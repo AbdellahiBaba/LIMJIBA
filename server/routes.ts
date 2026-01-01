@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { isTransientError } from "./db";
+import { isTransientError, checkDatabaseHealth, getPoolStats } from "./db";
 import { 
   insertProductSchema, 
   insertInvoiceSchema, 
@@ -84,6 +84,43 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  // Health check endpoint for monitoring
+  app.get("/api/health", async (req, res) => {
+    try {
+      const dbHealth = await checkDatabaseHealth();
+      const poolStats = getPoolStats();
+      
+      if (dbHealth.healthy) {
+        res.json({
+          status: "healthy",
+          database: {
+            connected: true,
+            latencyMs: dbHealth.latencyMs,
+          },
+          pool: poolStats,
+          timestamp: new Date().toISOString(),
+        });
+      } else {
+        res.status(503).json({
+          status: "unhealthy",
+          database: {
+            connected: false,
+            error: dbHealth.error,
+            latencyMs: dbHealth.latencyMs,
+          },
+          pool: poolStats,
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (error) {
+      res.status(503).json({
+        status: "error",
+        error: error instanceof Error ? error.message : "Unknown error",
+        timestamp: new Date().toISOString(),
+      });
+    }
+  });
 
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
