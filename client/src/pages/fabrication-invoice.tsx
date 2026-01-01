@@ -199,8 +199,9 @@ export default function FabricationInvoice() {
               ...item,
               productId,
               designation: product.name,
-              unitPrice: product.unitPrice,
-              total: item.quantity * product.unitPrice,
+              weightKg: product.weightPerUnit || 0,
+              unitPrice: product.costPrice || 0,
+              total: item.quantity * (product.costPrice || 0),
             };
           }
           return item;
@@ -798,7 +799,7 @@ export default function FabricationInvoice() {
                           <SelectItem value="custom">{getLabel("Saisie libre", "إدخال مخصص")}</SelectItem>
                           {products?.map((product) => (
                             <SelectItem key={product.id} value={product.id}>
-                              {product.name}
+                              {product.name} ({getLabel("Stock", "المخزون")}: {product.stockQuantity})
                             </SelectItem>
                           ))}
                         </SelectContent>
