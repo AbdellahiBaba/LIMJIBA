@@ -41,7 +41,7 @@ import {
   fabricationInvoices,
   fabricationItems,
 } from "@shared/schema";
-import { db } from "./db";
+import { db, withRetry } from "./db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
 
 export interface IStorage {
@@ -123,7 +123,9 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProducts(): Promise<Product[]> {
-    return await db.select().from(products);
+    return await withRetry(async () => {
+      return await db.select().from(products);
+    });
   }
 
   async getProduct(id: string): Promise<Product | undefined> {
@@ -132,8 +134,10 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProduct(product: InsertProduct): Promise<Product> {
-    const [created] = await db.insert(products).values(product).returning();
-    return created;
+    return await withRetry(async () => {
+      const [created] = await db.insert(products).values(product).returning();
+      return created;
+    });
   }
 
   async updateProduct(id: string, product: Partial<InsertProduct>): Promise<Product | undefined> {
