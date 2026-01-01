@@ -1,0 +1,261 @@
+Enhance the existing system with the following improvements. All features must work fully offline and integrate seamlessly with the current architecture.
+
+1. Multilingual Support (Arabic + French)
+UI Language System
+Add a language switcher (Arabic / French / Bilingual).
+
+Store language preference locally.
+
+Move all UI text into translation files:
+
+/locales/ar.json
+
+/locales/fr.json
+
+Arabic RTL Support
+Apply dir="rtl" and lang="ar" when Arabic is selected.
+
+Right-align text, tables, and forms.
+
+Use Arabic-friendly fonts (Cairo, Amiri, Noto Kufi Arabic).
+
+Ensure PDF generator supports RTL text.
+
+Invoice Language Options
+Arabic
+
+French
+
+Bilingual (AR + FR)
+
+Support Arabic and French number‑to‑words conversion.
+
+Adjust invoice layout automatically based on selected language.
+
+2. Branding System (Logo + Colors + Watermark)
+Branding Settings Page
+Allow the user to:
+
+Upload company logo
+
+Upload watermark image
+
+Toggle watermark ON/OFF
+
+Choose logo position (left / center / right)
+
+Choose default invoice language
+
+Choose brand primary and accent colors
+
+Preview invoice with branding applied
+
+Brand Color System
+Automatically extract dominant colors from the uploaded logo.
+
+Suggest primary and accent colors.
+
+Apply brand colors to:
+
+Invoice borders
+
+Table headers
+
+Buttons
+
+Sidebar
+
+POS interface
+
+Headings
+
+Logo & Watermark
+Display logo in invoice header, POS receipts, dashboard sidebar, login screen.
+
+Watermark centered behind invoice content (10–15% opacity).
+
+Ensure watermark works in RTL and LTR modes.
+
+Add live preview for both logo and watermark.
+
+3. Sales Invoice Enhancements
+Include full company details (name, address, artisan number, article number, fiscal number, phone, email, website).
+
+Add invoice preview before PDF download.
+
+Fix PDF download issues (blank pages, missing images, corrupted files).
+
+Ensure fonts embed correctly.
+
+Ensure RTL text renders properly.
+
+4. Fabrication Invoice (No Inventory Deduction)
+Fabrication Invoice Features
+Separate invoice type: Fabrication Invoice (Production Invoice)
+
+Does NOT deduct or add inventory
+
+Has its own numbering format (FAB‑0001, FAB‑0002…)
+
+Stored separately from sales invoices
+
+Supports Arabic, French, and bilingual formats
+
+Supports logo, watermark, and brand colors
+
+Includes preview before PDF generation
+
+Fabrication Invoice Fields
+Fabrication date
+
+Fabrication invoice number
+
+Responsible person
+
+Notes
+
+Product table with:
+
+Product name
+
+Quantity produced
+
+Unit cost (optional)
+
+Total cost (optional)
+
+Weight per unit (KG)
+
+Total weight (auto-calculated)
+
+Fabrication Dashboard
+List fabrication invoices
+
+Show total weight
+
+Show total cost (if used)
+
+PDF download button
+
+5. Inventory Module Enhancements
+Add Product Cost (Cost per Unit) when adding/editing products.
+
+Add Weight per Unit.
+
+Store cost and weight in the database.
+
+Use product cost automatically in profit calculations.
+
+6. Salaries Module
+Add a new section:
+
+Salaries
+Add employee name
+
+Add monthly salary amount
+
+Add role (optional)
+
+Add payment date (optional)
+
+Store salaries locally
+
+Automatically include salaries in profit calculations
+
+7. Business Expenses Module
+Add a new section:
+
+Business Expenses
+Add expense name
+
+Add category (rent, electricity, fuel, maintenance, etc.)
+
+Add amount
+
+Add date
+
+Store expenses locally
+
+Automatically include expenses in profit calculations
+
+8. Automatic Profit System (Fully Automated)
+Automatic Data Collection
+Pull data automatically from:
+
+Invoices → sales revenue
+
+Products → cost per unit
+
+Salaries → total payroll
+
+Expenses → business expenses
+
+Automatic Calculations
+A. Total Sales Revenue
+Code
+Total Sales = Sum of all invoice totals
+B. Total Product Costs (COGS)
+Code
+Total Product Costs = Sum(Product Cost × Quantity Sold)
+C. Total Salaries
+Code
+Total Salaries = Sum of all salaries
+D. Total Business Expenses
+Code
+Total Expenses = Sum of all expenses
+E. Net Profit (Automatic)
+Code
+Net Profit = Total Sales – (Total Product Costs + Total Expenses + Total Salaries)
+F. Global Profit
+Code
+Global Profit = Sum of Net Profit over selected period
+Profit Dashboard
+Show all totals
+
+Show charts (sales, expenses, salaries, profit)
+
+Auto-update whenever data changes
+
+9. FIX & POLISH EVERYTHING (IMPORTANT)
+Go through the entire system and:
+
+Fix any broken features
+
+Fix any missing functions
+
+Fix any UI inconsistencies
+
+Fix any PDF rendering issues
+
+Fix any RTL/LTR layout issues
+
+Fix any missing translations
+
+Fix any incorrect calculations
+
+Fix any missing validations
+
+Fix any navigation or routing issues
+
+Fix any database inconsistencies
+
+Fix any missing fields or incomplete logic
+
+Polish all UI pages for a clean, professional look
+
+Ensure all modules work together smoothly
+
+Ensure everything works fully offline
+
+The system must feel complete, stable, polished, and production-ready.
+
+10. Requirements
+Must work fully offline
+
+Must integrate with existing modules
+
+Must not break existing logic
+
+Ask me only if a critical detail is missing
+
+Start implementing all enhancements step by step.
