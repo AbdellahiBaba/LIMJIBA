@@ -35,6 +35,14 @@ export function LanguageSwitcher() {
           <span className="mr-2">🇸🇦</span>
           {t("language.arabic")}
         </DropdownMenuItem>
+        <DropdownMenuItem
+          onClick={() => setLanguage("en")}
+          className={language === "en" ? "bg-accent" : ""}
+          data-testid="menu-item-english"
+        >
+          <span className="mr-2">🇬🇧</span>
+          {t("language.english")}
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

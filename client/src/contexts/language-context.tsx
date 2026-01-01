@@ -1,8 +1,9 @@
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
 import frTranslations from "../locales/fr.json";
 import arTranslations from "../locales/ar.json";
+import enTranslations from "../locales/en.json";
 
-type Language = "fr" | "ar";
+type Language = "fr" | "ar" | "en";
 type InvoiceLanguage = "fr" | "ar" | "bilingual";
 
 interface CompanyInfo {
@@ -73,6 +74,7 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 const translations: Record<Language, typeof frTranslations> = {
   fr: frTranslations,
   ar: arTranslations,
+  en: enTranslations as typeof frTranslations,
 };
 
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
