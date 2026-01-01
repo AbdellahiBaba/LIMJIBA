@@ -1,8 +1,9 @@
-import { drizzle } from "drizzle-orm/node-postgres";
-import pg from "pg";
+import { Pool, neonConfig } from "@neondatabase/serverless";
+import { drizzle } from "drizzle-orm/neon-serverless";
+import ws from "ws";
 import * as schema from "@shared/schema";
 
-const { Pool } = pg;
+neonConfig.webSocketConstructor = ws;
 
 if (!process.env.DATABASE_URL) {
   throw new Error(
@@ -10,17 +11,13 @@ if (!process.env.DATABASE_URL) {
   );
 }
 
-// Robust connection pool configuration
 export const pool = new Pool({ 
   connectionString: process.env.DATABASE_URL,
-  max: 20,                      // Increased pool size for better concurrency
-  min: 2,                       // Keep minimum connections alive
-  idleTimeoutMillis: 30000,     // Close idle connections after 30s
-  connectionTimeoutMillis: 10000, // Timeout for acquiring connection
-  allowExitOnIdle: false,       // Keep pool alive
+  max: 20,
+  idleTimeoutMillis: 10000,
+  connectionTimeoutMillis: 5000,
 });
 
-// Track pool health and readiness
 let poolHealthy = true;
 let lastHealthCheck = Date.now();
 let databaseReady = false;
@@ -33,48 +30,43 @@ export function setDatabaseReady(ready: boolean): void {
   databaseReady = ready;
 }
 
-pool.on('error', (err) => {
+pool.on('error', (err: Error) => {
   console.error('[DB Pool] Unexpected pool error:', err.message);
   poolHealthy = false;
-  databaseReady = false; // Revert to 503 responses until recovery
+  databaseReady = false;
 });
 
 pool.on('connect', () => {
   poolHealthy = true;
-  databaseReady = true; // Recover after reconnection
+  databaseReady = true;
 });
 
 export const db = drizzle(pool, { schema });
 
-// Explicit list of transient error codes that should trigger retries
-// These are network/connection issues, NOT application/validation errors
 const TRANSIENT_ERROR_CODES = new Set([
-  // Node.js DNS/network errors
-  'EAI_AGAIN',      // DNS lookup timed out
-  'ECONNRESET',     // Connection reset by peer
-  'ETIMEDOUT',      // Connection timed out
-  'ENOTFOUND',      // DNS lookup failed
-  'ECONNREFUSED',   // Connection refused
-  'EPIPE',          // Broken pipe
-  'ECONNABORTED',   // Connection aborted
-  'EHOSTUNREACH',   // Host unreachable
-  'ENETUNREACH',    // Network unreachable
-  // PostgreSQL transient errors (SQLSTATE codes)
-  '57P01',          // Admin shutdown
-  '57P02',          // Crash shutdown
-  '57P03',          // Cannot connect now
-  '53300',          // Too many connections
-  '53400',          // Configuration limit exceeded
-  '08000',          // Connection exception
-  '08003',          // Connection does not exist
-  '08006',          // Connection failure
-  '08001',          // Unable to establish connection
-  '08004',          // Server rejected connection
-  '40001',          // Serialization failure (retry is appropriate)
-  '40P01',          // Deadlock detected (retry is appropriate)
+  'EAI_AGAIN',
+  'ECONNRESET',
+  'ETIMEDOUT',
+  'ENOTFOUND',
+  'ECONNREFUSED',
+  'EPIPE',
+  'ECONNABORTED',
+  'EHOSTUNREACH',
+  'ENETUNREACH',
+  '57P01',
+  '57P02',
+  '57P03',
+  '53300',
+  '53400',
+  '08000',
+  '08003',
+  '08006',
+  '08001',
+  '08004',
+  '40001',
+  '40P01',
 ]);
 
-// Error messages that indicate transient issues
 const TRANSIENT_ERROR_MESSAGES = [
   'timeout exceeded when trying to connect',
   'connection terminated unexpectedly',
@@ -85,24 +77,23 @@ const TRANSIENT_ERROR_MESSAGES = [
   'server closed the connection unexpectedly',
   'SSL connection has been closed unexpectedly',
   'Connection terminated',
+  'fetch failed',
+  'WebSocket',
 ];
 
 export function isTransientError(error: any): boolean {
   if (!error) return false;
   
-  // Check error.code for Node.js network errors or PostgreSQL SQLSTATE
   const code = error?.code;
   if (code && TRANSIENT_ERROR_CODES.has(code)) {
     return true;
   }
   
-  // Check for PostgreSQL error with embedded SQLSTATE in message
   const sqlstate = error?.sqlState || error?.sqlstate;
   if (sqlstate && TRANSIENT_ERROR_CODES.has(sqlstate)) {
     return true;
   }
   
-  // Check for specific connection-related error messages
   const message = error?.message?.toLowerCase() || '';
   for (const pattern of TRANSIENT_ERROR_MESSAGES) {
     if (message.includes(pattern.toLowerCase())) {
@@ -110,8 +101,6 @@ export function isTransientError(error: any): boolean {
     }
   }
   
-  // Do NOT retry based on generic substring matching
-  // This prevents constraint violations, syntax errors, etc. from being retried
   return false;
 }
 
@@ -128,14 +117,11 @@ export async function withRetry<T>(
     } catch (error: any) {
       lastError = error;
       
-      // Only retry on transient errors
       if (isTransientError(error) && attempt < maxRetries) {
-        // Exponential backoff with jitter
         const delay = initialDelayMs * Math.pow(2, attempt - 1) + Math.random() * 100;
         console.log(`[withRetry] Transient error (attempt ${attempt}/${maxRetries}), code=${error?.code || 'N/A'}, retrying in ${Math.round(delay)}ms...`);
         await new Promise(resolve => setTimeout(resolve, delay));
       } else {
-        // Not a transient error, or max retries reached - throw immediately
         throw error;
       }
     }
@@ -143,7 +129,6 @@ export async function withRetry<T>(
   throw lastError;
 }
 
-// Health check function - verifies database connectivity
 export async function checkDatabaseHealth(): Promise<{ healthy: boolean; latencyMs: number; error?: string }> {
   const start = Date.now();
   try {
@@ -167,44 +152,40 @@ export async function checkDatabaseHealth(): Promise<{ healthy: boolean; latency
   }
 }
 
-// Verify database connection on startup with continuous background retry
 export async function verifyDatabaseConnection(): Promise<boolean> {
-  console.log('[DB] Verifying database connection...');
+  console.log('[DB] Verifying Neon database connection...');
   
   for (let attempt = 1; attempt <= 10; attempt++) {
     const health = await checkDatabaseHealth();
     if (health.healthy) {
-      console.log(`[DB] Database connection verified (${health.latencyMs}ms)`);
+      console.log(`[DB] Neon database connection verified (${health.latencyMs}ms)`);
       databaseReady = true;
       return true;
     }
     
     console.log(`[DB] Connection attempt ${attempt}/10 failed: ${health.error}`);
     if (attempt < 10) {
-      const delay = Math.min(1000 * attempt, 5000); // Max 5 seconds between retries
+      const delay = Math.min(1000 * attempt, 5000);
       console.log(`[DB] Retrying in ${delay}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
   
-  console.error('[DB] Failed to verify database connection after 10 attempts');
+  console.error('[DB] Failed to verify Neon database connection after 10 attempts');
   console.log('[DB] Starting background recovery loop...');
   databaseReady = false;
   
-  // Start background recovery - keep trying every 10 seconds
   startBackgroundRecovery();
   return false;
 }
 
-// Background recovery loop for production cold starts
 let recoveryInterval: ReturnType<typeof setInterval> | null = null;
 
 function startBackgroundRecovery() {
-  if (recoveryInterval) return; // Already running
+  if (recoveryInterval) return;
   
   recoveryInterval = setInterval(async () => {
     if (databaseReady) {
-      // Already recovered, stop the loop
       if (recoveryInterval) {
         clearInterval(recoveryInterval);
         recoveryInterval = null;
@@ -212,10 +193,10 @@ function startBackgroundRecovery() {
       return;
     }
     
-    console.log('[DB] Background recovery: Attempting to reconnect...');
+    console.log('[DB] Background recovery: Attempting to reconnect to Neon...');
     const health = await checkDatabaseHealth();
     if (health.healthy) {
-      console.log(`[DB] Background recovery: Connection restored (${health.latencyMs}ms)`);
+      console.log(`[DB] Background recovery: Neon connection restored (${health.latencyMs}ms)`);
       databaseReady = true;
       if (recoveryInterval) {
         clearInterval(recoveryInterval);
@@ -224,10 +205,9 @@ function startBackgroundRecovery() {
     } else {
       console.log(`[DB] Background recovery: Still failing - ${health.error}`);
     }
-  }, 10000); // Try every 10 seconds
+  }, 10000);
 }
 
-// Get pool statistics for monitoring
 export function getPoolStats() {
   return {
     totalCount: pool.totalCount,
@@ -235,12 +215,12 @@ export function getPoolStats() {
     waitingCount: pool.waitingCount,
     healthy: poolHealthy,
     lastHealthCheck: new Date(lastHealthCheck).toISOString(),
+    provider: 'neon',
   };
 }
 
-// Graceful shutdown
 export async function closePool(): Promise<void> {
-  console.log('[DB] Closing connection pool...');
+  console.log('[DB] Closing Neon connection pool...');
   await pool.end();
-  console.log('[DB] Connection pool closed');
+  console.log('[DB] Neon connection pool closed');
 }
