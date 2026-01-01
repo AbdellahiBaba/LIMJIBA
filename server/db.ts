@@ -167,11 +167,11 @@ export async function checkDatabaseHealth(): Promise<{ healthy: boolean; latency
   }
 }
 
-// Verify database connection on startup
+// Verify database connection on startup with continuous background retry
 export async function verifyDatabaseConnection(): Promise<boolean> {
   console.log('[DB] Verifying database connection...');
   
-  for (let attempt = 1; attempt <= 5; attempt++) {
+  for (let attempt = 1; attempt <= 10; attempt++) {
     const health = await checkDatabaseHealth();
     if (health.healthy) {
       console.log(`[DB] Database connection verified (${health.latencyMs}ms)`);
@@ -179,17 +179,52 @@ export async function verifyDatabaseConnection(): Promise<boolean> {
       return true;
     }
     
-    console.log(`[DB] Connection attempt ${attempt}/5 failed: ${health.error}`);
-    if (attempt < 5) {
-      const delay = 1000 * attempt;
+    console.log(`[DB] Connection attempt ${attempt}/10 failed: ${health.error}`);
+    if (attempt < 10) {
+      const delay = Math.min(1000 * attempt, 5000); // Max 5 seconds between retries
       console.log(`[DB] Retrying in ${delay}ms...`);
       await new Promise(resolve => setTimeout(resolve, delay));
     }
   }
   
-  console.error('[DB] Failed to verify database connection after 5 attempts');
+  console.error('[DB] Failed to verify database connection after 10 attempts');
+  console.log('[DB] Starting background recovery loop...');
   databaseReady = false;
+  
+  // Start background recovery - keep trying every 10 seconds
+  startBackgroundRecovery();
   return false;
+}
+
+// Background recovery loop for production cold starts
+let recoveryInterval: ReturnType<typeof setInterval> | null = null;
+
+function startBackgroundRecovery() {
+  if (recoveryInterval) return; // Already running
+  
+  recoveryInterval = setInterval(async () => {
+    if (databaseReady) {
+      // Already recovered, stop the loop
+      if (recoveryInterval) {
+        clearInterval(recoveryInterval);
+        recoveryInterval = null;
+      }
+      return;
+    }
+    
+    console.log('[DB] Background recovery: Attempting to reconnect...');
+    const health = await checkDatabaseHealth();
+    if (health.healthy) {
+      console.log(`[DB] Background recovery: Connection restored (${health.latencyMs}ms)`);
+      databaseReady = true;
+      if (recoveryInterval) {
+        clearInterval(recoveryInterval);
+        recoveryInterval = null;
+      }
+    } else {
+      console.log(`[DB] Background recovery: Still failing - ${health.error}`);
+    }
+  }, 10000); // Try every 10 seconds
 }
 
 // Get pool statistics for monitoring
