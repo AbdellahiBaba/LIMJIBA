@@ -20,17 +20,28 @@ export const pool = new Pool({
   allowExitOnIdle: false,       // Keep pool alive
 });
 
-// Track pool health
+// Track pool health and readiness
 let poolHealthy = true;
 let lastHealthCheck = Date.now();
+let databaseReady = false;
+
+export function isDatabaseReady(): boolean {
+  return databaseReady;
+}
+
+export function setDatabaseReady(ready: boolean): void {
+  databaseReady = ready;
+}
 
 pool.on('error', (err) => {
   console.error('[DB Pool] Unexpected pool error:', err.message);
   poolHealthy = false;
+  databaseReady = false; // Revert to 503 responses until recovery
 });
 
 pool.on('connect', () => {
   poolHealthy = true;
+  databaseReady = true; // Recover after reconnection
 });
 
 export const db = drizzle(pool, { schema });
@@ -157,14 +168,15 @@ export async function checkDatabaseHealth(): Promise<{ healthy: boolean; latency
 }
 
 // Verify database connection on startup
-export async function verifyDatabaseConnection(): Promise<void> {
+export async function verifyDatabaseConnection(): Promise<boolean> {
   console.log('[DB] Verifying database connection...');
   
   for (let attempt = 1; attempt <= 5; attempt++) {
     const health = await checkDatabaseHealth();
     if (health.healthy) {
       console.log(`[DB] Database connection verified (${health.latencyMs}ms)`);
-      return;
+      databaseReady = true;
+      return true;
     }
     
     console.log(`[DB] Connection attempt ${attempt}/5 failed: ${health.error}`);
@@ -176,7 +188,8 @@ export async function verifyDatabaseConnection(): Promise<void> {
   }
   
   console.error('[DB] Failed to verify database connection after 5 attempts');
-  // Don't throw - let the app start and try to recover
+  databaseReady = false;
+  return false;
 }
 
 // Get pool statistics for monitoring

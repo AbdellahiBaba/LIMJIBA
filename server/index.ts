@@ -2,7 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
-import { verifyDatabaseConnection } from "./db";
+import { verifyDatabaseConnection, isDatabaseReady, getPoolStats } from "./db";
 
 const app = express();
 const httpServer = createServer(app);
@@ -61,9 +61,37 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Verify database connection on startup
-  await verifyDatabaseConnection();
-  
+  // Health check endpoint - must respond quickly for Replit health checks
+  app.get("/health", (_req: Request, res: Response) => {
+    const dbReady = isDatabaseReady();
+    const poolStats = getPoolStats();
+    
+    if (dbReady) {
+      res.status(200).json({ 
+        status: "healthy", 
+        database: "connected",
+        pool: poolStats
+      });
+    } else {
+      res.status(503).json({ 
+        status: "starting", 
+        database: "connecting",
+        message: "Database connection initializing, please retry"
+      });
+    }
+  });
+
+  // Middleware to handle requests gracefully when database is not ready
+  app.use("/api", (req: Request, res: Response, next: NextFunction) => {
+    if (!isDatabaseReady()) {
+      return res.status(503).json({ 
+        message: "Database temporarily unavailable: Please try again in a moment",
+        retryAfter: 2
+      });
+    }
+    next();
+  });
+
   await registerRoutes(httpServer, app);
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
@@ -89,6 +117,8 @@ app.use((req, res, next) => {
   // this serves both the API and the client.
   // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
+  
+  // Start listening IMMEDIATELY so Replit health checks don't timeout
   httpServer.listen(
     {
       port,
@@ -99,4 +129,13 @@ app.use((req, res, next) => {
       log(`serving on port ${port}`);
     },
   );
+
+  // Verify database connection in the background AFTER server starts
+  verifyDatabaseConnection().then((success) => {
+    if (success) {
+      log("Database ready for requests");
+    } else {
+      log("WARNING: Database connection failed - API requests will return 503");
+    }
+  });
 })();
