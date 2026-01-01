@@ -1,0 +1,519 @@
+import { useState } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Plus,
+  Search,
+  Gift,
+  Users,
+  Trophy,
+  Edit,
+  Trash2,
+  Sparkles,
+  Settings,
+  Check,
+} from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
+import type { Reseller, InsertReseller } from "@shared/schema";
+
+function ResellerFormDialog({
+  open,
+  onOpenChange,
+  reseller,
+  onSuccess,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  reseller?: Reseller;
+  onSuccess: () => void;
+}) {
+  const { toast } = useToast();
+  const [formData, setFormData] = useState<Partial<InsertReseller>>({
+    name: reseller?.name ?? "",
+    phone: reseller?.phone ?? "",
+    email: reseller?.email ?? "",
+    totalPurchases: reseller?.totalPurchases ?? 0,
+    rewardThreshold: reseller?.rewardThreshold ?? 100000,
+    inRewardPool: reseller?.inRewardPool ?? false,
+    isWinner: reseller?.isWinner ?? false,
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: InsertReseller) => apiRequest("POST", "/api/resellers", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/resellers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({ title: "Reseller added successfully" });
+      onSuccess();
+    },
+    onError: () => {
+      toast({ title: "Failed to add reseller", variant: "destructive" });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: (data: InsertReseller) =>
+      apiRequest("PATCH", `/api/resellers/${reseller?.id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/resellers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({ title: "Reseller updated successfully" });
+      onSuccess();
+    },
+    onError: () => {
+      toast({ title: "Failed to update reseller", variant: "destructive" });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const data = formData as InsertReseller;
+    if (reseller) {
+      updateMutation.mutate(data);
+    } else {
+      createMutation.mutate(data);
+    }
+  };
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md">
+        <DialogHeader>
+          <DialogTitle>
+            {reseller ? "Edit Reseller" : "Add Reseller"}
+          </DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="name">Name *</Label>
+            <Input
+              id="name"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              placeholder="Reseller name"
+              required
+              data-testid="input-reseller-name"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="phone">Phone</Label>
+              <Input
+                id="phone"
+                value={formData.phone ?? ""}
+                onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                placeholder="+213..."
+                data-testid="input-reseller-phone"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                type="email"
+                value={formData.email ?? ""}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                placeholder="email@example.com"
+                data-testid="input-reseller-email"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="rewardThreshold">Reward Threshold (DZD)</Label>
+            <Input
+              id="rewardThreshold"
+              type="number"
+              min="0"
+              value={formData.rewardThreshold}
+              onChange={(e) =>
+                setFormData({ ...formData, rewardThreshold: parseFloat(e.target.value) || 0 })
+              }
+              data-testid="input-reward-threshold"
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isPending} data-testid="button-save-reseller">
+              {isPending ? "Saving..." : reseller ? "Update" : "Add"}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function WinnerDialog({
+  open,
+  onOpenChange,
+  winner,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  winner: Reseller | null;
+}) {
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-md text-center">
+        <div className="py-8">
+          <div className="w-20 h-20 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center mx-auto mb-4">
+            <Trophy className="h-10 w-10 text-yellow-600" />
+          </div>
+          <h2 className="text-2xl font-bold mb-2">Congratulations!</h2>
+          {winner && (
+            <>
+              <p className="text-3xl font-bold text-primary mb-2">{winner.name}</p>
+              <p className="text-muted-foreground">
+                Total purchases: {winner.totalPurchases.toLocaleString()} DZD
+              </p>
+            </>
+          )}
+        </div>
+        <DialogFooter className="sm:justify-center">
+          <Button onClick={() => onOpenChange(false)}>
+            <Check className="h-4 w-4 mr-2" />
+            Close
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+export default function Resellers() {
+  const { toast } = useToast();
+  const [search, setSearch] = useState("");
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingReseller, setEditingReseller] = useState<Reseller | undefined>();
+  const [winnerDialogOpen, setWinnerDialogOpen] = useState(false);
+  const [selectedWinner, setSelectedWinner] = useState<Reseller | null>(null);
+
+  const { data: resellers, isLoading } = useQuery<Reseller[]>({
+    queryKey: ["/api/resellers"],
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("DELETE", `/api/resellers/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/resellers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({ title: "Reseller deleted successfully" });
+    },
+    onError: () => {
+      toast({ title: "Failed to delete reseller", variant: "destructive" });
+    },
+  });
+
+  const drawWinnerMutation = useMutation({
+    mutationFn: () => apiRequest<Reseller>("POST", "/api/resellers/draw-winner"),
+    onSuccess: (winner) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/resellers"] });
+      setSelectedWinner(winner);
+      setWinnerDialogOpen(true);
+    },
+    onError: () => {
+      toast({ title: "No eligible resellers in the reward pool", variant: "destructive" });
+    },
+  });
+
+  const resetPoolMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/resellers/reset-pool"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/resellers"] });
+      toast({ title: "Reward pool has been reset" });
+    },
+    onError: () => {
+      toast({ title: "Failed to reset pool", variant: "destructive" });
+    },
+  });
+
+  const filteredResellers = resellers?.filter((reseller) =>
+    reseller.name.toLowerCase().includes(search.toLowerCase()) ||
+    (reseller.phone?.includes(search) ?? false)
+  );
+
+  const inPoolCount = resellers?.filter((r) => r.inRewardPool).length ?? 0;
+  const winnersCount = resellers?.filter((r) => r.isWinner).length ?? 0;
+
+  const handleEdit = (reseller: Reseller) => {
+    setEditingReseller(reseller);
+    setDialogOpen(true);
+  };
+
+  const handleNew = () => {
+    setEditingReseller(undefined);
+    setDialogOpen(true);
+  };
+
+  const handleDialogClose = () => {
+    setDialogOpen(false);
+    setEditingReseller(undefined);
+  };
+
+  return (
+    <div className="p-6 space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold" data-testid="text-resellers-title">
+            Reseller Rewards
+          </h1>
+          <p className="text-muted-foreground text-sm">
+            Manage resellers and reward program
+          </p>
+        </div>
+        <Button onClick={handleNew} data-testid="button-add-reseller">
+          <Plus className="h-4 w-4 mr-2" />
+          Add Reseller
+        </Button>
+      </div>
+
+      <div className="grid gap-4 md:grid-cols-3">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Total Resellers
+            </CardTitle>
+            <Users className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{resellers?.length ?? 0}</div>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              In Reward Pool
+            </CardTitle>
+            <Gift className="h-4 w-4 text-primary" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{inPoolCount}</div>
+            <p className="text-xs text-muted-foreground">Eligible for draw</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
+              Past Winners
+            </CardTitle>
+            <Trophy className="h-4 w-4 text-yellow-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{winnersCount}</div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <CardTitle className="text-lg flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              Reward Draw
+            </CardTitle>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => resetPoolMutation.mutate()}
+                disabled={resetPoolMutation.isPending || inPoolCount === 0}
+                data-testid="button-reset-pool"
+              >
+                <Settings className="h-4 w-4 mr-2" />
+                Reset Pool
+              </Button>
+              <Button
+                onClick={() => drawWinnerMutation.mutate()}
+                disabled={drawWinnerMutation.isPending || inPoolCount === 0}
+                data-testid="button-draw-winner"
+              >
+                <Trophy className="h-4 w-4 mr-2" />
+                {drawWinnerMutation.isPending ? "Drawing..." : "Draw Winner"}
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            {inPoolCount === 0
+              ? "No resellers currently eligible for the reward draw. Resellers are added when they reach their purchase threshold."
+              : `${inPoolCount} reseller${inPoolCount > 1 ? "s" : ""} eligible. Click "Draw Winner" to randomly select a winner.`}
+          </p>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search resellers..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-9"
+              data-testid="input-search-resellers"
+            />
+          </div>
+        </CardHeader>
+        <CardContent>
+          {isLoading ? (
+            <div className="space-y-3">
+              {[...Array(5)].map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          ) : filteredResellers && filteredResellers.length > 0 ? (
+            <div className="rounded-md border overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Name</TableHead>
+                    <TableHead>Contact</TableHead>
+                    <TableHead>Total Purchases</TableHead>
+                    <TableHead>Progress</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredResellers.map((reseller) => {
+                    const progress = Math.min(
+                      (reseller.totalPurchases / reseller.rewardThreshold) * 100,
+                      100
+                    );
+                    return (
+                      <TableRow key={reseller.id} data-testid={`row-reseller-${reseller.id}`}>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                              <span className="text-xs font-medium text-primary">
+                                {reseller.name.charAt(0).toUpperCase()}
+                              </span>
+                            </div>
+                            <span className="font-medium">{reseller.name}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="text-sm">
+                            <p>{reseller.phone || "-"}</p>
+                            <p className="text-muted-foreground text-xs">
+                              {reseller.email || "-"}
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell className="font-mono">
+                          {reseller.totalPurchases.toLocaleString()} DZD
+                        </TableCell>
+                        <TableCell>
+                          <div className="space-y-1">
+                            <Progress value={progress} className="h-2 w-24" />
+                            <p className="text-xs text-muted-foreground">
+                              {Math.round(progress)}% to threshold
+                            </p>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex flex-wrap gap-1">
+                            {reseller.isWinner && (
+                              <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300">
+                                <Trophy className="h-3 w-3 mr-1" />
+                                Winner
+                              </Badge>
+                            )}
+                            {reseller.inRewardPool && (
+                              <Badge variant="secondary">
+                                <Gift className="h-3 w-3 mr-1" />
+                                In Pool
+                              </Badge>
+                            )}
+                            {!reseller.inRewardPool && !reseller.isWinner && (
+                              <Badge variant="outline">Active</Badge>
+                            )}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleEdit(reseller)}
+                              data-testid={`button-edit-${reseller.id}`}
+                            >
+                              <Edit className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => deleteMutation.mutate(reseller.id)}
+                              data-testid={`button-delete-${reseller.id}`}
+                            >
+                              <Trash2 className="h-4 w-4 text-destructive" />
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="font-medium text-lg mb-1">No resellers found</h3>
+              <p className="text-muted-foreground text-sm mb-4">
+                {search
+                  ? "Try a different search"
+                  : "Get started by adding your first reseller"}
+              </p>
+              {!search && (
+                <Button onClick={handleNew}>
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Reseller
+                </Button>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <ResellerFormDialog
+        open={dialogOpen}
+        onOpenChange={handleDialogClose}
+        reseller={editingReseller}
+        onSuccess={handleDialogClose}
+      />
+
+      <WinnerDialog
+        open={winnerDialogOpen}
+        onOpenChange={setWinnerDialogOpen}
+        winner={selectedWinner}
+      />
+    </div>
+  );
+}
