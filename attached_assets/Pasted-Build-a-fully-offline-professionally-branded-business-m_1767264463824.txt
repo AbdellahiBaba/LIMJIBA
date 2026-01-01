@@ -1,0 +1,135 @@
+Build a fully offline, professionally branded business management system for my company.
+The system must include: invoice generation, stock management, POS, and a reseller reward program.
+Everything must run 100% locally with no internet connection.
+
+🎨 Branding Requirements
+The entire system must follow a consistent, modern, professional brand identity:
+
+Use my company name: POLY FLECTA PLASTICA
+
+Use my company colors (choose a clean palette inspired by industrial manufacturing: blues, greys, white, metallic accents)
+
+Use a clean, modern UI style (Material Design or Tailwind‑based)
+
+Include my company logo placeholder
+
+Use consistent typography across all modules
+
+All PDFs, dashboards, and POS screens must look professional and branded
+
+Include footer branding on invoices and receipts
+
+Include watermark or subtle brand elements where appropriate
+
+The final result should look like a polished commercial software product, not a basic CRUD app.
+
+🧾 1. Offline Invoice Generation System
+Create an invoice generator that produces invoices identical to the sample PDF I provided, but with professional branding.
+
+Features:
+
+Company header with logo, address, artisan number, fiscal number
+
+Invoice metadata (date, invoice number, responsible person, payment mode, due date)
+
+Product table with quantity, designation, unit price, total
+
+Automatic totals (HT, TTC)
+
+Convert total amount into written text (French or Arabic)
+
+Branded PDF export (offline)
+
+Local storage of invoices (SQLite or local files)
+
+Search, filter, and list invoices
+
+Professional layout matching the provided invoice style
+
+📦 2. Offline Stock Management System
+A complete inventory module with professional UI:
+
+Add/edit/delete products
+
+Track stock quantities
+
+Auto‑deduct stock when invoices or POS sales occur
+
+Low‑stock alerts
+
+Product categories
+
+Import/export stock data locally
+
+Branded dashboard with charts and analytics
+
+🛒 3. Offline POS (Point of Sale)
+A fast, clean, branded POS interface:
+
+Add products to cart
+
+Calculate totals, taxes, discounts
+
+Print branded POS receipts
+
+Deduct stock automatically
+
+Support multiple payment modes
+
+Daily sales reports stored locally
+
+Professional UI optimized for speed
+
+🎁 4. Offline Reseller Reward Program
+A branded reward system:
+
+Track reseller purchase volume
+
+When a reseller reaches a threshold, add them to a reward pool
+
+Random offline selection of winners
+
+Admin panel to:
+
+Set thresholds
+
+View reseller stats
+
+Trigger random draw
+
+Display winners with branded UI
+
+🛠️ 5. Technical Requirements
+Must run fully offline
+
+Use a local backend (Node.js + Express, Python + FastAPI, or similar)
+
+Use SQLite for local database
+
+Local file storage for PDFs and backups
+
+Clean, modular code
+
+Admin dashboard with authentication
+
+Responsive UI
+
+No external APIs or cloud services
+
+📦 6. Deliverables
+Full source code
+
+Local database schema
+
+API documentation
+
+Instructions to run offline
+
+Branded UI for all modules
+
+Branded PDF templates
+
+🧭 Instructions for Replit AI Agent
+Build this entire system step by step.
+Start by generating the project structure with branding assets, then implement each module one by one.
+Ask me questions only when necessary.
