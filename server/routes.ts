@@ -80,7 +80,7 @@ function handleError(res: any, context: string, error: unknown, defaultStatus: n
 }
 
 const statusSchema = z.object({
-  status: z.enum(["pending", "paid", "cancelled"])
+  status: z.enum(["pending", "unpaid", "paid", "cancelled"])
 });
 
 export async function registerRoutes(

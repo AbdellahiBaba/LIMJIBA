@@ -45,8 +45,9 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import type { Invoice } from "@shared/schema";
 
-const statusConfig: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; variant: "default" | "secondary" | "destructive" }> = {
+const statusConfig: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; variant: "default" | "secondary" | "destructive" | "outline" }> = {
   pending: { label: "Pending", icon: Clock, variant: "secondary" },
+  unpaid: { label: "Unpaid", icon: Clock, variant: "outline" },
   paid: { label: "Paid", icon: CheckCircle, variant: "default" },
   cancelled: { label: "Cancelled", icon: XCircle, variant: "destructive" },
 };
@@ -173,6 +174,7 @@ export default function Invoices() {
               <SelectContent>
                 <SelectItem value="all">All Status</SelectItem>
                 <SelectItem value="pending">Pending</SelectItem>
+                <SelectItem value="unpaid">Unpaid</SelectItem>
                 <SelectItem value="paid">Paid</SelectItem>
                 <SelectItem value="cancelled">Cancelled</SelectItem>
               </SelectContent>

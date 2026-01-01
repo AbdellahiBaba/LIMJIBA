@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLocation, useParams } from "wouter";
+import { useLanguage, useBranding } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +22,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { ArrowLeft, Plus, Trash2, Save, Printer } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { ArrowLeft, Plus, Trash2, Save, Eye } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Product, InvoiceWithItems, InsertInvoiceItem } from "@shared/schema";
 
@@ -75,9 +83,13 @@ function numberToFrenchWords(n: number): string {
 
 export default function InvoiceForm() {
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const { branding } = useBranding();
   const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
   const isEditing = params.id && params.id !== "new";
+  const [showPreview, setShowPreview] = useState(false);
+  const invoiceRef = useRef<HTMLDivElement>(null);
 
   const [formData, setFormData] = useState({
     invoiceNumber: "",
@@ -505,12 +517,195 @@ export default function InvoiceForm() {
           >
             Cancel
           </Button>
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => setShowPreview(true)}
+            data-testid="button-preview-invoice"
+          >
+            <Eye className="h-4 w-4 mr-2" />
+            Preview
+          </Button>
           <Button type="submit" disabled={createMutation.isPending} data-testid="button-save-invoice">
             <Save className="h-4 w-4 mr-2" />
             {createMutation.isPending ? "Saving..." : "Save Invoice"}
           </Button>
         </div>
       </form>
+
+      <Dialog open={showPreview} onOpenChange={setShowPreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Invoice Preview</DialogTitle>
+          </DialogHeader>
+          <div 
+            ref={invoiceRef}
+            className="bg-white text-gray-900 p-8 rounded-md border"
+          >
+            {branding.enableWatermark && branding.watermark && (
+              <div 
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                style={{ opacity: branding.watermarkOpacity }}
+              >
+                <img 
+                  src={branding.watermark} 
+                  alt="Watermark" 
+                  className="max-w-[60%] max-h-[60%] object-contain"
+                />
+              </div>
+            )}
+            
+            <div className="relative z-10">
+              <div 
+                className="flex items-start justify-between mb-6 pb-4"
+                style={{ borderBottom: `3px solid ${branding.primaryColor}` }}
+              >
+                <div className="flex items-start gap-4">
+                  {branding.logo ? (
+                    <img 
+                      src={branding.logo} 
+                      alt="Logo" 
+                      className="h-16 w-auto object-contain"
+                    />
+                  ) : (
+                    <div 
+                      className="w-16 h-16 rounded-md flex items-center justify-center text-white font-bold text-lg"
+                      style={{ backgroundColor: branding.primaryColor }}
+                    >
+                      PFP
+                    </div>
+                  )}
+                  <div>
+                    <h2 
+                      className="text-xl font-bold"
+                      style={{ color: branding.primaryColor }}
+                    >
+                      {branding.companyInfo?.name || "POLY FLECTA PLASTICA"}
+                    </h2>
+                    <p className="text-sm text-gray-600">
+                      {branding.companyInfo?.tagline || "FABRICATION D'EMBALLAGE EN PLASTIQUE"}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-1">
+                      {branding.companyInfo?.address || "Village Zaitout, Local N°01, Commune Hammam Dalaa - W M'sila"}
+                    </p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <h3 
+                    className="text-2xl font-bold"
+                    style={{ color: branding.primaryColor }}
+                  >
+                    FACTURE
+                  </h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    N°: {formData.invoiceNumber}
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    Date: {formData.date}
+                  </p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-8 mb-6">
+                <div className="p-4 rounded-md" style={{ backgroundColor: `${branding.primaryColor}10` }}>
+                  <h4 className="font-semibold mb-2" style={{ color: branding.primaryColor }}>
+                    Client
+                  </h4>
+                  <p className="text-sm">{formData.clientName || "---"}</p>
+                </div>
+                <div className="p-4 rounded-md" style={{ backgroundColor: `${branding.accentColor}10` }}>
+                  <h4 className="font-semibold mb-2" style={{ color: branding.primaryColor }}>
+                    Détails
+                  </h4>
+                  <p className="text-xs">
+                    <span className="text-gray-600">Mode de paiement:</span> {formData.paymentMode}
+                  </p>
+                  <p className="text-xs">
+                    <span className="text-gray-600">Responsable:</span> {formData.responsible}
+                  </p>
+                  {formData.dueDate && (
+                    <p className="text-xs">
+                      <span className="text-gray-600">Échéance:</span> {formData.dueDate}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <table className="w-full text-sm mb-6 border-collapse">
+                <thead>
+                  <tr style={{ backgroundColor: branding.primaryColor }}>
+                    <th className="text-white p-3 text-center border border-white/20 w-12">#</th>
+                    <th className="text-white p-3 text-left border border-white/20">Désignation</th>
+                    <th className="text-white p-3 text-center border border-white/20 w-16">Qté</th>
+                    <th className="text-white p-3 text-center border border-white/20 w-20">Poids/U</th>
+                    <th className="text-white p-3 text-center border border-white/20 w-24">Poids Total</th>
+                    <th className="text-white p-3 text-right border border-white/20 w-24">Prix U.</th>
+                    <th className="text-white p-3 text-right border border-white/20 w-28">Montant</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {items.filter(item => item.designation).map((item, index) => (
+                    <tr key={item.id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+                      <td className="p-3 text-center border">{index + 1}</td>
+                      <td className="p-3 border">{item.designation}</td>
+                      <td className="p-3 text-center border">{item.quantity}</td>
+                      <td className="p-3 text-center border">{item.weightPerUnit > 0 ? item.weightPerUnit.toFixed(2) : "-"}</td>
+                      <td className="p-3 text-center border font-medium">{item.totalWeight.toFixed(2)} kg</td>
+                      <td className="p-3 text-right border">{item.unitPrice.toLocaleString()} DZD</td>
+                      <td className="p-3 text-right border font-medium">{item.total.toLocaleString()} DZD</td>
+                    </tr>
+                  ))}
+                </tbody>
+                <tfoot>
+                  <tr className="bg-gray-100">
+                    <td colSpan={4} className="p-3 border font-semibold">Total</td>
+                    <td className="p-3 text-center border font-semibold">{totalWeight.toFixed(2)} kg</td>
+                    <td className="p-3 border"></td>
+                    <td 
+                      className="p-3 text-right border font-bold"
+                      style={{ color: branding.primaryColor }}
+                    >
+                      {totalTTC.toLocaleString()} DZD
+                    </td>
+                  </tr>
+                </tfoot>
+              </table>
+
+              <div 
+                className="p-4 rounded-md mb-6"
+                style={{ backgroundColor: `${branding.primaryColor}05`, border: `1px solid ${branding.primaryColor}30` }}
+              >
+                <p className="text-sm">
+                  <span className="font-semibold">Arrêté la présente facture à la somme de:</span>
+                </p>
+                <p className="text-lg font-medium mt-1" style={{ color: branding.primaryColor }}>
+                  {numberToFrenchWords(Math.floor(totalTTC))} dinars algériens
+                </p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-8">
+                <div>
+                  <p className="text-sm font-semibold mb-2">Signature du client</p>
+                  <div className="h-16 border-b border-gray-300"></div>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm font-semibold mb-2">Cachet et signature</p>
+                  <div className="h-16 border-b border-gray-300"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowPreview(false)}>
+              Close
+            </Button>
+            <Button onClick={() => setShowPreview(false)} data-testid="button-confirm-preview">
+              <Save className="h-4 w-4 mr-2" />
+              Confirm & Continue Editing
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
