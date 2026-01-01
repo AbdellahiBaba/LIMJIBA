@@ -1,0 +1,70 @@
+My Biz‑Sync app is still failing with database errors even after recreating the database. I am still getting errors like:
+
+503 Database temporarily unavailable
+Database temporarily unavailable: Please try again in a moment
+
+This means the issue is deeper than the database itself. I need you to perform a COMPLETE SYSTEM RESET AND REBUILD. Do NOT patch anything. Do NOT reuse any old logic. I want a fully clean, stable, production‑ready system.
+
+Here is exactly what I need you to do:
+
+1. **Rebuild the entire database layer from scratch**
+   - Drop the existing database completely.
+   - Create a brand‑new database.
+   - Rebuild the schema from the models.
+   - Recreate all tables, indexes, relations, and constraints.
+   - Regenerate migrations cleanly.
+   - Ensure schema matches the backend models exactly.
+
+2. **Rebuild the entire backend database connection logic**
+   - Remove any old or unstable connection code.
+   - Implement a proper connection pool.
+   - Fix any connection leaks.
+   - Fix any missing awaits or async issues.
+   - Add robust retry logic with exponential backoff.
+   - Ensure the backend never opens a new connection per request.
+
+3. **Rebuild the environment configuration**
+   - Verify DATABASE_URL is correct.
+   - Fix any incorrect hostnames.
+   - Fix any DNS‑related issues.
+   - Ensure production and development configs match.
+   - Ensure SSL settings are correct if required.
+
+4. **Rebuild the product creation endpoint**
+   - Add full validation for all fields.
+   - Ensure no invalid data reaches the database.
+   - Ensure the backend never throws unhandled exceptions.
+   - Ensure correct status codes (400, 422, 500, etc.).
+
+5. **Audit the entire backend for hidden issues**
+   - Race conditions
+   - Missing awaits
+   - Unhandled promise rejections
+   - Incorrect imports
+   - Duplicate routes
+   - Incorrect async patterns
+   - Mismatched field names between frontend and backend
+
+6. **Audit the frontend API calls**
+   - Ensure correct endpoint paths.
+   - Ensure correct payload structure.
+   - Ensure correct field names and types.
+   - Ensure the frontend handles backend errors gracefully.
+
+7. **Perform a full end‑to‑end test**
+   - Test database connection.
+   - Test product creation.
+   - Test all CRUD operations.
+   - Confirm no 503 or connection errors occur.
+
+8. **Deliver the final result**
+   - Provide the corrected backend code.
+   - Provide the corrected database connection logic.
+   - Provide the corrected schema and migrations.
+   - Provide the corrected environment configuration.
+   - Provide any frontend fixes.
+   - Provide a list of ALL issues found.
+   - Provide a detailed explanation of how each issue was fixed.
+   - Provide recommendations to prevent future failures.
+
+Treat this as a full system rebuild. Do not skip any layer. Do not assume anything is correct until you verify it. I want a fully stable, production‑ready system with zero database availability issues.
