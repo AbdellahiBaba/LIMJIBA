@@ -28,6 +28,9 @@ import {
   type InsertFabricationItem,
   type FabricationInvoiceWithItems,
   type ProfitStats,
+  type StockMovement,
+  type InsertStockMovement,
+  type StockMovementWithProduct,
   users,
   products,
   invoices,
@@ -40,6 +43,7 @@ import {
   expenses,
   fabricationInvoices,
   fabricationItems,
+  stockMovements,
 } from "@shared/schema";
 import { db, withRetry } from "./db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
@@ -104,6 +108,11 @@ export interface IStorage {
 
   getDashboardStats(): Promise<DashboardStats>;
   getProfitStats(startDate: string, endDate: string): Promise<ProfitStats>;
+
+  getStockMovements(productId?: string): Promise<StockMovementWithProduct[]>;
+  createStockMovement(movement: InsertStockMovement): Promise<StockMovement>;
+  adjustStock(productId: string, quantity: number, reason: string, reference?: string, createdBy?: string): Promise<{ movement: StockMovement; product: Product }>;
+  getProductByBarcode(barcode: string): Promise<Product | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -571,6 +580,79 @@ export class DatabaseStorage implements IStorage {
         periodStart: startDate,
         periodEnd: endDate,
       };
+    });
+  }
+
+  async getStockMovements(productId?: string): Promise<StockMovementWithProduct[]> {
+    return await withRetry(async () => {
+      let movements: StockMovement[];
+      if (productId) {
+        movements = await db.select().from(stockMovements)
+          .where(eq(stockMovements.productId, productId))
+          .orderBy(desc(stockMovements.createdAt));
+      } else {
+        movements = await db.select().from(stockMovements)
+          .orderBy(desc(stockMovements.createdAt));
+      }
+      
+      const result: StockMovementWithProduct[] = [];
+      for (const movement of movements) {
+        const [product] = await db.select().from(products).where(eq(products.id, movement.productId));
+        result.push({ ...movement, product: product || undefined });
+      }
+      return result;
+    });
+  }
+
+  async createStockMovement(movement: InsertStockMovement): Promise<StockMovement> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(stockMovements).values(movement).returning();
+      return created;
+    });
+  }
+
+  async adjustStock(
+    productId: string,
+    quantity: number,
+    reason: string,
+    reference?: string,
+    createdBy?: string
+  ): Promise<{ movement: StockMovement; product: Product }> {
+    return await withRetry(async () => {
+      const [product] = await db.select().from(products).where(eq(products.id, productId));
+      if (!product) {
+        throw new Error("Product not found");
+      }
+
+      const previousStock = product.stockQuantity;
+      const newStock = Math.max(0, previousStock + quantity);
+      const movementType = quantity > 0 ? "in" : quantity < 0 ? "out" : "adjustment";
+
+      const [updatedProduct] = await db.update(products)
+        .set({ stockQuantity: newStock })
+        .where(eq(products.id, productId))
+        .returning();
+
+      const [movement] = await db.insert(stockMovements).values({
+        productId,
+        movementType,
+        reason,
+        quantity,
+        previousStock,
+        newStock,
+        reference,
+        createdAt: new Date().toISOString(),
+        createdBy,
+      }).returning();
+
+      return { movement, product: updatedProduct };
+    });
+  }
+
+  async getProductByBarcode(barcode: string): Promise<Product | undefined> {
+    return await withRetry(async () => {
+      const [product] = await db.select().from(products).where(eq(products.barcode, barcode));
+      return product || undefined;
     });
   }
 }

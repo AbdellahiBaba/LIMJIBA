@@ -27,11 +27,31 @@ export const products = pgTable("products", {
   stockQuantity: integer("stock_quantity").notNull().default(0),
   lowStockThreshold: integer("low_stock_threshold").notNull().default(10),
   unit: text("unit").notNull().default("pcs"),
+  barcode: text("barcode"),
 });
 
 export const insertProductSchema = createInsertSchema(products).omit({ id: true });
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Product = typeof products.$inferSelect;
+
+// Stock movements for tracking inventory changes
+export const stockMovements = pgTable("stock_movements", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar("product_id").notNull(),
+  movementType: text("movement_type").notNull(), // 'in' | 'out' | 'adjustment'
+  reason: text("reason").notNull(), // 'purchase', 'sale', 'return', 'damaged', 'correction', 'initial'
+  quantity: integer("quantity").notNull(), // positive for in, negative for out
+  previousStock: integer("previous_stock").notNull(),
+  newStock: integer("new_stock").notNull(),
+  reference: text("reference"), // invoice number, sale number, or note
+  createdAt: text("created_at").notNull(),
+  createdBy: text("created_by"),
+});
+
+export const insertStockMovementSchema = createInsertSchema(stockMovements).omit({ id: true });
+export type InsertStockMovement = z.infer<typeof insertStockMovementSchema>;
+export type StockMovement = typeof stockMovements.$inferSelect;
+export type StockMovementWithProduct = StockMovement & { product?: Product };
 
 export const invoices = pgTable("invoices", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
