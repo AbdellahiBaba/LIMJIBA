@@ -44,11 +44,13 @@ function ResellerFormDialog({
   onOpenChange,
   reseller,
   onSuccess,
+  t,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   reseller?: Reseller;
   onSuccess: () => void;
+  t: (key: string) => string;
 }) {
   const { toast } = useToast();
   const [formData, setFormData] = useState<Partial<InsertReseller>>({
@@ -66,11 +68,11 @@ function ResellerFormDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/resellers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: "Reseller added successfully" });
+      toast({ title: t("resellers.resellerAdded") });
       onSuccess();
     },
     onError: () => {
-      toast({ title: "Failed to add reseller", variant: "destructive" });
+      toast({ title: t("common.error"), variant: "destructive" });
     },
   });
 
@@ -80,11 +82,11 @@ function ResellerFormDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/resellers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: "Reseller updated successfully" });
+      toast({ title: t("resellers.resellerUpdated") });
       onSuccess();
     },
     onError: () => {
-      toast({ title: "Failed to update reseller", variant: "destructive" });
+      toast({ title: t("common.error"), variant: "destructive" });
     },
   });
 
@@ -105,24 +107,24 @@ function ResellerFormDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {reseller ? "Edit Reseller" : "Add Reseller"}
+            {reseller ? t("resellers.editReseller") : t("resellers.addReseller")}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Name *</Label>
+            <Label htmlFor="name">{t("resellers.name")} *</Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder="Reseller name"
+              placeholder={t("resellers.resellerName")}
               required
               data-testid="input-reseller-name"
             />
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="phone">Phone</Label>
+              <Label htmlFor="phone">{t("resellers.phone")}</Label>
               <Input
                 id="phone"
                 value={formData.phone ?? ""}
@@ -132,7 +134,7 @@ function ResellerFormDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="email">Email</Label>
+              <Label htmlFor="email">{t("resellers.email")}</Label>
               <Input
                 id="email"
                 type="email"
@@ -144,7 +146,7 @@ function ResellerFormDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="rewardThreshold">Reward Threshold (DZD)</Label>
+            <Label htmlFor="rewardThreshold">{t("resellers.rewardThreshold")} (DZD)</Label>
             <Input
               id="rewardThreshold"
               type="number"
@@ -158,10 +160,10 @@ function ResellerFormDialog({
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={isPending} data-testid="button-save-reseller">
-              {isPending ? "Saving..." : reseller ? "Update" : "Add"}
+              {isPending ? t("common.loading") : reseller ? t("common.save") : t("resellers.addReseller")}
             </Button>
           </DialogFooter>
         </form>
@@ -174,10 +176,12 @@ function WinnerDialog({
   open,
   onOpenChange,
   winner,
+  t,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   winner: Reseller | null;
+  t: (key: string) => string;
 }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -186,12 +190,12 @@ function WinnerDialog({
           <div className="w-20 h-20 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center mx-auto mb-4">
             <Trophy className="h-10 w-10 text-yellow-600" />
           </div>
-          <h2 className="text-2xl font-bold mb-2">Congratulations!</h2>
+          <h2 className="text-2xl font-bold mb-2">{t("resellers.congratulations")}</h2>
           {winner && (
             <>
               <p className="text-3xl font-bold text-primary mb-2">{winner.name}</p>
               <p className="text-muted-foreground">
-                Total purchases: {winner.totalPurchases.toLocaleString()} DZD
+                {t("resellers.totalPurchases")}: {winner.totalPurchases.toLocaleString()} DZD
               </p>
             </>
           )}
@@ -199,7 +203,7 @@ function WinnerDialog({
         <DialogFooter className="sm:justify-center">
           <Button onClick={() => onOpenChange(false)}>
             <Check className="h-4 w-4 mr-2" />
-            Close
+            {t("resellers.close")}
           </Button>
         </DialogFooter>
       </DialogContent>
@@ -225,10 +229,10 @@ export default function Resellers() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/resellers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: "Reseller deleted successfully" });
+      toast({ title: t("resellers.resellerDeleted") });
     },
     onError: () => {
-      toast({ title: "Failed to delete reseller", variant: "destructive" });
+      toast({ title: t("common.error"), variant: "destructive" });
     },
   });
 
@@ -243,7 +247,7 @@ export default function Resellers() {
       setWinnerDialogOpen(true);
     },
     onError: () => {
-      toast({ title: "No eligible resellers in the reward pool", variant: "destructive" });
+      toast({ title: t("resellers.noEligibleResellers"), variant: "destructive" });
     },
   });
 
@@ -251,10 +255,10 @@ export default function Resellers() {
     mutationFn: () => apiRequest("POST", "/api/resellers/reset-pool"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/resellers"] });
-      toast({ title: "Reward pool has been reset" });
+      toast({ title: t("resellers.winnerDrawn") });
     },
     onError: () => {
-      toast({ title: "Failed to reset pool", variant: "destructive" });
+      toast({ title: t("common.error"), variant: "destructive" });
     },
   });
 
@@ -302,7 +306,7 @@ export default function Resellers() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Total Resellers
+              {t("resellers.totalResellers")}
             </CardTitle>
             <Users className="h-4 w-4 text-primary" />
           </CardHeader>
@@ -313,19 +317,19 @@ export default function Resellers() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              In Reward Pool
+              {t("resellers.inRewardPool")}
             </CardTitle>
             <Gift className="h-4 w-4 text-primary" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">{inPoolCount}</div>
-            <p className="text-xs text-muted-foreground">Eligible for draw</p>
+            <p className="text-xs text-muted-foreground">{t("resellers.eligibleResellers")}</p>
           </CardContent>
         </Card>
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
             <CardTitle className="text-sm font-medium text-muted-foreground">
-              Past Winners
+              {t("resellers.pastWinners")}
             </CardTitle>
             <Trophy className="h-4 w-4 text-yellow-500" />
           </CardHeader>
@@ -340,7 +344,7 @@ export default function Resellers() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <CardTitle className="text-lg flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              Reward Draw
+              {t("resellers.rewardDraw")}
             </CardTitle>
             <div className="flex gap-2">
               <Button
@@ -350,7 +354,7 @@ export default function Resellers() {
                 data-testid="button-reset-pool"
               >
                 <Settings className="h-4 w-4 mr-2" />
-                Reset Pool
+                {t("resellers.resetPool")}
               </Button>
               <Button
                 onClick={() => drawWinnerMutation.mutate()}
@@ -366,8 +370,8 @@ export default function Resellers() {
         <CardContent>
           <p className="text-sm text-muted-foreground">
             {inPoolCount === 0
-              ? "No resellers currently eligible for the reward draw. Resellers are added when they reach their purchase threshold."
-              : `${inPoolCount} reseller${inPoolCount > 1 ? "s" : ""} eligible. Click "Draw Winner" to randomly select a winner.`}
+              ? t("resellers.noResellersEligible")
+              : `${inPoolCount} ${t("resellers.eligibleClickDraw")}`}
           </p>
         </CardContent>
       </Card>
@@ -377,7 +381,7 @@ export default function Resellers() {
           <div className="relative flex-1">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search resellers..."
+              placeholder={t("resellers.searchResellers")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -397,12 +401,12 @@ export default function Resellers() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead>Total Purchases</TableHead>
-                    <TableHead>Progress</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t("resellers.name")}</TableHead>
+                    <TableHead>{t("resellers.contact")}</TableHead>
+                    <TableHead>{t("resellers.totalPurchases")}</TableHead>
+                    <TableHead>{t("resellers.progress")}</TableHead>
+                    <TableHead>{t("resellers.status")}</TableHead>
+                    <TableHead className="text-right">{t("resellers.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -447,17 +451,17 @@ export default function Resellers() {
                             {reseller.isWinner && (
                               <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300">
                                 <Trophy className="h-3 w-3 mr-1" />
-                                Winner
+                                {t("resellers.winner")}
                               </Badge>
                             )}
                             {reseller.inRewardPool && (
                               <Badge variant="secondary">
                                 <Gift className="h-3 w-3 mr-1" />
-                                In Pool
+                                {t("resellers.inRewardPool")}
                               </Badge>
                             )}
                             {!reseller.inRewardPool && !reseller.isWinner && (
-                              <Badge variant="outline">Active</Badge>
+                              <Badge variant="outline">{t("resellers.active")}</Badge>
                             )}
                           </div>
                         </TableCell>
@@ -490,16 +494,16 @@ export default function Resellers() {
           ) : (
             <div className="text-center py-12">
               <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="font-medium text-lg mb-1">No resellers found</h3>
+              <h3 className="font-medium text-lg mb-1">{t("common.noData")}</h3>
               <p className="text-muted-foreground text-sm mb-4">
                 {search
-                  ? "Try a different search"
-                  : "Get started by adding your first reseller"}
+                  ? t("resellers.searchResellers")
+                  : t("resellers.addReseller")}
               </p>
               {!search && (
                 <Button onClick={handleNew}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Reseller
+                  {t("resellers.addReseller")}
                 </Button>
               )}
             </div>
@@ -512,12 +516,14 @@ export default function Resellers() {
         onOpenChange={handleDialogClose}
         reseller={editingReseller}
         onSuccess={handleDialogClose}
+        t={t}
       />
 
       <WinnerDialog
         open={winnerDialogOpen}
         onOpenChange={setWinnerDialogOpen}
         winner={selectedWinner}
+        t={t}
       />
     </div>
   );
