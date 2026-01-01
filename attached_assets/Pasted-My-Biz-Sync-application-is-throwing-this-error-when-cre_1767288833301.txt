@@ -1,0 +1,53 @@
+My Biz‑Sync application is throwing this error when creating a product:
+
+503 Service Unavailable:
+{
+  "error": "Database temporarily unavailable",
+  "details": "Please try again in a moment",
+  "retryable": true
+}
+
+I need you to fully diagnose and fix the root cause of this issue, not just the symptom. Please inspect all backend code, database configuration, and environment variables. Specifically:
+
+1. Identify why the database becomes temporarily unavailable.
+   - Check for connection pooling issues.
+   - Check for too many open connections.
+   - Check for cold starts or idle database behavior.
+   - Check for incorrect or unstable DATABASE_URL or DB_HOST values.
+   - Check for DNS or network resolution failures.
+
+2. Ensure the backend uses a proper database connection pool.
+   - No new connection per request.
+   - Reuse connections efficiently.
+   - Add safe timeouts and retry logic.
+
+3. Add robust retry logic for temporary DB failures.
+   - Use exponential backoff.
+   - Only retry when the error is marked as retryable.
+
+4. Improve backend error handling.
+   - Replace generic 500/503 errors with meaningful messages.
+   - Ensure all DB operations are wrapped in try/catch.
+   - Return correct HTTP status codes (400, 404, 409, 422, etc.).
+
+5. Validate all incoming request data.
+   - Ensure product creation cannot crash the backend.
+   - Add schema validation (Zod, Joi, or custom).
+
+6. Verify that the frontend and backend expect the same field names and data types.
+
+7. Inspect the entire system for related issues.
+   - Any unstable API calls.
+   - Any missing environment variables.
+   - Any incorrect async/await usage.
+   - Any unhandled promise rejections.
+
+8. After fixing everything, provide:
+   - Updated backend code.
+   - Updated database connection logic.
+   - Updated environment variable configuration.
+   - Any frontend changes needed.
+   - A clear explanation of what was wrong and how you fixed it.
+   - Recommendations to prevent this from happening again.
+
+Treat this as a full reliability audit and repair, not a quick fix.
