@@ -18,9 +18,13 @@ connectionString = connectionString.trim()
   .replace(/^psql\s+/i, '')  // Remove 'psql ' prefix if present
   .replace(/^['"]|['"]$/g, '');  // Remove surrounding quotes
 
-// Log connection details (without password) for debugging
-const safeUrl = connectionString.replace(/:[^:@]+@/, ':***@');
-console.log('[DB] Connecting to:', safeUrl);
+// Log connection host only (no credentials) for debugging
+try {
+  const url = new URL(connectionString);
+  console.log('[DB] Connecting to Neon:', url.host);
+} catch {
+  console.log('[DB] Connecting to Neon database...');
+}
 
 export const pool = new Pool({ 
   connectionString,

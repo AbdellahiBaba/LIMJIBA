@@ -68,6 +68,12 @@ Core entities:
 
 **Stock Deduction:** POS sales automatically reduce product stock quantities and update reseller purchase totals.
 
+**Neon PostgreSQL:** Migrated from Replit PostgreSQL to Neon PostgreSQL for better reliability and faster cold-starts:
+- Uses `@neondatabase/serverless` driver with WebSocket support
+- Connection pooling with Neon-optimized settings (max=20, idleTimeout=10s, connectionTimeout=5s)
+- Connection string from `NEON_DATABASE_URL` environment variable
+- Schema management via `drizzle-kit push` (requires `DATABASE_URL` override for migrations)
+
 **Cold-Start Optimization:** In-memory caching layer (`server/cache.ts`) provides instant responses during database wake-up:
 - Cache-first pattern for all major collections (products, invoices, sales, resellers, employees, expenses, fabrication_invoices, dashboard_stats)
 - 30-second TTL for frequently changing business data
