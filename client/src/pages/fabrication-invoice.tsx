@@ -233,7 +233,187 @@ export default function FabricationInvoice() {
   };
 
   const handlePrint = () => {
-    window.print();
+    const printWindow = window.open("", "_blank");
+    if (!printWindow) return;
+
+    const companyInfo = branding.companyInfo || {};
+    const logoHtml = branding.logo 
+      ? `<img src="${branding.logo}" alt="Logo" style="max-height: 60px; max-width: 150px; object-fit: contain;" />`
+      : `<div style="width: 60px; height: 60px; background: ${branding.primaryColor}; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px;">PFP</div>`;
+
+    const watermarkHtml = branding.enableWatermark && branding.watermark 
+      ? `<div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: -1; opacity: ${branding.watermarkOpacity};">
+          <img src="${branding.watermark}" alt="Watermark" style="max-width: 400px; max-height: 400px;" />
+         </div>`
+      : "";
+
+    const formatNumber = (amount: number) => {
+      return new Intl.NumberFormat("fr-DZ", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2,
+      }).format(amount);
+    };
+
+    const itemRows = items
+      .filter((item) => item.designation && item.quantity > 0)
+      .map((item) => `
+        <tr>
+          <td style="padding: 8px; border: 1px solid #ddd; ${isRTL ? "text-align: right;" : ""}">${item.quantity}</td>
+          <td style="padding: 8px; border: 1px solid #ddd; ${isRTL ? "text-align: right;" : ""}">${item.designation}</td>
+          <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${item.weightKg.toFixed(2)}</td>
+          <td style="padding: 8px; border: 1px solid #ddd; text-align: center;">${(item.weightKg * item.quantity).toFixed(2)}</td>
+          <td style="padding: 8px; border: 1px solid #ddd; text-align: ${isRTL ? "left" : "right"};">${formatNumber(item.unitPrice)}</td>
+          <td style="padding: 8px; border: 1px solid #ddd; text-align: ${isRTL ? "left" : "right"};">${formatNumber(item.total)}</td>
+        </tr>
+      `).join("");
+
+    const labels = {
+      invoice: getLabel("FACTURE FABRICATION", "فاتورة تصنيع"),
+      number: getLabel("N°", "رقم"),
+      date: getLabel("Date", "التاريخ"),
+      responsible: getLabel("Responsable", "المسؤول"),
+      role: getLabel("Fonction", "الوظيفة"),
+      paymentMode: getLabel("Mode de Paiement", "طريقة الدفع"),
+      dueDate: getLabel("Échéance", "تاريخ الاستحقاق"),
+      client: getLabel("Client", "العميل"),
+      qty: getLabel("Qté", "الكمية"),
+      designation: getLabel("Désignation", "الوصف"),
+      unitWeight: getLabel("Poids/U (Kg)", "الوزن/و"),
+      totalWeight: getLabel("Poids Total (Kg)", "الوزن الكلي"),
+      unitPrice: getLabel("Prix U (DZD)", "سعر الوحدة"),
+      amount: getLabel("Montant (DZD)", "المبلغ"),
+      totalHT: getLabel("TOTAL H.T", "المجموع"),
+      totalTTC: getLabel("TOTAL T.T.C", "المجموع الكلي"),
+      weight: getLabel("Poids Total", "الوزن الكلي"),
+      amountInWords: getLabel("Arrêter la présente facture à la somme de", "المبلغ بالحروف"),
+      signature: getLabel("Cachet & Signature", "الختم والتوقيع"),
+    };
+
+    const html = `
+<!DOCTYPE html>
+<html dir="${isRTL ? "rtl" : "ltr"}" lang="${isRTL ? "ar" : "fr"}">
+<head>
+  <meta charset="UTF-8">
+  <title>${labels.invoice} ${formData.invoiceNumber}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  <style>
+    @media print {
+      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+    body { 
+      font-family: ${isRTL ? "'Cairo', sans-serif" : "'Roboto', Arial, sans-serif"}; 
+      margin: 0; padding: 40px; background: #fff; color: #333; 
+      direction: ${isRTL ? "rtl" : "ltr"}; 
+    }
+    .header { display: flex; justify-content: space-between; margin-bottom: 30px; border-bottom: 3px solid ${branding.primaryColor}; padding-bottom: 20px; }
+    .company h1 { color: ${branding.primaryColor}; margin: 0; font-size: 24px; }
+    .company p { margin: 5px 0; color: #666; font-size: 12px; }
+    .invoice-info { text-align: ${isRTL ? "left" : "right"}; }
+    .invoice-info h2 { color: ${branding.primaryColor}; margin: 0; }
+    .invoice-info p { margin: 5px 0; font-size: 12px; }
+    .meta-table { width: 100%; margin: 20px 0; border-collapse: collapse; }
+    .meta-table td { padding: 8px; border: 1px solid #ddd; font-size: 12px; }
+    .meta-table .label { background: #f5f5f5; font-weight: 500; width: 150px; }
+    .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    .items-table th { background: ${branding.primaryColor}; color: white; padding: 10px; text-align: ${isRTL ? "right" : "left"}; font-size: 12px; }
+    .items-table td { padding: 8px; border: 1px solid #ddd; font-size: 12px; }
+    .items-table tr:nth-child(even) { background: #f9f9f9; }
+    .totals { text-align: ${isRTL ? "left" : "right"}; margin-top: 20px; }
+    .totals p { margin: 5px 0; font-size: 14px; }
+    .totals .grand-total { font-size: 18px; font-weight: bold; color: ${branding.primaryColor}; }
+    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; }
+    .footer p { font-size: 12px; color: #666; margin: 5px 0; }
+    .signature { margin-top: 40px; text-align: ${isRTL ? "left" : "right"}; }
+    .signature p { margin: 5px 0; font-size: 12px; }
+    .print-btn { position: fixed; top: 20px; ${isRTL ? "left" : "right"}: 20px; padding: 10px 20px; background: ${branding.primaryColor}; color: white; border: none; cursor: pointer; border-radius: 4px; }
+    @media print { .print-btn { display: none; } }
+  </style>
+</head>
+<body>
+  ${watermarkHtml}
+  <button class="print-btn" onclick="window.print()">${isRTL ? "طباعة" : "Print / Save as PDF"}</button>
+  
+  <div class="header">
+    <div class="company">
+      ${logoHtml}
+      <h1>${companyInfo.name || "POLY FLECTA PLASTICA"}</h1>
+      ${isRTL && companyInfo.nameAr ? `<h2 style="font-size: 16px; margin-top: 4px;">${companyInfo.nameAr}</h2>` : ""}
+      <p>${getLabel("FABRICATION D'EMBALLAGE EN PLASTIQUE", "تصنيع عبوات بلاستيكية")}</p>
+      <p>${companyInfo.address || "Village Zaitout, Local N°01, Commune Hammam Dalaa - W M'sila"}</p>
+      ${companyInfo.artisanNumber ? `<p>CARTE ARTISAN N° : ${companyInfo.artisanNumber}</p>` : ""}
+      ${companyInfo.articleNumber ? `<p>N° ARTICLE : ${companyInfo.articleNumber}</p>` : ""}
+      ${companyInfo.fiscalNumber ? `<p>N° FISCAL : ${companyInfo.fiscalNumber}</p>` : ""}
+    </div>
+    <div class="invoice-info">
+      <h2>${labels.invoice}</h2>
+      <p><strong>${labels.number}:</strong> ${formData.invoiceNumber}</p>
+      <p><strong>${labels.date}:</strong> ${formData.date}</p>
+    </div>
+  </div>
+
+  <table class="meta-table">
+    <tr>
+      <td class="label">${labels.responsible}</td>
+      <td>${formData.responsible}</td>
+      <td class="label">${labels.role}</td>
+      <td>${formData.role}</td>
+    </tr>
+    <tr>
+      <td class="label">${labels.paymentMode}</td>
+      <td>${formData.paymentMode}</td>
+      <td class="label">${labels.dueDate}</td>
+      <td>${formData.dueDate || "-"}</td>
+    </tr>
+    ${formData.clientName ? `
+    <tr>
+      <td class="label">${labels.client}</td>
+      <td colspan="3">${formData.clientName}</td>
+    </tr>
+    ` : ""}
+  </table>
+
+  <table class="items-table">
+    <thead>
+      <tr>
+        <th style="width: 60px;">${labels.qty}</th>
+        <th>${labels.designation}</th>
+        <th style="width: 100px; text-align: center;">${labels.unitWeight}</th>
+        <th style="width: 100px; text-align: center;">${labels.totalWeight}</th>
+        <th style="width: 100px; text-align: ${isRTL ? "left" : "right"};">${labels.unitPrice}</th>
+        <th style="width: 100px; text-align: ${isRTL ? "left" : "right"};">${labels.amount}</th>
+      </tr>
+    </thead>
+    <tbody>
+      ${itemRows}
+    </tbody>
+  </table>
+
+  <div class="totals">
+    <p>${labels.weight}: <strong>${totalWeight.toFixed(2)} Kg</strong></p>
+    <p>${labels.totalHT}: <strong>${formatNumber(totalHT)} DZD</strong></p>
+    <p class="grand-total">${labels.totalTTC}: ${formatNumber(totalTTC)} DZD</p>
+  </div>
+
+  <div class="footer">
+    <p><strong>${labels.amountInWords}:</strong></p>
+    <p style="font-style: italic;">${getAmountInWords(totalTTC)}</p>
+    <p><strong>${labels.paymentMode}:</strong> ${formData.paymentMode}</p>
+  </div>
+
+  <div class="signature">
+    <p>${labels.signature}</p>
+    <div style="width: 150px; height: 80px; border: 1px solid #ddd; margin-${isRTL ? "right" : "left"}: auto;"></div>
+  </div>
+
+  <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid ${branding.primaryColor}; font-size: 11px; color: #666;">
+    <p>${companyInfo.website || "www.polyflectaplastica.com"} | ${companyInfo.email || "contact@polyflectaplastica.com"} | ${companyInfo.phone || "+213 6 70 04 91 24"}</p>
+  </div>
+</body>
+</html>
+    `;
+
+    printWindow.document.write(html);
+    printWindow.document.close();
   };
 
   const formatCurrency = (amount: number) => {
