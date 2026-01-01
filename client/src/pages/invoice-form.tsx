@@ -151,7 +151,7 @@ export default function InvoiceForm() {
       navigate("/invoices");
     },
     onError: (error: Error) => {
-      toast({ title: error.message || t("common.error"), variant: "destructive" });
+      toast({ title: error.message || "Error", variant: "destructive" });
     },
   });
 

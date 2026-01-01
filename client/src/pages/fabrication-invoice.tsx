@@ -662,6 +662,41 @@ export default function FabricationInvoice() {
         </div>
       </div>
 
+      <Card className="border-t-4" style={{ borderTopColor: branding.primaryColor }}>
+        <CardContent className="pt-4">
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              {branding.logo ? (
+                <img 
+                  src={branding.logo} 
+                  alt="Logo" 
+                  className="h-12 w-auto object-contain"
+                />
+              ) : (
+                <div 
+                  className="w-12 h-12 rounded-md flex items-center justify-center text-white font-bold"
+                  style={{ backgroundColor: branding.primaryColor }}
+                >
+                  PFP
+                </div>
+              )}
+              <div>
+                <h2 className="text-lg font-bold" style={{ color: branding.primaryColor }}>
+                  {branding.companyInfo.name || "POLY FLECTA PLASTICA"}
+                </h2>
+                <p className="text-sm text-muted-foreground">
+                  {branding.companyInfo.tagline || getLabel("FABRICATION D'EMBALLAGE EN PLASTIQUE", "تصنيع عبوات بلاستيكية")}
+                </p>
+              </div>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-muted-foreground">{branding.companyInfo.phone}</p>
+              <p className="text-sm text-muted-foreground">{branding.companyInfo.email}</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <form onSubmit={handleSubmit} className="space-y-6">
         <div className="grid gap-6 md:grid-cols-2">
           <Card>
