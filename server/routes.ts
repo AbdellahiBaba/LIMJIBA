@@ -2,6 +2,7 @@ import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { isTransientError, checkDatabaseHealth, getPoolStats } from "./db";
+import { cache } from "./cache";
 import { 
   insertProductSchema, 
   insertInvoiceSchema, 
@@ -93,6 +94,7 @@ export async function registerRoutes(
     try {
       const dbHealth = await checkDatabaseHealth();
       const poolStats = getPoolStats();
+      const cacheStats = cache.getStats();
       
       // Always return 200 - status is in the response body
       res.status(200).json({
@@ -103,6 +105,7 @@ export async function registerRoutes(
           error: dbHealth.error || null,
         },
         pool: poolStats,
+        cache: cacheStats,
         timestamp: new Date().toISOString(),
       });
     } catch (error) {

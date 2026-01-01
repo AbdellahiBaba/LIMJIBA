@@ -47,6 +47,7 @@ import {
 } from "@shared/schema";
 import { db, withRetry } from "./db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
+import { cache, CACHE_KEYS, CACHE_TTL } from "./cache";
 
 export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
@@ -138,9 +139,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getProducts(): Promise<Product[]> {
-    return await withRetry(async () => {
+    // Check cache first for instant cold-start response
+    const cached = cache.get<Product[]>(CACHE_KEYS.PRODUCTS);
+    if (cached) return cached;
+    
+    const result = await withRetry(async () => {
       return await db.select().from(products);
     });
+    
+    // Update cache for next request
+    cache.set(CACHE_KEYS.PRODUCTS, result, CACHE_TTL.SHORT);
+    return result;
   }
 
   async getProduct(id: string): Promise<Product | undefined> {
@@ -151,40 +160,67 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createProduct(product: InsertProduct): Promise<Product> {
-    return await withRetry(async () => {
+    const result = await withRetry(async () => {
       const [created] = await db.insert(products).values(product).returning();
       return created;
     });
+    
+    // Invalidate products cache on mutation
+    cache.delete(CACHE_KEYS.PRODUCTS);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
   }
 
   async updateProduct(id: string, product: Partial<InsertProduct>): Promise<Product | undefined> {
-    return await withRetry(async () => {
+    const result = await withRetry(async () => {
       const [updated] = await db.update(products).set(product).where(eq(products.id, id)).returning();
       return updated || undefined;
     });
+    
+    // Invalidate products cache on mutation
+    cache.delete(CACHE_KEYS.PRODUCTS);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
   }
 
   async deleteProduct(id: string): Promise<boolean> {
-    return await withRetry(async () => {
-      const result = await db.delete(products).where(eq(products.id, id)).returning();
-      return result.length > 0;
+    const result = await withRetry(async () => {
+      const deleted = await db.delete(products).where(eq(products.id, id)).returning();
+      return deleted.length > 0;
     });
+    
+    // Invalidate products cache on mutation
+    cache.delete(CACHE_KEYS.PRODUCTS);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
   }
 
   async updateStock(id: string, quantity: number): Promise<Product | undefined> {
-    return await withRetry(async () => {
+    const result = await withRetry(async () => {
       const [existing] = await db.select().from(products).where(eq(products.id, id));
       if (!existing) return undefined;
       const newQuantity = Math.max(0, existing.stockQuantity + quantity);
       const [updated] = await db.update(products).set({ stockQuantity: newQuantity }).where(eq(products.id, id)).returning();
       return updated || undefined;
     });
+    
+    // Invalidate caches on stock change
+    cache.delete(CACHE_KEYS.PRODUCTS);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
   }
 
   async getInvoices(): Promise<Invoice[]> {
-    return await withRetry(async () => {
+    // Check cache first for instant cold-start response
+    const cached = cache.get<Invoice[]>(CACHE_KEYS.INVOICES);
+    if (cached) return cached;
+    
+    const result = await withRetry(async () => {
       return await db.select().from(invoices).orderBy(desc(invoices.date));
     });
+    
+    cache.set(CACHE_KEYS.INVOICES, result, CACHE_TTL.SHORT);
+    return result;
   }
 
   async getInvoice(id: string): Promise<Invoice | undefined> {
@@ -204,7 +240,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createInvoice(invoice: InsertInvoice, items: InsertInvoiceItem[]): Promise<InvoiceWithItems> {
-    return await withRetry(async () => {
+    const result = await withRetry(async () => {
       return await db.transaction(async (tx) => {
         const [created] = await tx.insert(invoices).values(invoice).returning();
         const createdItems: InvoiceItem[] = [];
@@ -215,23 +251,38 @@ export class DatabaseStorage implements IStorage {
         return { ...created, items: createdItems };
       });
     });
+    
+    // Invalidate caches on mutation
+    cache.delete(CACHE_KEYS.INVOICES);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
   }
 
   async updateInvoiceStatus(id: string, status: string): Promise<Invoice | undefined> {
-    return await withRetry(async () => {
+    const result = await withRetry(async () => {
       const [updated] = await db.update(invoices).set({ status }).where(eq(invoices.id, id)).returning();
       return updated || undefined;
     });
+    
+    // Invalidate caches on invoice status change
+    cache.delete(CACHE_KEYS.INVOICES);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
   }
 
   async deleteInvoice(id: string): Promise<boolean> {
-    return await withRetry(async () => {
+    const result = await withRetry(async () => {
       return await db.transaction(async (tx) => {
         await tx.delete(invoiceItems).where(eq(invoiceItems.invoiceId, id));
-        const result = await tx.delete(invoices).where(eq(invoices.id, id)).returning();
-        return result.length > 0;
+        const deleted = await tx.delete(invoices).where(eq(invoices.id, id)).returning();
+        return deleted.length > 0;
       });
     });
+    
+    // Invalidate caches on mutation
+    cache.delete(CACHE_KEYS.INVOICES);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
   }
 
   async getNextInvoiceNumber(): Promise<string> {
@@ -244,9 +295,16 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getSales(): Promise<Sale[]> {
-    return await withRetry(async () => {
+    // Check cache first for instant cold-start response
+    const cached = cache.get<Sale[]>(CACHE_KEYS.SALES);
+    if (cached) return cached;
+    
+    const result = await withRetry(async () => {
       return await db.select().from(sales).orderBy(desc(sales.date));
     });
+    
+    cache.set(CACHE_KEYS.SALES, result, CACHE_TTL.SHORT);
+    return result;
   }
 
   async getSale(id: string): Promise<Sale | undefined> {
@@ -266,7 +324,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createSale(sale: InsertSale, items: InsertSaleItem[]): Promise<SaleWithItems> {
-    return await withRetry(async () => {
+    const result = await withRetry(async () => {
       return await db.transaction(async (tx) => {
         const [created] = await tx.insert(sales).values(sale).returning();
         const createdItems: SaleItem[] = [];
@@ -294,12 +352,26 @@ export class DatabaseStorage implements IStorage {
         return { ...created, items: createdItems };
       });
     });
+    
+    // Invalidate all affected caches on sale
+    cache.delete(CACHE_KEYS.SALES);
+    cache.delete(CACHE_KEYS.PRODUCTS);
+    cache.delete(CACHE_KEYS.RESELLERS);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
   }
 
   async getResellers(): Promise<Reseller[]> {
-    return await withRetry(async () => {
+    // Check cache first for instant cold-start response
+    const cached = cache.get<Reseller[]>(CACHE_KEYS.RESELLERS);
+    if (cached) return cached;
+    
+    const result = await withRetry(async () => {
       return await db.select().from(resellers);
     });
+    
+    cache.set(CACHE_KEYS.RESELLERS, result, CACHE_TTL.SHORT);
+    return result;
   }
 
   async getReseller(id: string): Promise<Reseller | undefined> {
@@ -310,28 +382,41 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createReseller(reseller: InsertReseller): Promise<Reseller> {
-    return await withRetry(async () => {
+    const result = await withRetry(async () => {
       const [created] = await db.insert(resellers).values(reseller).returning();
       return created;
     });
+    
+    // Invalidate caches on mutation
+    cache.delete(CACHE_KEYS.RESELLERS);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
   }
 
   async updateReseller(id: string, reseller: Partial<InsertReseller>): Promise<Reseller | undefined> {
-    return await withRetry(async () => {
+    const result = await withRetry(async () => {
       const [updated] = await db.update(resellers).set(reseller).where(eq(resellers.id, id)).returning();
       return updated || undefined;
     });
+    
+    cache.delete(CACHE_KEYS.RESELLERS);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
   }
 
   async deleteReseller(id: string): Promise<boolean> {
-    return await withRetry(async () => {
-      const result = await db.delete(resellers).where(eq(resellers.id, id)).returning();
-      return result.length > 0;
+    const result = await withRetry(async () => {
+      const deleted = await db.delete(resellers).where(eq(resellers.id, id)).returning();
+      return deleted.length > 0;
     });
+    
+    cache.delete(CACHE_KEYS.RESELLERS);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
   }
 
   async addResellerPurchase(id: string, amount: number): Promise<Reseller | undefined> {
-    return await withRetry(async () => {
+    const result = await withRetry(async () => {
       const [existing] = await db.select().from(resellers).where(eq(resellers.id, id));
       if (!existing) return undefined;
       const newTotal = existing.totalPurchases + amount;
@@ -339,10 +424,14 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db.update(resellers).set({ totalPurchases: newTotal, inRewardPool }).where(eq(resellers.id, id)).returning();
       return updated || undefined;
     });
+    
+    cache.delete(CACHE_KEYS.RESELLERS);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
   }
 
   async drawWinner(): Promise<Reseller | undefined> {
-    return await withRetry(async () => {
+    const result = await withRetry(async () => {
       return await db.transaction(async (tx) => {
         const eligible = await tx.select().from(resellers).where(
           and(eq(resellers.inRewardPool, true), eq(resellers.isWinner, false))
@@ -358,18 +447,31 @@ export class DatabaseStorage implements IStorage {
         return updated;
       });
     });
+    
+    cache.delete(CACHE_KEYS.RESELLERS);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
   }
 
   async resetRewardPool(): Promise<void> {
     await withRetry(async () => {
       await db.update(resellers).set({ inRewardPool: false }).where(eq(resellers.inRewardPool, true));
     });
+    
+    cache.delete(CACHE_KEYS.RESELLERS);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
   }
 
   async getEmployees(): Promise<Employee[]> {
-    return await withRetry(async () => {
+    const cached = cache.get<Employee[]>(CACHE_KEYS.EMPLOYEES);
+    if (cached) return cached;
+    
+    const result = await withRetry(async () => {
       return await db.select().from(employees);
     });
+    
+    cache.set(CACHE_KEYS.EMPLOYEES, result, CACHE_TTL.SHORT);
+    return result;
   }
 
   async getEmployee(id: string): Promise<Employee | undefined> {
@@ -380,24 +482,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createEmployee(employee: InsertEmployee): Promise<Employee> {
-    return await withRetry(async () => {
+    const result = await withRetry(async () => {
       const [created] = await db.insert(employees).values(employee).returning();
       return created;
     });
+    
+    cache.delete(CACHE_KEYS.EMPLOYEES);
+    return result;
   }
 
   async updateEmployee(id: string, employee: Partial<InsertEmployee>): Promise<Employee | undefined> {
-    return await withRetry(async () => {
+    const result = await withRetry(async () => {
       const [updated] = await db.update(employees).set(employee).where(eq(employees.id, id)).returning();
       return updated || undefined;
     });
+    
+    cache.delete(CACHE_KEYS.EMPLOYEES);
+    return result;
   }
 
   async deleteEmployee(id: string): Promise<boolean> {
-    return await withRetry(async () => {
-      const result = await db.delete(employees).where(eq(employees.id, id)).returning();
-      return result.length > 0;
+    const result = await withRetry(async () => {
+      const deleted = await db.delete(employees).where(eq(employees.id, id)).returning();
+      return deleted.length > 0;
     });
+    
+    cache.delete(CACHE_KEYS.EMPLOYEES);
+    return result;
   }
 
   async getSalaryPayments(): Promise<SalaryPayment[]> {
@@ -414,23 +525,35 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createSalaryPayment(payment: InsertSalaryPayment): Promise<SalaryPayment> {
-    return await withRetry(async () => {
+    const result = await withRetry(async () => {
       const [created] = await db.insert(salaryPayments).values(payment).returning();
       return created;
     });
+    
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
   }
 
   async deleteSalaryPayment(id: string): Promise<boolean> {
-    return await withRetry(async () => {
-      const result = await db.delete(salaryPayments).where(eq(salaryPayments.id, id)).returning();
-      return result.length > 0;
+    const result = await withRetry(async () => {
+      const deleted = await db.delete(salaryPayments).where(eq(salaryPayments.id, id)).returning();
+      return deleted.length > 0;
     });
+    
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
   }
 
   async getExpenses(): Promise<Expense[]> {
-    return await withRetry(async () => {
+    const cached = cache.get<Expense[]>(CACHE_KEYS.EXPENSES);
+    if (cached) return cached;
+    
+    const result = await withRetry(async () => {
       return await db.select().from(expenses).orderBy(desc(expenses.date));
     });
+    
+    cache.set(CACHE_KEYS.EXPENSES, result, CACHE_TTL.SHORT);
+    return result;
   }
 
   async getExpense(id: string): Promise<Expense | undefined> {
@@ -441,30 +564,48 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createExpense(expense: InsertExpense): Promise<Expense> {
-    return await withRetry(async () => {
+    const result = await withRetry(async () => {
       const [created] = await db.insert(expenses).values(expense).returning();
       return created;
     });
+    
+    cache.delete(CACHE_KEYS.EXPENSES);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
   }
 
   async updateExpense(id: string, expense: Partial<InsertExpense>): Promise<Expense | undefined> {
-    return await withRetry(async () => {
+    const result = await withRetry(async () => {
       const [updated] = await db.update(expenses).set(expense).where(eq(expenses.id, id)).returning();
       return updated || undefined;
     });
+    
+    cache.delete(CACHE_KEYS.EXPENSES);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
   }
 
   async deleteExpense(id: string): Promise<boolean> {
-    return await withRetry(async () => {
-      const result = await db.delete(expenses).where(eq(expenses.id, id)).returning();
-      return result.length > 0;
+    const result = await withRetry(async () => {
+      const deleted = await db.delete(expenses).where(eq(expenses.id, id)).returning();
+      return deleted.length > 0;
     });
+    
+    cache.delete(CACHE_KEYS.EXPENSES);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
   }
 
   async getFabricationInvoices(): Promise<FabricationInvoice[]> {
-    return await withRetry(async () => {
+    const cached = cache.get<FabricationInvoice[]>(CACHE_KEYS.FABRICATION_INVOICES);
+    if (cached) return cached;
+    
+    const result = await withRetry(async () => {
       return await db.select().from(fabricationInvoices).orderBy(desc(fabricationInvoices.date));
     });
+    
+    cache.set(CACHE_KEYS.FABRICATION_INVOICES, result, CACHE_TTL.SHORT);
+    return result;
   }
 
   async getFabricationInvoice(id: string): Promise<FabricationInvoice | undefined> {
@@ -484,7 +625,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async createFabricationInvoice(invoice: InsertFabricationInvoice, items: InsertFabricationItem[]): Promise<FabricationInvoiceWithItems> {
-    return await withRetry(async () => {
+    const result = await withRetry(async () => {
       return await db.transaction(async (tx) => {
         const [created] = await tx.insert(fabricationInvoices).values(invoice).returning();
         const createdItems: FabricationItem[] = [];
@@ -495,16 +636,22 @@ export class DatabaseStorage implements IStorage {
         return { ...created, items: createdItems };
       });
     });
+    
+    cache.delete(CACHE_KEYS.FABRICATION_INVOICES);
+    return result;
   }
 
   async deleteFabricationInvoice(id: string): Promise<boolean> {
-    return await withRetry(async () => {
+    const result = await withRetry(async () => {
       return await db.transaction(async (tx) => {
         await tx.delete(fabricationItems).where(eq(fabricationItems.fabricationInvoiceId, id));
-        const result = await tx.delete(fabricationInvoices).where(eq(fabricationInvoices.id, id)).returning();
-        return result.length > 0;
+        const deleted = await tx.delete(fabricationInvoices).where(eq(fabricationInvoices.id, id)).returning();
+        return deleted.length > 0;
       });
     });
+    
+    cache.delete(CACHE_KEYS.FABRICATION_INVOICES);
+    return result;
   }
 
   async getNextFabricationNumber(): Promise<string> {
@@ -517,7 +664,11 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getDashboardStats(): Promise<DashboardStats> {
-    return await withRetry(async () => {
+    // Check cache first for instant cold-start response
+    const cached = cache.get<DashboardStats>(CACHE_KEYS.DASHBOARD_STATS);
+    if (cached) return cached;
+    
+    const result = await withRetry(async () => {
       const allProducts = await db.select().from(products);
       const allInvoices = await db.select().from(invoices);
       const allSales = await db.select().from(sales);
@@ -537,6 +688,9 @@ export class DatabaseStorage implements IStorage {
         rewardPoolCount: allResellers.filter((r) => r.inRewardPool).length,
       };
     });
+    
+    cache.set(CACHE_KEYS.DASHBOARD_STATS, result, CACHE_TTL.SHORT);
+    return result;
   }
 
   async getProfitStats(startDate: string, endDate: string): Promise<ProfitStats> {
