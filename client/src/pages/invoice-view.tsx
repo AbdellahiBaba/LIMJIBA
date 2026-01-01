@@ -96,8 +96,8 @@ export default function InvoiceView() {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({ title: t("invoices.invoiceCreated") });
     },
-    onError: () => {
-      toast({ title: "Failed to update status", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 

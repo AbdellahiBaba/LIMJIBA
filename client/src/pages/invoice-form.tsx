@@ -150,8 +150,8 @@ export default function InvoiceForm() {
       toast({ title: "Invoice created successfully" });
       navigate("/invoices");
     },
-    onError: () => {
-      toast({ title: "Failed to create invoice", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 

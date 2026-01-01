@@ -100,7 +100,7 @@ function ProductFormDialog({
     },
     onError: (error: Error) => {
       console.error("Product creation error:", error);
-      toast({ title: "Failed to create product", variant: "destructive" });
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 
@@ -113,8 +113,8 @@ function ProductFormDialog({
       toast({ title: t("stock.productUpdated") });
       onSuccess();
     },
-    onError: () => {
-      toast({ title: "Failed to update product", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 
@@ -305,8 +305,8 @@ export default function Stock() {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({ title: t("stock.productDeleted") });
     },
-    onError: () => {
-      toast({ title: "Failed to delete product", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 

@@ -85,8 +85,8 @@ function ResellerFormDialog({
       toast({ title: t("resellers.resellerAdded") });
       onSuccess();
     },
-    onError: () => {
-      toast({ title: t("common.error"), variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 
@@ -99,8 +99,8 @@ function ResellerFormDialog({
       toast({ title: t("resellers.resellerUpdated") });
       onSuccess();
     },
-    onError: () => {
-      toast({ title: t("common.error"), variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 
@@ -245,8 +245,8 @@ export default function Resellers() {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({ title: t("resellers.resellerDeleted") });
     },
-    onError: () => {
-      toast({ title: t("common.error"), variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 
@@ -260,8 +260,8 @@ export default function Resellers() {
       setSelectedWinner(winner);
       setWinnerDialogOpen(true);
     },
-    onError: () => {
-      toast({ title: t("resellers.noEligibleResellers"), variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: error.message || t("resellers.noEligibleResellers"), variant: "destructive" });
     },
   });
 
@@ -271,8 +271,8 @@ export default function Resellers() {
       queryClient.invalidateQueries({ queryKey: ["/api/resellers"] });
       toast({ title: t("resellers.winnerDrawn") });
     },
-    onError: () => {
-      toast({ title: t("common.error"), variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 

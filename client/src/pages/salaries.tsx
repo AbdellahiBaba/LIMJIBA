@@ -112,8 +112,8 @@ function EmployeeFormDialog({
       toast({ title: t("salaries.employeeAdded") });
       onSuccess();
     },
-    onError: () => {
-      toast({ title: "Error", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 
@@ -125,8 +125,8 @@ function EmployeeFormDialog({
       toast({ title: t("salaries.employeeUpdated") });
       onSuccess();
     },
-    onError: () => {
-      toast({ title: "Error", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 
@@ -276,8 +276,8 @@ function PaymentFormDialog({
       toast({ title: t("salaries.paymentAdded") });
       onSuccess();
     },
-    onError: () => {
-      toast({ title: "Error", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 

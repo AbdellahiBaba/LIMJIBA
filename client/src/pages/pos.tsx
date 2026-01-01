@@ -77,8 +77,8 @@ export default function POS() {
       setDiscount(0);
       setSelectedReseller("none");
     },
-    onError: () => {
-      toast({ title: "Failed to complete sale", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 

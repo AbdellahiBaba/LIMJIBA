@@ -107,8 +107,8 @@ function ExpenseFormDialog({
       toast({ title: t("expenses.expenseAdded") });
       onSuccess();
     },
-    onError: () => {
-      toast({ title: "Error", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 
@@ -120,8 +120,8 @@ function ExpenseFormDialog({
       toast({ title: t("expenses.expenseUpdated") });
       onSuccess();
     },
-    onError: () => {
-      toast({ title: "Error", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 

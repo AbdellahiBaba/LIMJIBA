@@ -69,8 +69,8 @@ export default function Invoices() {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({ title: t("invoices.invoiceDeleted") });
     },
-    onError: () => {
-      toast({ title: "Failed to delete invoice", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 
@@ -82,8 +82,8 @@ export default function Invoices() {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({ title: t("invoices.statusUpdated") });
     },
-    onError: () => {
-      toast({ title: "Failed to update status", variant: "destructive" });
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 
