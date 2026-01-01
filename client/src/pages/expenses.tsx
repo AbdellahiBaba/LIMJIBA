@@ -88,6 +88,18 @@ function ExpenseFormDialog({
     notes: expense?.notes ?? "",
   });
 
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        name: expense?.name ?? "",
+        category: expense?.category ?? "other",
+        amount: expense?.amount ?? 0,
+        date: expense?.date ?? new Date().toISOString().split("T")[0],
+        notes: expense?.notes ?? "",
+      });
+    }
+  }, [open, expense]);
+
   const createMutation = useMutation({
     mutationFn: (data: InsertExpense) => apiRequest("POST", "/api/expenses", data),
     onSuccess: () => {

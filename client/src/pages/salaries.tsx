@@ -92,6 +92,19 @@ function EmployeeFormDialog({
     isActive: employee?.isActive ?? true,
   });
 
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        name: employee?.name ?? "",
+        role: employee?.role ?? "",
+        monthlySalary: employee?.monthlySalary ?? 0,
+        phone: employee?.phone ?? "",
+        email: employee?.email ?? "",
+        isActive: employee?.isActive ?? true,
+      });
+    }
+  }, [open, employee]);
+
   const createMutation = useMutation({
     mutationFn: (data: InsertEmployee) => apiRequest("POST", "/api/employees", data),
     onSuccess: () => {
@@ -241,6 +254,20 @@ function PaymentFormDialog({
     year: currentDate.getFullYear(),
     notes: "",
   });
+
+  useEffect(() => {
+    if (open) {
+      const now = new Date();
+      setFormData({
+        employeeId: "",
+        amount: 0,
+        paymentDate: now.toISOString().split("T")[0],
+        month: String(now.getMonth() + 1).padStart(2, "0"),
+        year: now.getFullYear(),
+        notes: "",
+      });
+    }
+  }, [open]);
 
   const createMutation = useMutation({
     mutationFn: (data: InsertSalaryPayment) => apiRequest("POST", "/api/salary-payments", data),

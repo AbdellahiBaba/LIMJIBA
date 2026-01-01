@@ -63,6 +63,20 @@ function ResellerFormDialog({
     isWinner: reseller?.isWinner ?? false,
   });
 
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        name: reseller?.name ?? "",
+        phone: reseller?.phone ?? "",
+        email: reseller?.email ?? "",
+        totalPurchases: reseller?.totalPurchases ?? 0,
+        rewardThreshold: reseller?.rewardThreshold ?? 100000,
+        inRewardPool: reseller?.inRewardPool ?? false,
+        isWinner: reseller?.isWinner ?? false,
+      });
+    }
+  }, [open, reseller]);
+
   const createMutation = useMutation({
     mutationFn: (data: InsertReseller) => apiRequest("POST", "/api/resellers", data),
     onSuccess: () => {
