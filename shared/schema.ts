@@ -43,6 +43,7 @@ export const invoices = pgTable("invoices", {
   dueDate: text("due_date"),
   totalHT: real("total_ht").notNull(),
   totalTTC: real("total_ttc").notNull(),
+  totalWeight: real("total_weight").notNull().default(0),
   status: text("status").notNull().default("pending"),
   clientName: text("client_name"),
 });
@@ -58,6 +59,8 @@ export const invoiceItems = pgTable("invoice_items", {
   designation: text("designation").notNull(),
   quantity: integer("quantity").notNull(),
   unitPrice: real("unit_price").notNull(),
+  weightPerUnit: real("weight_per_unit").notNull().default(0),
+  totalWeight: real("total_weight").notNull().default(0),
   total: real("total").notNull(),
 });
 
