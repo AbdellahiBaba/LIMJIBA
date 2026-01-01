@@ -64,7 +64,7 @@ export const invoiceItems = pgTable("invoice_items", {
   total: real("total").notNull(),
 });
 
-export const insertInvoiceItemSchema = createInsertSchema(invoiceItems).omit({ id: true });
+export const insertInvoiceItemSchema = createInsertSchema(invoiceItems).omit({ id: true, invoiceId: true });
 export type InsertInvoiceItem = z.infer<typeof insertInvoiceItemSchema>;
 export type InvoiceItem = typeof invoiceItems.$inferSelect;
 
@@ -92,7 +92,7 @@ export const saleItems = pgTable("sale_items", {
   total: real("total").notNull(),
 });
 
-export const insertSaleItemSchema = createInsertSchema(saleItems).omit({ id: true });
+export const insertSaleItemSchema = createInsertSchema(saleItems).omit({ id: true, saleId: true });
 export type InsertSaleItem = z.infer<typeof insertSaleItemSchema>;
 export type SaleItem = typeof saleItems.$inferSelect;
 
