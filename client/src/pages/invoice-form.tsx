@@ -99,6 +99,8 @@ export default function InvoiceForm() {
     paymentMode: "A TERME",
     dueDate: "",
     clientName: "",
+    applyTva: false,
+    tvaRate: 0.19,
   });
 
   const [items, setItems] = useState<InvoiceLineItem[]>([
