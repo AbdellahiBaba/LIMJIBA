@@ -1,6 +1,7 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLocation, useParams } from "wouter";
+import { useLanguage, useBranding } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -77,6 +78,8 @@ const statusConfig: Record<string, { label: string; icon: React.ComponentType<{ 
 
 export default function InvoiceView() {
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const { branding } = useBranding();
   const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
 
@@ -91,7 +94,7 @@ export default function InvoiceView() {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices", params.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: "Invoice status updated" });
+      toast({ title: t("invoices.invoiceCreated") });
     },
     onError: () => {
       toast({ title: "Failed to update status", variant: "destructive" });
@@ -99,7 +102,23 @@ export default function InvoiceView() {
   });
 
   const handlePrint = () => {
-    window.open(`/api/invoices/${params.id}/pdf`, "_blank");
+    const params_url = new URLSearchParams({
+      invoiceLanguage: branding.invoiceLanguage,
+      primaryColor: branding.primaryColor,
+      accentColor: branding.accentColor,
+      logoPosition: branding.logoPosition,
+      enableWatermark: String(branding.enableWatermark),
+      watermarkOpacity: String(branding.watermarkOpacity),
+    });
+    
+    if (branding.logo) {
+      params_url.set("logo", branding.logo);
+    }
+    if (branding.enableWatermark && branding.watermark) {
+      params_url.set("watermark", branding.watermark);
+    }
+    
+    window.open(`/api/invoices/${params.id}/pdf?${params_url.toString()}`, "_blank");
   };
 
   if (isLoading) {

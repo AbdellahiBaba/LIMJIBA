@@ -160,7 +160,18 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Invoice not found" });
       }
 
-      const html = generateInvoicePDF(invoice);
+      const branding = {
+        logo: req.query.logo as string | undefined,
+        watermark: req.query.watermark as string | undefined,
+        enableWatermark: req.query.enableWatermark === "true",
+        watermarkOpacity: parseFloat(req.query.watermarkOpacity as string) || 0.12,
+        logoPosition: (req.query.logoPosition as "left" | "center" | "right") || "left",
+        primaryColor: (req.query.primaryColor as string) || "#1976D2",
+        accentColor: (req.query.accentColor as string) || "#42A5F5",
+        invoiceLanguage: (req.query.invoiceLanguage as "fr" | "ar" | "bilingual") || "fr",
+      };
+
+      const html = generateInvoicePDF(invoice, branding);
       res.setHeader("Content-Type", "text/html");
       res.send(html);
     } catch (error) {
@@ -342,87 +353,208 @@ function numberToFrenchWords(n: number): string {
   return n.toString();
 }
 
-function generateInvoicePDF(invoice: any): string {
+function numberToArabicWords(n: number): string {
+  const units = ["", "واحد", "اثنان", "ثلاثة", "أربعة", "خمسة", "ستة", "سبعة", "ثمانية", "تسعة"];
+  const teens = ["عشرة", "أحد عشر", "اثنا عشر", "ثلاثة عشر", "أربعة عشر", "خمسة عشر", "ستة عشر", "سبعة عشر", "ثمانية عشر", "تسعة عشر"];
+  const tens = ["", "", "عشرون", "ثلاثون", "أربعون", "خمسون", "ستون", "سبعون", "ثمانون", "تسعون"];
+
+  if (n === 0) return "صفر";
+  if (n < 10) return units[n];
+  if (n < 20) return teens[n - 10];
+  if (n < 100) {
+    const t = Math.floor(n / 10);
+    const u = n % 10;
+    return u > 0 ? units[u] + " و" + tens[t] : tens[t];
+  }
+  if (n < 1000) {
+    const h = Math.floor(n / 100);
+    const r = n % 100;
+    const prefix = h === 1 ? "مائة" : h === 2 ? "مائتان" : units[h] + " مائة";
+    return prefix + (r > 0 ? " و" + numberToArabicWords(r) : "");
+  }
+  if (n < 1000000) {
+    const t = Math.floor(n / 1000);
+    const r = n % 1000;
+    const prefix = t === 1 ? "ألف" : t === 2 ? "ألفان" : numberToArabicWords(t) + " آلاف";
+    return prefix + (r > 0 ? " و" + numberToArabicWords(r) : "");
+  }
+  if (n < 1000000000) {
+    const m = Math.floor(n / 1000000);
+    const r = n % 1000000;
+    const prefix = m === 1 ? "مليون" : m === 2 ? "مليونان" : numberToArabicWords(m) + " ملايين";
+    return prefix + (r > 0 ? " و" + numberToArabicWords(r) : "");
+  }
+  return n.toString();
+}
+
+interface InvoiceBranding {
+  logo?: string;
+  watermark?: string;
+  enableWatermark: boolean;
+  watermarkOpacity: number;
+  logoPosition: "left" | "center" | "right";
+  primaryColor: string;
+  accentColor: string;
+  invoiceLanguage: "fr" | "ar" | "bilingual";
+}
+
+function generateInvoicePDF(invoice: any, branding: InvoiceBranding = {
+  enableWatermark: false,
+  watermarkOpacity: 0.12,
+  logoPosition: "left",
+  primaryColor: "#1976D2",
+  accentColor: "#42A5F5",
+  invoiceLanguage: "fr"
+}): string {
+  const isArabic = branding.invoiceLanguage === "ar";
+  const isBilingual = branding.invoiceLanguage === "bilingual";
+  const dir = isArabic ? "rtl" : "ltr";
+  const fontFamily = isArabic ? "'Cairo', 'Roboto', sans-serif" : "'Roboto', Arial, sans-serif";
+  
+  const labels = {
+    invoice: isArabic ? "فاتورة" : "FACTURE",
+    invoiceAr: "فاتورة",
+    invoiceFr: "FACTURE",
+    number: isArabic ? "رقم" : "N°",
+    date: isArabic ? "التاريخ" : "Date",
+    responsible: isArabic ? "المسؤول" : "Responsible",
+    role: isArabic ? "الوظيفة" : "Role",
+    paymentMode: isArabic ? "طريقة الدفع" : "Mode de Paiement",
+    dueDate: isArabic ? "تاريخ الاستحقاق" : "Échéance",
+    client: isArabic ? "العميل" : "Client",
+    qty: isArabic ? "الكمية" : "Qté",
+    designation: isArabic ? "الوصف" : "Désignation",
+    unitPrice: isArabic ? "سعر الوحدة" : "Prix U",
+    amount: isArabic ? "المبلغ" : "Montant",
+    totalHT: isArabic ? "المجموع (قبل الضريبة)" : "TOTAL H.T",
+    totalTTC: isArabic ? "المجموع الكلي" : "TOTAL T.T.C",
+    amountInWords: isArabic ? "المبلغ بالحروف" : "Arrêter la présente facture à la somme de",
+    signature: isArabic ? "الختم والتوقيع" : "Cachet & Signature",
+    tbd: isArabic ? "سيتم تحديده" : "À déterminer",
+    companyName: "POLY FLECTA PLASTICA",
+    companyNameAr: "بولي فليكتا بلاستيكا",
+    tagline: isArabic ? "تصنيع عبوات بلاستيكية" : "FABRICATION D'EMBALLAGE EN PLASTIQUE",
+  };
+
+  const amountInWords = isArabic 
+    ? numberToArabicWords(Math.floor(invoice.totalTTC)) + " دينار جزائري"
+    : numberToFrenchWords(Math.floor(invoice.totalTTC)) + " dinars";
+
   const itemRows = invoice.items.map((item: any) => `
     <tr>
-      <td style="padding: 8px; border: 1px solid #ddd;">${item.quantity}</td>
-      <td style="padding: 8px; border: 1px solid #ddd;">${item.designation}</td>
-      <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${item.unitPrice > 0 ? item.unitPrice.toLocaleString() + ' DZD' : '- DZD'}</td>
-      <td style="padding: 8px; border: 1px solid #ddd; text-align: right;">${item.total > 0 ? item.total.toLocaleString() + ' DZD' : '- DZD'}</td>
+      <td style="padding: 8px; border: 1px solid #ddd; ${isArabic ? 'text-align: right;' : ''}">${item.quantity}</td>
+      <td style="padding: 8px; border: 1px solid #ddd; ${isArabic ? 'text-align: right;' : ''}">${item.designation}</td>
+      <td style="padding: 8px; border: 1px solid #ddd; text-align: ${isArabic ? 'left' : 'right'};">${item.unitPrice > 0 ? item.unitPrice.toLocaleString() + ' DZD' : '- DZD'}</td>
+      <td style="padding: 8px; border: 1px solid #ddd; text-align: ${isArabic ? 'left' : 'right'};">${item.total > 0 ? item.total.toLocaleString() + ' DZD' : '- DZD'}</td>
     </tr>
   `).join('');
 
+  const logoHtml = branding.logo 
+    ? `<img src="${branding.logo}" alt="Logo" style="max-height: 60px; max-width: 150px; object-fit: contain;" />`
+    : `<div style="width: 60px; height: 60px; background: ${branding.primaryColor}; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px;">PFP</div>`;
+
+  const watermarkHtml = branding.enableWatermark && branding.watermark 
+    ? `<div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: -1; opacity: ${branding.watermarkOpacity};">
+        <img src="${branding.watermark}" alt="Watermark" style="max-width: 400px; max-height: 400px;" />
+       </div>`
+    : '';
+
+  const logoPositionStyle = {
+    left: 'flex-start',
+    center: 'center',
+    right: 'flex-end'
+  }[branding.logoPosition];
+
+  const bilingualHeader = isBilingual ? `
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+      <div style="text-align: left;">
+        <h1 style="color: ${branding.primaryColor}; margin: 0; font-size: 20px;">POLY FLECTA PLASTICA</h1>
+        <p style="margin: 2px 0; font-size: 11px;">FABRICATION D'EMBALLAGE EN PLASTIQUE</p>
+      </div>
+      <div style="text-align: right; direction: rtl; font-family: 'Cairo', sans-serif;">
+        <h1 style="color: ${branding.primaryColor}; margin: 0; font-size: 20px;">بولي فليكتا بلاستيكا</h1>
+        <p style="margin: 2px 0; font-size: 11px;">تصنيع عبوات بلاستيكية</p>
+      </div>
+    </div>
+  ` : '';
+
   return `
 <!DOCTYPE html>
-<html>
+<html dir="${dir}" lang="${isArabic ? 'ar' : 'fr'}">
 <head>
   <meta charset="UTF-8">
-  <title>Invoice ${invoice.invoiceNumber}</title>
+  <title>${labels.invoice} ${invoice.invoiceNumber}</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
     @media print {
       body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
-    body { font-family: 'Roboto', Arial, sans-serif; margin: 0; padding: 40px; background: #fff; color: #333; }
-    .header { display: flex; justify-content: space-between; margin-bottom: 30px; border-bottom: 3px solid #1976D2; padding-bottom: 20px; }
-    .company { }
-    .company h1 { color: #1976D2; margin: 0; font-size: 24px; }
+    body { font-family: ${fontFamily}; margin: 0; padding: 40px; background: #fff; color: #333; direction: ${dir}; }
+    .header { display: flex; justify-content: space-between; margin-bottom: 30px; border-bottom: 3px solid ${branding.primaryColor}; padding-bottom: 20px; }
+    .company h1 { color: ${branding.primaryColor}; margin: 0; font-size: 24px; }
     .company p { margin: 5px 0; color: #666; font-size: 12px; }
-    .invoice-info { text-align: right; }
-    .invoice-info h2 { color: #1976D2; margin: 0; }
+    .invoice-info { text-align: ${isArabic ? 'left' : 'right'}; }
+    .invoice-info h2 { color: ${branding.primaryColor}; margin: 0; }
     .invoice-info p { margin: 5px 0; font-size: 12px; }
     .meta-table { width: 100%; margin: 20px 0; border-collapse: collapse; }
     .meta-table td { padding: 8px; border: 1px solid #ddd; font-size: 12px; }
     .meta-table .label { background: #f5f5f5; font-weight: 500; width: 150px; }
     .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-    .items-table th { background: #1976D2; color: white; padding: 10px; text-align: left; font-size: 12px; }
+    .items-table th { background: ${branding.primaryColor}; color: white; padding: 10px; text-align: ${isArabic ? 'right' : 'left'}; font-size: 12px; }
     .items-table td { padding: 8px; border: 1px solid #ddd; font-size: 12px; }
     .items-table tr:nth-child(even) { background: #f9f9f9; }
-    .totals { text-align: right; margin-top: 20px; }
+    .totals { text-align: ${isArabic ? 'left' : 'right'}; margin-top: 20px; }
     .totals p { margin: 5px 0; font-size: 14px; }
-    .totals .grand-total { font-size: 18px; font-weight: bold; color: #1976D2; }
+    .totals .grand-total { font-size: 18px; font-weight: bold; color: ${branding.primaryColor}; }
     .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; }
     .footer p { font-size: 12px; color: #666; margin: 5px 0; }
-    .signature { margin-top: 40px; text-align: right; }
+    .signature { margin-top: 40px; text-align: ${isArabic ? 'left' : 'right'}; }
     .signature p { margin: 5px 0; font-size: 12px; }
-    .print-btn { position: fixed; top: 20px; right: 20px; padding: 10px 20px; background: #1976D2; color: white; border: none; cursor: pointer; border-radius: 4px; }
+    .print-btn { position: fixed; top: 20px; ${isArabic ? 'left' : 'right'}: 20px; padding: 10px 20px; background: ${branding.primaryColor}; color: white; border: none; cursor: pointer; border-radius: 4px; }
     @media print { .print-btn { display: none; } }
+    .logo-container { display: flex; justify-content: ${logoPositionStyle}; margin-bottom: 10px; }
   </style>
 </head>
 <body>
-  <button class="print-btn" onclick="window.print()">Print / Save as PDF</button>
+  ${watermarkHtml}
+  <button class="print-btn" onclick="window.print()">${isArabic ? 'طباعة' : 'Print / Save as PDF'}</button>
+  
+  ${isBilingual ? bilingualHeader : ''}
   
   <div class="header">
-    <div class="company">
-      <h1>POLY FLECTA PLASTICA</h1>
-      <p>FABRICATION D'EMBALLAGE EN PLASTIQUE</p>
+    <div class="company" style="${branding.logoPosition === 'left' ? '' : 'order: 2;'}">
+      ${branding.logoPosition === 'left' ? logoHtml : ''}
+      <h1>${isBilingual ? '' : (isArabic ? labels.companyNameAr : labels.companyName)}</h1>
+      ${!isBilingual ? `<p>${labels.tagline}</p>` : ''}
       <p>Village Zaitout, Local N°01, Commune Hammam Dalaa - W M'sila</p>
       <p>CARTE ARTISAN N° : 28/ 00 - 2896688A24</p>
       <p>N° ARTICLE : 101082709</p>
       <p>N° FISCAL : 28516010001318002800</p>
     </div>
-    <div class="invoice-info">
-      <h2>FACTURE</h2>
-      <p><strong>N°:</strong> ${invoice.invoiceNumber}</p>
-      <p><strong>Date:</strong> ${invoice.date}</p>
+    <div class="invoice-info" style="${branding.logoPosition === 'right' ? '' : ''}">
+      ${branding.logoPosition === 'right' ? logoHtml : ''}
+      <h2>${isBilingual ? labels.invoiceFr + ' / ' + labels.invoiceAr : labels.invoice}</h2>
+      <p><strong>${labels.number}:</strong> ${invoice.invoiceNumber}</p>
+      <p><strong>${labels.date}:</strong> ${invoice.date}</p>
     </div>
   </div>
 
   <table class="meta-table">
     <tr>
-      <td class="label">Responsible</td>
+      <td class="label">${labels.responsible}</td>
       <td>${invoice.responsible}</td>
-      <td class="label">Role</td>
+      <td class="label">${labels.role}</td>
       <td>${invoice.role}</td>
     </tr>
     <tr>
-      <td class="label">Mode de Paiement</td>
+      <td class="label">${labels.paymentMode}</td>
       <td>${invoice.paymentMode}</td>
-      <td class="label">Échéance</td>
-      <td>${invoice.dueDate || 'À déterminer'}</td>
+      <td class="label">${labels.dueDate}</td>
+      <td>${invoice.dueDate || labels.tbd}</td>
     </tr>
     ${invoice.clientName ? `
     <tr>
-      <td class="label">Client</td>
+      <td class="label">${labels.client}</td>
       <td colspan="3">${invoice.clientName}</td>
     </tr>
     ` : ''}
@@ -431,10 +563,10 @@ function generateInvoicePDF(invoice: any): string {
   <table class="items-table">
     <thead>
       <tr>
-        <th style="width: 80px;">Qté</th>
-        <th>Désignation</th>
-        <th style="width: 120px; text-align: right;">Prix U</th>
-        <th style="width: 120px; text-align: right;">Montant</th>
+        <th style="width: 80px;">${labels.qty}</th>
+        <th>${labels.designation}</th>
+        <th style="width: 120px; text-align: ${isArabic ? 'left' : 'right'};">${labels.unitPrice}</th>
+        <th style="width: 120px; text-align: ${isArabic ? 'left' : 'right'};">${labels.amount}</th>
       </tr>
     </thead>
     <tbody>
@@ -443,22 +575,23 @@ function generateInvoicePDF(invoice: any): string {
   </table>
 
   <div class="totals">
-    <p>TOTAL H.T: <strong>${invoice.totalHT.toLocaleString()} DZD</strong></p>
-    <p class="grand-total">TOTAL T.T.C: ${invoice.totalTTC.toLocaleString()} DZD</p>
+    <p>${labels.totalHT}: <strong>${invoice.totalHT.toLocaleString()} DZD</strong></p>
+    <p class="grand-total">${labels.totalTTC}: ${invoice.totalTTC.toLocaleString()} DZD</p>
   </div>
 
   <div class="footer">
-    <p><strong>Arrêter la présente facture à la somme de:</strong></p>
-    <p style="font-style: italic;">${numberToFrenchWords(Math.floor(invoice.totalTTC))}</p>
-    <p><strong>MODE DE PAIEMENT:</strong> ${invoice.paymentMode}</p>
+    <p><strong>${labels.amountInWords}:</strong></p>
+    <p style="font-style: italic;">${amountInWords}</p>
+    ${isBilingual ? `<p style="font-style: italic; direction: rtl; font-family: 'Cairo', sans-serif;">${numberToArabicWords(Math.floor(invoice.totalTTC))} دينار جزائري</p>` : ''}
+    <p><strong>${labels.paymentMode}:</strong> ${invoice.paymentMode}</p>
   </div>
 
   <div class="signature">
-    <p>Cachet & Signature</p>
-    <div style="width: 150px; height: 80px; border: 1px solid #ddd; margin-left: auto;"></div>
+    <p>${labels.signature}</p>
+    <div style="width: 150px; height: 80px; border: 1px solid #ddd; margin-${isArabic ? 'right' : 'left'}: auto;"></div>
   </div>
 
-  <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #1976D2; font-size: 11px; color: #666;">
+  <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid ${branding.primaryColor}; font-size: 11px; color: #666;">
     <p>www.polyflectaplastica.com | contact@polyflectaplastica.com | +213 6 70 04 91 24</p>
   </div>
 </body>

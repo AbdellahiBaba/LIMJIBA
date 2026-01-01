@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useLanguage } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
@@ -68,6 +69,7 @@ function StatCardSkeleton() {
 }
 
 export default function Dashboard() {
+  const { t } = useLanguage();
   const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard/stats"],
   });
@@ -76,10 +78,10 @@ export default function Dashboard() {
     <div className="p-6 space-y-6">
       <div className="flex flex-col gap-1">
         <h1 className="text-2xl font-semibold" data-testid="text-dashboard-title">
-          Dashboard
+          {t("dashboard.title")}
         </h1>
         <p className="text-muted-foreground text-sm">
-          Welcome to POLY FLECTA PLASTICA Business Management System
+          {t("company.tagline")}
         </p>
       </div>
 
@@ -94,29 +96,26 @@ export default function Dashboard() {
         ) : (
           <>
             <StatCard
-              title="Total Products"
+              title={t("dashboard.totalProducts")}
               value={stats?.totalProducts ?? 0}
               icon={Package}
-              description="Active products in inventory"
             />
             <StatCard
-              title="Low Stock Items"
+              title={t("dashboard.lowStockAlerts")}
               value={stats?.lowStockCount ?? 0}
               icon={AlertTriangle}
-              description="Items below threshold"
               variant={stats?.lowStockCount && stats.lowStockCount > 0 ? "warning" : "default"}
             />
             <StatCard
-              title="Total Invoices"
+              title={t("dashboard.invoicesThisMonth")}
               value={stats?.totalInvoices ?? 0}
+              description={`${stats?.pendingInvoices ?? 0} ${t("invoices.pending").toLowerCase()}`}
               icon={FileText}
-              description={`${stats?.pendingInvoices ?? 0} pending`}
             />
             <StatCard
-              title="Today's Sales"
+              title={t("dashboard.salesToday")}
               value={stats?.todaySales ?? 0}
               icon={ShoppingCart}
-              description="Transactions today"
               variant="success"
             />
           </>
@@ -134,29 +133,25 @@ export default function Dashboard() {
         ) : (
           <>
             <StatCard
-              title="Today's Revenue"
-              value={`${(stats?.todayRevenue ?? 0).toLocaleString()} DZD`}
+              title={t("common.total") + " (DZD)"}
+              value={`${(stats?.todayRevenue ?? 0).toLocaleString()}`}
               icon={TrendingUp}
-              description="Total sales amount"
               variant="success"
             />
             <StatCard
-              title="Active Resellers"
+              title={t("dashboard.activeResellers")}
               value={stats?.activeResellers ?? 0}
               icon={Users}
-              description="Registered resellers"
             />
             <StatCard
-              title="Reward Pool"
+              title={t("resellers.inRewardPool")}
               value={stats?.rewardPoolCount ?? 0}
               icon={Gift}
-              description="Eligible for rewards"
             />
             <StatCard
-              title="Pending Invoices"
+              title={t("invoices.pending")}
               value={stats?.pendingInvoices ?? 0}
               icon={Clock}
-              description="Awaiting payment"
               variant={stats?.pendingInvoices && stats.pendingInvoices > 0 ? "warning" : "default"}
             />
           </>
@@ -166,7 +161,7 @@ export default function Dashboard() {
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Quick Actions</CardTitle>
+            <CardTitle className="text-lg">{t("dashboard.quickActions")}</CardTitle>
           </CardHeader>
           <CardContent className="grid gap-3 sm:grid-cols-2">
             <a
@@ -176,8 +171,8 @@ export default function Dashboard() {
             >
               <FileText className="h-5 w-5 text-primary" />
               <div>
-                <p className="font-medium text-sm">New Invoice</p>
-                <p className="text-xs text-muted-foreground">Create invoice</p>
+                <p className="font-medium text-sm">{t("dashboard.newInvoice")}</p>
+                <p className="text-xs text-muted-foreground">{t("invoices.newInvoice")}</p>
               </div>
             </a>
             <a
@@ -187,8 +182,8 @@ export default function Dashboard() {
             >
               <ShoppingCart className="h-5 w-5 text-primary" />
               <div>
-                <p className="font-medium text-sm">Open POS</p>
-                <p className="text-xs text-muted-foreground">Start selling</p>
+                <p className="font-medium text-sm">{t("nav.pos")}</p>
+                <p className="text-xs text-muted-foreground">{t("dashboard.newSale")}</p>
               </div>
             </a>
             <a
@@ -198,8 +193,8 @@ export default function Dashboard() {
             >
               <Package className="h-5 w-5 text-primary" />
               <div>
-                <p className="font-medium text-sm">Manage Stock</p>
-                <p className="text-xs text-muted-foreground">View inventory</p>
+                <p className="font-medium text-sm">{t("nav.stock")}</p>
+                <p className="text-xs text-muted-foreground">{t("dashboard.addProduct")}</p>
               </div>
             </a>
             <a
@@ -209,8 +204,8 @@ export default function Dashboard() {
             >
               <Gift className="h-5 w-5 text-primary" />
               <div>
-                <p className="font-medium text-sm">Reseller Rewards</p>
-                <p className="text-xs text-muted-foreground">Manage program</p>
+                <p className="font-medium text-sm">{t("nav.resellers")}</p>
+                <p className="text-xs text-muted-foreground">{t("resellers.title")}</p>
               </div>
             </a>
           </CardContent>
@@ -218,31 +213,31 @@ export default function Dashboard() {
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Company Information</CardTitle>
+            <CardTitle className="text-lg">{t("company.name")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Company</span>
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">{t("common.name")}</span>
               <span className="font-medium">POLY FLECTA PLASTICA</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Activity</span>
-              <span className="font-medium">Fabrication d'Emballage en Plastique</span>
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">{t("common.description")}</span>
+              <span className="font-medium text-right">Fabrication d'Emballage en Plastique</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Address</span>
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">{t("common.address")}</span>
               <span className="font-medium text-right">Village Zaitout, Hammam Dalaa - W M'sila</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-2">
               <span className="text-muted-foreground">Carte Artisan</span>
               <span className="font-medium">28/ 00 - 2896688A24</span>
             </div>
-            <div className="flex justify-between">
+            <div className="flex justify-between gap-2">
               <span className="text-muted-foreground">N. Article</span>
               <span className="font-medium">101082709</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-muted-foreground">Phone</span>
+            <div className="flex justify-between gap-2">
+              <span className="text-muted-foreground">{t("common.phone")}</span>
               <span className="font-medium">+213 6 70 04 91 24</span>
             </div>
           </CardContent>

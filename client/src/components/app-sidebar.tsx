@@ -1,4 +1,5 @@
 import { useLocation, Link } from "wouter";
+import { useLanguage, useBranding } from "@/contexts/language-context";
 import {
   Sidebar,
   SidebarContent,
@@ -18,48 +19,75 @@ import {
   ShoppingCart,
   Gift,
   Settings,
+  Palette,
 } from "lucide-react";
-
-const menuItems = [
-  {
-    title: "Dashboard",
-    url: "/",
-    icon: LayoutDashboard,
-  },
-  {
-    title: "Invoices",
-    url: "/invoices",
-    icon: FileText,
-  },
-  {
-    title: "Stock",
-    url: "/stock",
-    icon: Package,
-  },
-  {
-    title: "POS",
-    url: "/pos",
-    icon: ShoppingCart,
-  },
-  {
-    title: "Resellers",
-    url: "/resellers",
-    icon: Gift,
-  },
-];
 
 export function AppSidebar() {
   const [location] = useLocation();
+  const { t } = useLanguage();
+  const { branding } = useBranding();
+
+  const menuItems = [
+    {
+      title: t("nav.dashboard"),
+      url: "/",
+      icon: LayoutDashboard,
+      testId: "nav-dashboard",
+    },
+    {
+      title: t("nav.invoices"),
+      url: "/invoices",
+      icon: FileText,
+      testId: "nav-invoices",
+    },
+    {
+      title: t("nav.stock"),
+      url: "/stock",
+      icon: Package,
+      testId: "nav-stock",
+    },
+    {
+      title: t("nav.pos"),
+      url: "/pos",
+      icon: ShoppingCart,
+      testId: "nav-pos",
+    },
+    {
+      title: t("nav.resellers"),
+      url: "/resellers",
+      icon: Gift,
+      testId: "nav-resellers",
+    },
+    {
+      title: t("nav.branding"),
+      url: "/branding",
+      icon: Palette,
+      testId: "nav-branding",
+    },
+  ];
 
   return (
     <Sidebar>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-md bg-primary flex items-center justify-center">
-            <span className="text-primary-foreground font-bold text-lg">PFP</span>
-          </div>
+          {branding.logo ? (
+            <img
+              src={branding.logo}
+              alt={t("company.name")}
+              className="w-10 h-10 rounded-md object-contain"
+            />
+          ) : (
+            <div
+              className="w-10 h-10 rounded-md flex items-center justify-center"
+              style={{ backgroundColor: branding.primaryColor }}
+            >
+              <span className="text-white font-bold text-lg">PFP</span>
+            </div>
+          )}
           <div className="flex flex-col">
-            <span className="font-semibold text-sm text-sidebar-foreground">POLY FLECTA</span>
+            <span className="font-semibold text-sm text-sidebar-foreground">
+              POLY FLECTA
+            </span>
             <span className="text-xs text-muted-foreground">PLASTICA</span>
           </div>
         </div>
@@ -67,19 +95,20 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground px-4">
-            Navigation
+            {t("nav.dashboard")}
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {menuItems.map((item) => {
-                const isActive = location === item.url || 
+                const isActive =
+                  location === item.url ||
                   (item.url !== "/" && location.startsWith(item.url));
                 return (
-                  <SidebarMenuItem key={item.title}>
+                  <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
-                      data-testid={`nav-${item.title.toLowerCase()}`}
+                      data-testid={item.testId}
                     >
                       <Link href={item.url}>
                         <item.icon className="h-4 w-4" />
