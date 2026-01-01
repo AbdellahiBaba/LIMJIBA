@@ -61,9 +61,10 @@ export async function registerRoutes(
     } catch (error) {
       console.error("Product creation error:", error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
+        return res.status(400).json({ error: error.errors, message: "Validation failed" });
       }
-      res.status(500).json({ error: "Failed to create product" });
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: "Failed to create product", details: errorMessage });
     }
   });
 
@@ -76,10 +77,12 @@ export async function registerRoutes(
       }
       res.json(product);
     } catch (error) {
+      console.error("Product update error:", error);
       if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
+        return res.status(400).json({ error: error.errors, message: "Validation failed" });
       }
-      res.status(500).json({ error: "Failed to update product" });
+      const errorMessage = error instanceof Error ? error.message : "Unknown error";
+      res.status(500).json({ error: "Failed to update product", details: errorMessage });
     }
   });
 

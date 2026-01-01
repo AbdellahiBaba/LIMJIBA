@@ -31,6 +31,8 @@ interface InvoiceLineItem {
   designation: string;
   quantity: number;
   unitPrice: number;
+  weightPerUnit: number;
+  totalWeight: number;
   total: number;
 }
 
@@ -88,7 +90,7 @@ export default function InvoiceForm() {
   });
 
   const [items, setItems] = useState<InvoiceLineItem[]>([
-    { id: crypto.randomUUID(), designation: "", quantity: 0, unitPrice: 0, total: 0 },
+    { id: crypto.randomUUID(), designation: "", quantity: 0, unitPrice: 0, weightPerUnit: 0, totalWeight: 0, total: 0 },
   ]);
 
   const { data: products } = useQuery<Product[]>({
@@ -130,6 +132,8 @@ export default function InvoiceForm() {
             designation: item.designation,
             quantity: item.quantity,
             unitPrice: item.unitPrice,
+            weightPerUnit: item.weightPerUnit || 0,
+            totalWeight: item.totalWeight || 0,
             total: item.total,
           }))
         );
@@ -138,7 +142,7 @@ export default function InvoiceForm() {
   }, [existingInvoice]);
 
   const createMutation = useMutation({
-    mutationFn: (data: { invoice: typeof formData & { totalHT: number; totalTTC: number }; items: InsertInvoiceItem[] }) =>
+    mutationFn: (data: { invoice: typeof formData & { totalHT: number; totalTTC: number; totalWeight: number }; items: InsertInvoiceItem[] }) =>
       apiRequest("POST", "/api/invoices", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
@@ -154,7 +158,7 @@ export default function InvoiceForm() {
   const addItem = () => {
     setItems([
       ...items,
-      { id: crypto.randomUUID(), designation: "", quantity: 0, unitPrice: 0, total: 0 },
+      { id: crypto.randomUUID(), designation: "", quantity: 0, unitPrice: 0, weightPerUnit: 0, totalWeight: 0, total: 0 },
     ]);
   };
 
@@ -171,6 +175,9 @@ export default function InvoiceForm() {
           const updated = { ...item, [field]: value };
           if (field === "quantity" || field === "unitPrice") {
             updated.total = updated.quantity * updated.unitPrice;
+          }
+          if (field === "quantity" || field === "weightPerUnit") {
+            updated.totalWeight = updated.quantity * updated.weightPerUnit;
           }
           return updated;
         }
@@ -190,7 +197,9 @@ export default function InvoiceForm() {
               productId,
               designation: product.name,
               unitPrice: product.unitPrice,
+              weightPerUnit: product.weightPerUnit || 0,
               total: item.quantity * product.unitPrice,
+              totalWeight: item.quantity * (product.weightPerUnit || 0),
             };
           }
           return item;
@@ -201,6 +210,7 @@ export default function InvoiceForm() {
 
   const totalHT = items.reduce((sum, item) => sum + item.total, 0);
   const totalTTC = totalHT;
+  const totalWeight = items.reduce((sum, item) => sum + item.totalWeight, 0);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -212,11 +222,13 @@ export default function InvoiceForm() {
         designation: item.designation,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
+        weightPerUnit: item.weightPerUnit,
+        totalWeight: item.totalWeight,
         total: item.total,
       }));
 
     createMutation.mutate({
-      invoice: { ...formData, totalHT, totalTTC },
+      invoice: { ...formData, totalHT, totalTTC, totalWeight },
       items: invoiceItems,
     });
   };
@@ -354,10 +366,12 @@ export default function InvoiceForm() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[100px]">Qty</TableHead>
-                    <TableHead className="min-w-[250px]">Designation</TableHead>
-                    <TableHead className="min-w-[150px]">Unit Price (DZD)</TableHead>
-                    <TableHead className="min-w-[150px] text-right">Total (DZD)</TableHead>
+                    <TableHead className="min-w-[80px]">Qty</TableHead>
+                    <TableHead className="min-w-[200px]">Designation</TableHead>
+                    <TableHead className="min-w-[100px]">Unit Price (DZD)</TableHead>
+                    <TableHead className="min-w-[80px]">Weight/Unit (kg)</TableHead>
+                    <TableHead className="min-w-[80px] text-right">Total Weight (kg)</TableHead>
+                    <TableHead className="min-w-[100px] text-right">Total (DZD)</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -417,9 +431,25 @@ export default function InvoiceForm() {
                           onChange={(e) =>
                             updateItem(item.id, "unitPrice", parseFloat(e.target.value) || 0)
                           }
-                          className="w-32"
+                          className="w-24"
                           data-testid={`input-price-${item.id}`}
                         />
+                      </TableCell>
+                      <TableCell>
+                        <Input
+                          type="number"
+                          min="0"
+                          step="0.001"
+                          value={item.weightPerUnit || ""}
+                          onChange={(e) =>
+                            updateItem(item.id, "weightPerUnit", parseFloat(e.target.value) || 0)
+                          }
+                          className="w-20"
+                          data-testid={`input-weight-${item.id}`}
+                        />
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {item.totalWeight.toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right font-mono">
                         {item.total.toLocaleString()}
@@ -442,6 +472,12 @@ export default function InvoiceForm() {
             </div>
 
             <div className="mt-6 flex flex-col items-end gap-2">
+              <div className="flex gap-8 text-sm">
+                <span className="text-muted-foreground">Total Weight:</span>
+                <span className="font-mono font-medium" data-testid="text-total-weight">
+                  {totalWeight.toFixed(2)} kg
+                </span>
+              </div>
               <div className="flex gap-8 text-sm">
                 <span className="text-muted-foreground">Total H.T:</span>
                 <span className="font-mono font-medium" data-testid="text-total-ht">

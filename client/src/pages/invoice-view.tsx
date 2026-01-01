@@ -236,9 +236,11 @@ export default function InvoiceView() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead className="w-20">Qty</TableHead>
+                    <TableHead className="w-16">Qty</TableHead>
                     <TableHead>Designation</TableHead>
                     <TableHead className="text-right">Unit Price</TableHead>
+                    <TableHead className="text-right">Weight/Unit</TableHead>
+                    <TableHead className="text-right">Total Weight</TableHead>
                     <TableHead className="text-right">Total</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -251,6 +253,12 @@ export default function InvoiceView() {
                         {item.unitPrice > 0 ? `${item.unitPrice.toLocaleString()} DZD` : "- DZD"}
                       </TableCell>
                       <TableCell className="text-right font-mono">
+                        {(item.weightPerUnit || 0).toFixed(2)} kg
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {(item.totalWeight || 0).toFixed(2)} kg
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
                         {item.total > 0 ? `${item.total.toLocaleString()} DZD` : "- DZD"}
                       </TableCell>
                     </TableRow>
@@ -260,6 +268,12 @@ export default function InvoiceView() {
             </div>
 
             <div className="mt-6 flex flex-col items-end gap-2">
+              <div className="flex gap-8 text-sm">
+                <span className="text-muted-foreground">Total Weight:</span>
+                <span className="font-mono font-medium">
+                  {(invoice.totalWeight || 0).toFixed(2)} kg
+                </span>
+              </div>
               <div className="flex gap-8 text-sm">
                 <span className="text-muted-foreground">Total H.T:</span>
                 <span className="font-mono font-medium">

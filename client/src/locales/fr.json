@@ -129,7 +129,10 @@
     "statusUpdated": "Statut de la facture mis à jour",
     "product": "Produit",
     "unitPrice": "Prix Unitaire",
-    "amount": "Montant"
+    "amount": "Montant",
+    "weightPerUnit": "Poids/Unité (kg)",
+    "totalWeight": "Poids Total (kg)",
+    "quantity": "Quantité"
   },
   "pos": {
     "title": "Point de Vente",

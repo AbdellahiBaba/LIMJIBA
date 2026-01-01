@@ -129,7 +129,10 @@
     "statusUpdated": "تم تحديث حالة الفاتورة",
     "product": "المنتج",
     "unitPrice": "سعر الوحدة",
-    "amount": "المبلغ"
+    "amount": "المبلغ",
+    "weightPerUnit": "الوزن/الوحدة (كغ)",
+    "totalWeight": "الوزن الكلي (كغ)",
+    "quantity": "الكمية"
   },
   "pos": {
     "title": "نقطة البيع",
