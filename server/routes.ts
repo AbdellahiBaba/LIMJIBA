@@ -1,6 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import { isTransientError } from "./db";
 import { 
   insertProductSchema, 
   insertInvoiceSchema, 
@@ -29,6 +30,7 @@ function logError(context: string, error: unknown): string {
 function handleError(res: any, context: string, error: unknown, defaultStatus: number = 500) {
   const errorMessage = logError(context, error);
   
+  // Handle Zod validation errors - 400 Bad Request
   if (error instanceof z.ZodError) {
     return res.status(400).json({ 
       error: "Validation failed", 
@@ -37,12 +39,8 @@ function handleError(res: any, context: string, error: unknown, defaultStatus: n
     });
   }
   
-  const isNetworkError = errorMessage.includes('EAI_AGAIN') || 
-                          errorMessage.includes('ECONNRESET') || 
-                          errorMessage.includes('ETIMEDOUT') ||
-                          errorMessage.includes('connection');
-  
-  if (isNetworkError) {
+  // Only return 503 for genuine transient errors
+  if (isTransientError(error)) {
     return res.status(503).json({ 
       error: "Database temporarily unavailable", 
       details: "Please try again in a moment",
@@ -50,6 +48,28 @@ function handleError(res: any, context: string, error: unknown, defaultStatus: n
     });
   }
   
+  // Handle PostgreSQL constraint violations - 409 Conflict
+  const pgError = error as any;
+  if (pgError?.code === '23505') { // Unique violation
+    return res.status(409).json({
+      error: "Duplicate entry",
+      details: pgError?.detail || errorMessage
+    });
+  }
+  if (pgError?.code === '23503') { // Foreign key violation
+    return res.status(400).json({
+      error: "Referenced record not found",
+      details: pgError?.detail || errorMessage
+    });
+  }
+  if (pgError?.code === '23502') { // Not null violation
+    return res.status(400).json({
+      error: "Required field missing",
+      details: pgError?.detail || errorMessage
+    });
+  }
+  
+  // All other errors - return appropriate status
   return res.status(defaultStatus).json({ 
     error: `Failed to ${context}`, 
     details: errorMessage 

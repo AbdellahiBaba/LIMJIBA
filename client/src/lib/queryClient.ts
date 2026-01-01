@@ -1,9 +1,46 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
+// Parse error response body to extract meaningful error message
+async function parseErrorResponse(res: Response): Promise<string> {
+  try {
+    const text = await res.text();
+    if (!text) {
+      return res.statusText || `HTTP ${res.status}`;
+    }
+    
+    // Try to parse as JSON to get structured error
+    try {
+      const json = JSON.parse(text);
+      // Return the most descriptive message available
+      if (json.message) return json.message;
+      if (json.error) {
+        if (json.details && typeof json.details === 'string') {
+          return `${json.error}: ${json.details}`;
+        }
+        return json.error;
+      }
+      return text;
+    } catch {
+      // Not JSON, return as plain text
+      return text;
+    }
+  } catch {
+    return res.statusText || `HTTP ${res.status}`;
+  }
+}
+
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
-    const text = (await res.text()) || res.statusText;
-    throw new Error(`${res.status}: ${text}`);
+    const errorMessage = await parseErrorResponse(res);
+    const error = new Error(errorMessage) as Error & { status: number; retryable?: boolean };
+    error.status = res.status;
+    
+    // Mark 503 errors as retryable
+    if (res.status === 503) {
+      error.retryable = true;
+    }
+    
+    throw error;
   }
 }
 
