@@ -1,0 +1,107 @@
+Enhance the Fabrication Invoice module so that fabrication invoices are fully branded, visually professional, and include complete company information, logo, and footer. Implement the following improvements:
+
+1. Full Branding Integration
+The Fabrication Invoice must use the same branding system as the main sales invoice:
+
+Apply brand primary and accent colors
+
+Use the uploaded company logo
+
+Use the uploaded watermark (if enabled)
+
+Apply the same typography and layout rules
+
+Ensure RTL/LTR support depending on language
+
+2. Company Information in Header
+The Fabrication Invoice must include all company details in the header, exactly like a professional invoice:
+
+Company name
+
+Logo
+
+Address
+
+Artisan number
+
+Article number
+
+Fiscal number
+
+Email
+
+Phone number
+
+Website (if available)
+
+These must be displayed cleanly and consistently.
+
+3. Branded Footer
+Add a footer section to the Fabrication Invoice PDF containing:
+
+Company name
+
+Contact information
+
+Website or slogan
+
+Optional legal or compliance text
+
+The footer must match the branding colors and style.
+
+4. Logo & Watermark Support
+Display the uploaded logo in the header
+
+Display the watermark behind the invoice content (10–15% opacity)
+
+Ensure watermark does not interfere with readability
+
+Support preview before generating the PDF
+
+5. Fabrication Invoice Layout Enhancements
+Improve the layout to match a premium invoice:
+
+Clean spacing and alignment
+
+Professional table styling
+
+Include weight columns and total weight
+
+Include fabrication date and responsible person
+
+Include notes section (optional)
+
+6. PDF Preview Before Download
+Add a Preview Fabrication Invoice feature that shows:
+
+Logo
+
+Watermark
+
+Company info
+
+Footer
+
+Product table
+
+Weight totals
+
+Language formatting (Arabic/French/Bilingual)
+
+The preview must match the final PDF exactly.
+
+7. PDF Generation Requirements
+Ensure PDF downloads correctly
+
+Ensure images (logo + watermark) render properly
+
+Ensure RTL text works for Arabic
+
+Ensure bilingual mode works
+
+Ensure fonts are embedded
+
+8. Must Work Offline
+All features must function fully offline and integrate with the existing system.
+
+Start implementing these enhancements step by step.

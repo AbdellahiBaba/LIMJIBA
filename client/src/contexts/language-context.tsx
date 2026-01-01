@@ -5,6 +5,20 @@ import arTranslations from "../locales/ar.json";
 type Language = "fr" | "ar";
 type InvoiceLanguage = "fr" | "ar" | "bilingual";
 
+interface CompanyInfo {
+  name: string;
+  nameAr: string;
+  tagline: string;
+  taglineAr: string;
+  address: string;
+  artisanNumber: string;
+  articleNumber: string;
+  fiscalNumber: string;
+  phone: string;
+  email: string;
+  website: string;
+}
+
 interface BrandingSettings {
   logo: string | null;
   watermark: string | null;
@@ -15,6 +29,7 @@ interface BrandingSettings {
   primaryColor: string;
   accentColor: string;
   invoiceLanguage: InvoiceLanguage;
+  companyInfo: CompanyInfo;
 }
 
 interface LanguageContextType {
@@ -26,6 +41,20 @@ interface LanguageContextType {
   updateBranding: (settings: Partial<BrandingSettings>) => void;
 }
 
+const defaultCompanyInfo: CompanyInfo = {
+  name: "POLY FLECTA PLASTICA",
+  nameAr: "بولي فليكتا بلاستيكا",
+  tagline: "FABRICATION D'EMBALLAGE EN PLASTIQUE",
+  taglineAr: "تصنيع عبوات بلاستيكية",
+  address: "Village Zaitout, Hammam Dalaa - M'sila",
+  artisanNumber: "28/00 - 2896688A24",
+  articleNumber: "",
+  fiscalNumber: "",
+  phone: "+213 6 70 04 91 24",
+  email: "contact@polyflectaplastica.com",
+  website: "www.polyflectaplastica.com",
+};
+
 const defaultBranding: BrandingSettings = {
   logo: null,
   watermark: null,
@@ -36,6 +65,7 @@ const defaultBranding: BrandingSettings = {
   primaryColor: "#1976D2",
   accentColor: "#42A5F5",
   invoiceLanguage: "fr",
+  companyInfo: defaultCompanyInfo,
 };
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
