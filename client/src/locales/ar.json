@@ -94,6 +94,7 @@
   "invoices": {
     "title": "الفواتير",
     "newInvoice": "فاتورة جديدة",
+    "fabricationInvoice": "فاتورة تصنيع",
     "editInvoice": "تعديل الفاتورة",
     "viewInvoice": "عرض الفاتورة",
     "deleteInvoice": "حذف الفاتورة",

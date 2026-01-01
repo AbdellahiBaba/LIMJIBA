@@ -94,6 +94,7 @@
   "invoices": {
     "title": "Factures",
     "newInvoice": "Nouvelle Facture",
+    "fabricationInvoice": "Facture Fabrication",
     "editInvoice": "Modifier Facture",
     "viewInvoice": "Voir Facture",
     "deleteInvoice": "Supprimer Facture",

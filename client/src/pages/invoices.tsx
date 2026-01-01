@@ -33,7 +33,15 @@ import {
   CheckCircle,
   Clock,
   XCircle,
+  Factory,
+  ChevronDown,
 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
 import type { Invoice } from "@shared/schema";
 
@@ -120,12 +128,29 @@ export default function Invoices() {
             Manage and generate invoices
           </p>
         </div>
-        <Link href="/invoices/new">
-          <Button data-testid="button-new-invoice">
-            <Plus className="h-4 w-4 mr-2" />
-            New Invoice
-          </Button>
-        </Link>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button data-testid="button-new-invoice">
+              <Plus className="h-4 w-4 mr-2" />
+              {t("invoices.newInvoice")}
+              <ChevronDown className="h-4 w-4 ml-2" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuItem asChild>
+              <Link href="/invoices/new" className="flex items-center gap-2 cursor-pointer">
+                <FileText className="h-4 w-4" />
+                {t("invoices.newInvoice")}
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/invoices/fabrication" className="flex items-center gap-2 cursor-pointer">
+                <Factory className="h-4 w-4" />
+                {t("invoices.fabricationInvoice")}
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       <Card>
