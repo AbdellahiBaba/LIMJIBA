@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useLanguage } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -208,6 +209,7 @@ function WinnerDialog({
 
 export default function Resellers() {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingReseller, setEditingReseller] = useState<Reseller | undefined>();
@@ -231,7 +233,10 @@ export default function Resellers() {
   });
 
   const drawWinnerMutation = useMutation({
-    mutationFn: () => apiRequest<Reseller>("POST", "/api/resellers/draw-winner"),
+    mutationFn: async () => {
+      const response = await apiRequest("POST", "/api/resellers/draw-winner");
+      return response.json() as Promise<Reseller>;
+    },
     onSuccess: (winner) => {
       queryClient.invalidateQueries({ queryKey: ["/api/resellers"] });
       setSelectedWinner(winner);
@@ -281,15 +286,15 @@ export default function Resellers() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold" data-testid="text-resellers-title">
-            Reseller Rewards
+            {t("resellers.title")}
           </h1>
           <p className="text-muted-foreground text-sm">
-            Manage resellers and reward program
+            {t("resellers.eligibleResellers")}
           </p>
         </div>
         <Button onClick={handleNew} data-testid="button-add-reseller">
           <Plus className="h-4 w-4 mr-2" />
-          Add Reseller
+          {t("resellers.addReseller")}
         </Button>
       </div>
 
@@ -353,7 +358,7 @@ export default function Resellers() {
                 data-testid="button-draw-winner"
               >
                 <Trophy className="h-4 w-4 mr-2" />
-                {drawWinnerMutation.isPending ? "Drawing..." : "Draw Winner"}
+                {drawWinnerMutation.isPending ? t("common.loading") : t("resellers.drawWinner")}
               </Button>
             </div>
           </div>

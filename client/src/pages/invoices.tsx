@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Link } from "wouter";
+import { useLanguage, useBranding } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -44,6 +45,8 @@ const statusConfig: Record<string, { label: string; icon: React.ComponentType<{ 
 
 export default function Invoices() {
   const { toast } = useToast();
+  const { t } = useLanguage();
+  const { branding } = useBranding();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
@@ -56,7 +59,7 @@ export default function Invoices() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: "Invoice deleted successfully" });
+      toast({ title: t("invoices.invoiceDeleted") });
     },
     onError: () => {
       toast({ title: "Failed to delete invoice", variant: "destructive" });
@@ -69,7 +72,7 @@ export default function Invoices() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: "Invoice status updated" });
+      toast({ title: t("invoices.statusUpdated") });
     },
     onError: () => {
       toast({ title: "Failed to update status", variant: "destructive" });
@@ -86,8 +89,24 @@ export default function Invoices() {
     return matchesSearch && matchesStatus;
   });
 
-  const handlePrint = async (invoiceId: string) => {
-    window.open(`/api/invoices/${invoiceId}/pdf`, "_blank");
+  const handlePrint = (invoiceId: string) => {
+    const params_url = new URLSearchParams({
+      invoiceLanguage: branding.invoiceLanguage,
+      primaryColor: branding.primaryColor,
+      accentColor: branding.accentColor,
+      logoPosition: branding.logoPosition,
+      enableWatermark: String(branding.enableWatermark),
+      watermarkOpacity: String(branding.watermarkOpacity),
+    });
+    
+    if (branding.logo) {
+      params_url.set("logo", branding.logo);
+    }
+    if (branding.enableWatermark && branding.watermark) {
+      params_url.set("watermark", branding.watermark);
+    }
+    
+    window.open(`/api/invoices/${invoiceId}/pdf?${params_url.toString()}`, "_blank");
   };
 
   return (

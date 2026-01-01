@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useLanguage } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -54,11 +55,13 @@ function ProductFormDialog({
   onOpenChange,
   product,
   onSuccess,
+  t,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   product?: Product;
   onSuccess: () => void;
+  t: (key: string) => string;
 }) {
   const { toast } = useToast();
   const [formData, setFormData] = useState<Partial<InsertProduct>>({
@@ -75,7 +78,7 @@ function ProductFormDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: "Product created successfully" });
+      toast({ title: t("stock.productAdded") });
       onSuccess();
     },
     onError: () => {
@@ -89,7 +92,7 @@ function ProductFormDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: "Product updated successfully" });
+      toast({ title: t("stock.productUpdated") });
       onSuccess();
     },
     onError: () => {
@@ -114,25 +117,25 @@ function ProductFormDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>
-            {product ? "Edit Product" : "Add New Product"}
+            {product ? t("stock.editProduct") : t("stock.addProduct")}
           </DialogTitle>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="name">Product Name *</Label>
+            <Label htmlFor="name">{t("stock.productName")} *</Label>
             <Input
               id="name"
               value={formData.name}
               onChange={(e) =>
                 setFormData({ ...formData, name: e.target.value })
               }
-              placeholder="e.g., Sac en plastique, 5KG"
+              placeholder={t("stock.productName")}
               required
               data-testid="input-product-name"
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="category">Category *</Label>
+            <Label htmlFor="category">{t("stock.category")} *</Label>
             <Select
               value={formData.category}
               onValueChange={(value) =>
@@ -153,7 +156,7 @@ function ProductFormDialog({
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="unitPrice">Unit Price (DZD) *</Label>
+              <Label htmlFor="unitPrice">{t("stock.unitPrice")} (DZD) *</Label>
               <Input
                 id="unitPrice"
                 type="number"
@@ -168,7 +171,7 @@ function ProductFormDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="unit">Unit</Label>
+              <Label htmlFor="unit">{t("stock.unit")}</Label>
               <Select
                 value={formData.unit}
                 onValueChange={(value) =>
@@ -179,17 +182,17 @@ function ProductFormDialog({
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="pcs">Pieces</SelectItem>
-                  <SelectItem value="box">Box</SelectItem>
-                  <SelectItem value="kg">Kilograms</SelectItem>
-                  <SelectItem value="palette">Palette</SelectItem>
+                  <SelectItem value="pcs">{t("stock.pieces")}</SelectItem>
+                  <SelectItem value="box">{t("stock.box")}</SelectItem>
+                  <SelectItem value="kg">{t("stock.kg")}</SelectItem>
+                  <SelectItem value="palette">{t("stock.palette")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="stockQuantity">Stock Quantity *</Label>
+              <Label htmlFor="stockQuantity">{t("stock.stockQuantity")} *</Label>
               <Input
                 id="stockQuantity"
                 type="number"
@@ -203,7 +206,7 @@ function ProductFormDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="lowStockThreshold">Low Stock Alert</Label>
+              <Label htmlFor="lowStockThreshold">{t("stock.lowStock")}</Label>
               <Input
                 id="lowStockThreshold"
                 type="number"
@@ -222,10 +225,10 @@ function ProductFormDialog({
               variant="outline"
               onClick={() => onOpenChange(false)}
             >
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button type="submit" disabled={isPending} data-testid="button-save-product">
-              {isPending ? "Saving..." : product ? "Update" : "Create"}
+              {isPending ? t("common.loading") : product ? t("common.save") : t("common.create")}
             </Button>
           </DialogFooter>
         </form>
@@ -236,6 +239,7 @@ function ProductFormDialog({
 
 export default function Stock() {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -250,7 +254,7 @@ export default function Stock() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: "Product deleted successfully" });
+      toast({ title: t("stock.productDeleted") });
     },
     onError: () => {
       toast({ title: "Failed to delete product", variant: "destructive" });
@@ -290,15 +294,15 @@ export default function Stock() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <h1 className="text-2xl font-semibold" data-testid="text-stock-title">
-            Stock Management
+            {t("stock.title")}
           </h1>
           <p className="text-muted-foreground text-sm">
-            Manage your product inventory
+            {t("stock.searchProducts")}
           </p>
         </div>
         <Button onClick={handleNew} data-testid="button-add-product">
           <Plus className="h-4 w-4 mr-2" />
-          Add Product
+          {t("stock.addProduct")}
         </Button>
       </div>
 
@@ -307,7 +311,7 @@ export default function Stock() {
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2 text-orange-600 dark:text-orange-400">
               <AlertTriangle className="h-4 w-4" />
-              Low Stock Alert
+              {t("stock.lowStock")}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -450,16 +454,16 @@ export default function Stock() {
           ) : (
             <div className="text-center py-12">
               <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="font-medium text-lg mb-1">No products found</h3>
+              <h3 className="font-medium text-lg mb-1">{t("common.noData")}</h3>
               <p className="text-muted-foreground text-sm mb-4">
                 {search || categoryFilter !== "all"
-                  ? "Try adjusting your search or filters"
-                  : "Get started by adding your first product"}
+                  ? t("stock.searchProducts")
+                  : t("stock.addProduct")}
               </p>
               {!search && categoryFilter === "all" && (
                 <Button onClick={handleNew}>
                   <Plus className="h-4 w-4 mr-2" />
-                  Add Product
+                  {t("stock.addProduct")}
                 </Button>
               )}
             </div>
@@ -472,6 +476,7 @@ export default function Stock() {
         onOpenChange={handleDialogClose}
         product={editingProduct}
         onSuccess={handleDialogClose}
+        t={t}
       />
     </div>
   );

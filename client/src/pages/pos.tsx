@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useLanguage } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -41,6 +42,7 @@ import type { Product, CartItem, Reseller, InsertSale, InsertSaleItem } from "@s
 
 export default function POS() {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [discount, setDiscount] = useState(0);
@@ -59,8 +61,10 @@ export default function POS() {
   });
 
   const createSaleMutation = useMutation({
-    mutationFn: (data: { sale: InsertSale; items: InsertSaleItem[] }) =>
-      apiRequest<{ id: string }>("POST", "/api/sales", data),
+    mutationFn: async (data: { sale: InsertSale; items: InsertSaleItem[] }) => {
+      const response = await apiRequest("POST", "/api/sales", data);
+      return response.json() as Promise<{ id: string }>;
+    },
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
@@ -276,10 +280,10 @@ export default function POS() {
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-lg">
             <ShoppingCart className="h-5 w-5" />
-            Cart
+            {t("pos.cart")}
             {cart.length > 0 && (
               <Badge variant="secondary" className="ml-auto">
-                {cart.reduce((sum, item) => sum + item.quantity, 0)} items
+                {cart.reduce((sum, item) => sum + item.quantity, 0)} {t("invoices.items")}
               </Badge>
             )}
           </CardTitle>
@@ -289,8 +293,8 @@ export default function POS() {
             <div className="flex-1 flex items-center justify-center text-center text-muted-foreground">
               <div>
                 <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-50" />
-                <p className="text-sm">Cart is empty</p>
-                <p className="text-xs">Click on products to add them</p>
+                <p className="text-sm">{t("pos.emptyCart")}</p>
+                <p className="text-xs">{t("pos.addToCart")}</p>
               </div>
             </div>
           ) : (

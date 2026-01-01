@@ -5,6 +5,7 @@
     "delete": "Supprimer",
     "edit": "Modifier",
     "add": "Ajouter",
+    "create": "Créer",
     "search": "Rechercher",
     "loading": "Chargement...",
     "noData": "Aucune donnée",
@@ -70,6 +71,10 @@
     "productUpdated": "Produit mis à jour avec succès",
     "productDeleted": "Produit supprimé avec succès",
     "unit": "Unité",
+    "pieces": "Pièces",
+    "box": "Boîte",
+    "kg": "Kilogrammes",
+    "palette": "Palette",
     "units": {
       "piece": "Pièce",
       "kg": "Kilogramme",
@@ -108,6 +113,7 @@
     "confirmDelete": "Êtes-vous sûr de vouloir supprimer cette facture?",
     "invoiceCreated": "Facture créée avec succès",
     "invoiceDeleted": "Facture supprimée avec succès",
+    "statusUpdated": "Statut de la facture mis à jour",
     "product": "Produit",
     "unitPrice": "Prix Unitaire",
     "amount": "Montant"
