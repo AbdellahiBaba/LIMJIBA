@@ -2,11 +2,11 @@
 
 ## Overview
 
-A fully offline, professionally branded business management system for an industrial plastic packaging manufacturer. The application provides four core modules: Invoice Generation (matching PDF sample format), Stock/Inventory Management, Point-of-Sale (POS) interface, and Reseller Rewards Program. Built as a full-stack TypeScript application with React frontend and Express backend, using in-memory storage for complete offline functionality.
+A professionally branded business management system for an industrial plastic packaging manufacturer. The application provides comprehensive modules: Invoice Generation (standard + fabrication), Stock/Inventory Management, Point-of-Sale (POS), Reseller Rewards Program, Salaries Management, Business Expenses Tracking, and Profit Analytics. Built as a full-stack TypeScript application with React frontend and Express backend, using PostgreSQL database for persistent data storage.
 
 **Company:** POLY FLECTA PLASTICA  
 **Industry:** Industrial plastic packaging manufacturing  
-**Status:** MVP Complete - All four modules functional
+**Status:** MVP Complete - All modules functional with persistent database
 
 ## User Preferences
 
@@ -22,81 +22,146 @@ Preferred communication style: Simple, everyday language.
 - **Styling:** Tailwind CSS with industrial branding (blue #1976D2 theme)
 - **Typography:** Roboto font family (Material Design)
 - **Build Tool:** Vite with HMR support
+- **Localization:** French, Arabic, and Bilingual modes with RTL support
 
 ### Core Modules
-1. **Dashboard** - Business statistics with 5 stat cards (products, sales, invoices, resellers, low stock alerts)
-2. **Stock Management** - Full CRUD for products, low stock alerts (threshold 10), search/filter
-3. **Invoice Generation** - Create/view/delete invoices, PDF generation with French number-to-words conversion
+1. **Dashboard** - Business statistics with stat cards (products, sales, invoices, resellers, low stock alerts)
+2. **Stock Management** - Full CRUD for products with cost price and weight tracking, low stock alerts
+3. **Invoice Generation** - Standard invoices (FA- prefix) and Fabrication invoices (FAB- prefix) with PDF generation
 4. **POS (Point of Sale)** - Product grid, cart system, checkout with payment modes, receipt printing
 5. **Reseller Rewards** - Track purchases, threshold-based reward pool, random winner draw
-6. **Profit Calculator** - Net profit analysis with configurable costs, monthly expenses, salaries, and product-level profitability metrics
+6. **Salaries Management** - Employee records, monthly salary payments, payment history
+7. **Expenses Tracking** - Business expenses by category (electricity, rent, supplies, etc.)
+8. **Profit Calculator** - Net profit analysis with automated data from sales, salaries, and expenses
 
 ### Backend Architecture
 - **Runtime:** Node.js with Express
 - **Language:** TypeScript
 - **API Design:** RESTful endpoints under `/api/*` prefix
-- **Storage:** In-memory storage (MemStorage class) for offline operation
+- **Database:** PostgreSQL with Drizzle ORM
+- **Storage Class:** DatabaseStorage (persistent)
 
 ### Data Storage
-- **Type:** In-memory storage (Map-based)
+- **Type:** PostgreSQL database (Drizzle ORM)
 - **Schema Location:** `shared/schema.ts` (shared types between frontend/backend)
-- **Seeded Data:** 8 products (plastic bags), 3 resellers for testing
+- **Migrations:** `npm run db:push` for schema updates
 
 Core entities:
-- Products (inventory with stock tracking, low stock alerts)
+- Products (inventory with stock, cost price, weight per unit)
 - Invoices and InvoiceItems (B2B billing with PDF generation)
+- FabricationInvoices and FabricationItems (manufacturing invoices)
 - Sales and SaleItems (POS transactions with automatic stock deduction)
 - Resellers (partner program with purchase tracking and reward pool)
+- Employees (staff management with monthly salary)
+- SalaryPayments (payment records by month/year)
+- Expenses (business expenses by category)
 
 ### Key Design Decisions
 
-**Offline-First:** Uses in-memory storage instead of PostgreSQL for complete offline functionality. No external dependencies required.
+**PostgreSQL Database:** Uses Drizzle ORM with PostgreSQL for persistent data storage across restarts.
 
 **Shared Schema Pattern:** Types defined in `shared/schema.ts` and used by both frontend and backend for type safety.
 
-**Industrial Branding:** Custom design tokens matching company branding (industrial blues, professional greys) defined in `design_guidelines.md`.
+**Industrial Branding:** Custom design tokens matching company branding defined in `design_guidelines.md`.
+
+**Multilingual Support:** French/Arabic/Bilingual modes with RTL layout for Arabic.
 
 **Stock Deduction:** POS sales automatically reduce product stock quantities and update reseller purchase totals.
 
 ## Recent Changes
 
 **January 2026:**
-- Added Profit Calculator module with monthly revenue analysis, cost breakdown, and product-level profitability metrics
-- Added invoice preview component to Branding page showing live logo, watermark, colors, and language settings
-- Added profit calculator translations in French and Arabic locale files
-- Fixed SelectItem empty value error in POS page (changed value="" to value="none")
-- Completed all five core modules with full functionality
-- Added theme toggle for light/dark mode support
-- Implemented French number-to-words conversion for invoices
-- Added sidebar navigation with all module links
+- Migrated from in-memory storage to PostgreSQL database for data persistence
+- Added Salaries module for employee management and payment tracking
+- Added Expenses module for business expense tracking by category
+- Added Fabrication Invoice module for manufacturing invoices
+- Extended products table with costPrice and weightPerUnit fields
+- Added automated profit statistics endpoint (/api/profit-stats)
+- Added translations for all new modules in French and Arabic
+- Updated sidebar navigation with Salaries and Expenses links
 
 ## File Structure
 
 ```
 client/src/
 ├── pages/
-│   ├── dashboard.tsx      # Main dashboard with stats
-│   ├── stock.tsx          # Product/inventory management
-│   ├── invoices.tsx       # Invoice list
-│   ├── invoice-form.tsx   # Create new invoice
-│   ├── invoice-view.tsx   # View invoice details
-│   ├── pos.tsx            # Point of sale interface
-│   ├── resellers.tsx      # Reseller rewards program
-│   └── profit-calculator.tsx # Net profit analysis
+│   ├── dashboard.tsx          # Main dashboard with stats
+│   ├── stock.tsx              # Product/inventory management
+│   ├── invoices.tsx           # Invoice list
+│   ├── invoice-form.tsx       # Create new standard invoice
+│   ├── invoice-view.tsx       # View invoice details
+│   ├── fabrication-invoice.tsx # Create fabrication invoice
+│   ├── pos.tsx                # Point of sale interface
+│   ├── resellers.tsx          # Reseller rewards program
+│   ├── salaries.tsx           # Employee and salary management
+│   ├── expenses.tsx           # Business expense tracking
+│   ├── profit-calculator.tsx  # Net profit analysis
+│   └── branding.tsx           # Company branding settings
 ├── components/
-│   ├── app-sidebar.tsx    # Main navigation sidebar
-│   └── theme-toggle.tsx   # Dark/light mode toggle
+│   ├── app-sidebar.tsx        # Main navigation sidebar
+│   ├── theme-toggle.tsx       # Dark/light mode toggle
+│   └── language-switcher.tsx  # Language selection
+├── contexts/
+│   └── language-context.tsx   # i18n and branding context
+├── locales/
+│   ├── fr.json                # French translations
+│   └── ar.json                # Arabic translations
 └── lib/
-    └── queryClient.ts     # React Query configuration
+    └── queryClient.ts         # React Query configuration
 
 server/
-├── routes.ts              # All API endpoints
-├── storage.ts             # In-memory storage implementation
-└── index.ts               # Express server entry
+├── routes.ts                  # All API endpoints
+├── storage.ts                 # DatabaseStorage implementation
+├── db.ts                      # Drizzle database connection
+└── index.ts                   # Express server entry
 
 shared/
-└── schema.ts              # TypeScript types and interfaces
+└── schema.ts                  # TypeScript types, Drizzle schemas, Zod validation
 ```
+
+## API Endpoints
+
+### Products
+- GET /api/products - List all products
+- GET /api/products/:id - Get single product
+- POST /api/products - Create product
+- PATCH /api/products/:id - Update product
+- DELETE /api/products/:id - Delete product
+
+### Invoices
+- GET /api/invoices - List all invoices
+- GET /api/invoices/:id - Get invoice with items
+- POST /api/invoices - Create invoice with items
+- DELETE /api/invoices/:id - Delete invoice
+
+### Fabrication Invoices
+- GET /api/fabrication-invoices - List all
+- GET /api/fabrication-invoices/:id - Get with items
+- GET /api/fabrication-invoices/next-number - Get next invoice number
+- POST /api/fabrication-invoices - Create
+- DELETE /api/fabrication-invoices/:id - Delete
+
+### Employees
+- GET /api/employees - List all employees
+- GET /api/employees/:id - Get single employee
+- POST /api/employees - Create employee
+- PATCH /api/employees/:id - Update employee
+- DELETE /api/employees/:id - Delete employee
+
+### Salary Payments
+- GET /api/salary-payments - List all payments
+- POST /api/salary-payments - Create payment
+- DELETE /api/salary-payments/:id - Delete payment
+
+### Expenses
+- GET /api/expenses - List all expenses
+- GET /api/expenses/:id - Get single expense
+- POST /api/expenses - Create expense
+- PATCH /api/expenses/:id - Update expense
+- DELETE /api/expenses/:id - Delete expense
+
+### Analytics
+- GET /api/profit-stats?startDate=&endDate= - Get profit statistics for date range
 
 ## External Dependencies
 
@@ -108,9 +173,12 @@ shared/
 
 ### Backend Libraries
 - express: Web framework
-- drizzle-zod: Schema validation (types only)
+- drizzle-orm: PostgreSQL ORM
+- drizzle-zod: Schema validation
 - zod: Runtime validation
+- pg: PostgreSQL driver
 
 ### Build Tools
 - Vite: Frontend bundler
 - tsx: TypeScript execution
+- drizzle-kit: Database migrations
