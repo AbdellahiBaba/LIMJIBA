@@ -188,7 +188,7 @@ export const fabricationItems = pgTable("fabrication_items", {
   totalCost: real("total_cost").notNull().default(0),
 });
 
-export const insertFabricationItemSchema = createInsertSchema(fabricationItems).omit({ id: true });
+export const insertFabricationItemSchema = createInsertSchema(fabricationItems).omit({ id: true, fabricationInvoiceId: true });
 export type InsertFabricationItem = z.infer<typeof insertFabricationItemSchema>;
 export type FabricationItem = typeof fabricationItems.$inferSelect;
 
