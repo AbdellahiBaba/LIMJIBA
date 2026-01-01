@@ -1,0 +1,108 @@
+Enhance the existing system with the following improvements related to PDF generation, branding, and invoice completeness:
+
+1. Fix PDF Downloading Issues
+Ensure the invoice PDF downloads reliably on all browsers.
+
+Fix any issues where the PDF:
+
+Fails to generate
+
+Generates blank pages
+
+Downloads corrupted
+
+Does not include images (logo/watermark)
+
+Make sure the PDF generator embeds fonts properly (especially Arabic fonts).
+
+Ensure RTL text renders correctly in the PDF.
+
+2. Add Logo Preview Before PDF Generation
+In the invoice creation page, add a live preview of the uploaded logo.
+
+The preview should show:
+
+Logo position (left / center / right)
+
+Logo size as it will appear in the PDF
+
+Allow the user to change the logo and instantly see the updated preview.
+
+3. Add Watermark Preview Before PDF Generation
+Add a preview area showing how the watermark will appear behind the invoice content.
+
+Watermark preview should include:
+
+Opacity (10–15%)
+
+Position (centered)
+
+Scaling
+
+Allow the user to upload a new watermark and see the preview instantly.
+
+4. Include Full Company Details in the Invoice
+Make sure the invoice PDF includes all company information:
+
+Company name
+
+Logo
+
+Address
+
+Artisan number
+
+Article number
+
+Fiscal number
+
+Email
+
+Phone number
+
+Website (if available)
+
+These details must appear in the header or footer exactly like a professional invoice.
+
+5. Improve Invoice Layout & Rendering
+Ensure spacing, alignment, and typography are clean and consistent.
+
+Make sure the invoice supports:
+
+Arabic (RTL)
+
+French (LTR)
+
+Bilingual mode
+
+Ensure tables render correctly in all languages.
+
+Ensure the watermark does not interfere with text readability.
+
+6. Add Invoice Preview Mode
+Add a Preview Invoice button that shows:
+
+Logo
+
+Watermark
+
+Company details
+
+Product table
+
+Totals
+
+Language formatting
+
+The preview should match the final PDF exactly.
+
+Only after preview confirmation should the user download the PDF.
+
+7. Requirements
+All features must work fully offline.
+
+Integrate seamlessly with the existing system.
+
+Ask me only if a critical detail is missing.
+
+Start implementing these enhancements step by step.
