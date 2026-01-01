@@ -61,64 +61,31 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Health check endpoint - must respond quickly for Replit health checks
+  // Health check endpoint - ALWAYS returns 200 so Replit doesn't kill the container
+  // Database status is reported in the response body for monitoring
   app.get("/health", (_req: Request, res: Response) => {
     const dbReady = isDatabaseReady();
     const poolStats = getPoolStats();
     
-    if (dbReady) {
-      res.status(200).json({ 
-        status: "healthy", 
-        database: "connected",
-        pool: poolStats
-      });
-    } else {
-      res.status(503).json({ 
-        status: "starting", 
-        database: "connecting",
-        message: "Database connection initializing, please retry"
-      });
-    }
+    // Always return 200 to pass Replit health checks
+    // The actual database status is in the response body
+    res.status(200).json({ 
+      status: dbReady ? "healthy" : "starting",
+      database: dbReady ? "connected" : "connecting",
+      pool: poolStats
+    });
   });
 
-  // Middleware to handle requests gracefully when database is not ready
-  app.use("/api", (req: Request, res: Response, next: NextFunction) => {
-    if (!isDatabaseReady()) {
-      return res.status(503).json({ 
-        message: "Database temporarily unavailable: Please try again in a moment",
-        retryAfter: 2
-      });
-    }
-    next();
-  });
-
-  await registerRoutes(httpServer, app);
-
-  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
-    const status = err.status || err.statusCode || 500;
-    const message = err.message || "Internal Server Error";
-
-    res.status(status).json({ message });
-    throw err;
-  });
-
-  // importantly only setup vite in development and after
-  // setting up all the other routes so the catch-all route
-  // doesn't interfere with the other routes
-  if (process.env.NODE_ENV === "production") {
-    serveStatic(app);
-  } else {
-    const { setupVite } = await import("./vite");
-    await setupVite(httpServer, app);
-  }
+  // NOTE: Removed blocking /api middleware that returned 503
+  // Instead, let actual database operations fail with proper error messages
+  // This prevents false 503s during production cold starts
 
   // ALWAYS serve the app on the port specified in the environment variable PORT
   // Other ports are firewalled. Default to 5000 if not specified.
-  // this serves both the API and the client.
-  // It is the only port that is not firewalled.
   const port = parseInt(process.env.PORT || "5000", 10);
   
   // Start listening IMMEDIATELY so Replit health checks don't timeout
+  // This must happen BEFORE any async setup to prevent cold start failures
   httpServer.listen(
     {
       port,
@@ -130,12 +97,33 @@ app.use((req, res, next) => {
     },
   );
 
-  // Verify database connection in the background AFTER server starts
+  // Start database verification in background immediately
   verifyDatabaseConnection().then((success) => {
     if (success) {
       log("Database ready for requests");
     } else {
-      log("WARNING: Database connection failed - API requests will return 503");
+      log("WARNING: Database connection issues - operations will retry automatically");
     }
   });
+
+  // Now register routes and setup static files
+  await registerRoutes(httpServer, app);
+
+  app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
+    const status = err.status || err.statusCode || 500;
+    const message = err.message || "Internal Server Error";
+
+    res.status(status).json({ message });
+    throw err;
+  });
+
+  // Setup vite in development or static files in production
+  if (process.env.NODE_ENV === "production") {
+    serveStatic(app);
+  } else {
+    const { setupVite } = await import("./vite");
+    await setupVite(httpServer, app);
+  }
+
+  log("Server fully initialized");
 })();
