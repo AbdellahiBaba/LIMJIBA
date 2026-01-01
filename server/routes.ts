@@ -16,6 +16,50 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 
+function logError(context: string, error: unknown): string {
+  const errorMessage = error instanceof Error ? error.message : String(error);
+  const errorStack = error instanceof Error ? error.stack : undefined;
+  console.error(`[${context}] Error:`, errorMessage);
+  if (errorStack) {
+    console.error(`[${context}] Stack:`, errorStack);
+  }
+  return errorMessage;
+}
+
+function handleError(res: any, context: string, error: unknown, defaultStatus: number = 500) {
+  const errorMessage = logError(context, error);
+  
+  if (error instanceof z.ZodError) {
+    return res.status(400).json({ 
+      error: "Validation failed", 
+      details: error.errors,
+      message: error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')
+    });
+  }
+  
+  const isNetworkError = errorMessage.includes('EAI_AGAIN') || 
+                          errorMessage.includes('ECONNRESET') || 
+                          errorMessage.includes('ETIMEDOUT') ||
+                          errorMessage.includes('connection');
+  
+  if (isNetworkError) {
+    return res.status(503).json({ 
+      error: "Database temporarily unavailable", 
+      details: "Please try again in a moment",
+      retryable: true
+    });
+  }
+  
+  return res.status(defaultStatus).json({ 
+    error: `Failed to ${context}`, 
+    details: errorMessage 
+  });
+}
+
+const statusSchema = z.object({
+  status: z.enum(["pending", "paid", "cancelled"])
+});
+
 export async function registerRoutes(
   httpServer: Server,
   app: Express
@@ -26,7 +70,7 @@ export async function registerRoutes(
       const stats = await storage.getDashboardStats();
       res.json(stats);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get dashboard stats" });
+      handleError(res, "get dashboard stats", error);
     }
   });
 
@@ -35,7 +79,7 @@ export async function registerRoutes(
       const products = await storage.getProducts();
       res.json(products);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get products" });
+      handleError(res, "get products", error);
     }
   });
 
@@ -43,46 +87,38 @@ export async function registerRoutes(
     try {
       const product = await storage.getProduct(req.params.id);
       if (!product) {
-        return res.status(404).json({ error: "Product not found" });
+        return res.status(404).json({ error: "Product not found", id: req.params.id });
       }
       res.json(product);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get product" });
+      handleError(res, "get product", error);
     }
   });
 
   app.post("/api/products", async (req, res) => {
     try {
-      console.log("Received product data:", req.body);
+      console.log("[POST /api/products] Received:", JSON.stringify(req.body));
       const data = insertProductSchema.parse(req.body);
-      console.log("Parsed product data:", data);
+      console.log("[POST /api/products] Validated:", JSON.stringify(data));
       const product = await storage.createProduct(data);
+      console.log("[POST /api/products] Created:", JSON.stringify(product));
       res.status(201).json(product);
     } catch (error) {
-      console.error("Product creation error:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors, message: "Validation failed" });
-      }
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({ error: "Failed to create product", details: errorMessage });
+      handleError(res, "create product", error);
     }
   });
 
   app.patch("/api/products/:id", async (req, res) => {
     try {
+      console.log("[PATCH /api/products] Received:", JSON.stringify(req.body));
       const data = insertProductSchema.partial().parse(req.body);
       const product = await storage.updateProduct(req.params.id, data);
       if (!product) {
-        return res.status(404).json({ error: "Product not found" });
+        return res.status(404).json({ error: "Product not found", id: req.params.id });
       }
       res.json(product);
     } catch (error) {
-      console.error("Product update error:", error);
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors, message: "Validation failed" });
-      }
-      const errorMessage = error instanceof Error ? error.message : "Unknown error";
-      res.status(500).json({ error: "Failed to update product", details: errorMessage });
+      handleError(res, "update product", error);
     }
   });
 
@@ -90,11 +126,11 @@ export async function registerRoutes(
     try {
       const deleted = await storage.deleteProduct(req.params.id);
       if (!deleted) {
-        return res.status(404).json({ error: "Product not found" });
+        return res.status(404).json({ error: "Product not found", id: req.params.id });
       }
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ error: "Failed to delete product" });
+      handleError(res, "delete product", error);
     }
   });
 
@@ -103,7 +139,7 @@ export async function registerRoutes(
       const invoices = await storage.getInvoices();
       res.json(invoices);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get invoices" });
+      handleError(res, "get invoices", error);
     }
   });
 
@@ -112,7 +148,7 @@ export async function registerRoutes(
       const nextNumber = await storage.getNextInvoiceNumber();
       res.json({ nextNumber });
     } catch (error) {
-      res.status(500).json({ error: "Failed to get next invoice number" });
+      handleError(res, "get next invoice number", error);
     }
   });
 
@@ -120,42 +156,53 @@ export async function registerRoutes(
     try {
       const invoice = await storage.getInvoiceWithItems(req.params.id);
       if (!invoice) {
-        return res.status(404).json({ error: "Invoice not found" });
+        return res.status(404).json({ error: "Invoice not found", id: req.params.id });
       }
       res.json(invoice);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get invoice" });
+      handleError(res, "get invoice", error);
     }
   });
 
   app.post("/api/invoices", async (req, res) => {
     try {
+      console.log("[POST /api/invoices] Received:", JSON.stringify(req.body));
       const { invoice, items } = req.body;
+      
+      if (!invoice) {
+        return res.status(400).json({ error: "Missing invoice data" });
+      }
+      if (!items || !Array.isArray(items)) {
+        return res.status(400).json({ error: "Missing or invalid items array" });
+      }
+      
       const invoiceData = insertInvoiceSchema.parse(invoice);
       const itemsData = z.array(insertInvoiceItemSchema).parse(items);
       const created = await storage.createInvoice(invoiceData, itemsData);
       res.status(201).json(created);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create invoice" });
+      handleError(res, "create invoice", error);
     }
   });
 
   app.patch("/api/invoices/:id/status", async (req, res) => {
     try {
-      const { status } = req.body;
-      if (!["pending", "paid", "cancelled"].includes(status)) {
-        return res.status(400).json({ error: "Invalid status" });
+      const parsed = statusSchema.safeParse(req.body);
+      if (!parsed.success) {
+        return res.status(400).json({ 
+          error: "Invalid status", 
+          details: "Status must be one of: pending, paid, cancelled",
+          received: req.body.status
+        });
       }
-      const invoice = await storage.updateInvoiceStatus(req.params.id, status);
+      
+      const invoice = await storage.updateInvoiceStatus(req.params.id, parsed.data.status);
       if (!invoice) {
-        return res.status(404).json({ error: "Invoice not found" });
+        return res.status(404).json({ error: "Invoice not found", id: req.params.id });
       }
       res.json(invoice);
     } catch (error) {
-      res.status(500).json({ error: "Failed to update invoice status" });
+      handleError(res, "update invoice status", error);
     }
   });
 
@@ -163,11 +210,11 @@ export async function registerRoutes(
     try {
       const deleted = await storage.deleteInvoice(req.params.id);
       if (!deleted) {
-        return res.status(404).json({ error: "Invoice not found" });
+        return res.status(404).json({ error: "Invoice not found", id: req.params.id });
       }
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ error: "Failed to delete invoice" });
+      handleError(res, "delete invoice", error);
     }
   });
 
@@ -175,7 +222,7 @@ export async function registerRoutes(
     try {
       const invoice = await storage.getInvoiceWithItems(req.params.id);
       if (!invoice) {
-        return res.status(404).json({ error: "Invoice not found" });
+        return res.status(404).json({ error: "Invoice not found", id: req.params.id });
       }
 
       const branding = {
@@ -193,7 +240,7 @@ export async function registerRoutes(
       res.setHeader("Content-Type", "text/html");
       res.send(html);
     } catch (error) {
-      res.status(500).json({ error: "Failed to generate PDF" });
+      handleError(res, "generate PDF", error);
     }
   });
 
@@ -202,7 +249,7 @@ export async function registerRoutes(
       const sales = await storage.getSales();
       res.json(sales);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get sales" });
+      handleError(res, "get sales", error);
     }
   });
 
@@ -210,26 +257,32 @@ export async function registerRoutes(
     try {
       const sale = await storage.getSaleWithItems(req.params.id);
       if (!sale) {
-        return res.status(404).json({ error: "Sale not found" });
+        return res.status(404).json({ error: "Sale not found", id: req.params.id });
       }
       res.json(sale);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get sale" });
+      handleError(res, "get sale", error);
     }
   });
 
   app.post("/api/sales", async (req, res) => {
     try {
+      console.log("[POST /api/sales] Received:", JSON.stringify(req.body));
       const { sale, items } = req.body;
+      
+      if (!sale) {
+        return res.status(400).json({ error: "Missing sale data" });
+      }
+      if (!items || !Array.isArray(items)) {
+        return res.status(400).json({ error: "Missing or invalid items array" });
+      }
+      
       const saleData = insertSaleSchema.parse(sale);
       const itemsData = z.array(insertSaleItemSchema).parse(items);
       const created = await storage.createSale(saleData, itemsData);
       res.status(201).json(created);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create sale" });
+      handleError(res, "create sale", error);
     }
   });
 
@@ -237,14 +290,14 @@ export async function registerRoutes(
     try {
       const sale = await storage.getSaleWithItems(req.params.id);
       if (!sale) {
-        return res.status(404).json({ error: "Sale not found" });
+        return res.status(404).json({ error: "Sale not found", id: req.params.id });
       }
 
       const html = generateReceiptHTML(sale);
       res.setHeader("Content-Type", "text/html");
       res.send(html);
     } catch (error) {
-      res.status(500).json({ error: "Failed to generate receipt" });
+      handleError(res, "generate receipt", error);
     }
   });
 
@@ -253,7 +306,7 @@ export async function registerRoutes(
       const resellers = await storage.getResellers();
       res.json(resellers);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get resellers" });
+      handleError(res, "get resellers", error);
     }
   });
 
@@ -261,24 +314,22 @@ export async function registerRoutes(
     try {
       const reseller = await storage.getReseller(req.params.id);
       if (!reseller) {
-        return res.status(404).json({ error: "Reseller not found" });
+        return res.status(404).json({ error: "Reseller not found", id: req.params.id });
       }
       res.json(reseller);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get reseller" });
+      handleError(res, "get reseller", error);
     }
   });
 
   app.post("/api/resellers", async (req, res) => {
     try {
+      console.log("[POST /api/resellers] Received:", JSON.stringify(req.body));
       const data = insertResellerSchema.parse(req.body);
       const reseller = await storage.createReseller(data);
       res.status(201).json(reseller);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create reseller" });
+      handleError(res, "create reseller", error);
     }
   });
 
@@ -287,14 +338,11 @@ export async function registerRoutes(
       const data = insertResellerSchema.partial().parse(req.body);
       const reseller = await storage.updateReseller(req.params.id, data);
       if (!reseller) {
-        return res.status(404).json({ error: "Reseller not found" });
+        return res.status(404).json({ error: "Reseller not found", id: req.params.id });
       }
       res.json(reseller);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update reseller" });
+      handleError(res, "update reseller", error);
     }
   });
 
@@ -302,11 +350,11 @@ export async function registerRoutes(
     try {
       const deleted = await storage.deleteReseller(req.params.id);
       if (!deleted) {
-        return res.status(404).json({ error: "Reseller not found" });
+        return res.status(404).json({ error: "Reseller not found", id: req.params.id });
       }
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ error: "Failed to delete reseller" });
+      handleError(res, "delete reseller", error);
     }
   });
 
@@ -314,11 +362,14 @@ export async function registerRoutes(
     try {
       const winner = await storage.drawWinner();
       if (!winner) {
-        return res.status(400).json({ error: "No eligible resellers in reward pool" });
+        return res.status(400).json({ 
+          error: "No eligible resellers", 
+          details: "No resellers in the reward pool are eligible for drawing"
+        });
       }
       res.json(winner);
     } catch (error) {
-      res.status(500).json({ error: "Failed to draw winner" });
+      handleError(res, "draw winner", error);
     }
   });
 
@@ -327,17 +378,16 @@ export async function registerRoutes(
       await storage.resetRewardPool();
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ error: "Failed to reset pool" });
+      handleError(res, "reset reward pool", error);
     }
   });
 
-  // Employee routes
   app.get("/api/employees", async (req, res) => {
     try {
       const allEmployees = await storage.getEmployees();
       res.json(allEmployees);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get employees" });
+      handleError(res, "get employees", error);
     }
   });
 
@@ -345,24 +395,22 @@ export async function registerRoutes(
     try {
       const employee = await storage.getEmployee(req.params.id);
       if (!employee) {
-        return res.status(404).json({ error: "Employee not found" });
+        return res.status(404).json({ error: "Employee not found", id: req.params.id });
       }
       res.json(employee);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get employee" });
+      handleError(res, "get employee", error);
     }
   });
 
   app.post("/api/employees", async (req, res) => {
     try {
+      console.log("[POST /api/employees] Received:", JSON.stringify(req.body));
       const data = insertEmployeeSchema.parse(req.body);
       const employee = await storage.createEmployee(data);
       res.status(201).json(employee);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create employee" });
+      handleError(res, "create employee", error);
     }
   });
 
@@ -371,14 +419,11 @@ export async function registerRoutes(
       const data = insertEmployeeSchema.partial().parse(req.body);
       const employee = await storage.updateEmployee(req.params.id, data);
       if (!employee) {
-        return res.status(404).json({ error: "Employee not found" });
+        return res.status(404).json({ error: "Employee not found", id: req.params.id });
       }
       res.json(employee);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update employee" });
+      handleError(res, "update employee", error);
     }
   });
 
@@ -386,34 +431,31 @@ export async function registerRoutes(
     try {
       const deleted = await storage.deleteEmployee(req.params.id);
       if (!deleted) {
-        return res.status(404).json({ error: "Employee not found" });
+        return res.status(404).json({ error: "Employee not found", id: req.params.id });
       }
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ error: "Failed to delete employee" });
+      handleError(res, "delete employee", error);
     }
   });
 
-  // Salary Payment routes
   app.get("/api/salary-payments", async (req, res) => {
     try {
       const payments = await storage.getSalaryPayments();
       res.json(payments);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get salary payments" });
+      handleError(res, "get salary payments", error);
     }
   });
 
   app.post("/api/salary-payments", async (req, res) => {
     try {
+      console.log("[POST /api/salary-payments] Received:", JSON.stringify(req.body));
       const data = insertSalaryPaymentSchema.parse(req.body);
       const payment = await storage.createSalaryPayment(data);
       res.status(201).json(payment);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create salary payment" });
+      handleError(res, "create salary payment", error);
     }
   });
 
@@ -421,21 +463,20 @@ export async function registerRoutes(
     try {
       const deleted = await storage.deleteSalaryPayment(req.params.id);
       if (!deleted) {
-        return res.status(404).json({ error: "Payment not found" });
+        return res.status(404).json({ error: "Salary payment not found", id: req.params.id });
       }
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ error: "Failed to delete salary payment" });
+      handleError(res, "delete salary payment", error);
     }
   });
 
-  // Expense routes
   app.get("/api/expenses", async (req, res) => {
     try {
       const allExpenses = await storage.getExpenses();
       res.json(allExpenses);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get expenses" });
+      handleError(res, "get expenses", error);
     }
   });
 
@@ -443,24 +484,22 @@ export async function registerRoutes(
     try {
       const expense = await storage.getExpense(req.params.id);
       if (!expense) {
-        return res.status(404).json({ error: "Expense not found" });
+        return res.status(404).json({ error: "Expense not found", id: req.params.id });
       }
       res.json(expense);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get expense" });
+      handleError(res, "get expense", error);
     }
   });
 
   app.post("/api/expenses", async (req, res) => {
     try {
+      console.log("[POST /api/expenses] Received:", JSON.stringify(req.body));
       const data = insertExpenseSchema.parse(req.body);
       const expense = await storage.createExpense(data);
       res.status(201).json(expense);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create expense" });
+      handleError(res, "create expense", error);
     }
   });
 
@@ -469,14 +508,11 @@ export async function registerRoutes(
       const data = insertExpenseSchema.partial().parse(req.body);
       const expense = await storage.updateExpense(req.params.id, data);
       if (!expense) {
-        return res.status(404).json({ error: "Expense not found" });
+        return res.status(404).json({ error: "Expense not found", id: req.params.id });
       }
       res.json(expense);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
-      }
-      res.status(500).json({ error: "Failed to update expense" });
+      handleError(res, "update expense", error);
     }
   });
 
@@ -484,21 +520,20 @@ export async function registerRoutes(
     try {
       const deleted = await storage.deleteExpense(req.params.id);
       if (!deleted) {
-        return res.status(404).json({ error: "Expense not found" });
+        return res.status(404).json({ error: "Expense not found", id: req.params.id });
       }
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ error: "Failed to delete expense" });
+      handleError(res, "delete expense", error);
     }
   });
 
-  // Fabrication Invoice routes
   app.get("/api/fabrication-invoices", async (req, res) => {
     try {
       const fabricationInvoices = await storage.getFabricationInvoices();
       res.json(fabricationInvoices);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get fabrication invoices" });
+      handleError(res, "get fabrication invoices", error);
     }
   });
 
@@ -507,7 +542,7 @@ export async function registerRoutes(
       const nextNumber = await storage.getNextFabricationNumber();
       res.json({ nextNumber });
     } catch (error) {
-      res.status(500).json({ error: "Failed to get next fabrication number" });
+      handleError(res, "get next fabrication number", error);
     }
   });
 
@@ -515,26 +550,32 @@ export async function registerRoutes(
     try {
       const invoice = await storage.getFabricationInvoiceWithItems(req.params.id);
       if (!invoice) {
-        return res.status(404).json({ error: "Fabrication invoice not found" });
+        return res.status(404).json({ error: "Fabrication invoice not found", id: req.params.id });
       }
       res.json(invoice);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get fabrication invoice" });
+      handleError(res, "get fabrication invoice", error);
     }
   });
 
   app.post("/api/fabrication-invoices", async (req, res) => {
     try {
+      console.log("[POST /api/fabrication-invoices] Received:", JSON.stringify(req.body));
       const { invoice, items } = req.body;
+      
+      if (!invoice) {
+        return res.status(400).json({ error: "Missing invoice data" });
+      }
+      if (!items || !Array.isArray(items)) {
+        return res.status(400).json({ error: "Missing or invalid items array" });
+      }
+      
       const invoiceData = insertFabricationInvoiceSchema.parse(invoice);
       const itemsData = z.array(insertFabricationItemSchema).parse(items);
       const created = await storage.createFabricationInvoice(invoiceData, itemsData);
       res.status(201).json(created);
     } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({ error: error.errors });
-      }
-      res.status(500).json({ error: "Failed to create fabrication invoice" });
+      handleError(res, "create fabrication invoice", error);
     }
   });
 
@@ -542,15 +583,14 @@ export async function registerRoutes(
     try {
       const deleted = await storage.deleteFabricationInvoice(req.params.id);
       if (!deleted) {
-        return res.status(404).json({ error: "Fabrication invoice not found" });
+        return res.status(404).json({ error: "Fabrication invoice not found", id: req.params.id });
       }
       res.status(204).send();
     } catch (error) {
-      res.status(500).json({ error: "Failed to delete fabrication invoice" });
+      handleError(res, "delete fabrication invoice", error);
     }
   });
 
-  // Profit Stats route
   app.get("/api/profit-stats", async (req, res) => {
     try {
       const startDate = (req.query.startDate as string) || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0];
@@ -558,7 +598,7 @@ export async function registerRoutes(
       const stats = await storage.getProfitStats(startDate, endDate);
       res.json(stats);
     } catch (error) {
-      res.status(500).json({ error: "Failed to get profit stats" });
+      handleError(res, "get profit stats", error);
     }
   });
 
@@ -664,273 +704,226 @@ function generateInvoicePDF(invoice: any, branding: InvoiceBranding = {
     invoice: isArabic ? "فاتورة" : "FACTURE",
     invoiceAr: "فاتورة",
     invoiceFr: "FACTURE",
-    number: isArabic ? "رقم" : "N°",
+    invoiceNumber: isArabic ? "رقم الفاتورة" : "N° Facture",
     date: isArabic ? "التاريخ" : "Date",
-    responsible: isArabic ? "المسؤول" : "Responsible",
-    role: isArabic ? "الوظيفة" : "Role",
-    paymentMode: isArabic ? "طريقة الدفع" : "Mode de Paiement",
-    dueDate: isArabic ? "تاريخ الاستحقاق" : "Échéance",
     client: isArabic ? "العميل" : "Client",
-    qty: isArabic ? "الكمية" : "Qté",
-    designation: isArabic ? "الوصف" : "Désignation",
-    unitPrice: isArabic ? "سعر الوحدة" : "Prix U",
-    amount: isArabic ? "المبلغ" : "Montant",
-    totalHT: isArabic ? "المجموع (قبل الضريبة)" : "TOTAL H.T",
-    totalTTC: isArabic ? "المجموع الكلي" : "TOTAL T.T.C",
+    responsible: isArabic ? "المسؤول" : "Responsable",
+    paymentMode: isArabic ? "طريقة الدفع" : "Mode de Paiement",
+    designation: isArabic ? "التسمية" : "Désignation",
+    quantity: isArabic ? "الكمية" : "Qté",
+    unitPrice: isArabic ? "سعر الوحدة" : "P.U",
+    total: isArabic ? "المجموع" : "Total",
+    totalHT: isArabic ? "المجموع بدون ضريبة" : "Total H.T",
+    totalTTC: isArabic ? "المجموع الكلي" : "Total T.T.C",
     amountInWords: isArabic ? "المبلغ بالحروف" : "Arrêter la présente facture à la somme de",
-    signature: isArabic ? "الختم والتوقيع" : "Cachet & Signature",
-    tbd: isArabic ? "سيتم تحديده" : "À déterminer",
     companyName: "POLY FLECTA PLASTICA",
-    companyNameAr: "بولي فليكتا بلاستيكا",
-    tagline: isArabic ? "تصنيع عبوات بلاستيكية" : "FABRICATION D'EMBALLAGE EN PLASTIQUE",
+    companySubtitle: isArabic ? "تصنيع التغليف البلاستيكي" : "FABRICATION D'EMBALLAGE EN PLASTIQUE",
+    weightPerUnit: isArabic ? "الوزن/الوحدة" : "Poids/U",
+    totalWeight: isArabic ? "الوزن الكلي" : "Poids Total",
   };
 
-  const amountInWords = isArabic 
+  const amountWords = isArabic 
     ? numberToArabicWords(Math.floor(invoice.totalTTC)) + " دينار جزائري"
-    : numberToFrenchWords(Math.floor(invoice.totalTTC)) + " dinars";
+    : numberToFrenchWords(Math.floor(invoice.totalTTC)) + " dinars algériens";
 
-  const itemRows = invoice.items.map((item: any) => `
-    <tr>
-      <td style="padding: 8px; border: 1px solid #ddd; ${isArabic ? 'text-align: right;' : ''}">${item.quantity}</td>
-      <td style="padding: 8px; border: 1px solid #ddd; ${isArabic ? 'text-align: right;' : ''}">${item.designation}</td>
-      <td style="padding: 8px; border: 1px solid #ddd; text-align: ${isArabic ? 'left' : 'right'};">${item.unitPrice > 0 ? item.unitPrice.toLocaleString() + ' DZD' : '- DZD'}</td>
-      <td style="padding: 8px; border: 1px solid #ddd; text-align: ${isArabic ? 'left' : 'right'};">${item.total > 0 ? item.total.toLocaleString() + ' DZD' : '- DZD'}</td>
-    </tr>
-  `).join('');
+  const logoHtml = branding.logo ? `<img src="${branding.logo}" style="max-height: 60px; max-width: 150px;" />` : '';
+  
+  const logoAlignment = branding.logoPosition === "center" ? "center" : branding.logoPosition === "right" ? "flex-end" : "flex-start";
 
-  const logoHtml = branding.logo 
-    ? `<img src="${branding.logo}" alt="Logo" style="max-height: 60px; max-width: 150px; object-fit: contain;" />`
-    : `<div style="width: 60px; height: 60px; background: ${branding.primaryColor}; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px;">PFP</div>`;
-
-  const watermarkHtml = branding.enableWatermark && branding.watermark 
-    ? `<div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: -1; opacity: ${branding.watermarkOpacity};">
-        <img src="${branding.watermark}" alt="Watermark" style="max-width: 400px; max-height: 400px;" />
-       </div>`
-    : '';
-
-  const logoPositionStyle = {
-    left: 'flex-start',
-    center: 'center',
-    right: 'flex-end'
-  }[branding.logoPosition];
-
-  const bilingualHeader = isBilingual ? `
-    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-      <div style="text-align: left;">
-        <h1 style="color: ${branding.primaryColor}; margin: 0; font-size: 20px;">POLY FLECTA PLASTICA</h1>
-        <p style="margin: 2px 0; font-size: 11px;">FABRICATION D'EMBALLAGE EN PLASTIQUE</p>
-      </div>
-      <div style="text-align: right; direction: rtl; font-family: 'Cairo', sans-serif;">
-        <h1 style="color: ${branding.primaryColor}; margin: 0; font-size: 20px;">بولي فليكتا بلاستيكا</h1>
-        <p style="margin: 2px 0; font-size: 11px;">تصنيع عبوات بلاستيكية</p>
-      </div>
+  const watermarkHtml = branding.enableWatermark && branding.watermark ? `
+    <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); opacity: ${branding.watermarkOpacity}; z-index: -1; pointer-events: none;">
+      <img src="${branding.watermark}" style="max-width: 400px; max-height: 400px;" />
     </div>
   ` : '';
 
   return `
 <!DOCTYPE html>
-<html dir="${dir}" lang="${isArabic ? 'ar' : 'fr'}">
+<html dir="${dir}">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Cairo:wght@300;400;500;700&display=swap" rel="stylesheet">
   <title>${labels.invoice} ${invoice.invoiceNumber}</title>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <style>
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-    }
-    body { font-family: ${fontFamily}; margin: 0; padding: 40px; background: #fff; color: #333; direction: ${dir}; }
-    .header { display: flex; justify-content: space-between; margin-bottom: 30px; border-bottom: 3px solid ${branding.primaryColor}; padding-bottom: 20px; }
-    .company h1 { color: ${branding.primaryColor}; margin: 0; font-size: 24px; }
-    .company p { margin: 5px 0; color: #666; font-size: 12px; }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: ${fontFamily}; font-size: 12px; color: #333; background: white; padding: 20px; direction: ${dir}; }
+    .container { max-width: 800px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; border-bottom: 3px solid ${branding.primaryColor}; padding-bottom: 20px; }
+    .company { text-align: ${isArabic ? 'right' : 'left'}; }
+    .company h1 { color: ${branding.primaryColor}; font-size: 24px; font-weight: 700; }
+    .company p { color: #666; font-size: 11px; }
     .invoice-info { text-align: ${isArabic ? 'left' : 'right'}; }
-    .invoice-info h2 { color: ${branding.primaryColor}; margin: 0; }
-    .invoice-info p { margin: 5px 0; font-size: 12px; }
-    .meta-table { width: 100%; margin: 20px 0; border-collapse: collapse; }
-    .meta-table td { padding: 8px; border: 1px solid #ddd; font-size: 12px; }
-    .meta-table .label { background: #f5f5f5; font-weight: 500; width: 150px; }
-    .items-table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-    .items-table th { background: ${branding.primaryColor}; color: white; padding: 10px; text-align: ${isArabic ? 'right' : 'left'}; font-size: 12px; }
-    .items-table td { padding: 8px; border: 1px solid #ddd; font-size: 12px; }
-    .items-table tr:nth-child(even) { background: #f9f9f9; }
-    .totals { text-align: ${isArabic ? 'left' : 'right'}; margin-top: 20px; }
-    .totals p { margin: 5px 0; font-size: 14px; }
-    .totals .grand-total { font-size: 18px; font-weight: bold; color: ${branding.primaryColor}; }
-    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #ddd; }
-    .footer p { font-size: 12px; color: #666; margin: 5px 0; }
-    .signature { margin-top: 40px; text-align: ${isArabic ? 'left' : 'right'}; }
-    .signature p { margin: 5px 0; font-size: 12px; }
-    .print-btn { position: fixed; top: 20px; ${isArabic ? 'left' : 'right'}: 20px; padding: 10px 20px; background: ${branding.primaryColor}; color: white; border: none; cursor: pointer; border-radius: 4px; }
-    @media print { .print-btn { display: none; } }
-    .logo-container { display: flex; justify-content: ${logoPositionStyle}; margin-bottom: 10px; }
+    .invoice-title { background: ${branding.primaryColor}; color: white; padding: 10px 20px; font-size: 18px; font-weight: 700; }
+    .invoice-details { margin-top: 10px; }
+    .invoice-details p { margin: 5px 0; }
+    .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px; }
+    .detail-box { background: #f8f9fa; padding: 15px; border-radius: 4px; border-${isArabic ? 'right' : 'left'}: 3px solid ${branding.accentColor}; }
+    .detail-box h3 { color: ${branding.primaryColor}; margin-bottom: 10px; font-size: 13px; }
+    .detail-box p { margin: 3px 0; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+    th { background: ${branding.primaryColor}; color: white; padding: 10px; text-align: ${isArabic ? 'right' : 'left'}; font-weight: 500; }
+    td { padding: 10px; border-bottom: 1px solid #ddd; }
+    tr:nth-child(even) { background: #f8f9fa; }
+    .totals { display: flex; justify-content: flex-end; }
+    .totals-box { background: #f8f9fa; padding: 15px 30px; border-radius: 4px; min-width: 250px; }
+    .totals-row { display: flex; justify-content: space-between; margin: 5px 0; }
+    .totals-row.final { border-top: 2px solid ${branding.primaryColor}; padding-top: 10px; margin-top: 10px; font-weight: 700; font-size: 16px; color: ${branding.primaryColor}; }
+    .amount-words { margin-top: 20px; padding: 15px; background: linear-gradient(to right, ${branding.accentColor}22, transparent); border-${isArabic ? 'right' : 'left'}: 3px solid ${branding.primaryColor}; font-style: italic; }
+    .logo-container { display: flex; justify-content: ${logoAlignment}; margin-bottom: 10px; }
+    @media print { body { padding: 0; } .container { max-width: 100%; } }
   </style>
 </head>
 <body>
   ${watermarkHtml}
-  <button class="print-btn" onclick="window.print()">${isArabic ? 'طباعة' : 'Print / Save as PDF'}</button>
-  
-  ${isBilingual ? bilingualHeader : ''}
-  
-  <div class="header">
-    <div class="company" style="${branding.logoPosition === 'left' ? '' : 'order: 2;'}">
-      ${branding.logoPosition === 'left' ? logoHtml : ''}
-      <h1>${isBilingual ? '' : (isArabic ? labels.companyNameAr : labels.companyName)}</h1>
-      ${!isBilingual ? `<p>${labels.tagline}</p>` : ''}
-      <p>Village Zaitout, Local N°01, Commune Hammam Dalaa - W M'sila</p>
-      <p>CARTE ARTISAN N° : 28/ 00 - 2896688A24</p>
-      <p>N° ARTICLE : 101082709</p>
-      <p>N° FISCAL : 28516010001318002800</p>
+  <div class="container">
+    <div class="logo-container">${logoHtml}</div>
+    <div class="header">
+      <div class="company">
+        <h1>${labels.companyName}</h1>
+        <p>${labels.companySubtitle}</p>
+        <p style="margin-top: 10px;">Village Zaitout, Local N°01</p>
+        <p>Draa Ben Khedda, Tizi Ouzou</p>
+        <p>Tel: 0555 123 456</p>
+      </div>
+      <div class="invoice-info">
+        <div class="invoice-title">${isBilingual ? `${labels.invoiceFr} / ${labels.invoiceAr}` : labels.invoice}</div>
+        <div class="invoice-details">
+          <p><strong>${labels.invoiceNumber}:</strong> ${invoice.invoiceNumber}</p>
+          <p><strong>${labels.date}:</strong> ${invoice.date}</p>
+        </div>
+      </div>
     </div>
-    <div class="invoice-info" style="${branding.logoPosition === 'right' ? '' : ''}">
-      ${branding.logoPosition === 'right' ? logoHtml : ''}
-      <h2>${isBilingual ? labels.invoiceFr + ' / ' + labels.invoiceAr : labels.invoice}</h2>
-      <p><strong>${labels.number}:</strong> ${invoice.invoiceNumber}</p>
-      <p><strong>${labels.date}:</strong> ${invoice.date}</p>
+    
+    <div class="details-grid">
+      <div class="detail-box">
+        <h3>${labels.client}</h3>
+        <p><strong>${invoice.clientName || '-'}</strong></p>
+      </div>
+      <div class="detail-box">
+        <h3>${labels.responsible}</h3>
+        <p><strong>${invoice.responsible}</strong> - ${invoice.role}</p>
+        <p>${labels.paymentMode}: ${invoice.paymentMode}</p>
+      </div>
+    </div>
+    
+    <table>
+      <thead>
+        <tr>
+          <th>${labels.quantity}</th>
+          <th>${labels.designation}</th>
+          <th>${labels.unitPrice}</th>
+          <th>${labels.weightPerUnit}</th>
+          <th>${labels.totalWeight}</th>
+          <th>${labels.total}</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${invoice.items.map((item: any) => `
+          <tr>
+            <td>${item.quantity}</td>
+            <td>${item.designation}</td>
+            <td>${item.unitPrice > 0 ? item.unitPrice.toLocaleString() + ' DZD' : '- DZD'}</td>
+            <td>${(item.weightPerUnit || 0).toFixed(2)} kg</td>
+            <td>${(item.totalWeight || 0).toFixed(2)} kg</td>
+            <td>${item.total > 0 ? item.total.toLocaleString() + ' DZD' : '- DZD'}</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+    
+    <div class="totals">
+      <div class="totals-box">
+        <div class="totals-row">
+          <span>${labels.totalWeight}:</span>
+          <span>${(invoice.totalWeight || 0).toFixed(2)} kg</span>
+        </div>
+        <div class="totals-row">
+          <span>${labels.totalHT}:</span>
+          <span>${invoice.totalHT.toLocaleString()} DZD</span>
+        </div>
+        <div class="totals-row final">
+          <span>${labels.totalTTC}:</span>
+          <span>${invoice.totalTTC.toLocaleString()} DZD</span>
+        </div>
+      </div>
+    </div>
+    
+    <div class="amount-words">
+      <strong>${labels.amountInWords}:</strong><br>
+      ${amountWords}
     </div>
   </div>
-
-  <table class="meta-table">
-    <tr>
-      <td class="label">${labels.responsible}</td>
-      <td>${invoice.responsible}</td>
-      <td class="label">${labels.role}</td>
-      <td>${invoice.role}</td>
-    </tr>
-    <tr>
-      <td class="label">${labels.paymentMode}</td>
-      <td>${invoice.paymentMode}</td>
-      <td class="label">${labels.dueDate}</td>
-      <td>${invoice.dueDate || labels.tbd}</td>
-    </tr>
-    ${invoice.clientName ? `
-    <tr>
-      <td class="label">${labels.client}</td>
-      <td colspan="3">${invoice.clientName}</td>
-    </tr>
-    ` : ''}
-  </table>
-
-  <table class="items-table">
-    <thead>
-      <tr>
-        <th style="width: 80px;">${labels.qty}</th>
-        <th>${labels.designation}</th>
-        <th style="width: 120px; text-align: ${isArabic ? 'left' : 'right'};">${labels.unitPrice}</th>
-        <th style="width: 120px; text-align: ${isArabic ? 'left' : 'right'};">${labels.amount}</th>
-      </tr>
-    </thead>
-    <tbody>
-      ${itemRows}
-    </tbody>
-  </table>
-
-  <div class="totals">
-    <p>${labels.totalHT}: <strong>${invoice.totalHT.toLocaleString()} DZD</strong></p>
-    <p class="grand-total">${labels.totalTTC}: ${invoice.totalTTC.toLocaleString()} DZD</p>
-  </div>
-
-  <div class="footer">
-    <p><strong>${labels.amountInWords}:</strong></p>
-    <p style="font-style: italic;">${amountInWords}</p>
-    ${isBilingual ? `<p style="font-style: italic; direction: rtl; font-family: 'Cairo', sans-serif;">${numberToArabicWords(Math.floor(invoice.totalTTC))} دينار جزائري</p>` : ''}
-    <p><strong>${labels.paymentMode}:</strong> ${invoice.paymentMode}</p>
-  </div>
-
-  <div class="signature">
-    <p>${labels.signature}</p>
-    <div style="width: 150px; height: 80px; border: 1px solid #ddd; margin-${isArabic ? 'right' : 'left'}: auto;"></div>
-  </div>
-
-  <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid ${branding.primaryColor}; font-size: 11px; color: #666;">
-    <p>www.polyflectaplastica.com | contact@polyflectaplastica.com | +213 6 70 04 91 24</p>
-  </div>
+  <script>window.onload = function() { window.print(); }</script>
 </body>
 </html>
   `;
 }
 
 function generateReceiptHTML(sale: any): string {
-  const itemRows = sale.items.map((item: any) => `
-    <tr>
-      <td style="padding: 4px 0;">${item.productName}</td>
-      <td style="padding: 4px 0; text-align: center;">${item.quantity}</td>
-      <td style="padding: 4px 0; text-align: right;">${item.total.toLocaleString()}</td>
-    </tr>
-  `).join('');
-
   return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
-  <title>Receipt ${sale.saleNumber}</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Receipt</title>
   <style>
-    @media print {
-      body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-      @page { size: 80mm auto; margin: 0; }
-    }
-    body { font-family: 'Courier New', monospace; margin: 0; padding: 10px; background: #fff; color: #000; width: 280px; font-size: 12px; }
-    .header { text-align: center; margin-bottom: 15px; }
-    .header h1 { font-size: 14px; margin: 0; }
-    .header p { margin: 2px 0; font-size: 10px; }
-    .divider { border-top: 1px dashed #000; margin: 10px 0; }
-    .items { width: 100%; }
-    .items td { padding: 4px 0; font-size: 11px; }
-    .totals { margin-top: 10px; }
-    .totals p { margin: 4px 0; display: flex; justify-content: space-between; }
-    .total-line { font-weight: bold; font-size: 14px; }
-    .footer { text-align: center; margin-top: 15px; font-size: 10px; }
-    .print-btn { position: fixed; top: 10px; right: 10px; padding: 8px 16px; background: #1976D2; color: white; border: none; cursor: pointer; border-radius: 4px; font-size: 12px; }
-    @media print { .print-btn { display: none; } }
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Courier New', monospace; font-size: 12px; width: 80mm; margin: 0 auto; padding: 10px; }
+    .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
+    .header h1 { font-size: 16px; }
+    .header p { font-size: 10px; }
+    .info { margin-bottom: 10px; }
+    .info p { margin: 2px 0; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
+    th, td { text-align: left; padding: 3px 0; }
+    th { border-bottom: 1px solid #000; }
+    .total { border-top: 1px dashed #000; padding-top: 10px; text-align: right; font-weight: bold; }
+    .footer { text-align: center; margin-top: 20px; font-size: 10px; }
+    @media print { body { width: 80mm; } }
   </style>
 </head>
 <body>
-  <button class="print-btn" onclick="window.print()">Print</button>
-
   <div class="header">
     <h1>POLY FLECTA PLASTICA</h1>
-    <p>Hammam Dalaa - M'sila</p>
-    <p>+213 6 70 04 91 24</p>
+    <p>Village Zaitout, Draa Ben Khedda</p>
+    <p>Tel: 0555 123 456</p>
   </div>
-
-  <div class="divider"></div>
-
-  <p style="text-align: center; font-size: 10px;">
-    ${sale.saleNumber}<br>
-    ${new Date(sale.date).toLocaleDateString()} ${new Date().toLocaleTimeString()}
-  </p>
-
-  <div class="divider"></div>
-
-  <table class="items">
+  
+  <div class="info">
+    <p><strong>Date:</strong> ${sale.date}</p>
+    <p><strong>Payment:</strong> ${sale.paymentMode}</p>
+  </div>
+  
+  <table>
     <thead>
       <tr>
-        <th style="text-align: left;">Item</th>
-        <th style="text-align: center;">Qty</th>
-        <th style="text-align: right;">Amount</th>
+        <th>Item</th>
+        <th>Qty</th>
+        <th>Price</th>
       </tr>
     </thead>
     <tbody>
-      ${itemRows}
+      ${sale.items.map((item: any) => `
+        <tr>
+          <td>${item.productName}</td>
+          <td>${item.quantity}</td>
+          <td>${item.total.toLocaleString()} DZD</td>
+        </tr>
+      `).join('')}
     </tbody>
   </table>
-
-  <div class="divider"></div>
-
-  <div class="totals">
-    ${sale.discount > 0 ? `
-    <p><span>Subtotal:</span><span>${(sale.total + sale.discount).toLocaleString()} DZD</span></p>
-    <p><span>Discount:</span><span>-${sale.discount.toLocaleString()} DZD</span></p>
-    ` : ''}
-    <p class="total-line"><span>TOTAL:</span><span>${sale.total.toLocaleString()} DZD</span></p>
-    <p><span>Payment:</span><span>${sale.paymentMode}</span></p>
+  
+  <div class="total">
+    ${sale.discount > 0 ? `<p>Discount: -${sale.discount}%</p>` : ''}
+    <p>TOTAL: ${sale.total.toLocaleString()} DZD</p>
   </div>
-
-  <div class="divider"></div>
-
+  
   <div class="footer">
     <p>Thank you for your purchase!</p>
-    <p>www.polyflectaplastica.com</p>
+    <p>Merci pour votre achat!</p>
   </div>
+  <script>window.onload = function() { window.print(); }</script>
 </body>
 </html>
   `;

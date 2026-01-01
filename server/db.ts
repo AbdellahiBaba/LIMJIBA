@@ -34,16 +34,23 @@ export async function withRetry<T>(
       return await operation();
     } catch (error: any) {
       lastError = error;
+      const errorMessage = error?.message || '';
+      const errorCode = error?.code || '';
+      
       const isRetryable = 
-        error.code === 'EAI_AGAIN' || 
-        error.code === 'ECONNRESET' ||
-        error.code === 'ETIMEDOUT' ||
-        error.code === 'ENOTFOUND' ||
-        error.message?.includes('EAI_AGAIN') ||
-        error.message?.includes('connection');
+        errorCode === 'EAI_AGAIN' || 
+        errorCode === 'ECONNRESET' ||
+        errorCode === 'ETIMEDOUT' ||
+        errorCode === 'ENOTFOUND' ||
+        errorCode === 'ECONNREFUSED' ||
+        errorCode === '57P01' ||
+        errorMessage.includes('EAI_AGAIN') ||
+        errorMessage.includes('connection') ||
+        errorMessage.includes('timeout') ||
+        errorMessage.includes('ECONNRESET');
       
       if (isRetryable && attempt < maxRetries) {
-        console.log(`Database operation failed (attempt ${attempt}/${maxRetries}), retrying in ${delayMs}ms...`);
+        console.log(`Database operation failed (attempt ${attempt}/${maxRetries}): ${errorMessage}. Retrying in ${delayMs * attempt}ms...`);
         await new Promise(resolve => setTimeout(resolve, delayMs * attempt));
       } else {
         throw error;
