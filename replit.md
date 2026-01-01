@@ -2,10 +2,11 @@
 
 ## Overview
 
-A fully-featured business management system for an industrial plastic packaging manufacturing company. The application provides invoice generation, stock/inventory management, point-of-sale (POS) functionality, and a reseller rewards program. Built as a full-stack TypeScript application with React frontend and Express backend, using PostgreSQL for data persistence.
+A fully offline, professionally branded business management system for an industrial plastic packaging manufacturer. The application provides four core modules: Invoice Generation (matching PDF sample format), Stock/Inventory Management, Point-of-Sale (POS) interface, and Reseller Rewards Program. Built as a full-stack TypeScript application with React frontend and Express backend, using in-memory storage for complete offline functionality.
 
 **Company:** POLY FLECTA PLASTICA  
-**Industry:** Industrial plastic packaging manufacturing
+**Industry:** Industrial plastic packaging manufacturing  
+**Status:** MVP Complete - All four modules functional
 
 ## User Preferences
 
@@ -15,76 +16,96 @@ Preferred communication style: Simple, everyday language.
 
 ### Frontend Architecture
 - **Framework:** React 18 with TypeScript
-- **Routing:** Wouter (lightweight alternative to React Router)
+- **Routing:** Wouter (lightweight router)
 - **State Management:** TanStack React Query for server state and caching
 - **UI Components:** shadcn/ui component library built on Radix UI primitives
-- **Styling:** Tailwind CSS with custom design tokens matching company branding (industrial blues, greys, metallic accents)
+- **Styling:** Tailwind CSS with industrial branding (blue #1976D2 theme)
+- **Typography:** Roboto font family (Material Design)
 - **Build Tool:** Vite with HMR support
 
-The frontend follows a page-based structure with shared components. Key modules include:
-- Dashboard with business statistics
-- Invoice generation and management with PDF export capability
-- Stock/inventory management with low-stock alerts
-- POS system for direct sales
-- Reseller management with rewards tracking
+### Core Modules
+1. **Dashboard** - Business statistics with 5 stat cards (products, sales, invoices, resellers, low stock alerts)
+2. **Stock Management** - Full CRUD for products, low stock alerts (threshold 10), search/filter
+3. **Invoice Generation** - Create/view/delete invoices, PDF generation with French number-to-words conversion
+4. **POS (Point of Sale)** - Product grid, cart system, checkout with payment modes, receipt printing
+5. **Reseller Rewards** - Track purchases, threshold-based reward pool, random winner draw
 
 ### Backend Architecture
 - **Runtime:** Node.js with Express
-- **Language:** TypeScript (compiled with tsx for development, esbuild for production)
+- **Language:** TypeScript
 - **API Design:** RESTful endpoints under `/api/*` prefix
-- **Server Structure:** Single entry point (`server/index.ts`) with modular route registration
-
-The server handles all CRUD operations for products, invoices, sales, and resellers. It serves the static frontend in production and proxies to Vite dev server in development.
+- **Storage:** In-memory storage (MemStorage class) for offline operation
 
 ### Data Storage
-- **Database:** PostgreSQL
-- **ORM:** Drizzle ORM with drizzle-zod for schema validation
-- **Schema Location:** `shared/schema.ts` (shared between frontend and backend)
-- **Migrations:** Managed via drizzle-kit (`db:push` command)
+- **Type:** In-memory storage (Map-based)
+- **Schema Location:** `shared/schema.ts` (shared types between frontend/backend)
+- **Seeded Data:** 8 products (plastic bags), 3 resellers for testing
 
 Core entities:
-- Users (authentication)
-- Products (inventory items with stock tracking)
-- Invoices and InvoiceItems (B2B billing)
-- Sales and SaleItems (POS transactions)
-- Resellers (partner program with rewards)
+- Products (inventory with stock tracking, low stock alerts)
+- Invoices and InvoiceItems (B2B billing with PDF generation)
+- Sales and SaleItems (POS transactions with automatic stock deduction)
+- Resellers (partner program with purchase tracking and reward pool)
 
 ### Key Design Decisions
 
-**Shared Schema Pattern:** The database schema is defined in `shared/schema.ts` and used by both frontend (for type safety) and backend (for database operations). This eliminates type drift between layers.
+**Offline-First:** Uses in-memory storage instead of PostgreSQL for complete offline functionality. No external dependencies required.
 
-**In-Memory Storage Fallback:** The storage layer (`server/storage.ts`) abstracts data access, allowing for in-memory storage during development or when database is unavailable.
+**Shared Schema Pattern:** Types defined in `shared/schema.ts` and used by both frontend and backend for type safety.
 
-**Component Library:** Using shadcn/ui provides accessible, customizable components without the overhead of a full component framework. Components are copied into the project for full control.
+**Industrial Branding:** Custom design tokens matching company branding (industrial blues, professional greys) defined in `design_guidelines.md`.
 
-**Monorepo Structure:** Single repository with `client/`, `server/`, and `shared/` directories. Path aliases (`@/`, `@shared/`) simplify imports.
+**Stock Deduction:** POS sales automatically reduce product stock quantities and update reseller purchase totals.
+
+## Recent Changes
+
+**January 2026:**
+- Fixed SelectItem empty value error in POS page (changed value="" to value="none")
+- Completed all four modules with full functionality
+- Added theme toggle for light/dark mode support
+- Implemented French number-to-words conversion for invoices
+- Added sidebar navigation with all module links
+
+## File Structure
+
+```
+client/src/
+├── pages/
+│   ├── dashboard.tsx      # Main dashboard with stats
+│   ├── stock.tsx          # Product/inventory management
+│   ├── invoices.tsx       # Invoice list
+│   ├── invoice-form.tsx   # Create new invoice
+│   ├── invoice-view.tsx   # View invoice details
+│   ├── pos.tsx            # Point of sale interface
+│   └── resellers.tsx      # Reseller rewards program
+├── components/
+│   ├── app-sidebar.tsx    # Main navigation sidebar
+│   └── theme-toggle.tsx   # Dark/light mode toggle
+└── lib/
+    └── queryClient.ts     # React Query configuration
+
+server/
+├── routes.ts              # All API endpoints
+├── storage.ts             # In-memory storage implementation
+└── index.ts               # Express server entry
+
+shared/
+└── schema.ts              # TypeScript types and interfaces
+```
 
 ## External Dependencies
 
-### Database
-- **PostgreSQL:** Primary data store, connection via `DATABASE_URL` environment variable
-- **connect-pg-simple:** Session storage for Express sessions
-
 ### Frontend Libraries
-- **@tanstack/react-query:** Server state management and caching
-- **Radix UI:** Accessible primitive components (dialogs, dropdowns, forms)
-- **Lucide React:** Icon library
-- **date-fns:** Date formatting and manipulation
-- **embla-carousel-react:** Carousel functionality
-- **react-day-picker:** Date picker component
-- **recharts:** Charting library for dashboard visualizations
+- @tanstack/react-query: Server state management
+- Radix UI: Accessible primitive components
+- Lucide React: Icon library
+- date-fns: Date formatting
 
 ### Backend Libraries
-- **express:** Web framework
-- **drizzle-orm:** Database ORM
-- **zod:** Schema validation
-- **express-session:** Session management
+- express: Web framework
+- drizzle-zod: Schema validation (types only)
+- zod: Runtime validation
 
 ### Build Tools
-- **Vite:** Frontend bundler with React plugin
-- **esbuild:** Production server bundling
-- **tsx:** TypeScript execution for development
-
-### Replit-Specific
-- **@replit/vite-plugin-runtime-error-modal:** Error overlay for development
-- **@replit/vite-plugin-cartographer:** Development tooling
+- Vite: Frontend bundler
+- tsx: TypeScript execution
