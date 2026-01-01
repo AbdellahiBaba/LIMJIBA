@@ -560,16 +560,19 @@ export default function FabricationInvoice() {
               <th className="text-white p-3 text-left border border-white/20">
                 {getLabel("Désignation", "الوصف")}
               </th>
-              <th className="text-white p-3 text-center border border-white/20 w-24">
-                {getLabel("Poids (Kg)", "الوزن")}
-              </th>
               <th className="text-white p-3 text-center border border-white/20 w-20">
+                {getLabel("Poids/U", "الوزن/و")}
+              </th>
+              <th className="text-white p-3 text-center border border-white/20 w-16">
                 {getLabel("Qté", "الكمية")}
               </th>
-              <th className="text-white p-3 text-right border border-white/20 w-28">
+              <th className="text-white p-3 text-center border border-white/20 w-24">
+                {getLabel("Poids Total", "الوزن الكلي")}
+              </th>
+              <th className="text-white p-3 text-right border border-white/20 w-24">
                 {getLabel("Prix U.", "السعر")}
               </th>
-              <th className="text-white p-3 text-right border border-white/20 w-32">
+              <th className="text-white p-3 text-right border border-white/20 w-28">
                 {getLabel("Montant", "المبلغ")}
               </th>
             </tr>
@@ -579,8 +582,9 @@ export default function FabricationInvoice() {
               <tr key={item.id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
                 <td className="p-3 text-center border">{index + 1}</td>
                 <td className="p-3 border">{item.designation}</td>
-                <td className="p-3 text-center border">{item.weightKg > 0 ? item.weightKg : "-"}</td>
+                <td className="p-3 text-center border">{item.weightKg > 0 ? item.weightKg.toFixed(2) : "-"}</td>
                 <td className="p-3 text-center border">{item.quantity}</td>
+                <td className="p-3 text-center border font-medium">{(item.weightKg * item.quantity).toFixed(2)} Kg</td>
                 <td className="p-3 text-right border">{formatCurrency(item.unitPrice)}</td>
                 <td className="p-3 text-right border font-medium">{formatCurrency(item.total)}</td>
               </tr>
@@ -591,10 +595,11 @@ export default function FabricationInvoice() {
               <td colSpan={2} className="p-3 border font-semibold">
                 {getLabel("Total", "المجموع")}
               </td>
-              <td className="p-3 text-center border font-semibold">{totalWeight.toFixed(2)} Kg</td>
+              <td className="p-3 text-center border"></td>
               <td className="p-3 text-center border font-semibold">
                 {items.reduce((sum, item) => sum + item.quantity, 0)}
               </td>
+              <td className="p-3 text-center border font-semibold">{totalWeight.toFixed(2)} Kg</td>
               <td className="p-3 border"></td>
               <td 
                 className="p-3 text-right border font-bold"
@@ -805,11 +810,12 @@ export default function FabricationInvoice() {
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead className="w-[40%]">{getLabel("Désignation", "الوصف")}</TableHead>
-                  <TableHead className="w-[15%]">{getLabel("Poids (Kg)", "الوزن")}</TableHead>
+                  <TableHead className="w-[30%]">{getLabel("Désignation", "الوصف")}</TableHead>
+                  <TableHead className="w-[10%]">{getLabel("Poids/U (Kg)", "الوزن/و")}</TableHead>
                   <TableHead className="w-[10%]">{t("common.quantity")}</TableHead>
-                  <TableHead className="w-[15%]">{t("invoices.unitPrice")}</TableHead>
-                  <TableHead className="w-[15%]">{t("common.total")}</TableHead>
+                  <TableHead className="w-[12%]">{getLabel("Poids Total", "الوزن الكلي")}</TableHead>
+                  <TableHead className="w-[13%]">{t("invoices.unitPrice")}</TableHead>
+                  <TableHead className="w-[13%]">{t("common.total")}</TableHead>
                   <TableHead className="w-[5%]"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -868,6 +874,9 @@ export default function FabricationInvoice() {
                         onChange={(e) => updateItem(item.id, "quantity", parseInt(e.target.value) || 0)}
                         data-testid={`input-quantity-${item.id}`}
                       />
+                    </TableCell>
+                    <TableCell className="font-medium text-center">
+                      {(item.weightKg * item.quantity).toFixed(2)} Kg
                     </TableCell>
                     <TableCell>
                       <Input
