@@ -21,6 +21,8 @@ import {
   Settings,
   Palette,
   Calculator,
+  Users,
+  Receipt,
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -58,6 +60,18 @@ export function AppSidebar() {
       url: "/resellers",
       icon: Gift,
       testId: "nav-resellers",
+    },
+    {
+      title: t("nav.salaries") || "Salaries",
+      url: "/salaries",
+      icon: Users,
+      testId: "nav-salaries",
+    },
+    {
+      title: t("nav.expenses") || "Expenses",
+      url: "/expenses",
+      icon: Receipt,
+      testId: "nav-expenses",
     },
     {
       title: t("nav.branding"),

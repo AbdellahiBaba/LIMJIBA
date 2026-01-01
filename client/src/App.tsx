@@ -15,6 +15,8 @@ import InvoiceForm from "@/pages/invoice-form";
 import InvoiceView from "@/pages/invoice-view";
 import POS from "@/pages/pos";
 import Resellers from "@/pages/resellers";
+import Salaries from "@/pages/salaries";
+import Expenses from "@/pages/expenses";
 import Branding from "@/pages/branding";
 import ProfitCalculator from "@/pages/profit-calculator";
 import FabricationInvoice from "@/pages/fabrication-invoice";
@@ -31,6 +33,8 @@ function Router() {
       <Route path="/invoices/:id" component={InvoiceView} />
       <Route path="/pos" component={POS} />
       <Route path="/resellers" component={Resellers} />
+      <Route path="/salaries" component={Salaries} />
+      <Route path="/expenses" component={Expenses} />
       <Route path="/branding" component={Branding} />
       <Route path="/profit" component={ProfitCalculator} />
       <Route component={NotFound} />
