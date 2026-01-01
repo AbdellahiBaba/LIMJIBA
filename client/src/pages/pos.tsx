@@ -209,7 +209,7 @@ export default function POS() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search products..."
+              placeholder={t("pos.searchProducts")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -254,10 +254,10 @@ export default function POS() {
                         variant={isOutOfStock ? "destructive" : "secondary"}
                         className="text-xs"
                       >
-                        {isOutOfStock ? "Out of stock" : `${product.stockQuantity} in stock`}
+                        {isOutOfStock ? t("pos.outOfStock") : `${product.stockQuantity} ${t("stock.inStock")}`}
                       </Badge>
                       {inCart && (
-                        <Badge className="text-xs">{inCart.quantity} in cart</Badge>
+                        <Badge className="text-xs">{inCart.quantity} {t("pos.cart")}</Badge>
                       )}
                     </div>
                   </button>
@@ -267,9 +267,9 @@ export default function POS() {
           ) : (
             <div className="text-center py-12">
               <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="font-medium text-lg mb-1">No products found</h3>
+              <h3 className="font-medium text-lg mb-1">{t("stock.noProducts")}</h3>
               <p className="text-muted-foreground text-sm">
-                {search ? "Try a different search" : "Add products in Stock Management"}
+                {search ? t("pos.searchProducts") : t("stock.addProduct")}
               </p>
             </div>
           )}
@@ -283,7 +283,7 @@ export default function POS() {
             {t("pos.cart")}
             {cart.length > 0 && (
               <Badge variant="secondary" className="ml-auto">
-                {cart.reduce((sum, item) => sum + item.quantity, 0)} {t("invoices.items")}
+                {cart.reduce((sum, item) => sum + item.quantity, 0)} {t("pos.items")}
               </Badge>
             )}
           </CardTitle>
@@ -360,18 +360,18 @@ export default function POS() {
               <Separator className="my-4" />
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Subtotal</span>
+                  <span className="text-muted-foreground">{t("pos.subtotal")}</span>
                   <span className="font-mono">{subtotal.toLocaleString()} DZD</span>
                 </div>
                 {discountAmount > 0 && (
                   <div className="flex justify-between text-green-600">
-                    <span>Discount ({discount}%)</span>
+                    <span>{t("pos.discount")} ({discount}%)</span>
                     <span className="font-mono">-{discountAmount.toLocaleString()} DZD</span>
                   </div>
                 )}
                 <Separator />
                 <div className="flex justify-between text-lg font-semibold">
-                  <span>Total</span>
+                  <span>{t("pos.total")}</span>
                   <span className="font-mono" data-testid="text-cart-total">
                     {total.toLocaleString()} DZD
                   </span>
@@ -381,7 +381,7 @@ export default function POS() {
               <div className="mt-4 space-y-3">
                 <div className="grid grid-cols-2 gap-2">
                   <div className="space-y-1">
-                    <Label className="text-xs">Discount %</Label>
+                    <Label className="text-xs">{t("pos.discountPercent")}</Label>
                     <Input
                       type="number"
                       min="0"
@@ -392,13 +392,13 @@ export default function POS() {
                     />
                   </div>
                   <div className="space-y-1">
-                    <Label className="text-xs">Reseller</Label>
+                    <Label className="text-xs">{t("pos.reseller")}</Label>
                     <Select value={selectedReseller} onValueChange={setSelectedReseller}>
                       <SelectTrigger data-testid="select-reseller">
-                        <SelectValue placeholder="None" />
+                        <SelectValue placeholder={t("pos.noReseller")} />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="none">None</SelectItem>
+                        <SelectItem value="none">{t("pos.noReseller")}</SelectItem>
                         {resellers?.map((reseller) => (
                           <SelectItem key={reseller.id} value={reseller.id}>
                             {reseller.name}
@@ -417,7 +417,7 @@ export default function POS() {
                     data-testid="button-clear-cart"
                   >
                     <Trash2 className="h-4 w-4 mr-1" />
-                    Clear
+                    {t("pos.clear")}
                   </Button>
                   <Button
                     className="flex-1"
@@ -425,7 +425,7 @@ export default function POS() {
                     data-testid="button-checkout"
                   >
                     <CreditCard className="h-4 w-4 mr-1" />
-                    Checkout
+                    {t("pos.checkout")}
                   </Button>
                 </div>
               </div>
@@ -437,7 +437,7 @@ export default function POS() {
       <Dialog open={checkoutDialogOpen} onOpenChange={setCheckoutDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>Complete Payment</DialogTitle>
+            <DialogTitle>{t("pos.completeSale")}</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-center py-4">
@@ -445,12 +445,12 @@ export default function POS() {
                 {total.toLocaleString()} DZD
               </p>
               <p className="text-sm text-muted-foreground mt-1">
-                {cart.reduce((sum, item) => sum + item.quantity, 0)} items
+                {cart.reduce((sum, item) => sum + item.quantity, 0)} {t("pos.items")}
               </p>
             </div>
 
             <div className="space-y-2">
-              <Label>Payment Method</Label>
+              <Label>{t("pos.paymentMethod")}</Label>
               <div className="grid grid-cols-3 gap-2">
                 <Button
                   type="button"
@@ -460,7 +460,7 @@ export default function POS() {
                   data-testid="button-payment-cash"
                 >
                   <Banknote className="h-5 w-5 mb-1" />
-                  <span className="text-xs">Cash</span>
+                  <span className="text-xs">{t("pos.cash")}</span>
                 </Button>
                 <Button
                   type="button"
@@ -470,7 +470,7 @@ export default function POS() {
                   data-testid="button-payment-card"
                 >
                   <CreditCard className="h-5 w-5 mb-1" />
-                  <span className="text-xs">Card</span>
+                  <span className="text-xs">{t("pos.card")}</span>
                 </Button>
                 <Button
                   type="button"
@@ -480,21 +480,21 @@ export default function POS() {
                   data-testid="button-payment-credit"
                 >
                   <Clock className="h-5 w-5 mb-1" />
-                  <span className="text-xs">Credit</span>
+                  <span className="text-xs">{t("pos.credit")}</span>
                 </Button>
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCheckoutDialogOpen(false)}>
-              Cancel
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={completeSale}
               disabled={createSaleMutation.isPending}
               data-testid="button-complete-sale"
             >
-              {createSaleMutation.isPending ? "Processing..." : "Complete Sale"}
+              {createSaleMutation.isPending ? t("common.loading") : t("pos.completeSale")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -506,18 +506,18 @@ export default function POS() {
             <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
               <Check className="h-8 w-8 text-green-600" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">Sale Complete!</h2>
+            <h2 className="text-xl font-semibold mb-2">{t("pos.saleComplete")}</h2>
             <p className="text-muted-foreground">
-              Transaction has been processed successfully.
+              {t("pos.transactionSuccess")}
             </p>
           </div>
           <DialogFooter className="sm:justify-center gap-2">
             <Button variant="outline" onClick={() => setSuccessDialogOpen(false)}>
-              Done
+              {t("pos.done")}
             </Button>
             <Button onClick={handlePrintReceipt} data-testid="button-print-receipt">
               <Printer className="h-4 w-4 mr-2" />
-              Print Receipt
+              {t("pos.printReceipt")}
             </Button>
           </DialogFooter>
         </DialogContent>

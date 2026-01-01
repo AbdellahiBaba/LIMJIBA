@@ -322,7 +322,7 @@ export default function Stock() {
                   variant="secondary"
                   className="bg-orange-100 dark:bg-orange-900/40 text-orange-700 dark:text-orange-300"
                 >
-                  {product.name} ({product.stockQuantity} left)
+                  {product.name} ({product.stockQuantity} {t("stock.left")})
                 </Badge>
               ))}
             </div>
@@ -336,7 +336,7 @@ export default function Stock() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search products..."
+                placeholder={t("stock.searchProducts")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -345,10 +345,10 @@ export default function Stock() {
             </div>
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger className="w-full sm:w-48" data-testid="select-filter-category">
-                <SelectValue placeholder="All Categories" />
+                <SelectValue placeholder={t("stock.allCategories")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Categories</SelectItem>
+                <SelectItem value="all">{t("stock.allCategories")}</SelectItem>
                 {categories.map((cat) => (
                   <SelectItem key={cat} value={cat}>
                     {cat}
@@ -372,15 +372,15 @@ export default function Stock() {
                   <TableRow>
                     <TableHead className="min-w-[200px]">
                       <div className="flex items-center gap-1">
-                        Product
+                        {t("stock.product")}
                         <ArrowUpDown className="h-3 w-3" />
                       </div>
                     </TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead className="text-right">Unit Price</TableHead>
-                    <TableHead className="text-right">Stock</TableHead>
-                    <TableHead className="text-right">Value</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t("stock.category")}</TableHead>
+                    <TableHead className="text-right">{t("stock.unitPrice")}</TableHead>
+                    <TableHead className="text-right">{t("stock.stock")}</TableHead>
+                    <TableHead className="text-right">{t("stock.value")}</TableHead>
+                    <TableHead className="text-right">{t("stock.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
