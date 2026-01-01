@@ -22,6 +22,8 @@ export const products = pgTable("products", {
   name: text("name").notNull(),
   category: text("category").notNull(),
   unitPrice: real("unit_price").notNull(),
+  costPrice: real("cost_price").notNull().default(0),
+  weightPerUnit: real("weight_per_unit").notNull().default(0),
   stockQuantity: integer("stock_quantity").notNull().default(0),
   lowStockThreshold: integer("low_stock_threshold").notNull().default(10),
   unit: text("unit").notNull().default("pcs"),
@@ -117,8 +119,80 @@ export const insertSettingSchema = createInsertSchema(settings).omit({ id: true 
 export type InsertSetting = z.infer<typeof insertSettingSchema>;
 export type Setting = typeof settings.$inferSelect;
 
+export const employees = pgTable("employees", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  role: text("role"),
+  monthlySalary: real("monthly_salary").notNull().default(0),
+  phone: text("phone"),
+  email: text("email"),
+  isActive: boolean("is_active").notNull().default(true),
+});
+
+export const insertEmployeeSchema = createInsertSchema(employees).omit({ id: true });
+export type InsertEmployee = z.infer<typeof insertEmployeeSchema>;
+export type Employee = typeof employees.$inferSelect;
+
+export const salaryPayments = pgTable("salary_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  employeeId: varchar("employee_id").notNull(),
+  amount: real("amount").notNull(),
+  paymentDate: text("payment_date").notNull(),
+  month: text("month").notNull(),
+  year: integer("year").notNull(),
+  notes: text("notes"),
+});
+
+export const insertSalaryPaymentSchema = createInsertSchema(salaryPayments).omit({ id: true });
+export type InsertSalaryPayment = z.infer<typeof insertSalaryPaymentSchema>;
+export type SalaryPayment = typeof salaryPayments.$inferSelect;
+
+export const expenses = pgTable("expenses", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  category: text("category").notNull(),
+  amount: real("amount").notNull(),
+  date: text("date").notNull(),
+  notes: text("notes"),
+});
+
+export const insertExpenseSchema = createInsertSchema(expenses).omit({ id: true });
+export type InsertExpense = z.infer<typeof insertExpenseSchema>;
+export type Expense = typeof expenses.$inferSelect;
+
+export const fabricationInvoices = pgTable("fabrication_invoices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  invoiceNumber: text("invoice_number").notNull().unique(),
+  date: text("date").notNull(),
+  responsible: text("responsible").notNull(),
+  notes: text("notes"),
+  totalWeight: real("total_weight").notNull().default(0),
+  totalCost: real("total_cost").notNull().default(0),
+});
+
+export const insertFabricationInvoiceSchema = createInsertSchema(fabricationInvoices).omit({ id: true });
+export type InsertFabricationInvoice = z.infer<typeof insertFabricationInvoiceSchema>;
+export type FabricationInvoice = typeof fabricationInvoices.$inferSelect;
+
+export const fabricationItems = pgTable("fabrication_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  fabricationInvoiceId: varchar("fabrication_invoice_id").notNull(),
+  productName: text("product_name").notNull(),
+  quantity: integer("quantity").notNull(),
+  weightPerUnit: real("weight_per_unit").notNull().default(0),
+  totalWeight: real("total_weight").notNull().default(0),
+  unitCost: real("unit_cost").notNull().default(0),
+  totalCost: real("total_cost").notNull().default(0),
+});
+
+export const insertFabricationItemSchema = createInsertSchema(fabricationItems).omit({ id: true });
+export type InsertFabricationItem = z.infer<typeof insertFabricationItemSchema>;
+export type FabricationItem = typeof fabricationItems.$inferSelect;
+
 export type InvoiceWithItems = Invoice & { items: InvoiceItem[] };
 export type SaleWithItems = Sale & { items: SaleItem[] };
+export type FabricationInvoiceWithItems = FabricationInvoice & { items: FabricationItem[] };
+export type SalaryPaymentWithEmployee = SalaryPayment & { employee?: Employee };
 
 export interface DashboardStats {
   totalProducts: number;
@@ -137,4 +211,15 @@ export interface CartItem {
   quantity: number;
   unitPrice: number;
   total: number;
+}
+
+export interface ProfitStats {
+  totalSalesRevenue: number;
+  totalProductCosts: number;
+  totalSalaries: number;
+  totalExpenses: number;
+  grossProfit: number;
+  netProfit: number;
+  periodStart: string;
+  periodEnd: string;
 }

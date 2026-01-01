@@ -1,7 +1,19 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { insertProductSchema, insertInvoiceSchema, insertInvoiceItemSchema, insertSaleSchema, insertSaleItemSchema, insertResellerSchema } from "@shared/schema";
+import { 
+  insertProductSchema, 
+  insertInvoiceSchema, 
+  insertInvoiceItemSchema, 
+  insertSaleSchema, 
+  insertSaleItemSchema, 
+  insertResellerSchema,
+  insertEmployeeSchema,
+  insertSalaryPaymentSchema,
+  insertExpenseSchema,
+  insertFabricationInvoiceSchema,
+  insertFabricationItemSchema,
+} from "@shared/schema";
 import { z } from "zod";
 
 export async function registerRoutes(
@@ -310,6 +322,237 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       res.status(500).json({ error: "Failed to reset pool" });
+    }
+  });
+
+  // Employee routes
+  app.get("/api/employees", async (req, res) => {
+    try {
+      const allEmployees = await storage.getEmployees();
+      res.json(allEmployees);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get employees" });
+    }
+  });
+
+  app.get("/api/employees/:id", async (req, res) => {
+    try {
+      const employee = await storage.getEmployee(req.params.id);
+      if (!employee) {
+        return res.status(404).json({ error: "Employee not found" });
+      }
+      res.json(employee);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get employee" });
+    }
+  });
+
+  app.post("/api/employees", async (req, res) => {
+    try {
+      const data = insertEmployeeSchema.parse(req.body);
+      const employee = await storage.createEmployee(data);
+      res.status(201).json(employee);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create employee" });
+    }
+  });
+
+  app.patch("/api/employees/:id", async (req, res) => {
+    try {
+      const data = insertEmployeeSchema.partial().parse(req.body);
+      const employee = await storage.updateEmployee(req.params.id, data);
+      if (!employee) {
+        return res.status(404).json({ error: "Employee not found" });
+      }
+      res.json(employee);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update employee" });
+    }
+  });
+
+  app.delete("/api/employees/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteEmployee(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Employee not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete employee" });
+    }
+  });
+
+  // Salary Payment routes
+  app.get("/api/salary-payments", async (req, res) => {
+    try {
+      const payments = await storage.getSalaryPayments();
+      res.json(payments);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get salary payments" });
+    }
+  });
+
+  app.post("/api/salary-payments", async (req, res) => {
+    try {
+      const data = insertSalaryPaymentSchema.parse(req.body);
+      const payment = await storage.createSalaryPayment(data);
+      res.status(201).json(payment);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create salary payment" });
+    }
+  });
+
+  app.delete("/api/salary-payments/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteSalaryPayment(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Payment not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete salary payment" });
+    }
+  });
+
+  // Expense routes
+  app.get("/api/expenses", async (req, res) => {
+    try {
+      const allExpenses = await storage.getExpenses();
+      res.json(allExpenses);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get expenses" });
+    }
+  });
+
+  app.get("/api/expenses/:id", async (req, res) => {
+    try {
+      const expense = await storage.getExpense(req.params.id);
+      if (!expense) {
+        return res.status(404).json({ error: "Expense not found" });
+      }
+      res.json(expense);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get expense" });
+    }
+  });
+
+  app.post("/api/expenses", async (req, res) => {
+    try {
+      const data = insertExpenseSchema.parse(req.body);
+      const expense = await storage.createExpense(data);
+      res.status(201).json(expense);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create expense" });
+    }
+  });
+
+  app.patch("/api/expenses/:id", async (req, res) => {
+    try {
+      const data = insertExpenseSchema.partial().parse(req.body);
+      const expense = await storage.updateExpense(req.params.id, data);
+      if (!expense) {
+        return res.status(404).json({ error: "Expense not found" });
+      }
+      res.json(expense);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to update expense" });
+    }
+  });
+
+  app.delete("/api/expenses/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteExpense(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Expense not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete expense" });
+    }
+  });
+
+  // Fabrication Invoice routes
+  app.get("/api/fabrication-invoices", async (req, res) => {
+    try {
+      const fabricationInvoices = await storage.getFabricationInvoices();
+      res.json(fabricationInvoices);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get fabrication invoices" });
+    }
+  });
+
+  app.get("/api/fabrication-invoices/next-number", async (req, res) => {
+    try {
+      const nextNumber = await storage.getNextFabricationNumber();
+      res.json({ nextNumber });
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get next fabrication number" });
+    }
+  });
+
+  app.get("/api/fabrication-invoices/:id", async (req, res) => {
+    try {
+      const invoice = await storage.getFabricationInvoiceWithItems(req.params.id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Fabrication invoice not found" });
+      }
+      res.json(invoice);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get fabrication invoice" });
+    }
+  });
+
+  app.post("/api/fabrication-invoices", async (req, res) => {
+    try {
+      const { invoice, items } = req.body;
+      const invoiceData = insertFabricationInvoiceSchema.parse(invoice);
+      const itemsData = z.array(insertFabricationItemSchema).parse(items);
+      const created = await storage.createFabricationInvoice(invoiceData, itemsData);
+      res.status(201).json(created);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return res.status(400).json({ error: error.errors });
+      }
+      res.status(500).json({ error: "Failed to create fabrication invoice" });
+    }
+  });
+
+  app.delete("/api/fabrication-invoices/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteFabricationInvoice(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Fabrication invoice not found" });
+      }
+      res.status(204).send();
+    } catch (error) {
+      res.status(500).json({ error: "Failed to delete fabrication invoice" });
+    }
+  });
+
+  // Profit Stats route
+  app.get("/api/profit-stats", async (req, res) => {
+    try {
+      const startDate = (req.query.startDate as string) || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split("T")[0];
+      const endDate = (req.query.endDate as string) || new Date().toISOString().split("T")[0];
+      const stats = await storage.getProfitStats(startDate, endDate);
+      res.json(stats);
+    } catch (error) {
+      res.status(500).json({ error: "Failed to get profit stats" });
     }
   });
 
