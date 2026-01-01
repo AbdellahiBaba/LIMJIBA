@@ -14,6 +14,7 @@ import {
   insertExpenseSchema,
   insertFabricationInvoiceSchema,
   insertFabricationItemSchema,
+  insertStockMovementSchema,
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -188,6 +189,119 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       handleError(res, "delete product", error);
+    }
+  });
+
+  // Stock Movements API
+  app.get("/api/stock-movements", async (req, res) => {
+    try {
+      const productId = req.query.productId as string | undefined;
+      const movements = await storage.getStockMovements(productId);
+      res.json(movements);
+    } catch (error) {
+      handleError(res, "get stock movements", error);
+    }
+  });
+
+  app.post("/api/stock-movements/adjust", async (req, res) => {
+    try {
+      const { productId, quantity, reason, reference, createdBy } = req.body;
+      if (!productId || quantity === undefined || !reason) {
+        return res.status(400).json({ error: "productId, quantity, and reason are required" });
+      }
+      const result = await storage.adjustStock(productId, quantity, reason, reference, createdBy);
+      res.status(201).json(result);
+    } catch (error) {
+      handleError(res, "adjust stock", error);
+    }
+  });
+
+  app.get("/api/products/barcode/:barcode", async (req, res) => {
+    try {
+      const product = await storage.getProductByBarcode(req.params.barcode);
+      if (!product) {
+        return res.status(404).json({ error: "Product not found with this barcode" });
+      }
+      res.json(product);
+    } catch (error) {
+      handleError(res, "get product by barcode", error);
+    }
+  });
+
+  // CSV Export for products
+  app.get("/api/products/export/csv", async (req, res) => {
+    try {
+      const products = await storage.getProducts();
+      const headers = ["id", "name", "category", "unitPrice", "costPrice", "weightPerUnit", "stockQuantity", "lowStockThreshold", "unit", "barcode"];
+      const csvRows = [headers.join(",")];
+      
+      for (const product of products) {
+        const row = headers.map(header => {
+          const value = product[header as keyof typeof product];
+          if (value === null || value === undefined) return "";
+          if (typeof value === "string" && (value.includes(",") || value.includes('"'))) {
+            return `"${value.replace(/"/g, '""')}"`;
+          }
+          return String(value);
+        });
+        csvRows.push(row.join(","));
+      }
+      
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", "attachment; filename=products.csv");
+      res.send(csvRows.join("\n"));
+    } catch (error) {
+      handleError(res, "export products", error);
+    }
+  });
+
+  // CSV Import for products
+  app.post("/api/products/import/csv", async (req, res) => {
+    try {
+      const { csvData } = req.body;
+      if (!csvData) {
+        return res.status(400).json({ error: "csvData is required" });
+      }
+
+      const lines = csvData.split("\n").filter((line: string) => line.trim());
+      if (lines.length < 2) {
+        return res.status(400).json({ error: "CSV must have headers and at least one data row" });
+      }
+
+      const headers = lines[0].split(",").map((h: string) => h.trim());
+      const results = { imported: 0, errors: [] as string[] };
+
+      for (let i = 1; i < lines.length; i++) {
+        try {
+          const values = lines[i].split(",").map((v: string) => v.trim().replace(/^"|"$/g, ""));
+          const productData: Record<string, any> = {};
+          
+          headers.forEach((header: string, index: number) => {
+            if (header === "id") return; // Skip id for new products
+            const value = values[index];
+            if (header === "unitPrice" || header === "costPrice" || header === "weightPerUnit") {
+              productData[header] = parseFloat(value) || 0;
+            } else if (header === "stockQuantity" || header === "lowStockThreshold") {
+              productData[header] = parseInt(value) || 0;
+            } else if (value) {
+              productData[header] = value;
+            }
+          });
+
+          if (productData.name && productData.category && productData.unitPrice !== undefined) {
+            await storage.createProduct(productData as any);
+            results.imported++;
+          } else {
+            results.errors.push(`Row ${i + 1}: Missing required fields (name, category, unitPrice)`);
+          }
+        } catch (rowError) {
+          results.errors.push(`Row ${i + 1}: ${rowError instanceof Error ? rowError.message : "Unknown error"}`);
+        }
+      }
+
+      res.json(results);
+    } catch (error) {
+      handleError(res, "import products", error);
     }
   });
 
