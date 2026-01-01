@@ -68,6 +68,14 @@ Core entities:
 
 **Stock Deduction:** POS sales automatically reduce product stock quantities and update reseller purchase totals.
 
+**Cold-Start Optimization:** In-memory caching layer (`server/cache.ts`) provides instant responses during database wake-up:
+- Cache-first pattern for all major collections (products, invoices, sales, resellers, employees, expenses, fabrication_invoices, dashboard_stats)
+- 30-second TTL for frequently changing business data
+- All mutations invalidate relevant caches to prevent stale data
+- Server starts immediately; DB verification runs in background
+- All DB operations wrapped in withRetry() for automatic error recovery
+- Health endpoints always return 200 with status in response body
+
 ## Recent Changes
 
 **January 2026:**
