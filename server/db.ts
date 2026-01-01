@@ -5,13 +5,22 @@ import * as schema from "@shared/schema";
 
 neonConfig.webSocketConstructor = ws;
 
-const connectionString = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
+let connectionString = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
 
 if (!connectionString) {
   throw new Error(
     "NEON_DATABASE_URL or DATABASE_URL must be set. Did you forget to provision a database?",
   );
 }
+
+// Clean up connection string - remove psql command prefix, extra quotes, and whitespace
+connectionString = connectionString.trim()
+  .replace(/^psql\s+/i, '')  // Remove 'psql ' prefix if present
+  .replace(/^['"]|['"]$/g, '');  // Remove surrounding quotes
+
+// Log connection details (without password) for debugging
+const safeUrl = connectionString.replace(/:[^:@]+@/, ':***@');
+console.log('[DB] Connecting to:', safeUrl);
 
 export const pool = new Pool({ 
   connectionString,
