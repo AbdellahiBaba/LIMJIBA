@@ -223,7 +223,19 @@
     "bilingual": "Bilingue (AR+FR)",
     "previewInvoice": "Aperçu Facture",
     "saveSettings": "Enregistrer les Paramètres",
-    "settingsSaved": "Paramètres enregistrés avec succès"
+    "settingsSaved": "Paramètres enregistrés avec succès",
+    "companyInfo": "Informations de l'Entreprise",
+    "companyName": "Nom de l'Entreprise",
+    "companyNameAr": "Nom de l'Entreprise (Arabe)",
+    "tagline": "Slogan",
+    "taglineAr": "Slogan (Arabe)",
+    "address": "Adresse",
+    "artisanNumber": "N° Carte Artisan",
+    "articleNumber": "N° Article",
+    "fiscalNumber": "N° Fiscal (NIF)",
+    "phone": "Téléphone",
+    "email": "Email",
+    "website": "Site Web"
   },
   "language": {
     "selectLanguage": "Sélectionner la Langue",

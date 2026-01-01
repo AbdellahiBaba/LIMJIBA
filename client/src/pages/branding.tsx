@@ -14,7 +14,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Upload, Trash2, Palette, FileText, Image } from "lucide-react";
+import { Upload, Trash2, Palette, FileText, Image, Building2 } from "lucide-react";
 
 function extractColorsFromImage(imageUrl: string): Promise<{ primary: string; accent: string }> {
   return new Promise((resolve) => {
@@ -403,6 +403,135 @@ export default function Branding() {
         </Card>
       </div>
 
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            {t("branding.companyInfo")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="company-name">{t("branding.companyName")}</Label>
+              <Input
+                id="company-name"
+                value={branding.companyInfo.name}
+                onChange={(e) => updateBranding({ companyInfo: { ...branding.companyInfo, name: e.target.value } })}
+                data-testid="input-company-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="company-name-ar">{t("branding.companyNameAr")}</Label>
+              <Input
+                id="company-name-ar"
+                value={branding.companyInfo.nameAr}
+                onChange={(e) => updateBranding({ companyInfo: { ...branding.companyInfo, nameAr: e.target.value } })}
+                dir="rtl"
+                data-testid="input-company-name-ar"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-2">
+            <div className="space-y-2">
+              <Label htmlFor="tagline">{t("branding.tagline")}</Label>
+              <Input
+                id="tagline"
+                value={branding.companyInfo.tagline}
+                onChange={(e) => updateBranding({ companyInfo: { ...branding.companyInfo, tagline: e.target.value } })}
+                data-testid="input-tagline"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="tagline-ar">{t("branding.taglineAr")}</Label>
+              <Input
+                id="tagline-ar"
+                value={branding.companyInfo.taglineAr}
+                onChange={(e) => updateBranding({ companyInfo: { ...branding.companyInfo, taglineAr: e.target.value } })}
+                dir="rtl"
+                data-testid="input-tagline-ar"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="address">{t("branding.address")}</Label>
+            <Input
+              id="address"
+              value={branding.companyInfo.address}
+              onChange={(e) => updateBranding({ companyInfo: { ...branding.companyInfo, address: e.target.value } })}
+              data-testid="input-address"
+            />
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="artisan-number">{t("branding.artisanNumber")}</Label>
+              <Input
+                id="artisan-number"
+                value={branding.companyInfo.artisanNumber}
+                onChange={(e) => updateBranding({ companyInfo: { ...branding.companyInfo, artisanNumber: e.target.value } })}
+                placeholder="28/00 - 2896688A24"
+                data-testid="input-artisan-number"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="article-number">{t("branding.articleNumber")}</Label>
+              <Input
+                id="article-number"
+                value={branding.companyInfo.articleNumber}
+                onChange={(e) => updateBranding({ companyInfo: { ...branding.companyInfo, articleNumber: e.target.value } })}
+                data-testid="input-article-number"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="fiscal-number">{t("branding.fiscalNumber")}</Label>
+              <Input
+                id="fiscal-number"
+                value={branding.companyInfo.fiscalNumber}
+                onChange={(e) => updateBranding({ companyInfo: { ...branding.companyInfo, fiscalNumber: e.target.value } })}
+                data-testid="input-fiscal-number"
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-4 md:grid-cols-3">
+            <div className="space-y-2">
+              <Label htmlFor="phone">{t("branding.phone")}</Label>
+              <Input
+                id="phone"
+                value={branding.companyInfo.phone}
+                onChange={(e) => updateBranding({ companyInfo: { ...branding.companyInfo, phone: e.target.value } })}
+                placeholder="+213 6 70 04 91 24"
+                data-testid="input-phone"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email">{t("branding.email")}</Label>
+              <Input
+                id="email"
+                type="email"
+                value={branding.companyInfo.email}
+                onChange={(e) => updateBranding({ companyInfo: { ...branding.companyInfo, email: e.target.value } })}
+                placeholder="contact@company.com"
+                data-testid="input-email"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="website">{t("branding.website")}</Label>
+              <Input
+                id="website"
+                value={branding.companyInfo.website}
+                onChange={(e) => updateBranding({ companyInfo: { ...branding.companyInfo, website: e.target.value } })}
+                placeholder="www.company.com"
+                data-testid="input-website"
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card className="mt-6">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
@@ -461,19 +590,31 @@ export default function Branding() {
                         className="text-lg font-bold"
                         style={{ color: branding.primaryColor }}
                       >
-                        POLY FLECTA PLASTICA
+                        {branding.invoiceLanguage === "ar" ? branding.companyInfo.nameAr : branding.companyInfo.name}
                       </h2>
                       <p className="text-xs text-gray-600">
                         {branding.invoiceLanguage === "ar" 
-                          ? "تصنيع عبوات بلاستيكية" 
-                          : "FABRICATION D'EMBALLAGE EN PLASTIQUE"}
+                          ? branding.companyInfo.taglineAr 
+                          : branding.companyInfo.tagline}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
-                        Village Zaitout, Hammam Dalaa - M'sila
+                        {branding.companyInfo.address}
                       </p>
-                      <p className="text-xs text-gray-500">
-                        CARTE ARTISAN N°: 28/00 - 2896688A24
-                      </p>
+                      {branding.companyInfo.artisanNumber && (
+                        <p className="text-xs text-gray-500">
+                          CARTE ARTISAN N°: {branding.companyInfo.artisanNumber}
+                        </p>
+                      )}
+                      {branding.companyInfo.articleNumber && (
+                        <p className="text-xs text-gray-500">
+                          ARTICLE N°: {branding.companyInfo.articleNumber}
+                        </p>
+                      )}
+                      {branding.companyInfo.fiscalNumber && (
+                        <p className="text-xs text-gray-500">
+                          NIF: {branding.companyInfo.fiscalNumber}
+                        </p>
+                      )}
                     </div>
                   )}
                 </div>
@@ -540,8 +681,11 @@ export default function Branding() {
                 </p>
               </div>
 
-              <div className="mt-4 pt-4 border-t text-xs text-gray-500 text-center">
-                www.polyflectaplastica.com | contact@polyflectaplastica.com | +213 6 70 04 91 24
+              <div 
+                className="mt-4 pt-4 border-t text-xs text-center"
+                style={{ borderColor: branding.accentColor, color: branding.primaryColor }}
+              >
+                {branding.companyInfo.website} | {branding.companyInfo.email} | {branding.companyInfo.phone}
               </div>
             </div>
           </div>

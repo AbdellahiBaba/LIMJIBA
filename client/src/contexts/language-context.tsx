@@ -100,7 +100,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
   const updateBranding = useCallback((settings: Partial<BrandingSettings>) => {
     setBranding((prev) => {
-      const updated = { ...prev, ...settings };
+      const updated = { 
+        ...prev, 
+        ...settings,
+        companyInfo: settings.companyInfo 
+          ? { ...prev.companyInfo, ...settings.companyInfo }
+          : prev.companyInfo
+      };
       localStorage.setItem("app-branding", JSON.stringify(updated));
       return updated;
     });

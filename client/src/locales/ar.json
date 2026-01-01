@@ -223,7 +223,19 @@
     "bilingual": "ثنائي اللغة (عربي+فرنسي)",
     "previewInvoice": "معاينة الفاتورة",
     "saveSettings": "حفظ الإعدادات",
-    "settingsSaved": "تم حفظ الإعدادات بنجاح"
+    "settingsSaved": "تم حفظ الإعدادات بنجاح",
+    "companyInfo": "معلومات الشركة",
+    "companyName": "اسم الشركة",
+    "companyNameAr": "اسم الشركة (بالعربية)",
+    "tagline": "الشعار",
+    "taglineAr": "الشعار (بالعربية)",
+    "address": "العنوان",
+    "artisanNumber": "رقم بطاقة الحرفي",
+    "articleNumber": "رقم المادة",
+    "fiscalNumber": "الرقم الجبائي",
+    "phone": "الهاتف",
+    "email": "البريد الإلكتروني",
+    "website": "الموقع الإلكتروني"
   },
   "language": {
     "selectLanguage": "اختر اللغة",
