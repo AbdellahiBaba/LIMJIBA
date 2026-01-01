@@ -40,11 +40,12 @@ function handleError(res: any, context: string, error: unknown, defaultStatus: n
     });
   }
   
-  // Only return 503 for genuine transient errors
+  // For transient DB errors (after retries failed), return 500 not 503
+  // This ensures API always responds and never blocks due to DB status
   if (isTransientError(error)) {
-    return res.status(503).json({ 
-      error: "Database temporarily unavailable", 
-      details: "Please try again in a moment",
+    return res.status(500).json({ 
+      error: "Database operation failed", 
+      details: "The operation could not be completed. Please try again.",
       retryable: true
     });
   }
@@ -86,38 +87,32 @@ export async function registerRoutes(
   app: Express
 ): Promise<Server> {
 
-  // Health check endpoint for monitoring
+  // Health check endpoint for monitoring - ALWAYS returns 200
+  // Reports DB status in body but never affects server availability
   app.get("/api/health", async (req, res) => {
     try {
       const dbHealth = await checkDatabaseHealth();
       const poolStats = getPoolStats();
       
-      if (dbHealth.healthy) {
-        res.json({
-          status: "healthy",
-          database: {
-            connected: true,
-            latencyMs: dbHealth.latencyMs,
-          },
-          pool: poolStats,
-          timestamp: new Date().toISOString(),
-        });
-      } else {
-        res.status(503).json({
-          status: "unhealthy",
-          database: {
-            connected: false,
-            error: dbHealth.error,
-            latencyMs: dbHealth.latencyMs,
-          },
-          pool: poolStats,
-          timestamp: new Date().toISOString(),
-        });
-      }
+      // Always return 200 - status is in the response body
+      res.status(200).json({
+        status: dbHealth.healthy ? "healthy" : "degraded",
+        database: {
+          connected: dbHealth.healthy,
+          latencyMs: dbHealth.latencyMs,
+          error: dbHealth.error || null,
+        },
+        pool: poolStats,
+        timestamp: new Date().toISOString(),
+      });
     } catch (error) {
-      res.status(503).json({
-        status: "error",
-        error: error instanceof Error ? error.message : "Unknown error",
+      // Even on error, return 200 with error details in body
+      res.status(200).json({
+        status: "degraded",
+        database: {
+          connected: false,
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
         timestamp: new Date().toISOString(),
       });
     }
