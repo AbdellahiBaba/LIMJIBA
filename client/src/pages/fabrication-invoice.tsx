@@ -22,6 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { ArrowLeft, Plus, Trash2, Save, Printer, Eye, Download, FileText } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/language-context";
 import type { Product, InsertInvoiceItem } from "@shared/schema";
@@ -126,6 +127,8 @@ export default function FabricationInvoice() {
     clientName: "",
     clientAddress: "",
     clientPhone: "",
+    applyTva: false,
+    tvaRate: 0.19,
   });
 
   const [items, setItems] = useState<FabricationLineItem[]>([
@@ -148,7 +151,7 @@ export default function FabricationInvoice() {
   }, [nextNumber]);
 
   const createMutation = useMutation({
-    mutationFn: (data: { invoice: typeof formData & { totalHT: number; totalTTC: number }; items: InsertInvoiceItem[] }) =>
+    mutationFn: (data: { invoice: typeof formData & { totalHT: number; tvaAmount: number; totalTTC: number }; items: InsertInvoiceItem[] }) =>
       apiRequest("POST", "/api/invoices", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
@@ -212,7 +215,8 @@ export default function FabricationInvoice() {
 
   const totalHT = items.reduce((sum, item) => sum + item.total, 0);
   const totalWeight = items.reduce((sum, item) => sum + item.weightKg * item.quantity, 0);
-  const totalTTC = totalHT;
+  const tvaAmount = formData.applyTva ? Math.round(totalHT * formData.tvaRate * 100) / 100 : 0;
+  const totalTTC = totalHT + tvaAmount;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -228,7 +232,7 @@ export default function FabricationInvoice() {
       }));
 
     createMutation.mutate({
-      invoice: { ...formData, totalHT, totalTTC },
+      invoice: { ...formData, totalHT, tvaAmount, totalTTC },
       items: invoiceItems,
     });
   };
@@ -392,6 +396,7 @@ export default function FabricationInvoice() {
   <div class="totals">
     <p>${labels.weight}: <strong>${totalWeight.toFixed(2)} Kg</strong></p>
     <p>${labels.totalHT}: <strong>${formatNumber(totalHT)} DZD</strong></p>
+    ${formData.applyTva ? `<p>${getLabel("TVA", "ضريبة القيمة المضافة")} (${(formData.tvaRate * 100).toFixed(0)}%): <strong>${formatNumber(tvaAmount)} DZD</strong></p>` : ""}
     <p class="grand-total">${labels.totalTTC}: ${formatNumber(totalTTC)} DZD</p>
   </div>
 
@@ -593,7 +598,7 @@ export default function FabricationInvoice() {
           <tfoot>
             <tr className="bg-gray-100">
               <td colSpan={2} className="p-3 border font-semibold">
-                {getLabel("Total", "المجموع")}
+                {getLabel("Total H.T", "المجموع")}
               </td>
               <td className="p-3 text-center border"></td>
               <td className="p-3 text-center border font-semibold">
@@ -601,11 +606,29 @@ export default function FabricationInvoice() {
               </td>
               <td className="p-3 text-center border font-semibold">{totalWeight.toFixed(2)} Kg</td>
               <td className="p-3 border"></td>
+              <td className="p-3 text-right border font-semibold">
+                {formatCurrency(totalHT)}
+              </td>
+            </tr>
+            {formData.applyTva && (
+              <tr className="bg-gray-50">
+                <td colSpan={6} className="p-3 border text-right">
+                  {getLabel(`TVA (${(formData.tvaRate * 100).toFixed(0)}%)`, `ضريبة القيمة المضافة (${(formData.tvaRate * 100).toFixed(0)}%)`)}
+                </td>
+                <td className="p-3 text-right border font-medium">
+                  {formatCurrency(tvaAmount)}
+                </td>
+              </tr>
+            )}
+            <tr className="bg-gray-200">
+              <td colSpan={6} className="p-3 border text-right font-bold">
+                {getLabel("Total T.T.C", "المجموع الكلي")}
+              </td>
               <td 
                 className="p-3 text-right border font-bold"
                 style={{ color: branding.primaryColor }}
               >
-                {formatCurrency(totalHT)}
+                {formatCurrency(totalTTC)}
               </td>
             </tr>
           </tfoot>
@@ -620,6 +643,7 @@ export default function FabricationInvoice() {
           </p>
           <p className="text-lg font-medium mt-1" style={{ color: branding.primaryColor }}>
             {getAmountInWords(totalTTC)}
+            {formData.applyTva && ` (${getLabel("TTC", "شامل الضريبة")})`}
           </p>
         </div>
 
@@ -794,6 +818,42 @@ export default function FabricationInvoice() {
                   data-testid="input-client-phone"
                 />
               </div>
+              <div className="flex items-center gap-4 pt-4 border-t">
+                <div className="flex items-center gap-2">
+                  <Switch
+                    id="applyTva"
+                    checked={formData.applyTva}
+                    onCheckedChange={(checked) =>
+                      setFormData({ ...formData, applyTva: checked })
+                    }
+                    data-testid="switch-apply-tva"
+                  />
+                  <Label htmlFor="applyTva" className="font-medium">
+                    {getLabel("Appliquer TVA (19%)", "تطبيق ضريبة القيمة المضافة (19%)")}
+                  </Label>
+                </div>
+                {formData.applyTva && (
+                  <div className="flex items-center gap-2">
+                    <Label htmlFor="tvaRate" className="text-sm text-muted-foreground">
+                      {getLabel("Taux:", "النسبة:")}
+                    </Label>
+                    <Input
+                      id="tvaRate"
+                      type="number"
+                      min="0"
+                      max="1"
+                      step="0.01"
+                      value={formData.tvaRate}
+                      onChange={(e) =>
+                        setFormData({ ...formData, tvaRate: parseFloat(e.target.value) || 0.19 })
+                      }
+                      className="w-20"
+                      data-testid="input-tva-rate"
+                    />
+                    <span className="text-sm text-muted-foreground">({(formData.tvaRate * 100).toFixed(0)}%)</span>
+                  </div>
+                )}
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -918,6 +978,12 @@ export default function FabricationInvoice() {
                   <span>TOTAL H.T:</span>
                   <span className="font-medium">{formatCurrency(totalHT)}</span>
                 </div>
+                {formData.applyTva && (
+                  <div className="flex justify-between text-sm">
+                    <span>TVA ({(formData.tvaRate * 100).toFixed(0)}%):</span>
+                    <span className="font-medium">{formatCurrency(tvaAmount)}</span>
+                  </div>
+                )}
                 <div 
                   className="flex justify-between text-lg font-bold pt-2 border-t"
                   style={{ color: branding.primaryColor }}

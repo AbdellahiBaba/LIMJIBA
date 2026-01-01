@@ -30,6 +30,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ArrowLeft, Plus, Trash2, Save, Eye } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import { useToast } from "@/hooks/use-toast";
 import type { Product, InvoiceWithItems, InsertInvoiceItem } from "@shared/schema";
 
@@ -137,6 +138,8 @@ export default function InvoiceForm() {
         paymentMode: existingInvoice.paymentMode,
         dueDate: existingInvoice.dueDate || "",
         clientName: existingInvoice.clientName || "",
+        applyTva: existingInvoice.applyTva || false,
+        tvaRate: existingInvoice.tvaRate || 0.19,
       });
       if (existingInvoice.items.length > 0) {
         setItems(
@@ -156,7 +159,7 @@ export default function InvoiceForm() {
   }, [existingInvoice]);
 
   const createMutation = useMutation({
-    mutationFn: (data: { invoice: typeof formData & { totalHT: number; totalTTC: number; totalWeight: number }; items: InsertInvoiceItem[] }) =>
+    mutationFn: (data: { invoice: typeof formData & { totalHT: number; tvaAmount: number; totalTTC: number; totalWeight: number }; items: InsertInvoiceItem[] }) =>
       apiRequest("POST", "/api/invoices", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
@@ -223,7 +226,8 @@ export default function InvoiceForm() {
   };
 
   const totalHT = items.reduce((sum, item) => sum + item.total, 0);
-  const totalTTC = totalHT;
+  const tvaAmount = formData.applyTva ? Math.round(totalHT * formData.tvaRate * 100) / 100 : 0;
+  const totalTTC = totalHT + tvaAmount;
   const totalWeight = items.reduce((sum, item) => sum + item.totalWeight, 0);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -242,7 +246,7 @@ export default function InvoiceForm() {
       }));
 
     createMutation.mutate({
-      invoice: { ...formData, totalHT, totalTTC, totalWeight },
+      invoice: { ...formData, totalHT, tvaAmount, totalTTC, totalWeight },
       items: invoiceItems,
     });
   };
@@ -363,6 +367,42 @@ export default function InvoiceForm() {
                   data-testid="input-due-date"
                 />
               </div>
+            </div>
+            <div className="flex items-center gap-4 pt-4 border-t">
+              <div className="flex items-center gap-2">
+                <Switch
+                  id="applyTva"
+                  checked={formData.applyTva}
+                  onCheckedChange={(checked) =>
+                    setFormData({ ...formData, applyTva: checked })
+                  }
+                  data-testid="switch-apply-tva"
+                />
+                <Label htmlFor="applyTva" className="font-medium">
+                  Apply TVA (19%)
+                </Label>
+              </div>
+              {formData.applyTva && (
+                <div className="flex items-center gap-2">
+                  <Label htmlFor="tvaRate" className="text-sm text-muted-foreground">
+                    Rate:
+                  </Label>
+                  <Input
+                    id="tvaRate"
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value={formData.tvaRate}
+                    onChange={(e) =>
+                      setFormData({ ...formData, tvaRate: parseFloat(e.target.value) || 0.19 })
+                    }
+                    className="w-20"
+                    data-testid="input-tva-rate"
+                  />
+                  <span className="text-sm text-muted-foreground">({(formData.tvaRate * 100).toFixed(0)}%)</span>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -498,6 +538,14 @@ export default function InvoiceForm() {
                   {totalHT.toLocaleString()} DZD
                 </span>
               </div>
+              {formData.applyTva && (
+                <div className="flex gap-8 text-sm">
+                  <span className="text-muted-foreground">TVA ({(formData.tvaRate * 100).toFixed(0)}%):</span>
+                  <span className="font-mono font-medium" data-testid="text-tva-amount">
+                    {tvaAmount.toLocaleString()} DZD
+                  </span>
+                </div>
+              )}
               <div className="flex gap-8 text-lg font-semibold">
                 <span>Total T.T.C:</span>
                 <span className="font-mono" data-testid="text-total-ttc">
@@ -660,9 +708,23 @@ export default function InvoiceForm() {
                 </tbody>
                 <tfoot>
                   <tr className="bg-gray-100">
-                    <td colSpan={4} className="p-3 border font-semibold">Total</td>
+                    <td colSpan={4} className="p-3 border font-semibold">Total H.T</td>
                     <td className="p-3 text-center border font-semibold">{totalWeight.toFixed(2)} kg</td>
                     <td className="p-3 border"></td>
+                    <td className="p-3 text-right border font-semibold">
+                      {totalHT.toLocaleString()} DZD
+                    </td>
+                  </tr>
+                  {formData.applyTva && (
+                    <tr className="bg-gray-50">
+                      <td colSpan={6} className="p-3 border text-right">TVA ({(formData.tvaRate * 100).toFixed(0)}%)</td>
+                      <td className="p-3 text-right border font-medium">
+                        {tvaAmount.toLocaleString()} DZD
+                      </td>
+                    </tr>
+                  )}
+                  <tr className="bg-gray-200">
+                    <td colSpan={6} className="p-3 border text-right font-bold">Total T.T.C</td>
                     <td 
                       className="p-3 text-right border font-bold"
                       style={{ color: branding.primaryColor }}
@@ -682,6 +744,7 @@ export default function InvoiceForm() {
                 </p>
                 <p className="text-lg font-medium mt-1" style={{ color: branding.primaryColor }}>
                   {numberToFrenchWords(Math.floor(totalTTC))} dinars algériens
+                  {formData.applyTva && " (TTC)"}
                 </p>
               </div>
 

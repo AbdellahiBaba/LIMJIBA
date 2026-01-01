@@ -1010,6 +1010,12 @@ function generateInvoicePDF(invoice: any, branding: InvoiceBranding = {
           <span>${labels.totalHT}:</span>
           <span>${invoice.totalHT.toLocaleString()} DZD</span>
         </div>
+        ${invoice.applyTva ? `
+        <div class="totals-row">
+          <span>${isArabic ? 'ضريبة القيمة المضافة' : 'TVA'} (${((invoice.tvaRate || 0.19) * 100).toFixed(0)}%):</span>
+          <span>${(invoice.tvaAmount || 0).toLocaleString()} DZD</span>
+        </div>
+        ` : ''}
         <div class="totals-row final">
           <span>${labels.totalTTC}:</span>
           <span>${invoice.totalTTC.toLocaleString()} DZD</span>

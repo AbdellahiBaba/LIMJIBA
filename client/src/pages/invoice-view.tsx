@@ -282,6 +282,14 @@ export default function InvoiceView() {
                   {invoice.totalHT.toLocaleString()} DZD
                 </span>
               </div>
+              {invoice.applyTva && (
+                <div className="flex gap-8 text-sm">
+                  <span className="text-muted-foreground">TVA ({((invoice.tvaRate || 0.19) * 100).toFixed(0)}%):</span>
+                  <span className="font-mono font-medium">
+                    {(invoice.tvaAmount || 0).toLocaleString()} DZD
+                  </span>
+                </div>
+              )}
               <div className="flex gap-8 text-lg font-semibold">
                 <span>Total T.T.C:</span>
                 <span className="font-mono">
