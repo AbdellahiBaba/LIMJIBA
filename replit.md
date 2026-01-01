@@ -29,6 +29,7 @@ Preferred communication style: Simple, everyday language.
 3. **Invoice Generation** - Create/view/delete invoices, PDF generation with French number-to-words conversion
 4. **POS (Point of Sale)** - Product grid, cart system, checkout with payment modes, receipt printing
 5. **Reseller Rewards** - Track purchases, threshold-based reward pool, random winner draw
+6. **Profit Calculator** - Net profit analysis with configurable costs, monthly expenses, salaries, and product-level profitability metrics
 
 ### Backend Architecture
 - **Runtime:** Node.js with Express
@@ -60,8 +61,11 @@ Core entities:
 ## Recent Changes
 
 **January 2026:**
+- Added Profit Calculator module with monthly revenue analysis, cost breakdown, and product-level profitability metrics
+- Added invoice preview component to Branding page showing live logo, watermark, colors, and language settings
+- Added profit calculator translations in French and Arabic locale files
 - Fixed SelectItem empty value error in POS page (changed value="" to value="none")
-- Completed all four modules with full functionality
+- Completed all five core modules with full functionality
 - Added theme toggle for light/dark mode support
 - Implemented French number-to-words conversion for invoices
 - Added sidebar navigation with all module links
@@ -77,7 +81,8 @@ client/src/
 │   ├── invoice-form.tsx   # Create new invoice
 │   ├── invoice-view.tsx   # View invoice details
 │   ├── pos.tsx            # Point of sale interface
-│   └── resellers.tsx      # Reseller rewards program
+│   ├── resellers.tsx      # Reseller rewards program
+│   └── profit-calculator.tsx # Net profit analysis
 ├── components/
 │   ├── app-sidebar.tsx    # Main navigation sidebar
 │   └── theme-toggle.tsx   # Dark/light mode toggle

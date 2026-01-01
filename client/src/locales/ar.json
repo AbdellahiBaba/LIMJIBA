@@ -37,6 +37,7 @@
     "pos": "نقطة البيع",
     "resellers": "الموزعون",
     "branding": "إعدادات العلامة التجارية",
+    "profit": "حاسبة الأرباح",
     "settings": "الإعدادات"
   },
   "dashboard": {
@@ -203,5 +204,22 @@
     "address": "المنطقة الصناعية، الجزائر",
     "phone": "+213 000 000 000",
     "email": "contact@polyflecta.com"
+  },
+  "profit": {
+    "title": "حاسبة الأرباح",
+    "description": "تحليل ربحية عملك",
+    "monthlyRevenue": "الإيرادات الشهرية",
+    "totalCosts": "إجمالي التكاليف",
+    "netProfit": "صافي الربح",
+    "yearlyProfit": "الربح السنوي",
+    "costInputs": "مدخلات التكلفة",
+    "productCostPercentage": "تكلفة المنتج (% من سعر البيع)",
+    "monthlyExpenses": "المصاريف الشهرية",
+    "monthlySalaries": "الرواتب الشهرية",
+    "breakdown": "التفاصيل الشهرية",
+    "productProfitability": "ربحية المنتج",
+    "costPerUnit": "التكلفة",
+    "profitPerUnit": "الربح",
+    "margin": "الهامش"
   }
 }

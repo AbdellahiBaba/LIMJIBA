@@ -20,6 +20,7 @@ import {
   Gift,
   Settings,
   Palette,
+  Calculator,
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -63,6 +64,12 @@ export function AppSidebar() {
       url: "/branding",
       icon: Palette,
       testId: "nav-branding",
+    },
+    {
+      title: t("nav.profit") || "Profit Calculator",
+      url: "/profit",
+      icon: Calculator,
+      testId: "nav-profit",
     },
   ];
 

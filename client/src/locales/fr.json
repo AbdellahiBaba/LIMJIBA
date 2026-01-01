@@ -37,6 +37,7 @@
     "pos": "Point de Vente",
     "resellers": "Revendeurs",
     "branding": "Paramètres de Marque",
+    "profit": "Calcul du Profit",
     "settings": "Paramètres"
   },
   "dashboard": {
@@ -203,5 +204,22 @@
     "address": "Zone Industrielle, Algérie",
     "phone": "+213 000 000 000",
     "email": "contact@polyflecta.com"
+  },
+  "profit": {
+    "title": "Calcul du Profit",
+    "description": "Analysez la rentabilité de votre entreprise",
+    "monthlyRevenue": "Revenus Mensuels",
+    "totalCosts": "Coûts Totaux",
+    "netProfit": "Bénéfice Net",
+    "yearlyProfit": "Bénéfice Annuel",
+    "costInputs": "Paramètres des Coûts",
+    "productCostPercentage": "Coût du Produit (% du prix de vente)",
+    "monthlyExpenses": "Charges Mensuelles",
+    "monthlySalaries": "Salaires Mensuels",
+    "breakdown": "Détail Mensuel",
+    "productProfitability": "Rentabilité par Produit",
+    "costPerUnit": "Coût",
+    "profitPerUnit": "Profit",
+    "margin": "Marge"
   }
 }

@@ -402,6 +402,151 @@ export default function Branding() {
           </CardContent>
         </Card>
       </div>
+
+      <Card className="mt-6">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            {t("branding.previewInvoice")}
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div 
+            className="relative border rounded-md bg-white dark:bg-gray-100 p-6 min-h-[400px] overflow-hidden"
+            style={{ direction: branding.invoiceLanguage === "ar" ? "rtl" : "ltr" }}
+          >
+            {branding.enableWatermark && branding.watermark && (
+              <div 
+                className="absolute inset-0 flex items-center justify-center pointer-events-none"
+                style={{ opacity: branding.watermarkOpacity }}
+              >
+                <img 
+                  src={branding.watermark} 
+                  alt="Watermark" 
+                  className="max-w-[60%] max-h-[60%] object-contain"
+                />
+              </div>
+            )}
+            
+            <div className="relative z-10">
+              <div 
+                className="flex items-start justify-between mb-6 pb-4"
+                style={{ borderBottom: `3px solid ${branding.primaryColor}` }}
+              >
+                <div 
+                  className="flex items-start gap-4"
+                  style={{ 
+                    flexDirection: branding.logoPosition === "right" ? "row-reverse" : "row",
+                    justifyContent: branding.logoPosition === "center" ? "center" : "flex-start",
+                    width: branding.logoPosition === "center" ? "100%" : "auto"
+                  }}
+                >
+                  {branding.logo ? (
+                    <img 
+                      src={branding.logo} 
+                      alt="Logo" 
+                      className="h-14 w-auto object-contain"
+                    />
+                  ) : (
+                    <div 
+                      className="w-14 h-14 rounded-md flex items-center justify-center text-white font-bold"
+                      style={{ backgroundColor: branding.primaryColor }}
+                    >
+                      PFP
+                    </div>
+                  )}
+                  {branding.logoPosition !== "center" && (
+                    <div className="text-gray-800">
+                      <h2 
+                        className="text-lg font-bold"
+                        style={{ color: branding.primaryColor }}
+                      >
+                        POLY FLECTA PLASTICA
+                      </h2>
+                      <p className="text-xs text-gray-600">
+                        {branding.invoiceLanguage === "ar" 
+                          ? "تصنيع عبوات بلاستيكية" 
+                          : "FABRICATION D'EMBALLAGE EN PLASTIQUE"}
+                      </p>
+                      <p className="text-xs text-gray-500 mt-1">
+                        Village Zaitout, Hammam Dalaa - M'sila
+                      </p>
+                      <p className="text-xs text-gray-500">
+                        CARTE ARTISAN N°: 28/00 - 2896688A24
+                      </p>
+                    </div>
+                  )}
+                </div>
+                <div className={`text-${branding.invoiceLanguage === "ar" ? "left" : "right"}`}>
+                  <h3 
+                    className="text-xl font-bold"
+                    style={{ color: branding.primaryColor }}
+                  >
+                    {branding.invoiceLanguage === "ar" ? "فاتورة" : 
+                     branding.invoiceLanguage === "bilingual" ? "FACTURE / فاتورة" : "FACTURE"}
+                  </h3>
+                  <p className="text-sm text-gray-600">
+                    {branding.invoiceLanguage === "ar" ? "رقم" : "N°"}: FA-2026-001
+                  </p>
+                  <p className="text-sm text-gray-600">
+                    {branding.invoiceLanguage === "ar" ? "التاريخ" : "Date"}: 01/01/2026
+                  </p>
+                </div>
+              </div>
+
+              <table className="w-full text-sm mb-4">
+                <thead>
+                  <tr style={{ backgroundColor: branding.primaryColor }}>
+                    <th className="text-white p-2 text-left">
+                      {branding.invoiceLanguage === "ar" ? "الكمية" : "Qté"}
+                    </th>
+                    <th className="text-white p-2 text-left">
+                      {branding.invoiceLanguage === "ar" ? "الوصف" : "Désignation"}
+                    </th>
+                    <th className="text-white p-2 text-right">
+                      {branding.invoiceLanguage === "ar" ? "سعر الوحدة" : "Prix U"}
+                    </th>
+                    <th className="text-white p-2 text-right">
+                      {branding.invoiceLanguage === "ar" ? "المبلغ" : "Montant"}
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="text-gray-700">
+                  <tr className="border-b">
+                    <td className="p-2">100</td>
+                    <td className="p-2">Sac en plastique 5KG</td>
+                    <td className="p-2 text-right">250 DZD</td>
+                    <td className="p-2 text-right">25,000 DZD</td>
+                  </tr>
+                  <tr className="border-b bg-gray-50">
+                    <td className="p-2">50</td>
+                    <td className="p-2">Sac en plastique 10KG</td>
+                    <td className="p-2 text-right">450 DZD</td>
+                    <td className="p-2 text-right">22,500 DZD</td>
+                  </tr>
+                </tbody>
+              </table>
+
+              <div className={`text-${branding.invoiceLanguage === "ar" ? "left" : "right"} text-gray-800`}>
+                <p className="text-sm">
+                  {branding.invoiceLanguage === "ar" ? "المجموع (قبل الضريبة)" : "TOTAL H.T"}: 
+                  <strong> 47,500 DZD</strong>
+                </p>
+                <p 
+                  className="text-lg font-bold mt-1"
+                  style={{ color: branding.primaryColor }}
+                >
+                  {branding.invoiceLanguage === "ar" ? "المجموع الكلي" : "TOTAL T.T.C"}: 47,500 DZD
+                </p>
+              </div>
+
+              <div className="mt-4 pt-4 border-t text-xs text-gray-500 text-center">
+                www.polyflectaplastica.com | contact@polyflectaplastica.com | +213 6 70 04 91 24
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

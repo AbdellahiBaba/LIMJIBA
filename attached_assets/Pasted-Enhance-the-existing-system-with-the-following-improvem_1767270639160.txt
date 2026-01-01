@@ -1,0 +1,197 @@
+Enhance the existing system with the following improvements related to branding, multilingual support, invoice completeness, PDF generation, and financial calculations:
+
+1. Fix PDF Downloading & Rendering
+Ensure invoice PDFs download reliably on all browsers.
+
+Fix issues where PDFs:
+
+Fail to generate
+
+Render blank pages
+
+Exclude images (logo/watermark)
+
+Corrupt during download
+
+Embed fonts properly, especially Arabic fonts.
+
+Ensure RTL text renders correctly in PDF.
+
+2. Logo & Watermark Preview Before PDF Generation
+Logo Preview
+Add a live preview of the uploaded logo in the invoice creation page.
+
+Show logo position (left / center / right).
+
+Show exact size and placement as it will appear in the PDF.
+
+Watermark Preview
+Add a preview of the watermark behind invoice content.
+
+Show opacity (10–15%), scaling, and centered placement.
+
+Allow instant preview when uploading a new watermark.
+
+3. Include Full Company Details in Invoice
+Ensure the invoice PDF includes all company information:
+
+Company name
+
+Logo
+
+Address
+
+Artisan number
+
+Article number
+
+Fiscal number
+
+Email
+
+Phone number
+
+Website (if available)
+
+These must appear in the header or footer in a professional layout.
+
+4. Multilingual Support (Arabic + French)
+UI Language System
+Add a language switcher (Arabic / French / Bilingual).
+
+Store language preference locally.
+
+Move all UI text into translation files:
+
+/locales/ar.json
+
+/locales/fr.json
+
+Arabic RTL Support
+Apply dir="rtl" and lang="ar" when Arabic is selected.
+
+Right-align text, tables, and forms.
+
+Use Arabic-friendly fonts (Cairo, Amiri, Noto Kufi Arabic).
+
+Ensure PDF generator supports RTL.
+
+Invoice Language Options
+Add invoice language setting:
+
+Arabic
+
+French
+
+Bilingual (AR + FR)
+
+Support Arabic and French number‑to‑words conversion.
+
+Adjust invoice layout automatically based on selected language.
+
+5. Branding System (Logo + Colors + Watermark)
+Branding Settings Page
+Add a page where the user can:
+
+Upload company logo
+
+Upload watermark image
+
+Toggle watermark ON/OFF
+
+Choose logo position
+
+Choose default invoice language
+
+Choose brand primary and accent colors
+
+Preview invoice with branding applied
+
+Brand Color System
+Automatically extract dominant colors from the uploaded logo.
+
+Suggest primary and accent colors.
+
+Apply brand colors to:
+
+Invoice borders
+
+Table headers
+
+Buttons
+
+Sidebar
+
+POS interface
+
+Headings
+
+6. Add Invoice Preview Mode
+Add a “Preview Invoice” button.
+
+Preview must show:
+
+Logo
+
+Watermark
+
+Company details
+
+Product table
+
+Totals
+
+Language formatting
+
+Preview must match the final PDF exactly.
+
+7. Net Profit Calculation System
+Add a financial analytics module to calculate net profit.
+
+Inputs
+Product cost (per item or batch)
+
+Business expenses (monthly or yearly)
+
+Salaries (monthly or yearly)
+
+Sell price (per product)
+
+Formula
+Code
+Net Profit = Sell Price – (Product Cost + Business Expenses + Salaries)
+Features
+Add a “Profit Calculator” page in the dashboard.
+
+Allow entering:
+
+Cost per product
+
+Total monthly expenses
+
+Total salaries
+
+Sell price
+
+Show:
+
+Profit per product
+
+Profit per invoice
+
+Monthly net profit
+
+Yearly net profit
+
+Integrate with stock and invoice data for automatic calculations.
+
+Display results with branded UI and charts.
+
+8. Requirements
+All features must work fully offline.
+
+Integrate seamlessly with the existing system.
+
+Ask me only if a critical detail is missing.
+
+Start implementing these enhancements step by step.
