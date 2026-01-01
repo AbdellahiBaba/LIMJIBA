@@ -53,10 +53,13 @@ export async function registerRoutes(
 
   app.post("/api/products", async (req, res) => {
     try {
+      console.log("Received product data:", req.body);
       const data = insertProductSchema.parse(req.body);
+      console.log("Parsed product data:", data);
       const product = await storage.createProduct(data);
       res.status(201).json(product);
     } catch (error) {
+      console.error("Product creation error:", error);
       if (error instanceof z.ZodError) {
         return res.status(400).json({ error: error.errors });
       }

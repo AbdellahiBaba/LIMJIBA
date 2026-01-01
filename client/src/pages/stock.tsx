@@ -98,7 +98,8 @@ function ProductFormDialog({
       toast({ title: t("stock.productAdded") });
       onSuccess();
     },
-    onError: () => {
+    onError: (error: Error) => {
+      console.error("Product creation error:", error);
       toast({ title: "Failed to create product", variant: "destructive" });
     },
   });
