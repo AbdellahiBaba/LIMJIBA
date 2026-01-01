@@ -68,6 +68,8 @@ function ProductFormDialog({
     name: product?.name ?? "",
     category: product?.category ?? categories[0],
     unitPrice: product?.unitPrice ?? 0,
+    costPrice: product?.costPrice ?? 0,
+    weightPerUnit: product?.weightPerUnit ?? 0,
     stockQuantity: product?.stockQuantity ?? 0,
     lowStockThreshold: product?.lowStockThreshold ?? 10,
     unit: product?.unit ?? "pcs",
@@ -168,6 +170,37 @@ function ProductFormDialog({
                 }
                 required
                 data-testid="input-unit-price"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="costPrice">{t("stock.costPrice")} (DZD) *</Label>
+              <Input
+                id="costPrice"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.costPrice}
+                onChange={(e) =>
+                  setFormData({ ...formData, costPrice: parseFloat(e.target.value) || 0 })
+                }
+                required
+                data-testid="input-cost-price"
+              />
+            </div>
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <Label htmlFor="weightPerUnit">{t("stock.weightPerUnit")} (kg)</Label>
+              <Input
+                id="weightPerUnit"
+                type="number"
+                step="0.001"
+                min="0"
+                value={formData.weightPerUnit}
+                onChange={(e) =>
+                  setFormData({ ...formData, weightPerUnit: parseFloat(e.target.value) || 0 })
+                }
+                data-testid="input-weight-per-unit"
               />
             </div>
             <div className="space-y-2">

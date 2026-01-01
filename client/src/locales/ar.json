@@ -63,6 +63,8 @@
     "sku": "رمز المنتج",
     "category": "الفئة",
     "unitPrice": "سعر الوحدة",
+    "costPrice": "سعر التكلفة",
+    "weightPerUnit": "الوزن لكل وحدة",
     "stockQuantity": "الكمية المتوفرة",
     "minStock": "الحد الأدنى للمخزون",
     "lowStock": "مخزون منخفض",

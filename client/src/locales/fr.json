@@ -63,6 +63,8 @@
     "sku": "SKU",
     "category": "Catégorie",
     "unitPrice": "Prix Unitaire",
+    "costPrice": "Prix de Revient",
+    "weightPerUnit": "Poids par Unité",
     "stockQuantity": "Quantité en Stock",
     "minStock": "Stock Minimum",
     "lowStock": "Stock Bas",
