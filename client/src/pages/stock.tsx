@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "@/contexts/language-context";
@@ -74,6 +74,21 @@ function ProductFormDialog({
     lowStockThreshold: product?.lowStockThreshold ?? 10,
     unit: product?.unit ?? "pcs",
   });
+
+  useEffect(() => {
+    if (open) {
+      setFormData({
+        name: product?.name ?? "",
+        category: product?.category ?? categories[0],
+        unitPrice: product?.unitPrice ?? 0,
+        costPrice: product?.costPrice ?? 0,
+        weightPerUnit: product?.weightPerUnit ?? 0,
+        stockQuantity: product?.stockQuantity ?? 0,
+        lowStockThreshold: product?.lowStockThreshold ?? 10,
+        unit: product?.unit ?? "pcs",
+      });
+    }
+  }, [open, product]);
 
   const createMutation = useMutation({
     mutationFn: (data: InsertProduct) => apiRequest("POST", "/api/products", data),
