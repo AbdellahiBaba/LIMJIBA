@@ -309,6 +309,8 @@
     "profitSummary": "Profit Summary",
     "invoiceRevenue": "Invoice Revenue",
     "posRevenue": "POS Sales Revenue",
+    "b2bSales": "B2B sales",
+    "directSales": "Direct sales",
     "productCosts": "Product Costs",
     "costOfGoods": "Cost of goods sold",
     "salaries": "Salaries",

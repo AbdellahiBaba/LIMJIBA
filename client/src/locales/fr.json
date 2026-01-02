@@ -309,6 +309,8 @@
     "profitSummary": "Résumé du Profit",
     "invoiceRevenue": "Revenus Factures",
     "posRevenue": "Revenus Point de Vente",
+    "b2bSales": "Ventes B2B",
+    "directSales": "Ventes directes",
     "productCosts": "Coût des Produits",
     "costOfGoods": "Coût des marchandises vendues",
     "salaries": "Salaires",

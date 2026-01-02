@@ -76,10 +76,10 @@ export default function ProfitCalculator() {
 
   const getPeriodLabel = () => {
     switch (period) {
-      case "month": return t("profit.thisMonth") || "This Month";
-      case "quarter": return t("profit.thisQuarter") || "This Quarter";
-      case "year": return t("profit.thisYear") || "This Year";
-      case "all": return t("profit.allTime") || "All Time";
+      case "month": return t("profit.thisMonth");
+      case "quarter": return t("profit.thisQuarter");
+      case "year": return t("profit.thisYear");
+      case "all": return t("profit.allTime");
     }
   };
 
@@ -89,10 +89,10 @@ export default function ProfitCalculator() {
         <div>
           <h1 className="text-2xl font-semibold flex items-center gap-2" data-testid="text-profit-title">
             <Calculator className="h-6 w-6" />
-            {t("profit.title") || "Profit Analytics"}
+            {t("profit.title")}
           </h1>
           <p className="text-muted-foreground text-sm">
-            {t("profit.description") || "Automated business profitability analysis"}
+            {t("profit.description")}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -101,10 +101,10 @@ export default function ProfitCalculator() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="month">{t("profit.thisMonth") || "This Month"}</SelectItem>
-              <SelectItem value="quarter">{t("profit.thisQuarter") || "This Quarter"}</SelectItem>
-              <SelectItem value="year">{t("profit.thisYear") || "This Year"}</SelectItem>
-              <SelectItem value="all">{t("profit.allTime") || "All Time"}</SelectItem>
+              <SelectItem value="month">{t("profit.thisMonth")}</SelectItem>
+              <SelectItem value="quarter">{t("profit.thisQuarter")}</SelectItem>
+              <SelectItem value="year">{t("profit.thisYear")}</SelectItem>
+              <SelectItem value="all">{t("profit.allTime")}</SelectItem>
             </SelectContent>
           </Select>
           <Button 
@@ -129,7 +129,7 @@ export default function ProfitCalculator() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {t("profit.totalRevenue") || "Total Revenue"}
+                  {t("profit.totalRevenue")}
                 </CardTitle>
                 <DollarSign className="h-4 w-4 text-green-600" />
               </CardHeader>
@@ -146,7 +146,7 @@ export default function ProfitCalculator() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {t("profit.totalCosts") || "Total Costs"}
+                  {t("profit.totalCosts")}
                 </CardTitle>
                 <TrendingDown className="h-4 w-4 text-red-600" />
               </CardHeader>
@@ -155,7 +155,7 @@ export default function ProfitCalculator() {
                   {formatCurrency(stats.totalProductCosts + stats.totalSalaries + stats.totalExpenses)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {t("profit.productsSalariesExpenses") || "Products + Salaries + Expenses"}
+                  {t("profit.productsSalariesExpenses")}
                 </p>
               </CardContent>
             </Card>
@@ -163,7 +163,7 @@ export default function ProfitCalculator() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {t("profit.netProfit") || "Net Profit"}
+                  {t("profit.netProfit")}
                 </CardTitle>
                 <TrendingUp className="h-4 w-4 text-primary" />
               </CardHeader>
@@ -175,7 +175,7 @@ export default function ProfitCalculator() {
                   variant={stats.netProfit >= 0 ? "default" : "destructive"} 
                   className="mt-1"
                 >
-                  {stats.profitMargin.toFixed(1)}% {t("profit.margin") || "margin"}
+                  {stats.profitMargin.toFixed(1)}% {t("profit.margin")}
                 </Badge>
               </CardContent>
             </Card>
@@ -183,7 +183,7 @@ export default function ProfitCalculator() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  {t("profit.grossProfit") || "Gross Profit"}
+                  {t("profit.grossProfit")}
                 </CardTitle>
                 <Receipt className="h-4 w-4 text-primary" />
               </CardHeader>
@@ -192,7 +192,7 @@ export default function ProfitCalculator() {
                   {formatCurrency(stats.grossProfit)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {t("profit.beforeExpenses") || "Before expenses & salaries"}
+                  {t("profit.beforeExpenses")}
                 </p>
               </CardContent>
             </Card>
@@ -203,7 +203,7 @@ export default function ProfitCalculator() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-green-600" />
-                  {t("profit.revenueBreakdown") || "Revenue Breakdown"}
+                  {t("profit.revenueBreakdown")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -212,8 +212,8 @@ export default function ProfitCalculator() {
                     <div className="flex items-center gap-3">
                       <FileText className="h-5 w-5 text-green-600" />
                       <div>
-                        <p className="font-medium">{t("profit.invoiceRevenue") || "Invoice Revenue"}</p>
-                        <p className="text-xs text-muted-foreground">B2B sales</p>
+                        <p className="font-medium">{t("profit.invoiceRevenue")}</p>
+                        <p className="text-xs text-muted-foreground">{t("profit.b2bSales")}</p>
                       </div>
                     </div>
                     <span className="font-bold text-green-600 dark:text-green-400">
@@ -225,8 +225,8 @@ export default function ProfitCalculator() {
                     <div className="flex items-center gap-3">
                       <ShoppingCart className="h-5 w-5 text-green-600" />
                       <div>
-                        <p className="font-medium">{t("profit.posRevenue") || "POS Sales Revenue"}</p>
-                        <p className="text-xs text-muted-foreground">Direct sales</p>
+                        <p className="font-medium">{t("profit.posRevenue")}</p>
+                        <p className="text-xs text-muted-foreground">{t("profit.directSales")}</p>
                       </div>
                     </div>
                     <span className="font-bold text-green-600 dark:text-green-400">
@@ -235,7 +235,7 @@ export default function ProfitCalculator() {
                   </div>
 
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md border-t-2 border-green-600">
-                    <span className="font-semibold">{t("profit.totalRevenue") || "Total Revenue"}</span>
+                    <span className="font-semibold">{t("profit.totalRevenue")}</span>
                     <span className="font-bold text-lg text-green-600 dark:text-green-400">
                       {formatCurrency(stats.totalRevenue)}
                     </span>
@@ -248,7 +248,7 @@ export default function ProfitCalculator() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingDown className="h-5 w-5 text-red-600" />
-                  {t("profit.costsBreakdown") || "Costs Breakdown"}
+                  {t("profit.costsBreakdown")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -257,8 +257,8 @@ export default function ProfitCalculator() {
                     <div className="flex items-center gap-3">
                       <Receipt className="h-5 w-5 text-red-600" />
                       <div>
-                        <p className="font-medium">{t("profit.productCosts") || "Product Costs"}</p>
-                        <p className="text-xs text-muted-foreground">{t("profit.costOfGoods") || "Cost of goods sold"}</p>
+                        <p className="font-medium">{t("profit.productCosts")}</p>
+                        <p className="text-xs text-muted-foreground">{t("profit.costOfGoods")}</p>
                       </div>
                     </div>
                     <span className="font-bold text-red-600 dark:text-red-400">
@@ -270,8 +270,8 @@ export default function ProfitCalculator() {
                     <div className="flex items-center gap-3">
                       <Users className="h-5 w-5 text-red-600" />
                       <div>
-                        <p className="font-medium">{t("profit.salaries") || "Salaries"}</p>
-                        <p className="text-xs text-muted-foreground">{t("profit.employeeWages") || "Employee wages"}</p>
+                        <p className="font-medium">{t("profit.salaries")}</p>
+                        <p className="text-xs text-muted-foreground">{t("profit.employeeWages")}</p>
                       </div>
                     </div>
                     <span className="font-bold text-red-600 dark:text-red-400">
@@ -283,8 +283,8 @@ export default function ProfitCalculator() {
                     <div className="flex items-center gap-3">
                       <Building2 className="h-5 w-5 text-red-600" />
                       <div>
-                        <p className="font-medium">{t("profit.expenses") || "Business Expenses"}</p>
-                        <p className="text-xs text-muted-foreground">{t("profit.rentUtilities") || "Rent, utilities, supplies"}</p>
+                        <p className="font-medium">{t("profit.expenses")}</p>
+                        <p className="text-xs text-muted-foreground">{t("profit.rentUtilities")}</p>
                       </div>
                     </div>
                     <span className="font-bold text-red-600 dark:text-red-400">
@@ -293,7 +293,7 @@ export default function ProfitCalculator() {
                   </div>
 
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md border-t-2 border-red-600">
-                    <span className="font-semibold">{t("profit.totalCosts") || "Total Costs"}</span>
+                    <span className="font-semibold">{t("profit.totalCosts")}</span>
                     <span className="font-bold text-lg text-red-600 dark:text-red-400">
                       {formatCurrency(stats.totalProductCosts + stats.totalSalaries + stats.totalExpenses)}
                     </span>
@@ -307,38 +307,38 @@ export default function ProfitCalculator() {
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calculator className="h-5 w-5" />
-                {t("profit.profitSummary") || "Profit Summary"}
+                {t("profit.profitSummary")}
               </CardTitle>
             </CardHeader>
             <CardContent>
               <div className="grid gap-4 md:grid-cols-3">
                 <div className="text-center p-4 bg-muted/30 rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-1">{t("profit.grossProfit") || "Gross Profit"}</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t("profit.grossProfit")}</p>
                   <p className={`text-xl font-bold ${stats.grossProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
                     {formatCurrency(stats.grossProfit)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {t("profit.revenueMinusProducts") || "Revenue - Product Costs"}
+                    {t("profit.revenueMinusProducts")}
                   </p>
                 </div>
                 
                 <div className="text-center p-4 bg-muted/30 rounded-lg">
-                  <p className="text-sm text-muted-foreground mb-1">{t("profit.operatingCosts") || "Operating Costs"}</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t("profit.operatingCosts")}</p>
                   <p className="text-xl font-bold text-red-600">
                     {formatCurrency(stats.totalSalaries + stats.totalExpenses)}
                   </p>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {t("profit.salariesPlusExpenses") || "Salaries + Expenses"}
+                    {t("profit.salariesPlusExpenses")}
                   </p>
                 </div>
                 
                 <div className={`text-center p-4 rounded-lg ${stats.netProfit >= 0 ? "bg-green-100 dark:bg-green-900/30" : "bg-red-100 dark:bg-red-900/30"}`}>
-                  <p className="text-sm text-muted-foreground mb-1">{t("profit.netProfit") || "Net Profit"}</p>
+                  <p className="text-sm text-muted-foreground mb-1">{t("profit.netProfit")}</p>
                   <p className={`text-2xl font-bold ${stats.netProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
                     {formatCurrency(stats.netProfit)}
                   </p>
                   <Badge variant={stats.netProfit >= 0 ? "default" : "destructive"} className="mt-2">
-                    {stats.profitMargin.toFixed(1)}% {t("profit.margin") || "margin"}
+                    {stats.profitMargin.toFixed(1)}% {t("profit.margin")}
                   </Badge>
                 </div>
               </div>
@@ -347,12 +347,12 @@ export default function ProfitCalculator() {
 
           <div className="text-center text-xs text-muted-foreground">
             <Calendar className="inline h-3 w-3 mr-1" />
-            {t("profit.period") || "Period"}: {stats.periodStart} - {stats.periodEnd}
+            {t("profit.period")}: {stats.periodStart} - {stats.periodEnd}
           </div>
         </>
       ) : (
         <div className="text-center py-12 text-muted-foreground">
-          {t("profit.noData") || "No data available"}
+          {t("profit.noData")}
         </div>
       )}
     </div>
