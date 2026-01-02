@@ -1,11 +1,11 @@
 import { useState } from "react";
+import { motion } from "framer-motion";
 import { useAuth } from "@/contexts/auth-context";
 import { useLanguage } from "@/contexts/language-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Loader2, Lock, User, Package, Shield } from "lucide-react";
+import { Loader2, Lock, User, Package, Shield, Boxes, Factory, Truck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 export default function Login() {
@@ -29,127 +29,285 @@ export default function Login() {
     }
   };
 
+  const floatingIcons = [
+    { Icon: Boxes, delay: 0, x: "10%", y: "20%" },
+    { Icon: Package, delay: 0.5, x: "85%", y: "15%" },
+    { Icon: Factory, delay: 1, x: "15%", y: "75%" },
+    { Icon: Truck, delay: 1.5, x: "80%", y: "70%" },
+    { Icon: Boxes, delay: 2, x: "50%", y: "10%" },
+    { Icon: Package, delay: 2.5, x: "5%", y: "45%" },
+  ];
+
   return (
     <div 
       className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden"
       dir={isRTL ? "rtl" : "ltr"}
     >
       <div className="absolute inset-0 bg-gradient-to-br from-[#0D47A1] via-[#1976D2] to-[#1565C0]" />
-      <div className="absolute inset-0 opacity-10">
-        <div className="absolute top-20 left-20 w-64 h-64 bg-white rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-20 w-80 h-80 bg-white rounded-full blur-3xl" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white rounded-full blur-3xl opacity-5" />
-      </div>
       
-      <div className="relative z-10 w-full max-w-lg">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center p-4 bg-white/10 backdrop-blur-sm rounded-2xl mb-6 border border-white/20">
+      <div className="absolute inset-0">
+        <motion.div
+          className="absolute w-[600px] h-[600px] rounded-full"
+          style={{
+            background: "radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%)",
+            top: "-200px",
+            right: "-200px",
+          }}
+          animate={{
+            scale: [1, 1.2, 1],
+            opacity: [0.3, 0.5, 0.3],
+          }}
+          transition={{
+            duration: 8,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+        <motion.div
+          className="absolute w-[500px] h-[500px] rounded-full"
+          style={{
+            background: "radial-gradient(circle, rgba(255,255,255,0.08) 0%, transparent 70%)",
+            bottom: "-150px",
+            left: "-150px",
+          }}
+          animate={{
+            scale: [1.2, 1, 1.2],
+            opacity: [0.2, 0.4, 0.2],
+          }}
+          transition={{
+            duration: 10,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        />
+      </div>
+
+      {floatingIcons.map(({ Icon, delay, x, y }, index) => (
+        <motion.div
+          key={index}
+          className="absolute text-white/10"
+          style={{ left: x, top: y }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ 
+            opacity: [0.05, 0.15, 0.05],
+            y: [0, -20, 0],
+            rotate: [0, 10, 0],
+          }}
+          transition={{
+            duration: 6,
+            delay,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+        >
+          <Icon className="w-16 h-16" />
+        </motion.div>
+      ))}
+
+      <motion.div
+        className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-transparent via-white/30 to-transparent"
+        animate={{
+          x: ["-100%", "100%"],
+        }}
+        transition={{
+          duration: 3,
+          repeat: Infinity,
+          ease: "linear",
+        }}
+      />
+
+      <div className="relative z-10 w-full max-w-md">
+        <motion.div 
+          className="text-center mb-8"
+          initial={{ opacity: 0, y: -30 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8, ease: "easeOut" }}
+        >
+          <motion.div 
+            className="inline-flex items-center justify-center p-5 bg-white/10 backdrop-blur-md rounded-2xl mb-6 border border-white/20 shadow-2xl"
+            initial={{ scale: 0.8, rotate: -10 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ duration: 0.6, delay: 0.2, type: "spring" }}
+            whileHover={{ scale: 1.05, rotate: 5 }}
+          >
             {branding.logo ? (
               <img 
                 src={branding.logo} 
                 alt={t("company.name")} 
-                className="h-16 w-auto"
+                className="h-20 w-auto"
               />
             ) : (
-              <Package className="h-12 w-12 text-white" />
+              <div className="relative">
+                <Package className="h-14 w-14 text-white" />
+                <motion.div
+                  className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full"
+                  animate={{ scale: [1, 1.3, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                />
+              </div>
             )}
-          </div>
-          <h1 className="text-3xl font-bold text-white mb-2 tracking-tight">
-            POLY FLECTA PLASTICA
-          </h1>
-          <p className="text-blue-100 text-lg">
-            {isRTL ? "نظام إدارة الأعمال المتكامل" : "Système de Gestion Intégré"}
-          </p>
-        </div>
-
-        <Card className="shadow-2xl border-0 bg-white/95 backdrop-blur-sm">
-          <CardContent className="p-8">
-            <div className="flex items-center justify-center gap-2 mb-6 text-[#1976D2]">
-              <Shield className="h-5 w-5" />
-              <span className="font-medium">
-                {isRTL ? "تسجيل الدخول الآمن" : "Connexion Sécurisée"}
-              </span>
+          </motion.div>
+          
+          <motion.h1 
+            className="text-4xl font-bold text-white mb-3 tracking-tight"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-white">
+              POLY FLECTA PLASTICA
+            </span>
+          </motion.h1>
+          
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.6 }}
+          >
+            <p className="text-blue-100 text-lg font-light">
+              {isRTL ? "نظام إدارة الأعمال المتكامل" : "Système de Gestion Intégré"}
+            </p>
+            <div className="flex items-center justify-center gap-2 mt-2 text-blue-200/70 text-sm">
+              <Boxes className="w-4 h-4" />
+              <span>{isRTL ? "صناعة التغليف البلاستيكي" : "Emballages Plastiques Industriels"}</span>
             </div>
-            
-            <form onSubmit={handleSubmit} className="space-y-5">
-              <div className="space-y-2">
-                <Label htmlFor="username" className="text-sm font-medium text-[#546E7A]">
-                  {isRTL ? "اسم المستخدم" : "Identifiant"}
-                </Label>
-                <div className="relative">
-                  <User className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-[#90A4AE] ${isRTL ? 'right-4' : 'left-4'}`} />
-                  <Input
-                    id="username"
-                    type="text"
-                    value={username}
-                    onChange={(e) => setUsername(e.target.value)}
-                    placeholder={isRTL ? "أدخل اسم المستخدم" : "Entrez votre identifiant"}
-                    className={`h-12 text-base border-2 border-gray-200 focus:border-[#1976D2] bg-gray-50/50 ${isRTL ? 'pr-12' : 'pl-12'}`}
-                    data-testid="input-username"
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="password" className="text-sm font-medium text-[#546E7A]">
-                  {isRTL ? "كلمة المرور" : "Mot de passe"}
-                </Label>
-                <div className="relative">
-                  <Lock className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-[#90A4AE] ${isRTL ? 'right-4' : 'left-4'}`} />
-                  <Input
-                    id="password"
-                    type="password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    placeholder={isRTL ? "أدخل كلمة المرور" : "Entrez votre mot de passe"}
-                    className={`h-12 text-base border-2 border-gray-200 focus:border-[#1976D2] bg-gray-50/50 ${isRTL ? 'pr-12' : 'pl-12'}`}
-                    data-testid="input-password"
-                    required
-                    disabled={isLoading}
-                  />
-                </div>
-              </div>
-              
-              {error && (
-                <div className="p-3 rounded-lg bg-red-50 border border-red-200">
-                  <p className="text-sm text-red-600 text-center" data-testid="text-login-error">
-                    {isRTL ? "اسم المستخدم أو كلمة المرور غير صحيحة" : "Identifiant ou mot de passe incorrect"}
-                  </p>
-                </div>
-              )}
-              
-              <Button 
-                type="submit" 
-                className="w-full h-12 text-base font-medium bg-[#1976D2] hover:bg-[#1565C0] transition-all duration-200"
-                disabled={isLoading || !username || !password}
-                data-testid="button-login"
-              >
-                {isLoading ? (
-                  <span className="flex items-center gap-2">
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                    {isRTL ? "جاري الدخول..." : "Connexion en cours..."}
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <Lock className="h-4 w-4" />
-                    {isRTL ? "تسجيل الدخول" : "Se connecter"}
-                  </span>
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
+          </motion.div>
+        </motion.div>
 
-        <div className="mt-8 text-center">
-          <p className="text-blue-100 text-sm">
-            {isRTL ? "صناعة التغليف البلاستيكي الصناعي" : "Fabrication d'Emballages Plastiques Industriels"}
+        <motion.div
+          initial={{ opacity: 0, y: 30, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          transition={{ duration: 0.6, delay: 0.3 }}
+        >
+          <div className="bg-white/95 backdrop-blur-xl rounded-2xl shadow-2xl overflow-hidden border border-white/50">
+            <div className="h-1.5 bg-gradient-to-r from-[#1976D2] via-[#42A5F5] to-[#1976D2]" />
+            
+            <div className="p-8">
+              <motion.div 
+                className="flex items-center justify-center gap-2 mb-6 text-[#1976D2]"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ delay: 0.5 }}
+              >
+                <Shield className="h-5 w-5" />
+                <span className="font-semibold text-sm uppercase tracking-wide">
+                  {isRTL ? "تسجيل الدخول الآمن" : "Connexion Sécurisée"}
+                </span>
+              </motion.div>
+              
+              <form onSubmit={handleSubmit} className="space-y-5">
+                <motion.div 
+                  className="space-y-2"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.6 }}
+                >
+                  <Label htmlFor="username" className="text-sm font-medium text-[#546E7A]">
+                    {isRTL ? "اسم المستخدم" : "Identifiant"}
+                  </Label>
+                  <div className="relative group">
+                    <User className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-[#90A4AE] transition-colors group-focus-within:text-[#1976D2] ${isRTL ? 'right-4' : 'left-4'}`} />
+                    <Input
+                      id="username"
+                      type="text"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)}
+                      placeholder={isRTL ? "أدخل اسم المستخدم" : "Entrez votre identifiant"}
+                      className={`h-12 text-base border-2 border-gray-200 focus:border-[#1976D2] bg-gray-50/50 rounded-xl transition-all duration-300 focus:shadow-lg focus:shadow-blue-500/10 ${isRTL ? 'pr-12' : 'pl-12'}`}
+                      data-testid="input-username"
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
+                </motion.div>
+                
+                <motion.div 
+                  className="space-y-2"
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.7 }}
+                >
+                  <Label htmlFor="password" className="text-sm font-medium text-[#546E7A]">
+                    {isRTL ? "كلمة المرور" : "Mot de passe"}
+                  </Label>
+                  <div className="relative group">
+                    <Lock className={`absolute top-1/2 -translate-y-1/2 h-5 w-5 text-[#90A4AE] transition-colors group-focus-within:text-[#1976D2] ${isRTL ? 'right-4' : 'left-4'}`} />
+                    <Input
+                      id="password"
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder={isRTL ? "أدخل كلمة المرور" : "Entrez votre mot de passe"}
+                      className={`h-12 text-base border-2 border-gray-200 focus:border-[#1976D2] bg-gray-50/50 rounded-xl transition-all duration-300 focus:shadow-lg focus:shadow-blue-500/10 ${isRTL ? 'pr-12' : 'pl-12'}`}
+                      data-testid="input-password"
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
+                </motion.div>
+                
+                {error && (
+                  <motion.div 
+                    className="p-3 rounded-xl bg-red-50 border border-red-200"
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                  >
+                    <p className="text-sm text-red-600 text-center" data-testid="text-login-error">
+                      {isRTL ? "اسم المستخدم أو كلمة المرور غير صحيحة" : "Identifiant ou mot de passe incorrect"}
+                    </p>
+                  </motion.div>
+                )}
+                
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.8 }}
+                >
+                  <Button 
+                    type="submit" 
+                    className="w-full h-12 text-base font-semibold bg-gradient-to-r from-[#1976D2] to-[#1565C0] hover:from-[#1565C0] hover:to-[#0D47A1] transition-all duration-300 rounded-xl shadow-lg hover:shadow-xl hover:shadow-blue-500/25 transform hover:-translate-y-0.5"
+                    disabled={isLoading || !username || !password}
+                    data-testid="button-login"
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center gap-2">
+                        <Loader2 className="h-5 w-5 animate-spin" />
+                        {isRTL ? "جاري الدخول..." : "Connexion en cours..."}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-2">
+                        <Lock className="h-4 w-4" />
+                        {isRTL ? "تسجيل الدخول" : "Se connecter"}
+                      </span>
+                    )}
+                  </Button>
+                </motion.div>
+              </form>
+            </div>
+          </div>
+        </motion.div>
+
+        <motion.div 
+          className="mt-8 text-center"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 1 }}
+        >
+          <div className="flex items-center justify-center gap-4 text-blue-200/80 text-xs mb-3">
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-green-400 animate-pulse" />
+              <span>{isRTL ? "نظام آمن" : "Système Sécurisé"}</span>
+            </div>
+            <span className="text-blue-300/50">|</span>
+            <div className="flex items-center gap-1">
+              <div className="w-2 h-2 rounded-full bg-blue-400" />
+              <span>{isRTL ? "متصل" : "En ligne"}</span>
+            </div>
+          </div>
+          <p className="text-blue-200/50 text-xs">
+            © {new Date().getFullYear()} POLY FLECTA PLASTICA - {isRTL ? "جميع الحقوق محفوظة" : "Tous droits réservés"}
           </p>
-          <p className="text-blue-200/70 text-xs mt-2">
-            {isRTL ? "جميع الحقوق محفوظة" : "Tous droits réservés"} © {new Date().getFullYear()}
-          </p>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
