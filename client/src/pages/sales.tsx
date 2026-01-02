@@ -48,6 +48,7 @@ import {
   CreditCard,
   Banknote,
   ArrowUpDown,
+  Download,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Sale, SaleWithItems } from "@shared/schema";
@@ -150,6 +151,10 @@ export default function Sales() {
     }
   };
 
+  const handleExportCSV = () => {
+    window.open("/api/sales/export/csv", "_blank");
+  };
+
   if (isLoading) {
     return (
       <div className="p-6 space-y-6">
@@ -170,6 +175,10 @@ export default function Sales() {
             Historique et gestion des ventes
           </p>
         </div>
+        <Button variant="outline" onClick={handleExportCSV} data-testid="button-export-sales">
+          <Download className="h-4 w-4 mr-2" />
+          Exporter CSV
+        </Button>
       </div>
 
       <Card>

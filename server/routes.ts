@@ -637,6 +637,41 @@ export async function registerRoutes(
     }
   });
 
+  // CSV Export endpoints
+  app.get("/api/sales/export/csv", async (req, res) => {
+    try {
+      const sales = await storage.getSales();
+      const csvHeader = "Sale Number,Date,Payment Mode,Status,Discount,Total,Customer Name,Customer Phone\n";
+      const csvRows = sales.map(sale => 
+        `"${sale.saleNumber}","${sale.date}","${sale.paymentMode}","${sale.status || 'completed'}","${sale.discount || 0}","${sale.total}","${sale.customerName || ''}","${sale.customerPhone || ''}"`
+      ).join("\n");
+      const csv = csvHeader + csvRows;
+      
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename=sales_export_${new Date().toISOString().split('T')[0]}.csv`);
+      res.send(csv);
+    } catch (error) {
+      handleError(res, "export sales csv", error);
+    }
+  });
+
+  app.get("/api/invoices/export/csv", async (req, res) => {
+    try {
+      const invoices = await storage.getInvoices();
+      const csvHeader = "Invoice Number,Date,Client Name,Responsible,Status,TVA Rate,Total HT,Total TTC\n";
+      const csvRows = invoices.map(inv => 
+        `"${inv.invoiceNumber}","${inv.date}","${inv.clientName || ''}","${inv.responsible}","${inv.status}","${inv.tvaRate || 0}%","${inv.totalHT}","${inv.totalTTC}"`
+      ).join("\n");
+      const csv = csvHeader + csvRows;
+      
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename=invoices_export_${new Date().toISOString().split('T')[0]}.csv`);
+      res.send(csv);
+    } catch (error) {
+      handleError(res, "export invoices csv", error);
+    }
+  });
+
   app.get("/api/resellers", async (req, res) => {
     try {
       const resellers = await storage.getResellers();

@@ -36,6 +36,7 @@ import {
   XCircle,
   Factory,
   ChevronDown,
+  Download,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -119,6 +120,10 @@ export default function Invoices() {
     window.open(`/public/invoices/${invoiceId}/pdf?${params_url.toString()}`, "_blank");
   };
 
+  const handleExportCSV = () => {
+    window.open("/api/invoices/export/csv", "_blank");
+  };
+
   return (
     <div className="p-6 space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -130,6 +135,11 @@ export default function Invoices() {
             Manage and generate invoices
           </p>
         </div>
+        <div className="flex gap-2 flex-wrap">
+          <Button variant="outline" onClick={handleExportCSV} data-testid="button-export-invoices">
+            <Download className="h-4 w-4 mr-2" />
+            Export CSV
+          </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button data-testid="button-new-invoice">
@@ -153,6 +163,7 @@ export default function Invoices() {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        </div>
       </div>
 
       <Card>
