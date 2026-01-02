@@ -698,7 +698,14 @@ export class DatabaseStorage implements IStorage {
       const allSales = await db.select().from(sales).where(
         and(gte(sales.date, startDate), lte(sales.date, endDate))
       );
-      const totalSalesRevenue = allSales.reduce((sum, s) => sum + s.total, 0);
+      const totalSalesRevenue = allSales.reduce((sum, s) => sum + s.total - (s.discount || 0), 0);
+
+      const allInvoices = await db.select().from(invoices).where(
+        and(gte(invoices.date, startDate), lte(invoices.date, endDate))
+      );
+      const totalInvoiceRevenue = allInvoices.reduce((sum, inv) => sum + inv.totalTTC, 0);
+
+      const totalRevenue = totalSalesRevenue + totalInvoiceRevenue;
 
       let totalProductCosts = 0;
       for (const sale of allSales) {
@@ -721,16 +728,20 @@ export class DatabaseStorage implements IStorage {
       );
       const totalExpenses = allExpenses.reduce((sum, e) => sum + e.amount, 0);
 
-      const grossProfit = totalSalesRevenue - totalProductCosts;
+      const grossProfit = totalRevenue - totalProductCosts;
       const netProfit = grossProfit - totalSalaries - totalExpenses;
+      const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
       return {
         totalSalesRevenue,
+        totalInvoiceRevenue,
+        totalRevenue,
         totalProductCosts,
         totalSalaries,
         totalExpenses,
         grossProfit,
         netProfit,
+        profitMargin,
         periodStart: startDate,
         periodEnd: endDate,
       };

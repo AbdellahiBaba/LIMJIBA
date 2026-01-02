@@ -241,11 +241,14 @@ export interface CartItem {
 
 export interface ProfitStats {
   totalSalesRevenue: number;
+  totalInvoiceRevenue: number;
+  totalRevenue: number;
   totalProductCosts: number;
   totalSalaries: number;
   totalExpenses: number;
   grossProfit: number;
   netProfit: number;
+  profitMargin: number;
   periodStart: string;
   periodEnd: string;
 }
