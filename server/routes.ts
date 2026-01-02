@@ -18,6 +18,7 @@ import {
   insertFabricationInvoiceSchema,
   insertFabricationItemSchema,
   insertStockMovementSchema,
+  insertCustomerSchema,
 } from "@shared/schema";
 import { z } from "zod";
 
@@ -281,6 +282,7 @@ export async function registerRoutes(
   app.use("/api/employees", requireAuth);
   app.use("/api/salary-payments", requireAuth);
   app.use("/api/expenses", requireAuth);
+  app.use("/api/customers", requireAuth);
   app.use("/api/fabrication-invoices", requireAuth);
   app.use("/api/stock-movements", requireAuth);
   app.use("/api/profit-stats", requireAuth);
@@ -954,6 +956,82 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       handleError(res, "delete expense", error);
+    }
+  });
+
+  // Customer API
+  app.get("/api/customers", async (req, res) => {
+    try {
+      const customerList = await storage.getCustomers();
+      res.json(customerList);
+    } catch (error) {
+      handleError(res, "get customers", error);
+    }
+  });
+
+  app.get("/api/customers/:id", async (req, res) => {
+    try {
+      const customer = await storage.getCustomer(req.params.id);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found", id: req.params.id });
+      }
+      res.json(customer);
+    } catch (error) {
+      handleError(res, "get customer", error);
+    }
+  });
+
+  app.post("/api/customers", async (req, res) => {
+    try {
+      const data = insertCustomerSchema.parse({
+        ...req.body,
+        createdAt: new Date().toISOString(),
+      });
+      const customer = await storage.createCustomer(data);
+      res.status(201).json(customer);
+    } catch (error) {
+      handleError(res, "create customer", error);
+    }
+  });
+
+  app.patch("/api/customers/:id", async (req, res) => {
+    try {
+      const data = insertCustomerSchema.partial().parse(req.body);
+      const customer = await storage.updateCustomer(req.params.id, data);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found", id: req.params.id });
+      }
+      res.json(customer);
+    } catch (error) {
+      handleError(res, "update customer", error);
+    }
+  });
+
+  app.delete("/api/customers/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteCustomer(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Customer not found", id: req.params.id });
+      }
+      res.status(204).send();
+    } catch (error) {
+      handleError(res, "delete customer", error);
+    }
+  });
+
+  app.patch("/api/customers/:id/balance", async (req, res) => {
+    try {
+      const { amount } = req.body;
+      if (typeof amount !== 'number') {
+        return res.status(400).json({ error: "Amount must be a number" });
+      }
+      const customer = await storage.updateCustomerBalance(req.params.id, amount);
+      if (!customer) {
+        return res.status(404).json({ error: "Customer not found", id: req.params.id });
+      }
+      res.json(customer);
+    } catch (error) {
+      handleError(res, "update customer balance", error);
     }
   });
 

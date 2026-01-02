@@ -140,6 +140,22 @@ export const insertResellerSchema = createInsertSchema(resellers).omit({ id: tru
 export type InsertReseller = z.infer<typeof insertResellerSchema>;
 export type Reseller = typeof resellers.$inferSelect;
 
+export const customers = pgTable("customers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  phone: text("phone"),
+  email: text("email"),
+  address: text("address"),
+  creditLimit: real("credit_limit").notNull().default(0),
+  currentBalance: real("current_balance").notNull().default(0),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertCustomerSchema = createInsertSchema(customers).omit({ id: true });
+export type InsertCustomer = z.infer<typeof insertCustomerSchema>;
+export type Customer = typeof customers.$inferSelect;
+
 export const settings = pgTable("settings", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   key: text("key").notNull().unique(),

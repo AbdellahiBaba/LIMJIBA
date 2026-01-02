@@ -31,6 +31,8 @@ import {
   type StockMovement,
   type InsertStockMovement,
   type StockMovementWithProduct,
+  type Customer,
+  type InsertCustomer,
   users,
   products,
   invoices,
@@ -38,6 +40,7 @@ import {
   sales,
   saleItems,
   resellers,
+  customers,
   employees,
   salaryPayments,
   expenses,
@@ -116,6 +119,13 @@ export interface IStorage {
   createStockMovement(movement: InsertStockMovement): Promise<StockMovement>;
   adjustStock(productId: string, quantity: number, reason: string, reference?: string, createdBy?: string): Promise<{ movement: StockMovement; product: Product }>;
   getProductByBarcode(barcode: string): Promise<Product | undefined>;
+
+  getCustomers(): Promise<Customer[]>;
+  getCustomer(id: string): Promise<Customer | undefined>;
+  createCustomer(customer: InsertCustomer): Promise<Customer>;
+  updateCustomer(id: string, customer: Partial<InsertCustomer>): Promise<Customer | undefined>;
+  deleteCustomer(id: string): Promise<boolean>;
+  updateCustomerBalance(id: string, amount: number): Promise<Customer | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -843,6 +853,54 @@ export class DatabaseStorage implements IStorage {
     return await withRetry(async () => {
       const [product] = await db.select().from(products).where(eq(products.barcode, barcode));
       return product || undefined;
+    });
+  }
+
+  async getCustomers(): Promise<Customer[]> {
+    return await withRetry(async () => {
+      return await db.select().from(customers).orderBy(desc(customers.createdAt));
+    });
+  }
+
+  async getCustomer(id: string): Promise<Customer | undefined> {
+    return await withRetry(async () => {
+      const [customer] = await db.select().from(customers).where(eq(customers.id, id));
+      return customer || undefined;
+    });
+  }
+
+  async createCustomer(customer: InsertCustomer): Promise<Customer> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(customers).values(customer).returning();
+      return created;
+    });
+  }
+
+  async updateCustomer(id: string, data: Partial<InsertCustomer>): Promise<Customer | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(customers).set(data).where(eq(customers.id, id)).returning();
+      return updated || undefined;
+    });
+  }
+
+  async deleteCustomer(id: string): Promise<boolean> {
+    return await withRetry(async () => {
+      const result = await db.delete(customers).where(eq(customers.id, id)).returning();
+      return result.length > 0;
+    });
+  }
+
+  async updateCustomerBalance(id: string, amount: number): Promise<Customer | undefined> {
+    return await withRetry(async () => {
+      const [customer] = await db.select().from(customers).where(eq(customers.id, id));
+      if (!customer) return undefined;
+      
+      const newBalance = (customer.currentBalance || 0) + amount;
+      const [updated] = await db.update(customers)
+        .set({ currentBalance: newBalance })
+        .where(eq(customers.id, id))
+        .returning();
+      return updated || undefined;
     });
   }
 }

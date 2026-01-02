@@ -24,6 +24,7 @@ import {
   Users,
   Receipt,
   History,
+  UserCircle,
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -67,6 +68,12 @@ export function AppSidebar() {
       url: "/resellers",
       icon: Gift,
       testId: "nav-resellers",
+    },
+    {
+      title: t("nav.customers") || "Clients",
+      url: "/customers",
+      icon: UserCircle,
+      testId: "nav-customers",
     },
     {
       title: t("nav.salaries") || "Salaries",
