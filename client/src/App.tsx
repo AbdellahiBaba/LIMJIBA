@@ -61,21 +61,21 @@ function Router() {
 }
 
 function LowStockNotifications() {
-  const { data: lowStockProducts } = useQuery<{ id: string; name: string; stockQuantity: number; lowStockThreshold: number }[]>({
+  const { data: lowStockProducts = [] } = useQuery<{ id: string; name: string; stockQuantity: number; lowStockThreshold: number }[]>({
     queryKey: ["/api/dashboard/low-stock"],
     refetchInterval: 120000, // Check every 2 minutes
   });
 
-  const hasAlerts = (lowStockProducts?.length || 0) > 0;
+  const alertCount = lowStockProducts.length;
 
   return (
     <Popover>
       <PopoverTrigger asChild>
         <Button variant="ghost" size="icon" className="relative" data-testid="button-notifications">
           <Bell className="h-4 w-4" />
-          {hasAlerts && (
+          {alertCount > 0 && (
             <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]">
-              {lowStockProducts.length}
+              {alertCount}
             </Badge>
           )}
         </Button>
@@ -88,7 +88,7 @@ function LowStockNotifications() {
           </h4>
         </div>
         <ScrollArea className="max-h-64">
-          {lowStockProducts.length === 0 ? (
+          {alertCount === 0 ? (
             <div className="p-4 text-center text-muted-foreground text-sm">
               Aucune alerte de stock
             </div>
@@ -110,7 +110,7 @@ function LowStockNotifications() {
             </div>
           )}
         </ScrollArea>
-        {lowStockProducts.length > 0 && (
+        {alertCount > 0 && (
           <div className="p-2 border-t">
             <Link href="/stock">
               <Button variant="outline" size="sm" className="w-full" data-testid="button-view-stock">
