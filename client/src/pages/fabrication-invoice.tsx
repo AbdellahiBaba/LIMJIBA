@@ -804,6 +804,15 @@ export default function FabricationInvoice() {
                   </Select>
                 </div>
               </div>
+              <div className="space-y-2">
+                <Label>{getLabel("Échéance", "تاريخ الاستحقاق")}</Label>
+                <Input
+                  type="date"
+                  value={formData.dueDate}
+                  onChange={(e) => setFormData({ ...formData, dueDate: e.target.value })}
+                  data-testid="input-due-date"
+                />
+              </div>
             </CardContent>
           </Card>
 
