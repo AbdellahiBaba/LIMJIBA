@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { Switch, Route, Link } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
@@ -132,6 +133,15 @@ function AuthenticatedApp() {
     "--sidebar-width": "16rem",
     "--sidebar-width-icon": "3rem",
   };
+
+  useEffect(() => {
+    if (branding.logo) {
+      const link = document.querySelector("link[rel='icon']") as HTMLLinkElement;
+      if (link) {
+        link.href = branding.logo;
+      }
+    }
+  }, [branding.logo]);
 
   return (
     <SidebarProvider style={style as React.CSSProperties}>
