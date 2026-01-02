@@ -308,7 +308,7 @@ export default function ProfitCalculator() {
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md border-t-2 border-red-600">
                     <span className="font-semibold">{t("profit.totalCosts")}</span>
                     <span className="font-bold text-lg text-red-600 dark:text-red-400">
-                      {formatCurrency(stats.totalProductCosts + (stats.totalFabricationCosts || 0) + stats.totalSalaries + stats.totalExpenses)}
+                      {formatCurrency(stats.totalProductCosts + stats.totalSalaries + stats.totalExpenses)}
                     </span>
                   </div>
                 </div>
