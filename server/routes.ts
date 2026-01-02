@@ -246,16 +246,18 @@ export async function registerRoutes(
         browser = await puppeteer.launch({
           headless: true,
           executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
-          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-extensions', '--disable-gpu', '--disable-software-rasterizer'],
+          timeout: 30000
         });
         
         const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: 'domcontentloaded' });
+        await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 15000 });
         
         const pdfUint8Array = await page.pdf({
           format: 'A4',
           printBackground: true,
           margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
+          timeout: 30000
         });
         
         // Convert Uint8Array to Buffer for proper response handling
@@ -298,16 +300,18 @@ export async function registerRoutes(
         browser = await puppeteer.launch({
           headless: true,
           executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
-          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-extensions', '--disable-gpu', '--disable-software-rasterizer'],
+          timeout: 30000
         });
         
         const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: 'domcontentloaded' });
+        await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 15000 });
         
         const pdfUint8Array = await page.pdf({
           format: 'A4',
           printBackground: true,
           margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
+          timeout: 30000
         });
         
         // Convert Uint8Array to Buffer for proper response handling
@@ -352,7 +356,7 @@ export async function registerRoutes(
         browser = await puppeteer.launch({
           headless: true,
           executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
-          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage', '--disable-extensions', '--disable-gpu', '--disable-software-rasterizer'],
           timeout: 30000
         });
 
