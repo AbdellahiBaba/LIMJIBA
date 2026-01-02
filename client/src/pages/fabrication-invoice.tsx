@@ -180,6 +180,9 @@ export default function FabricationInvoice() {
       
       try {
         const response = await fetch(`/public/invoices/${createdInvoice.id}/pdf?${params_url.toString()}`);
+        if (!response.ok) {
+          throw new Error('PDF generation failed');
+        }
         const blob = await response.blob();
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -191,6 +194,7 @@ export default function FabricationInvoice() {
         document.body.removeChild(a);
       } catch (err) {
         console.error('PDF download failed:', err);
+        toast({ title: t("common.error"), variant: "destructive" });
       }
       
       navigate("/invoices");
