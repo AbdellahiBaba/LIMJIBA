@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { formatDateDMY } from "@/lib/dateUtils";
 import { useLocation } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -373,7 +374,7 @@ export default function FabricationInvoice() {
     <div class="invoice-info">
       <h2>${labels.invoice}</h2>
       <p><strong>${labels.number}:</strong> ${formData.invoiceNumber}</p>
-      <p><strong>${labels.date}:</strong> ${formData.date}</p>
+      <p><strong>${labels.date}:</strong> ${formatDateDMY(formData.date)}</p>
     </div>
   </div>
 
@@ -388,7 +389,7 @@ export default function FabricationInvoice() {
       <td class="label">${labels.paymentMode}</td>
       <td>${formData.paymentMode}</td>
       <td class="label">${labels.dueDate}</td>
-      <td>${formData.dueDate || "-"}</td>
+      <td>${formData.dueDate ? formatDateDMY(formData.dueDate) : "-"}</td>
     </tr>
     ${formData.clientName ? `
     <tr>
@@ -547,7 +548,7 @@ export default function FabricationInvoice() {
               {getLabel("N°", "رقم")}: {formData.invoiceNumber}
             </p>
             <p className="text-sm text-gray-600">
-              {getLabel("Date", "التاريخ")}: {formData.date}
+              {getLabel("Date", "التاريخ")}: {formatDateDMY(formData.date)}
             </p>
           </div>
         </div>
@@ -573,7 +574,7 @@ export default function FabricationInvoice() {
             </p>
             {formData.dueDate && (
               <p className="text-xs">
-                <span className="text-gray-600">{getLabel("Échéance", "تاريخ الاستحقاق")}:</span> {formData.dueDate}
+                <span className="text-gray-600">{getLabel("Échéance", "تاريخ الاستحقاق")}:</span> {formatDateDMY(formData.dueDate)}
               </p>
             )}
           </div>

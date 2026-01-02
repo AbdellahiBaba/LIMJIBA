@@ -885,6 +885,14 @@ export async function registerRoutes(
   return httpServer;
 }
 
+function formatDateDMY(dateString: string): string {
+  if (!dateString) return "-";
+  const parts = dateString.split("-");
+  if (parts.length !== 3) return dateString;
+  const [year, month, day] = parts;
+  return `${day}/${month}/${year}`;
+}
+
 function numberToFrenchWords(n: number): string {
   const units = ["", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf"];
   const teens = ["dix", "onze", "douze", "treize", "quatorze", "quinze", "seize", "dix-sept", "dix-huit", "dix-neuf"];
@@ -1074,7 +1082,7 @@ function generateInvoicePDF(invoice: any, branding: InvoiceBranding = {
         <div class="invoice-title">${isBilingual ? `${labels.invoiceFr} / ${labels.invoiceAr}` : labels.invoice}</div>
         <div class="invoice-details">
           <p><strong>${labels.invoiceNumber}:</strong> ${invoice.invoiceNumber}</p>
-          <p><strong>${labels.date}:</strong> ${invoice.date}</p>
+          <p><strong>${labels.date}:</strong> ${formatDateDMY(invoice.date)}</p>
         </div>
       </div>
     </div>
@@ -1090,7 +1098,7 @@ function generateInvoicePDF(invoice: any, branding: InvoiceBranding = {
         <td class="label">${labels.paymentMode}</td>
         <td>${invoice.paymentMode}</td>
         <td class="label">${labels.dueDate}</td>
-        <td>${invoice.dueDate || '-'}</td>
+        <td>${invoice.dueDate ? formatDateDMY(invoice.dueDate) : '-'}</td>
       </tr>
       ${invoice.clientName ? `
       <tr>

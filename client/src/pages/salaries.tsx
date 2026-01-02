@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { formatDateDMY } from "@/lib/dateUtils";
 import { useLanguage } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -663,7 +664,7 @@ export default function SalariesPage() {
                         <TableCell>{getMonthName(payment.month)}</TableCell>
                         <TableCell>{payment.year}</TableCell>
                         <TableCell>{formatCurrency(payment.amount)}</TableCell>
-                        <TableCell>{payment.paymentDate}</TableCell>
+                        <TableCell>{formatDateDMY(payment.paymentDate)}</TableCell>
                         <TableCell className="text-right">
                           <Button
                             size="icon"

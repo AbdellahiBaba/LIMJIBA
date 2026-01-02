@@ -1,5 +1,6 @@
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { formatDateDMY } from "@/lib/dateUtils";
 import { useLocation, useParams } from "wouter";
 import { useLanguage, useBranding } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -158,7 +159,7 @@ export default function InvoiceView() {
               Invoice {invoice.invoiceNumber}
             </h1>
             <p className="text-muted-foreground text-sm">
-              Created on {invoice.date}
+              Created on {formatDateDMY(invoice.date)}
             </p>
           </div>
         </div>
@@ -208,7 +209,7 @@ export default function InvoiceView() {
               </div>
               <div className="space-y-1 text-sm">
                 <p className="text-muted-foreground">Date</p>
-                <p className="font-medium">{invoice.date}</p>
+                <p className="font-medium">{formatDateDMY(invoice.date)}</p>
               </div>
               <div className="space-y-1 text-sm">
                 <p className="text-muted-foreground">Responsible</p>

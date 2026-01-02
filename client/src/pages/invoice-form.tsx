@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { formatDateDMY } from "@/lib/dateUtils";
 import { useLocation, useParams } from "wouter";
 import { useLanguage, useBranding } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -672,7 +673,7 @@ export default function InvoiceForm() {
                     N°: {formData.invoiceNumber}
                   </p>
                   <p className="text-sm text-gray-600">
-                    Date: {formData.date}
+                    Date: {formatDateDMY(formData.date)}
                   </p>
                 </div>
               </div>
@@ -696,7 +697,7 @@ export default function InvoiceForm() {
                   </p>
                   {formData.dueDate && (
                     <p className="text-xs">
-                      <span className="text-gray-600">Échéance:</span> {formData.dueDate}
+                      <span className="text-gray-600">Échéance:</span> {formatDateDMY(formData.dueDate)}
                     </p>
                   )}
                 </div>

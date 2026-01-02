@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { formatDateDMY } from "@/lib/dateUtils";
 import { Link } from "wouter";
 import { useLanguage, useBranding } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -216,7 +217,7 @@ export default function Invoices() {
                             </span>
                           </div>
                         </TableCell>
-                        <TableCell>{invoice.date}</TableCell>
+                        <TableCell>{formatDateDMY(invoice.date)}</TableCell>
                         <TableCell>{invoice.clientName || "-"}</TableCell>
                         <TableCell>{invoice.responsible}</TableCell>
                         <TableCell>
