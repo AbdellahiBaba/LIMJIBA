@@ -159,12 +159,33 @@ export default function InvoiceForm() {
   }, [existingInvoice]);
 
   const createMutation = useMutation({
-    mutationFn: (data: { invoice: typeof formData & { totalHT: number; tvaAmount: number; totalTTC: number; totalWeight: number }; items: InsertInvoiceItem[] }) =>
-      apiRequest("POST", "/api/invoices", data),
-    onSuccess: () => {
+    mutationFn: async (data: { invoice: typeof formData & { totalHT: number; tvaAmount: number; totalTTC: number; totalWeight: number }; items: InsertInvoiceItem[] }) => {
+      const response = await apiRequest("POST", "/api/invoices", data);
+      return response.json();
+    },
+    onSuccess: (createdInvoice: { id: string }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({ title: "Invoice created successfully" });
+      
+      // Open PDF for the saved invoice
+      const params_url = new URLSearchParams({
+        invoiceLanguage: branding.invoiceLanguage,
+        primaryColor: branding.primaryColor,
+        accentColor: branding.accentColor,
+        logoPosition: branding.logoPosition,
+        enableWatermark: String(branding.enableWatermark),
+        watermarkOpacity: String(branding.watermarkOpacity),
+      });
+      
+      if (branding.logo) {
+        params_url.set("logo", branding.logo);
+      }
+      if (branding.enableWatermark && branding.watermark) {
+        params_url.set("watermark", branding.watermark);
+      }
+      
+      window.open(`/api/invoices/${createdInvoice.id}/pdf?${params_url.toString()}`, "_blank");
       navigate("/invoices");
     },
     onError: (error: Error) => {
