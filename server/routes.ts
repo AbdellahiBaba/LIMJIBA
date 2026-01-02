@@ -273,6 +273,7 @@ export async function registerRoutes(
     }
   });
 
+  
   // ===================== PROTECTED ROUTES =====================
   
   // Apply authentication middleware to all data routes
@@ -353,6 +354,25 @@ export async function registerRoutes(
       res.json(topProducts);
     } catch (error) {
       handleError(res, "get top products", error);
+    }
+  });
+
+  // Low stock alerts endpoint - server-side filtering
+  app.get("/api/dashboard/low-stock", async (req, res) => {
+    try {
+      const products = await storage.getProducts();
+      const lowStockProducts = products
+        .filter(p => p.stockQuantity <= p.lowStockThreshold)
+        .slice(0, 20) // Limit to 20 items
+        .map(p => ({
+          id: p.id,
+          name: p.name,
+          stockQuantity: p.stockQuantity,
+          lowStockThreshold: p.lowStockThreshold,
+        }));
+      res.json(lowStockProducts);
+    } catch (error) {
+      handleError(res, "get low stock products", error);
     }
   });
 
@@ -673,8 +693,31 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Invoice not found", id: req.params.id });
       }
       
+      // Validate payment amount
+      const amount = parseFloat(req.body.amount);
+      if (isNaN(amount) || amount <= 0) {
+        return res.status(400).json({ error: "Invalid payment amount" });
+      }
+      
+      // Check remaining balance
+      const currentPaid = await storage.getInvoicePaidAmount(req.params.id);
+      const remaining = invoice.totalTTC - currentPaid;
+      if (amount > remaining + 0.01) { // Allow small rounding tolerance
+        return res.status(400).json({ 
+          error: "Payment exceeds remaining balance", 
+          remaining: remaining 
+        });
+      }
+      
+      // Validate payment method
+      const validMethods = ['cash', 'cheque', 'virement', 'carte'];
+      if (!validMethods.includes(req.body.paymentMethod)) {
+        return res.status(400).json({ error: "Invalid payment method" });
+      }
+      
       const data = insertInvoicePaymentSchema.parse({
         ...req.body,
+        amount: amount,
         invoiceId: req.params.id,
         createdAt: new Date().toISOString(),
       });
@@ -682,7 +725,7 @@ export async function registerRoutes(
       const payment = await storage.createInvoicePayment(data);
       
       const paidAmount = await storage.getInvoicePaidAmount(req.params.id);
-      if (paidAmount >= invoice.totalTTC) {
+      if (paidAmount >= invoice.totalTTC - 0.01) {
         await storage.updateInvoiceStatus(req.params.id, "paid");
       } else if (paidAmount > 0 && invoice.status === "pending") {
         await storage.updateInvoiceStatus(req.params.id, "unpaid");
@@ -716,6 +759,55 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       handleError(res, "delete invoice payment", error);
+    }
+  });
+
+  // Delivery Note PDF (protected)
+  app.get("/api/invoices/:id/delivery-note", async (req, res) => {
+    try {
+      const invoice = await storage.getInvoiceWithItems(req.params.id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found", id: req.params.id });
+      }
+
+      const branding = {
+        logo: req.query.logo as string | undefined,
+        primaryColor: (req.query.primaryColor as string) || "#1976D2",
+      };
+
+      const html = generateDeliveryNotePDF(invoice, branding);
+      
+      let browser;
+      try {
+        browser = await puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+        });
+        
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'networkidle0' });
+        
+        const pdfBuffer = await page.pdf({
+          format: 'A4',
+          printBackground: true,
+          margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
+        });
+        
+        const blNum = invoice.invoiceNumber.includes('-') ? 
+          'BL-' + invoice.invoiceNumber.split('-')[1] : 
+          'BL-' + invoice.invoiceNumber;
+        const filename = `${blNum.replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+        res.send(pdfBuffer);
+      } finally {
+        if (browser) {
+          await browser.close();
+        }
+      }
+    } catch (error) {
+      handleError(res, "generate delivery note PDF", error);
     }
   });
 
@@ -1496,6 +1588,127 @@ function generateInvoicePDF(invoice: any, branding: InvoiceBranding = {
     </div>
   </div>
   <script>window.onload = function() { window.print(); }</script>
+</body>
+</html>
+  `;
+}
+
+function generateDeliveryNotePDF(invoice: any, branding: { logo?: string; primaryColor?: string } = {}): string {
+  const primaryColor = branding.primaryColor || '#1976D2';
+  const logo = branding.logo;
+  
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  };
+
+  const blNumber = invoice.invoiceNumber.replace('FA-', 'BL-');
+
+  return `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Bon de Livraison - ${blNumber}</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: 'Segoe UI', 'Roboto', sans-serif; font-size: 12px; padding: 20px; }
+    .container { max-width: 800px; margin: 0 auto; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 3px solid ${primaryColor}; }
+    .company-info h1 { color: ${primaryColor}; font-size: 24px; margin-bottom: 10px; }
+    .company-info p { color: #666; font-size: 11px; line-height: 1.6; }
+    .logo { max-width: 100px; max-height: 80px; object-fit: contain; }
+    .document-title { text-align: center; background: ${primaryColor}; color: white; padding: 15px; font-size: 20px; font-weight: bold; margin-bottom: 30px; letter-spacing: 2px; }
+    .info-section { display: flex; justify-content: space-between; margin-bottom: 30px; }
+    .info-box { padding: 15px; background: #f5f5f5; border-radius: 4px; width: 48%; }
+    .info-box h3 { color: ${primaryColor}; margin-bottom: 10px; font-size: 14px; text-transform: uppercase; }
+    .info-box p { line-height: 1.8; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+    th { background: ${primaryColor}; color: white; padding: 12px 8px; text-align: left; font-weight: 500; }
+    td { padding: 10px 8px; border-bottom: 1px solid #e0e0e0; }
+    tr:nth-child(even) { background: #fafafa; }
+    .weight-total { text-align: right; margin-bottom: 40px; }
+    .weight-total span { background: ${primaryColor}20; padding: 10px 20px; border-radius: 4px; font-size: 14px; }
+    .signatures { display: flex; justify-content: space-between; margin-top: 60px; padding-top: 20px; }
+    .signature-box { width: 45%; text-align: center; }
+    .signature-box p { margin-bottom: 60px; font-weight: bold; color: ${primaryColor}; }
+    .signature-line { border-top: 2px solid #333; padding-top: 10px; font-size: 11px; color: #666; }
+    .note { background: #fff3cd; padding: 15px; border-left: 4px solid #ffc107; margin-bottom: 30px; font-style: italic; }
+    @media print { body { padding: 0; } .container { max-width: 100%; } }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="company-info">
+        <h1>POLY FLECTA PLASTICA</h1>
+        <p>Village Zaitout, Local N°01<br>
+        Commune Hammam Dalaa - W M'sila<br>
+        Tél: 0550 51 07 46</p>
+      </div>
+      ${logo ? `<img src="${logo}" class="logo" alt="Logo">` : ''}
+    </div>
+
+    <div class="document-title">BON DE LIVRAISON</div>
+
+    <div class="info-section">
+      <div class="info-box">
+        <h3>Informations Document</h3>
+        <p><strong>N° BL:</strong> ${blNumber}<br>
+        <strong>Date:</strong> ${formatDate(invoice.date)}<br>
+        <strong>Facture liée:</strong> ${invoice.invoiceNumber}<br>
+        <strong>Responsable:</strong> ${invoice.responsible || 'N/A'}</p>
+      </div>
+      <div class="info-box">
+        <h3>Client</h3>
+        <p>${invoice.clientName || 'Client comptoir'}</p>
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width: 10%">Qté</th>
+          <th style="width: 50%">Désignation</th>
+          <th style="width: 20%">Poids unitaire</th>
+          <th style="width: 20%">Poids total</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${invoice.items.map((item: any) => `
+          <tr>
+            <td>${item.quantity}</td>
+            <td>${item.designation}</td>
+            <td>${(item.weightPerUnit || 0).toFixed(2)} kg</td>
+            <td>${(item.totalWeight || 0).toFixed(2)} kg</td>
+          </tr>
+        `).join('')}
+      </tbody>
+    </table>
+
+    <div class="weight-total">
+      <span><strong>Poids total:</strong> ${(invoice.totalWeight || 0).toFixed(2)} kg</span>
+    </div>
+
+    <div class="note">
+      Marchandise livrée en bon état. Toute réclamation doit être faite dans les 48 heures suivant la réception.
+    </div>
+
+    <div class="signatures">
+      <div class="signature-box">
+        <p>Signature du livreur</p>
+        <div class="signature-line">Nom et cachet</div>
+      </div>
+      <div class="signature-box">
+        <p>Signature du client</p>
+        <div class="signature-line">Lu et approuvé</div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
   `;

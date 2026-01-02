@@ -59,17 +59,12 @@ function Router() {
 }
 
 function LowStockNotifications() {
-  const { t } = useLanguage();
-  const { data: products } = useQuery<Product[]>({
-    queryKey: ["/api/products"],
-    refetchInterval: 60000,
+  const { data: lowStockProducts } = useQuery<{ id: string; name: string; stockQuantity: number; lowStockThreshold: number }[]>({
+    queryKey: ["/api/dashboard/low-stock"],
+    refetchInterval: 120000, // Check every 2 minutes
   });
 
-  const lowStockProducts = products?.filter(
-    (p) => p.stockQuantity <= p.lowStockThreshold
-  ) || [];
-
-  const hasAlerts = lowStockProducts.length > 0;
+  const hasAlerts = (lowStockProducts?.length || 0) > 0;
 
   return (
     <Popover>

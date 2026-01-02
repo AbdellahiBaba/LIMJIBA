@@ -476,14 +476,29 @@ export default function InvoiceView() {
                 data-testid="button-download-pdf"
               >
                 <Printer className="h-4 w-4 mr-2" />
-                Download PDF
+                Télécharger la facture
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  const url = new URLSearchParams({
+                    primaryColor: branding.primaryColor,
+                  });
+                  if (branding.logo) url.set("logo", branding.logo);
+                  window.open(`/api/invoices/${params.id}/delivery-note?${url.toString()}`, "_blank");
+                }}
+                data-testid="button-download-delivery-note"
+              >
+                <FileText className="h-4 w-4 mr-2" />
+                Bon de livraison
               </Button>
               <Button
                 variant="outline"
                 className="w-full"
                 onClick={() => navigate("/invoices")}
               >
-                Back to List
+                Retour à la liste
               </Button>
             </CardContent>
           </Card>
