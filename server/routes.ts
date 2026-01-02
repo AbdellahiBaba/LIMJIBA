@@ -8,7 +8,8 @@ import { cache } from "./cache";
 import { 
   insertProductSchema, 
   insertInvoiceSchema, 
-  insertInvoiceItemSchema, 
+  insertInvoiceItemSchema,
+  insertInvoicePaymentSchema,
   insertSaleSchema, 
   insertSaleItemSchema, 
   insertResellerSchema,
@@ -651,6 +652,70 @@ export async function registerRoutes(
       res.status(201).json(created);
     } catch (error) {
       handleError(res, "duplicate invoice", error);
+    }
+  });
+
+  // Invoice Payments API
+  app.get("/api/invoices/:id/payments", async (req, res) => {
+    try {
+      const payments = await storage.getInvoicePayments(req.params.id);
+      const paidAmount = await storage.getInvoicePaidAmount(req.params.id);
+      res.json({ payments, paidAmount });
+    } catch (error) {
+      handleError(res, "get invoice payments", error);
+    }
+  });
+
+  app.post("/api/invoices/:id/payments", async (req, res) => {
+    try {
+      const invoice = await storage.getInvoice(req.params.id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found", id: req.params.id });
+      }
+      
+      const data = insertInvoicePaymentSchema.parse({
+        ...req.body,
+        invoiceId: req.params.id,
+        createdAt: new Date().toISOString(),
+      });
+      
+      const payment = await storage.createInvoicePayment(data);
+      
+      const paidAmount = await storage.getInvoicePaidAmount(req.params.id);
+      if (paidAmount >= invoice.totalTTC) {
+        await storage.updateInvoiceStatus(req.params.id, "paid");
+      } else if (paidAmount > 0 && invoice.status === "pending") {
+        await storage.updateInvoiceStatus(req.params.id, "unpaid");
+      }
+      
+      res.status(201).json(payment);
+    } catch (error) {
+      handleError(res, "create invoice payment", error);
+    }
+  });
+
+  app.delete("/api/invoices/:invoiceId/payments/:paymentId", async (req, res) => {
+    try {
+      const deleted = await storage.deleteInvoicePayment(req.params.paymentId);
+      if (!deleted) {
+        return res.status(404).json({ error: "Payment not found", id: req.params.paymentId });
+      }
+      
+      const invoice = await storage.getInvoice(req.params.invoiceId);
+      if (invoice) {
+        const paidAmount = await storage.getInvoicePaidAmount(req.params.invoiceId);
+        if (paidAmount >= invoice.totalTTC) {
+          await storage.updateInvoiceStatus(req.params.invoiceId, "paid");
+        } else if (paidAmount > 0) {
+          await storage.updateInvoiceStatus(req.params.invoiceId, "unpaid");
+        } else {
+          await storage.updateInvoiceStatus(req.params.invoiceId, "pending");
+        }
+      }
+      
+      res.status(204).send();
+    } catch (error) {
+      handleError(res, "delete invoice payment", error);
     }
   });
 

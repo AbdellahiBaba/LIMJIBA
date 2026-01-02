@@ -7,6 +7,8 @@ import {
   type InsertInvoice,
   type InvoiceItem,
   type InsertInvoiceItem,
+  type InvoicePayment,
+  type InsertInvoicePayment,
   type Sale,
   type InsertSale,
   type SaleItem,
@@ -37,6 +39,7 @@ import {
   products,
   invoices,
   invoiceItems,
+  invoicePayments,
   sales,
   saleItems,
   resellers,
@@ -126,6 +129,11 @@ export interface IStorage {
   updateCustomer(id: string, customer: Partial<InsertCustomer>): Promise<Customer | undefined>;
   deleteCustomer(id: string): Promise<boolean>;
   updateCustomerBalance(id: string, amount: number): Promise<Customer | undefined>;
+
+  getInvoicePayments(invoiceId: string): Promise<InvoicePayment[]>;
+  createInvoicePayment(payment: InsertInvoicePayment): Promise<InvoicePayment>;
+  deleteInvoicePayment(id: string): Promise<boolean>;
+  getInvoicePaidAmount(invoiceId: string): Promise<number>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -901,6 +909,41 @@ export class DatabaseStorage implements IStorage {
         .where(eq(customers.id, id))
         .returning();
       return updated || undefined;
+    });
+  }
+
+  async getInvoicePayments(invoiceId: string): Promise<InvoicePayment[]> {
+    return await withRetry(async () => {
+      return await db.select().from(invoicePayments)
+        .where(eq(invoicePayments.invoiceId, invoiceId))
+        .orderBy(desc(invoicePayments.createdAt));
+    });
+  }
+
+  async createInvoicePayment(payment: InsertInvoicePayment): Promise<InvoicePayment> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(invoicePayments).values(payment).returning();
+      cache.delete(CACHE_KEYS.INVOICES);
+      return created;
+    });
+  }
+
+  async deleteInvoicePayment(id: string): Promise<boolean> {
+    return await withRetry(async () => {
+      const result = await db.delete(invoicePayments).where(eq(invoicePayments.id, id)).returning();
+      if (result.length > 0) {
+        cache.delete(CACHE_KEYS.INVOICES);
+      }
+      return result.length > 0;
+    });
+  }
+
+  async getInvoicePaidAmount(invoiceId: string): Promise<number> {
+    return await withRetry(async () => {
+      const result = await db.select({
+        total: sql<number>`COALESCE(SUM(${invoicePayments.amount}), 0)`
+      }).from(invoicePayments).where(eq(invoicePayments.invoiceId, invoiceId));
+      return Number(result[0]?.total || 0);
     });
   }
 }

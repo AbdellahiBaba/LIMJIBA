@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { formatDateDMY } from "@/lib/dateUtils";
@@ -6,6 +7,8 @@ import { useLanguage, useBranding } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import {
   Table,
   TableBody,
@@ -21,6 +24,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -30,9 +41,12 @@ import {
   CheckCircle,
   Clock,
   XCircle,
+  Plus,
+  Trash2,
+  Banknote,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { InvoiceWithItems } from "@shared/schema";
+import type { InvoiceWithItems, InvoicePayment } from "@shared/schema";
 
 function numberToFrenchWords(n: number): string {
   const units = ["", "un", "deux", "trois", "quatre", "cinq", "six", "sept", "huit", "neuf"];
@@ -84,9 +98,18 @@ export default function InvoiceView() {
   const { branding } = useBranding();
   const [, navigate] = useLocation();
   const params = useParams<{ id: string }>();
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("cash");
+  const [paymentReference, setPaymentReference] = useState("");
 
   const { data: invoice, isLoading } = useQuery<InvoiceWithItems>({
     queryKey: ["/api/invoices", params.id],
+  });
+
+  const { data: paymentsData } = useQuery<{ payments: InvoicePayment[]; paidAmount: number }>({
+    queryKey: ["/api/invoices", params.id, "payments"],
+    enabled: !!params.id,
   });
 
   const updateStatusMutation = useMutation({
@@ -102,6 +125,53 @@ export default function InvoiceView() {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
+
+  const addPaymentMutation = useMutation({
+    mutationFn: (data: { amount: number; paymentMethod: string; paymentDate: string; reference?: string }) =>
+      apiRequest("POST", `/api/invoices/${params.id}/payments`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices", params.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices", params.id, "payments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      toast({ title: "Paiement enregistré" });
+      setPaymentDialogOpen(false);
+      setPaymentAmount("");
+      setPaymentReference("");
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
+    },
+  });
+
+  const deletePaymentMutation = useMutation({
+    mutationFn: (paymentId: string) =>
+      apiRequest("DELETE", `/api/invoices/${params.id}/payments/${paymentId}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices", params.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices", params.id, "payments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      toast({ title: "Paiement supprimé" });
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
+    },
+  });
+
+  const handleAddPayment = () => {
+    const amount = parseFloat(paymentAmount);
+    if (isNaN(amount) || amount <= 0) {
+      toast({ title: "Montant invalide", variant: "destructive" });
+      return;
+    }
+    addPaymentMutation.mutate({
+      amount,
+      paymentMethod,
+      paymentDate: new Date().toISOString().split("T")[0],
+      reference: paymentReference || undefined,
+    });
+  };
+
+  const remainingAmount = invoice ? invoice.totalTTC - (paymentsData?.paidAmount || 0) : 0;
 
   const handlePrint = () => {
     const params_url = new URLSearchParams({
@@ -338,6 +408,64 @@ export default function InvoiceView() {
           </Card>
 
           <Card>
+            <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Banknote className="h-4 w-4" />
+                Paiements
+              </CardTitle>
+              {invoice.status !== "paid" && (
+                <Button size="sm" onClick={() => setPaymentDialogOpen(true)} data-testid="button-add-payment">
+                  <Plus className="h-3 w-3 mr-1" />
+                  Ajouter
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Total facture:</span>
+                <span className="font-mono">{invoice.totalTTC.toLocaleString()} DZD</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Payé:</span>
+                <span className="font-mono text-green-600">{(paymentsData?.paidAmount || 0).toLocaleString()} DZD</span>
+              </div>
+              <div className="flex justify-between font-medium">
+                <span>Restant:</span>
+                <span className={`font-mono ${remainingAmount > 0 ? "text-destructive" : "text-green-600"}`}>
+                  {remainingAmount.toLocaleString()} DZD
+                </span>
+              </div>
+              
+              {paymentsData?.payments && paymentsData.payments.length > 0 && (
+                <>
+                  <Separator className="my-2" />
+                  <div className="space-y-2">
+                    {paymentsData.payments.map((payment) => (
+                      <div key={payment.id} className="flex items-center justify-between text-xs bg-muted/50 p-2 rounded">
+                        <div>
+                          <p className="font-medium">{payment.amount.toLocaleString()} DZD</p>
+                          <p className="text-muted-foreground">
+                            {formatDateDMY(payment.paymentDate)} - {payment.paymentMethod}
+                          </p>
+                        </div>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-6 w-6"
+                          onClick={() => deletePaymentMutation.mutate(payment.id)}
+                          data-testid={`button-delete-payment-${payment.id}`}
+                        >
+                          <Trash2 className="h-3 w-3 text-destructive" />
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
             <CardHeader>
               <CardTitle className="text-sm">Actions</CardTitle>
             </CardHeader>
@@ -361,6 +489,64 @@ export default function InvoiceView() {
           </Card>
         </div>
       </div>
+
+      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Enregistrer un paiement</DialogTitle>
+            <DialogDescription>
+              Restant à payer: {remainingAmount.toLocaleString()} DZD
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Montant (DZD)</Label>
+              <Input
+                type="number"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+                placeholder={remainingAmount.toString()}
+                data-testid="input-payment-amount"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Mode de paiement</Label>
+              <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                <SelectTrigger data-testid="select-payment-method">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Espèces</SelectItem>
+                  <SelectItem value="cheque">Chèque</SelectItem>
+                  <SelectItem value="virement">Virement</SelectItem>
+                  <SelectItem value="carte">Carte bancaire</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Référence (optionnel)</Label>
+              <Input
+                value={paymentReference}
+                onChange={(e) => setPaymentReference(e.target.value)}
+                placeholder="N° chèque, référence virement..."
+                data-testid="input-payment-reference"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handleAddPayment}
+              disabled={addPaymentMutation.isPending}
+              data-testid="button-confirm-payment"
+            >
+              {addPaymentMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

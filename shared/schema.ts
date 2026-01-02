@@ -93,6 +93,21 @@ export const insertInvoiceItemSchema = createInsertSchema(invoiceItems).omit({ i
 export type InsertInvoiceItem = z.infer<typeof insertInvoiceItemSchema>;
 export type InvoiceItem = typeof invoiceItems.$inferSelect;
 
+export const invoicePayments = pgTable("invoice_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  invoiceId: varchar("invoice_id").notNull(),
+  amount: real("amount").notNull(),
+  paymentDate: text("payment_date").notNull(),
+  paymentMethod: text("payment_method").notNull(),
+  reference: text("reference"),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertInvoicePaymentSchema = createInsertSchema(invoicePayments).omit({ id: true });
+export type InsertInvoicePayment = z.infer<typeof insertInvoicePaymentSchema>;
+export type InvoicePayment = typeof invoicePayments.$inferSelect;
+
 export const sales = pgTable("sales", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   saleNumber: text("sale_number").notNull().unique(),
