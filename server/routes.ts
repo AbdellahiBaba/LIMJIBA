@@ -2106,6 +2106,14 @@ function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null): 
       <span class="info-value">${reseller.phone}</span>
     </div>
     ` : ''}
+    <div class="info-row">
+      <span class="info-label">Total Achats:</span>
+      <span class="info-value">${(reseller.totalPurchases || 0).toLocaleString('fr-FR')} DA</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Progression:</span>
+      <span class="info-value">${Math.min(100, ((reseller.totalPurchases || 0) / (reseller.rewardThreshold || 100000) * 100)).toFixed(1)}%</span>
+    </div>
     ` : ''}
   </div>
   
