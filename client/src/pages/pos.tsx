@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLanguage, useBranding } from "@/contexts/language-context";
@@ -36,7 +36,13 @@ import {
   Package,
   Check,
   Printer,
+  Keyboard,
 } from "lucide-react";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import type { Product, CartItem, Reseller, InsertSale, InsertSaleItem } from "@shared/schema";
 
@@ -210,6 +216,69 @@ export default function POS() {
     setSuccessDialogOpen(false);
   };
 
+  // Keyboard shortcuts handler
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    // Ignore if typing in an input
+    const target = e.target as HTMLElement;
+    if (target.tagName === "INPUT" || target.tagName === "TEXTAREA") {
+      return;
+    }
+
+    // Escape: Clear cart
+    if (e.key === "Escape") {
+      e.preventDefault();
+      if (checkoutDialogOpen) {
+        setCheckoutDialogOpen(false);
+      } else if (successDialogOpen) {
+        setSuccessDialogOpen(false);
+      } else {
+        clearCart();
+        toast({ title: "Panier vidé" });
+      }
+      return;
+    }
+
+    // F2: Open checkout
+    if (e.key === "F2") {
+      e.preventDefault();
+      if (!checkoutDialogOpen && cart.length > 0) {
+        handleCheckout();
+      }
+      return;
+    }
+
+    // F4: Complete sale (when checkout dialog is open)
+    if (e.key === "F4" && checkoutDialogOpen) {
+      e.preventDefault();
+      completeSale();
+      return;
+    }
+
+    // Number keys 1-9: Quick add products (first 9 filtered products)
+    if (e.key >= "1" && e.key <= "9" && !checkoutDialogOpen && !successDialogOpen) {
+      e.preventDefault();
+      const index = parseInt(e.key) - 1;
+      const productsToShow = filteredProducts || [];
+      if (index < productsToShow.length) {
+        addToCart(productsToShow[index]);
+      }
+      return;
+    }
+
+    // Delete: Remove last item from cart
+    if (e.key === "Delete" && cart.length > 0 && !checkoutDialogOpen) {
+      e.preventDefault();
+      const lastItem = cart[cart.length - 1];
+      removeFromCart(lastItem.productId);
+      return;
+    }
+  }, [cart, checkoutDialogOpen, successDialogOpen, filteredProducts, toast]);
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]);
+
   return (
     <div className="h-[calc(100vh-4rem)] flex flex-col lg:flex-row gap-4 p-4">
       <div className="flex-1 flex flex-col min-w-0">
@@ -289,6 +358,23 @@ export default function POS() {
           <CardTitle className="flex items-center gap-2 text-lg">
             <ShoppingCart className="h-5 w-5" />
             {t("pos.cart")}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="ghost" size="icon" className="h-6 w-6 ml-1" data-testid="button-keyboard-help">
+                  <Keyboard className="h-4 w-4 text-muted-foreground" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="bottom" className="max-w-xs">
+                <div className="text-xs space-y-1">
+                  <p className="font-semibold mb-2">Raccourcis clavier:</p>
+                  <p><kbd className="bg-muted px-1 rounded">1-9</kbd> Ajouter produit</p>
+                  <p><kbd className="bg-muted px-1 rounded">F2</kbd> Paiement</p>
+                  <p><kbd className="bg-muted px-1 rounded">F4</kbd> Confirmer vente</p>
+                  <p><kbd className="bg-muted px-1 rounded">Suppr</kbd> Retirer dernier</p>
+                  <p><kbd className="bg-muted px-1 rounded">Échap</kbd> Vider panier</p>
+                </div>
+              </TooltipContent>
+            </Tooltip>
             {cart.length > 0 && (
               <Badge variant="secondary" className="ml-auto">
                 {cart.reduce((sum, item) => sum + item.quantity, 0)} {t("pos.items")}
