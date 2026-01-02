@@ -120,7 +120,7 @@ export default function InvoiceView() {
       params_url.set("watermark", branding.watermark);
     }
     
-    window.open(`/api/invoices/${params.id}/pdf?${params_url.toString()}`, "_blank");
+    window.open(`/public/invoices/${params.id}/pdf?${params_url.toString()}`, "_blank");
   };
 
   if (isLoading) {

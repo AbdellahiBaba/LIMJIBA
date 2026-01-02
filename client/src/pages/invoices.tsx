@@ -116,7 +116,7 @@ export default function Invoices() {
       params_url.set("watermark", branding.watermark);
     }
     
-    window.open(`/api/invoices/${invoiceId}/pdf?${params_url.toString()}`, "_blank");
+    window.open(`/public/invoices/${invoiceId}/pdf?${params_url.toString()}`, "_blank");
   };
 
   return (
