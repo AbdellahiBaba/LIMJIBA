@@ -1234,10 +1234,18 @@ export async function registerRoutes(
 
   app.post("/api/customers", async (req, res) => {
     try {
-      const data = insertCustomerSchema.parse({
-        ...req.body,
+      // Map snake_case from frontend to camelCase for Drizzle schema
+      const mappedData = {
+        name: req.body.name,
+        phone: req.body.phone || null,
+        email: req.body.email || null,
+        address: req.body.address || null,
+        creditLimit: parseFloat(req.body.credit_limit) || parseFloat(req.body.creditLimit) || 0,
+        currentBalance: 0,
+        notes: req.body.notes || null,
         createdAt: new Date().toISOString(),
-      });
+      };
+      const data = insertCustomerSchema.parse(mappedData);
       const customer = await storage.createCustomer(data);
       res.status(201).json(customer);
     } catch (error) {
@@ -1247,7 +1255,17 @@ export async function registerRoutes(
 
   app.patch("/api/customers/:id", async (req, res) => {
     try {
-      const data = insertCustomerSchema.partial().parse(req.body);
+      // Map snake_case from frontend to camelCase for Drizzle schema
+      const mappedData: Record<string, any> = {};
+      if (req.body.name !== undefined) mappedData.name = req.body.name;
+      if (req.body.phone !== undefined) mappedData.phone = req.body.phone;
+      if (req.body.email !== undefined) mappedData.email = req.body.email;
+      if (req.body.address !== undefined) mappedData.address = req.body.address;
+      if (req.body.credit_limit !== undefined) mappedData.creditLimit = parseFloat(req.body.credit_limit);
+      if (req.body.creditLimit !== undefined) mappedData.creditLimit = parseFloat(req.body.creditLimit);
+      if (req.body.notes !== undefined) mappedData.notes = req.body.notes;
+      
+      const data = insertCustomerSchema.partial().parse(mappedData);
       const customer = await storage.updateCustomer(req.params.id, data);
       if (!customer) {
         return res.status(404).json({ error: "Customer not found", id: req.params.id });
