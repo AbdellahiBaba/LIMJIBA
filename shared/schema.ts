@@ -101,6 +101,9 @@ export const sales = pgTable("sales", {
   total: real("total").notNull(),
   discount: real("discount").default(0),
   resellerId: varchar("reseller_id"),
+  status: text("status").notNull().default("completed"),
+  customerName: text("customer_name"),
+  customerPhone: text("customer_phone"),
 });
 
 export const insertSaleSchema = createInsertSchema(sales).omit({ id: true });

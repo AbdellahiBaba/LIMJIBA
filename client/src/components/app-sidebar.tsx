@@ -23,6 +23,7 @@ import {
   Calculator,
   Users,
   Receipt,
+  History,
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -54,6 +55,12 @@ export function AppSidebar() {
       url: "/pos",
       icon: ShoppingCart,
       testId: "nav-pos",
+    },
+    {
+      title: t("nav.sales") || "Ventes",
+      url: "/sales",
+      icon: History,
+      testId: "nav-sales",
     },
     {
       title: t("nav.resellers"),

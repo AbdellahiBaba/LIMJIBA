@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useLanguage } from "@/contexts/language-context";
+import { useLanguage, useBranding } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -43,6 +43,7 @@ import type { Product, CartItem, Reseller, InsertSale, InsertSaleItem } from "@s
 export default function POS() {
   const { toast } = useToast();
   const { t } = useLanguage();
+  const { branding } = useBranding();
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [discount, setDiscount] = useState(0);
@@ -190,6 +191,7 @@ export default function POS() {
         total,
         discount: discountAmount,
         resellerId: selectedReseller !== "none" ? selectedReseller : null,
+        status: paymentMode === "CREDIT" ? "credit" : "completed",
       },
       items: saleItems,
     });
@@ -197,7 +199,13 @@ export default function POS() {
 
   const handlePrintReceipt = () => {
     if (lastSaleId) {
-      window.open(`/api/sales/${lastSaleId}/receipt`, "_blank");
+      const params = new URLSearchParams({
+        primaryColor: branding.primaryColor,
+      });
+      if (branding.logo) {
+        params.set("logo", branding.logo);
+      }
+      window.open(`/api/sales/${lastSaleId}/receipt?${params.toString()}`, "_blank");
     }
     setSuccessDialogOpen(false);
   };

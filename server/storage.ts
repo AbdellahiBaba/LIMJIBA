@@ -73,6 +73,8 @@ export interface IStorage {
   getSale(id: string): Promise<Sale | undefined>;
   getSaleWithItems(id: string): Promise<SaleWithItems | undefined>;
   createSale(sale: InsertSale, items: InsertSaleItem[]): Promise<SaleWithItems>;
+  updateSaleStatus(id: string, status: string): Promise<Sale | undefined>;
+  deleteSale(id: string): Promise<boolean>;
 
   getResellers(): Promise<Reseller[]>;
   getReseller(id: string): Promise<Reseller | undefined>;
@@ -357,6 +359,29 @@ export class DatabaseStorage implements IStorage {
     cache.delete(CACHE_KEYS.SALES);
     cache.delete(CACHE_KEYS.PRODUCTS);
     cache.delete(CACHE_KEYS.RESELLERS);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
+  }
+
+  async updateSaleStatus(id: string, status: string): Promise<Sale | undefined> {
+    const result = await withRetry(async () => {
+      const [updated] = await db.update(sales).set({ status }).where(eq(sales.id, id)).returning();
+      return updated || undefined;
+    });
+    
+    cache.delete(CACHE_KEYS.SALES);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result;
+  }
+
+  async deleteSale(id: string): Promise<boolean> {
+    const result = await withRetry(async () => {
+      await db.delete(saleItems).where(eq(saleItems.saleId, id));
+      const deleted = await db.delete(sales).where(eq(sales.id, id)).returning();
+      return deleted.length > 0;
+    });
+    
+    cache.delete(CACHE_KEYS.SALES);
     cache.delete(CACHE_KEYS.DASHBOARD_STATS);
     return result;
   }

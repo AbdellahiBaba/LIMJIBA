@@ -601,11 +601,39 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Sale not found", id: req.params.id });
       }
 
-      const html = generateReceiptHTML(sale);
+      const html = generateReceiptHTML(sale, req.query);
       res.setHeader("Content-Type", "text/html");
       res.send(html);
     } catch (error) {
       handleError(res, "generate receipt", error);
+    }
+  });
+
+  app.patch("/api/sales/:id/status", async (req, res) => {
+    try {
+      const { status } = req.body;
+      if (!status) {
+        return res.status(400).json({ error: "Missing status" });
+      }
+      const updated = await storage.updateSaleStatus(req.params.id, status);
+      if (!updated) {
+        return res.status(404).json({ error: "Sale not found", id: req.params.id });
+      }
+      res.json(updated);
+    } catch (error) {
+      handleError(res, "update sale status", error);
+    }
+  });
+
+  app.delete("/api/sales/:id", async (req, res) => {
+    try {
+      const deleted = await storage.deleteSale(req.params.id);
+      if (!deleted) {
+        return res.status(404).json({ error: "Sale not found", id: req.params.id });
+      }
+      res.status(204).send();
+    } catch (error) {
+      handleError(res, "delete sale", error);
     }
   });
 
@@ -1195,70 +1223,272 @@ function generateInvoicePDF(invoice: any, branding: InvoiceBranding = {
   `;
 }
 
-function generateReceiptHTML(sale: any): string {
+function generateReceiptHTML(sale: any, query: any = {}): string {
+  const logo = query.logo || '';
+  const primaryColor = query.primaryColor || '#1976D2';
+  const companyPhone = '0550 51 07 46';
+  const companyAddress = 'Village Zaitout, Draa Ben Khedda, Tizi Ouzou';
+  const companyName = 'POLY FLECTA PLASTICA';
+  
+  // Format date as DD/MM/YYYY
+  const formatDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const parts = dateStr.split('-');
+    if (parts.length === 3) {
+      return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    }
+    return dateStr;
+  };
+  
+  const paymentLabels: Record<string, string> = {
+    'CASH': 'Espèces',
+    'CARD': 'Carte',
+    'CREDIT': 'Crédit',
+    'TRANSFER': 'Virement'
+  };
+  
+  const statusLabels: Record<string, string> = {
+    'completed': 'Payé',
+    'credit': 'Crédit',
+    'pending': 'En attente'
+  };
+
   return `
 <!DOCTYPE html>
 <html>
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Receipt</title>
+  <title>Ticket de Caisse - ${sale.saleNumber}</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { font-family: 'Courier New', monospace; font-size: 12px; width: 80mm; margin: 0 auto; padding: 10px; }
-    .header { text-align: center; border-bottom: 1px dashed #000; padding-bottom: 10px; margin-bottom: 10px; }
-    .header h1 { font-size: 16px; }
-    .header p { font-size: 10px; }
-    .info { margin-bottom: 10px; }
-    .info p { margin: 2px 0; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-    th, td { text-align: left; padding: 3px 0; }
-    th { border-bottom: 1px solid #000; }
-    .total { border-top: 1px dashed #000; padding-top: 10px; text-align: right; font-weight: bold; }
-    .footer { text-align: center; margin-top: 20px; font-size: 10px; }
-    @media print { body { width: 80mm; } }
+    body { 
+      font-family: 'Segoe UI', 'Roboto', sans-serif; 
+      font-size: 11px; 
+      width: 80mm; 
+      margin: 0 auto; 
+      padding: 8px;
+      background: #fff;
+    }
+    .header { 
+      text-align: center; 
+      padding-bottom: 12px; 
+      margin-bottom: 10px;
+      border-bottom: 2px solid ${primaryColor};
+    }
+    .logo-container {
+      margin-bottom: 8px;
+    }
+    .logo {
+      max-width: 60px;
+      max-height: 60px;
+      object-fit: contain;
+    }
+    .company-name { 
+      font-size: 18px; 
+      font-weight: bold;
+      color: ${primaryColor};
+      letter-spacing: 1px;
+      margin-bottom: 4px;
+    }
+    .company-info { 
+      font-size: 9px; 
+      color: #555;
+      line-height: 1.4;
+    }
+    .company-phone {
+      font-size: 11px;
+      font-weight: 600;
+      color: ${primaryColor};
+      margin-top: 4px;
+    }
+    .receipt-title {
+      text-align: center;
+      font-size: 13px;
+      font-weight: bold;
+      text-transform: uppercase;
+      padding: 6px 0;
+      background: ${primaryColor}15;
+      margin: 8px 0;
+      border-radius: 4px;
+    }
+    .info { 
+      margin-bottom: 10px;
+      padding: 8px;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+    .info-row { 
+      display: flex;
+      justify-content: space-between;
+      margin: 3px 0;
+      font-size: 10px;
+    }
+    .info-label { color: #666; }
+    .info-value { font-weight: 600; }
+    table { 
+      width: 100%; 
+      border-collapse: collapse; 
+      margin: 10px 0;
+    }
+    th { 
+      font-size: 9px;
+      text-transform: uppercase;
+      color: #666;
+      border-bottom: 1px solid #ddd;
+      padding: 6px 2px;
+      text-align: left;
+    }
+    th:last-child { text-align: right; }
+    td { 
+      padding: 6px 2px;
+      border-bottom: 1px dashed #eee;
+      vertical-align: top;
+    }
+    td:last-child { text-align: right; font-weight: 500; }
+    .item-name { font-weight: 500; }
+    .item-qty { color: #666; font-size: 10px; }
+    .totals {
+      border-top: 2px solid ${primaryColor};
+      padding-top: 10px;
+      margin-top: 10px;
+    }
+    .totals-row {
+      display: flex;
+      justify-content: space-between;
+      padding: 4px 0;
+      font-size: 11px;
+    }
+    .totals-row.discount { color: #e53935; }
+    .totals-row.grand-total {
+      font-size: 16px;
+      font-weight: bold;
+      color: ${primaryColor};
+      border-top: 1px dashed #ccc;
+      padding-top: 8px;
+      margin-top: 6px;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    .status-completed { background: #4caf5020; color: #2e7d32; }
+    .status-credit { background: #ff980020; color: #e65100; }
+    .status-pending { background: #9e9e9e20; color: #616161; }
+    .footer { 
+      text-align: center; 
+      margin-top: 16px;
+      padding-top: 12px;
+      border-top: 1px dashed #ccc;
+    }
+    .footer-thanks {
+      font-size: 12px;
+      font-weight: 600;
+      color: ${primaryColor};
+      margin-bottom: 4px;
+    }
+    .footer-msg {
+      font-size: 9px;
+      color: #888;
+    }
+    .receipt-number {
+      text-align: center;
+      font-size: 8px;
+      color: #999;
+      margin-top: 10px;
+    }
+    @media print { 
+      body { width: 80mm; padding: 5mm; }
+      .no-print { display: none; }
+    }
   </style>
 </head>
 <body>
   <div class="header">
-    <h1>POLY FLECTA PLASTICA</h1>
-    <p>Village Zaitout, Draa Ben Khedda</p>
-    <p>Tel: 0555 123 456</p>
+    ${logo ? `<div class="logo-container"><img src="${logo}" alt="Logo" class="logo" /></div>` : ''}
+    <div class="company-name">${companyName}</div>
+    <div class="company-info">${companyAddress}</div>
+    <div class="company-phone">Tel: ${companyPhone}</div>
   </div>
   
+  <div class="receipt-title">Ticket de Caisse</div>
+  
   <div class="info">
-    <p><strong>Date:</strong> ${sale.date}</p>
-    <p><strong>Payment:</strong> ${sale.paymentMode}</p>
+    <div class="info-row">
+      <span class="info-label">N:</span>
+      <span class="info-value">${sale.saleNumber}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Date:</span>
+      <span class="info-value">${formatDate(sale.date)}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Paiement:</span>
+      <span class="info-value">${paymentLabels[sale.paymentMode] || sale.paymentMode}</span>
+    </div>
+    <div class="info-row">
+      <span class="info-label">Statut:</span>
+      <span class="info-value">
+        <span class="status-badge status-${sale.status || 'completed'}">
+          ${statusLabels[sale.status || 'completed'] || 'Payé'}
+        </span>
+      </span>
+    </div>
+    ${sale.customerName ? `
+    <div class="info-row">
+      <span class="info-label">Client:</span>
+      <span class="info-value">${sale.customerName}</span>
+    </div>
+    ` : ''}
   </div>
   
   <table>
     <thead>
       <tr>
-        <th>Item</th>
-        <th>Qty</th>
-        <th>Price</th>
+        <th>Article</th>
+        <th>Qté</th>
+        <th>Prix</th>
       </tr>
     </thead>
     <tbody>
       ${sale.items.map((item: any) => `
         <tr>
-          <td>${item.productName}</td>
-          <td>${item.quantity}</td>
-          <td>${item.total.toLocaleString()} DZD</td>
+          <td class="item-name">${item.productName}</td>
+          <td class="item-qty">${item.quantity}</td>
+          <td>${item.total.toLocaleString('fr-FR')} DA</td>
         </tr>
       `).join('')}
     </tbody>
   </table>
   
-  <div class="total">
-    ${sale.discount > 0 ? `<p>Discount: -${sale.discount}%</p>` : ''}
-    <p>TOTAL: ${sale.total.toLocaleString()} DZD</p>
+  <div class="totals">
+    <div class="totals-row">
+      <span>Sous-total:</span>
+      <span>${(sale.total + (sale.discount || 0)).toLocaleString('fr-FR')} DA</span>
+    </div>
+    ${sale.discount > 0 ? `
+    <div class="totals-row discount">
+      <span>Remise:</span>
+      <span>-${sale.discount.toLocaleString('fr-FR')} DA</span>
+    </div>
+    ` : ''}
+    <div class="totals-row grand-total">
+      <span>TOTAL:</span>
+      <span>${sale.total.toLocaleString('fr-FR')} DA</span>
+    </div>
   </div>
   
   <div class="footer">
-    <p>Thank you for your purchase!</p>
-    <p>Merci pour votre achat!</p>
+    <div class="footer-thanks">Merci pour votre achat!</div>
+    <div class="footer-msg">A bientot chez ${companyName}</div>
   </div>
+  
+  <div class="receipt-number">${sale.saleNumber}</div>
+  
   <script>window.onload = function() { window.print(); }</script>
 </body>
 </html>
