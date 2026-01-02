@@ -1802,143 +1802,172 @@ function generateReceiptHTML(sale: any, query: any = {}): string {
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { 
-      font-family: 'Segoe UI', 'Roboto', sans-serif; 
+      font-family: 'Segoe UI', 'Roboto', -apple-system, sans-serif; 
       font-size: 11px; 
       width: 80mm; 
       margin: 0 auto; 
-      padding: 8px;
+      padding: 10px;
       background: #fff;
+      color: #333;
     }
     .header { 
       text-align: center; 
-      padding-bottom: 12px; 
-      margin-bottom: 10px;
-      border-bottom: 2px solid ${primaryColor};
+      padding-bottom: 14px; 
+      margin-bottom: 12px;
+      border-bottom: 3px solid ${primaryColor};
     }
     .logo-container {
-      margin-bottom: 8px;
+      margin-bottom: 10px;
     }
     .logo {
-      max-width: 60px;
-      max-height: 60px;
+      max-width: 70px;
+      max-height: 70px;
       object-fit: contain;
     }
     .company-name { 
-      font-size: 18px; 
-      font-weight: bold;
+      font-size: 20px; 
+      font-weight: 800;
       color: ${primaryColor};
-      letter-spacing: 1px;
-      margin-bottom: 4px;
+      letter-spacing: 0.5px;
+      margin-bottom: 6px;
+      text-transform: uppercase;
     }
     .company-info { 
       font-size: 9px; 
-      color: #555;
-      line-height: 1.4;
+      color: #666;
+      line-height: 1.5;
     }
     .company-phone {
-      font-size: 11px;
-      font-weight: 600;
+      font-size: 12px;
+      font-weight: 700;
       color: ${primaryColor};
-      margin-top: 4px;
+      margin-top: 6px;
     }
     .receipt-title {
       text-align: center;
-      font-size: 13px;
-      font-weight: bold;
+      font-size: 14px;
+      font-weight: 700;
       text-transform: uppercase;
-      padding: 6px 0;
-      background: ${primaryColor}15;
-      margin: 8px 0;
-      border-radius: 4px;
+      letter-spacing: 2px;
+      padding: 8px 0;
+      background: linear-gradient(135deg, ${primaryColor}20, ${primaryColor}10);
+      margin: 10px 0;
+      border-radius: 6px;
+      color: ${primaryColor};
     }
     .info { 
-      margin-bottom: 10px;
-      padding: 8px;
+      margin-bottom: 12px;
+      padding: 10px 12px;
       background: #f8f9fa;
-      border-radius: 4px;
+      border-radius: 6px;
+      border-left: 3px solid ${primaryColor};
     }
     .info-row { 
       display: flex;
       justify-content: space-between;
-      margin: 3px 0;
+      align-items: center;
+      margin: 4px 0;
       font-size: 10px;
     }
-    .info-label { color: #666; }
-    .info-value { font-weight: 600; }
+    .info-label { color: #666; font-weight: 500; }
+    .info-value { font-weight: 600; color: #333; }
     table { 
       width: 100%; 
       border-collapse: collapse; 
-      margin: 10px 0;
+      margin: 12px 0;
     }
     th { 
       font-size: 9px;
       text-transform: uppercase;
-      color: #666;
-      border-bottom: 1px solid #ddd;
-      padding: 6px 2px;
+      color: #888;
+      border-bottom: 2px solid #eee;
+      padding: 8px 4px;
       text-align: left;
+      font-weight: 600;
+      letter-spacing: 0.5px;
     }
     th:last-child { text-align: right; }
     td { 
-      padding: 6px 2px;
-      border-bottom: 1px dashed #eee;
-      vertical-align: top;
+      padding: 8px 4px;
+      border-bottom: 1px dashed #e0e0e0;
+      vertical-align: middle;
+      font-size: 11px;
     }
-    td:last-child { text-align: right; font-weight: 500; }
-    .item-name { font-weight: 500; }
-    .item-qty { color: #666; font-size: 10px; }
+    td:last-child { 
+      text-align: right; 
+      font-weight: 600; 
+      font-family: 'SF Mono', 'Consolas', monospace;
+    }
+    .item-name { font-weight: 600; color: #333; }
+    .item-qty { 
+      color: #888; 
+      font-size: 9px; 
+      font-family: 'SF Mono', 'Consolas', monospace;
+    }
     .totals {
-      border-top: 2px solid ${primaryColor};
-      padding-top: 10px;
-      margin-top: 10px;
+      background: linear-gradient(135deg, ${primaryColor}15, ${primaryColor}05);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 12px;
     }
     .totals-row {
       display: flex;
       justify-content: space-between;
-      padding: 4px 0;
+      align-items: center;
+      padding: 5px 0;
       font-size: 11px;
     }
-    .totals-row.discount { color: #e53935; }
+    .totals-row span:last-child {
+      font-family: 'SF Mono', 'Consolas', monospace;
+      font-weight: 600;
+    }
+    .totals-row.discount { color: #4caf50; }
     .totals-row.grand-total {
-      font-size: 16px;
-      font-weight: bold;
+      font-size: 18px;
+      font-weight: 800;
       color: ${primaryColor};
-      border-top: 1px dashed #ccc;
-      padding-top: 8px;
-      margin-top: 6px;
+      border-top: 2px dashed ${primaryColor}40;
+      padding-top: 10px;
+      margin-top: 8px;
     }
     .status-badge {
       display: inline-block;
-      padding: 2px 8px;
-      border-radius: 10px;
+      padding: 3px 10px;
+      border-radius: 12px;
       font-size: 9px;
-      font-weight: 600;
+      font-weight: 700;
       text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
-    .status-completed { background: #4caf5020; color: #2e7d32; }
-    .status-credit { background: #ff980020; color: #e65100; }
-    .status-pending { background: #9e9e9e20; color: #616161; }
+    .status-completed { background: #e8f5e9; color: #2e7d32; }
+    .status-credit { background: #fff3e0; color: #e65100; }
+    .status-pending { background: #f5f5f5; color: #616161; }
     .footer { 
       text-align: center; 
-      margin-top: 16px;
-      padding-top: 12px;
-      border-top: 1px dashed #ccc;
+      margin-top: 18px;
+      padding-top: 14px;
+      border-top: 2px dashed #ddd;
     }
     .footer-thanks {
-      font-size: 12px;
-      font-weight: 600;
+      font-size: 14px;
+      font-weight: 700;
       color: ${primaryColor};
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
     .footer-msg {
-      font-size: 9px;
+      font-size: 10px;
       color: #888;
+      font-style: italic;
     }
     .receipt-number {
       text-align: center;
-      font-size: 8px;
-      color: #999;
-      margin-top: 10px;
+      font-size: 9px;
+      color: #aaa;
+      margin-top: 12px;
+      padding: 6px;
+      background: #f5f5f5;
+      border-radius: 4px;
+      font-family: 'SF Mono', 'Consolas', monospace;
     }
     @media print { 
       body { width: 80mm; padding: 5mm; }

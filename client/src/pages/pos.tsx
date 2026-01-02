@@ -419,58 +419,62 @@ export default function POS() {
             </div>
           ) : (
             <ScrollArea className="flex-1 -mx-4 px-4">
-              <div className="space-y-3">
-                {cart.map((item) => (
+              <div className="space-y-2">
+                {cart.map((item, index) => (
                   <div
                     key={item.productId}
-                    className="grid grid-cols-[1fr_auto_auto] items-center gap-2 p-2 rounded-md bg-muted/50"
+                    className="relative p-3 rounded-lg border bg-card hover-elevate transition-colors"
                     data-testid={`cart-item-${item.productId}`}
                   >
-                    {/* Product name and unit price - flexible width with truncation */}
-                    <div className="min-w-0 overflow-hidden">
-                      <p className="font-medium text-sm truncate">{item.productName}</p>
-                      <p className="text-xs text-muted-foreground truncate">
-                        {item.unitPrice.toLocaleString()} DZD × {item.quantity}
-                      </p>
-                    </div>
-                    {/* Quantity controls - fixed width */}
-                    <div className="flex items-center gap-1">
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => updateQuantity(item.productId, -1)}
-                        data-testid={`button-decrease-${item.productId}`}
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      <span className="w-8 text-center font-mono text-sm">
-                        {item.quantity}
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="icon"
-                        className="h-7 w-7"
-                        onClick={() => updateQuantity(item.productId, 1)}
-                        data-testid={`button-increase-${item.productId}`}
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </div>
-                    {/* Total and delete - fixed width with right alignment */}
-                    <div className="flex items-center gap-1 min-w-[90px] justify-end">
-                      <p className="font-mono text-sm font-medium whitespace-nowrap">
-                        {item.total.toLocaleString()}
-                      </p>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate leading-tight">{item.productName}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {item.unitPrice.toLocaleString()} DZD
+                        </p>
+                      </div>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-7 w-7"
+                        className="-mt-1 -mr-1"
                         onClick={() => removeFromCart(item.productId)}
                         data-testid={`button-remove-${item.productId}`}
                       >
-                        <Trash2 className="h-3 w-3 text-destructive" />
+                        <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
                       </Button>
+                    </div>
+                    <div className="flex items-center justify-between mt-2 pt-2 border-t border-dashed">
+                      <div className="flex items-center gap-1.5">
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="rounded-full"
+                          onClick={() => updateQuantity(item.productId, -1)}
+                          data-testid={`button-decrease-${item.productId}`}
+                        >
+                          <Minus className="h-3 w-3" />
+                        </Button>
+                        <span 
+                          className="w-10 text-center font-mono text-sm font-semibold bg-muted rounded-md py-1"
+                          data-testid={`text-cart-quantity-${item.productId}`}
+                        >
+                          {item.quantity}
+                        </span>
+                        <Button
+                          variant="outline"
+                          size="icon"
+                          className="rounded-full"
+                          onClick={() => updateQuantity(item.productId, 1)}
+                          data-testid={`button-increase-${item.productId}`}
+                        >
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-mono text-base font-bold text-primary whitespace-nowrap">
+                          {item.total.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">DZD</span>
+                        </p>
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -479,80 +483,76 @@ export default function POS() {
           )}
 
           {cart.length > 0 && (
-            <>
-              <Separator className="my-4" />
-              <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
+            <div className="mt-4 space-y-4 border-t pt-4">
+              <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t("pos.subtotal")}</span>
-                  <span className="font-mono">{subtotal.toLocaleString()} DZD</span>
+                  <span className="font-mono font-medium">{subtotal.toLocaleString()} DZD</span>
                 </div>
                 {discountAmount > 0 && (
-                  <div className="flex justify-between text-green-600">
-                    <span>{t("pos.discount")} ({discount}%)</span>
-                    <span className="font-mono">-{discountAmount.toLocaleString()} DZD</span>
+                  <div className="flex justify-between text-sm">
+                    <span className="text-green-600 dark:text-green-400">{t("pos.discount")} ({discount}%)</span>
+                    <span className="font-mono font-medium text-green-600 dark:text-green-400">-{discountAmount.toLocaleString()} DZD</span>
                   </div>
                 )}
                 <Separator />
-                <div className="flex justify-between text-lg font-semibold">
-                  <span>{t("pos.total")}</span>
-                  <span className="font-mono" data-testid="text-cart-total">
+                <div className="flex justify-between items-center">
+                  <span className="text-lg font-bold">{t("pos.total")}</span>
+                  <span className="font-mono text-xl font-bold text-primary" data-testid="text-cart-total">
                     {total.toLocaleString()} DZD
                   </span>
                 </div>
               </div>
 
-              <div className="mt-4 space-y-3">
-                <div className="grid grid-cols-2 gap-2">
-                  <div className="space-y-1">
-                    <Label className="text-xs">{t("pos.discountPercent")}</Label>
-                    <Input
-                      type="number"
-                      min="0"
-                      max="100"
-                      value={discount}
-                      onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
-                      data-testid="input-discount"
-                    />
-                  </div>
-                  <div className="space-y-1">
-                    <Label className="text-xs">{t("pos.reseller")}</Label>
-                    <Select value={selectedReseller} onValueChange={setSelectedReseller}>
-                      <SelectTrigger data-testid="select-reseller">
-                        <SelectValue placeholder={t("pos.noReseller")} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">{t("pos.noReseller")}</SelectItem>
-                        {resellers?.map((reseller) => (
-                          <SelectItem key={reseller.id} value={reseller.id}>
-                            {reseller.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">{t("pos.discountPercent")}</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    max="100"
+                    value={discount}
+                    onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                    className="h-9"
+                    data-testid="input-discount"
+                  />
                 </div>
-
-                <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={clearCart}
-                    data-testid="button-clear-cart"
-                  >
-                    <Trash2 className="h-4 w-4 mr-1" />
-                    {t("pos.clear")}
-                  </Button>
-                  <Button
-                    className="flex-1"
-                    onClick={handleCheckout}
-                    data-testid="button-checkout"
-                  >
-                    <CreditCard className="h-4 w-4 mr-1" />
-                    {t("pos.checkout")}
-                  </Button>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">{t("pos.reseller")}</Label>
+                  <Select value={selectedReseller} onValueChange={setSelectedReseller}>
+                    <SelectTrigger className="h-9" data-testid="select-reseller">
+                      <SelectValue placeholder={t("pos.noReseller")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">{t("pos.noReseller")}</SelectItem>
+                      {resellers?.map((reseller) => (
+                        <SelectItem key={reseller.id} value={reseller.id}>
+                          {reseller.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
               </div>
-            </>
+
+              <div className="grid grid-cols-2 gap-2">
+                <Button
+                  variant="outline"
+                  onClick={clearCart}
+                  data-testid="button-clear-cart"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  {t("pos.clear")}
+                </Button>
+                <Button
+                  onClick={handleCheckout}
+                  data-testid="button-checkout"
+                >
+                  <CreditCard className="h-4 w-4 mr-2" />
+                  {t("pos.checkout")}
+                </Button>
+              </div>
+            </div>
           )}
         </CardContent>
       </Card>
