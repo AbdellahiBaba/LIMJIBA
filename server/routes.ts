@@ -282,7 +282,13 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Sale not found", id: req.params.id });
       }
 
-      const html = generateReceiptHTML(sale, req.query);
+      // Fetch reseller info if sale has a resellerId
+      let reseller = null;
+      if (sale.resellerId) {
+        reseller = await storage.getReseller(sale.resellerId);
+      }
+
+      const html = generateReceiptHTML(sale, req.query, reseller);
 
       let browser: any = null;
       try {
@@ -903,7 +909,13 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Sale not found", id: req.params.id });
       }
 
-      const html = generateReceiptHTML(sale, req.query);
+      // Fetch reseller info if sale has a resellerId
+      let reseller = null;
+      if (sale.resellerId) {
+        reseller = await storage.getReseller(sale.resellerId);
+      }
+
+      const html = generateReceiptHTML(sale, req.query, reseller);
       res.setHeader("Content-Type", "text/html");
       res.send(html);
     } catch (error) {
@@ -1823,7 +1835,7 @@ function generateDeliveryNotePDF(invoice: any, branding: { logo?: string; primar
   `;
 }
 
-function generateReceiptHTML(sale: any, query: any = {}): string {
+function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null): string {
   const logo = query.logo || '';
   const primaryColor = query.primaryColor || '#1976D2';
   const companyPhone = '0670 04 91 24';
@@ -2072,6 +2084,18 @@ function generateReceiptHTML(sale: any, query: any = {}): string {
       <span class="info-label">Client:</span>
       <span class="info-value">${sale.customerName}</span>
     </div>
+    ` : ''}
+    ${reseller ? `
+    <div class="info-row">
+      <span class="info-label">Revendeur:</span>
+      <span class="info-value">${reseller.name}</span>
+    </div>
+    ${reseller.phone ? `
+    <div class="info-row">
+      <span class="info-label">Tel:</span>
+      <span class="info-value">${reseller.phone}</span>
+    </div>
+    ` : ''}
     ` : ''}
   </div>
   
