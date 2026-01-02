@@ -37,6 +37,7 @@ import {
   Factory,
   ChevronDown,
   Download,
+  Copy,
 } from "lucide-react";
 import {
   DropdownMenu,
@@ -84,6 +85,18 @@ export default function Invoices() {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({ title: t("invoices.statusUpdated") });
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
+    },
+  });
+
+  const duplicateMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("POST", `/api/invoices/${id}/duplicate`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({ title: "Facture dupliquée avec succès" });
     },
     onError: (error: Error) => {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
@@ -258,6 +271,16 @@ export default function Invoices() {
                               data-testid={`button-print-${invoice.id}`}
                             >
                               <Printer className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => duplicateMutation.mutate(invoice.id)}
+                              disabled={duplicateMutation.isPending}
+                              data-testid={`button-duplicate-${invoice.id}`}
+                              title="Dupliquer la facture"
+                            >
+                              <Copy className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"

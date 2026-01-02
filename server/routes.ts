@@ -612,6 +612,48 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/invoices/:id/duplicate", async (req, res) => {
+    try {
+      const originalInvoice = await storage.getInvoiceWithItems(req.params.id);
+      if (!originalInvoice) {
+        return res.status(404).json({ error: "Invoice not found", id: req.params.id });
+      }
+      
+      const nextNumber = await storage.getNextInvoiceNumber();
+      const today = new Date().toISOString().split("T")[0];
+      
+      const newInvoice = {
+        invoiceNumber: nextNumber,
+        date: today,
+        responsible: originalInvoice.invoice.responsible,
+        clientName: originalInvoice.invoice.clientName,
+        clientAddress: originalInvoice.invoice.clientAddress,
+        clientPhone: originalInvoice.invoice.clientPhone,
+        status: "pending" as const,
+        subtotal: originalInvoice.invoice.subtotal,
+        tvaAmount: originalInvoice.invoice.tvaAmount,
+        totalTTC: originalInvoice.invoice.totalTTC,
+        hasTva: originalInvoice.invoice.hasTva,
+        tvaRate: originalInvoice.invoice.tvaRate,
+        totalWeight: originalInvoice.invoice.totalWeight,
+      };
+      
+      const newItems = originalInvoice.items.map((item) => ({
+        productId: item.productId,
+        productName: item.productName,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        weight: item.weight,
+        total: item.total,
+      }));
+      
+      const created = await storage.createInvoice(newInvoice, newItems);
+      res.status(201).json(created);
+    } catch (error) {
+      handleError(res, "duplicate invoice", error);
+    }
+  });
+
   app.get("/api/sales", async (req, res) => {
     try {
       const sales = await storage.getSales();
