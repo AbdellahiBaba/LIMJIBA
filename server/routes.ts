@@ -1,5 +1,6 @@
-import type { Express } from "express";
+import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import bcrypt from "bcrypt";
 import { storage } from "./storage";
 import { isTransientError, checkDatabaseHealth, getPoolStats } from "./db";
 import { cache } from "./cache";
@@ -18,6 +19,27 @@ import {
   insertStockMovementSchema,
 } from "@shared/schema";
 import { z } from "zod";
+
+const loginSchema = z.object({
+  username: z.string().min(1),
+  password: z.string().min(1),
+});
+
+function requireAuth(req: Request, res: Response, next: NextFunction) {
+  if (req.session?.isAuthenticated) {
+    next();
+  } else {
+    res.status(401).json({ error: "Authentication required" });
+  }
+}
+
+function requireAdmin(req: Request, res: Response, next: NextFunction) {
+  if (req.session?.isAuthenticated && req.session?.isAdmin) {
+    next();
+  } else {
+    res.status(403).json({ error: "Admin access required" });
+  }
+}
 
 function logError(context: string, error: unknown): string {
   const errorMessage = error instanceof Error ? error.message : String(error);
@@ -120,6 +142,80 @@ export async function registerRoutes(
       });
     }
   });
+
+  // ===================== AUTH ROUTES =====================
+  
+  app.post("/api/auth/login", async (req, res) => {
+    try {
+      const { username, password } = loginSchema.parse(req.body);
+      
+      const user = await storage.getUserByUsername(username);
+      if (!user) {
+        return res.status(401).json({ error: "Invalid username or password" });
+      }
+      
+      const isValidPassword = await bcrypt.compare(password, user.password);
+      if (!isValidPassword) {
+        return res.status(401).json({ error: "Invalid username or password" });
+      }
+      
+      req.session.userId = user.id;
+      req.session.username = user.username;
+      req.session.isAdmin = user.isAdmin;
+      req.session.isAuthenticated = true;
+      
+      res.json({ 
+        success: true, 
+        user: { 
+          id: user.id, 
+          username: user.username, 
+          isAdmin: user.isAdmin 
+        } 
+      });
+    } catch (error) {
+      handleError(res, "login", error);
+    }
+  });
+
+  app.post("/api/auth/logout", (req, res) => {
+    req.session.destroy((err) => {
+      if (err) {
+        return res.status(500).json({ error: "Failed to logout" });
+      }
+      res.clearCookie("connect.sid");
+      res.json({ success: true });
+    });
+  });
+
+  app.get("/api/auth/session", (req, res) => {
+    if (req.session?.isAuthenticated) {
+      res.json({
+        isAuthenticated: true,
+        user: {
+          id: req.session.userId,
+          username: req.session.username,
+          isAdmin: req.session.isAdmin,
+        },
+      });
+    } else {
+      res.json({ isAuthenticated: false });
+    }
+  });
+
+  // ===================== PROTECTED ROUTES =====================
+  
+  // Apply authentication middleware to all data routes
+  app.use("/api/products", requireAuth);
+  app.use("/api/invoices", requireAuth);
+  app.use("/api/sales", requireAuth);
+  app.use("/api/resellers", requireAuth);
+  app.use("/api/employees", requireAuth);
+  app.use("/api/salary-payments", requireAuth);
+  app.use("/api/expenses", requireAuth);
+  app.use("/api/fabrication-invoices", requireAuth);
+  app.use("/api/stock-movements", requireAuth);
+  app.use("/api/profit-stats", requireAuth);
+  app.use("/api/dashboard", requireAuth);
 
   app.get("/api/dashboard/stats", async (req, res) => {
     try {
