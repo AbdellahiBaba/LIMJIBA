@@ -28,11 +28,12 @@ Preferred communication style: Simple, everyday language.
 1. **Dashboard** - Business statistics with stat cards (products, sales, invoices, resellers, low stock alerts)
 2. **Stock Management** - Full CRUD for products with cost price and weight tracking, low stock alerts
 3. **Invoice Generation** - Standard invoices (FA- prefix) and Fabrication invoices (FAB- prefix) with PDF generation
-4. **POS (Point of Sale)** - Product grid, cart system, checkout with payment modes, receipt printing
-5. **Reseller Rewards** - Track purchases, threshold-based reward pool, random winner draw
-6. **Salaries Management** - Employee records, monthly salary payments, payment history
-7. **Expenses Tracking** - Business expenses by category (electricity, rent, supplies, etc.)
-8. **Profit Calculator** - Net profit analysis with automated data from sales, salaries, and expenses
+4. **POS (Point of Sale)** - Product grid, cart system, checkout with payment modes, receipt printing with branding
+5. **Sales Management** - View sales history, filter by status (completed/credit), update status, delete sales
+6. **Reseller Rewards** - Track purchases, threshold-based reward pool, random winner draw
+7. **Salaries Management** - Employee records, monthly salary payments, payment history
+8. **Expenses Tracking** - Business expenses by category (electricity, rent, supplies, etc.)
+9. **Profit Calculator** - Net profit analysis with automated data from sales, salaries, and expenses
 
 ### Backend Architecture
 - **Runtime:** Node.js with Express
