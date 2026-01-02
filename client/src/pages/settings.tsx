@@ -106,7 +106,7 @@ export default function Settings() {
 
   if (!user?.isAdmin) {
     return (
-      <div className="p-6 flex items-center justify-center h-full">
+      <div className="p-3 sm:p-6 flex items-center justify-center h-full">
         <Card className="max-w-md">
           <CardContent className="pt-6 text-center">
             <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
@@ -120,12 +120,12 @@ export default function Settings() {
   }
 
   return (
-    <div className="p-6 space-y-6 max-w-4xl mx-auto">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6 max-w-4xl mx-auto">
       <div>
-        <h1 className="text-2xl font-bold" data-testid="text-settings-title">
+        <h1 className="text-xl sm:text-2xl font-bold" data-testid="text-settings-title">
           {t("settings.title")}
         </h1>
-        <p className="text-muted-foreground">
+        <p className="text-muted-foreground text-xs sm:text-sm hidden sm:block">
           {t("settings.description")}
         </p>
       </div>
@@ -228,7 +228,7 @@ export default function Settings() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-2 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
               <p className="text-muted-foreground">Utilisateur connecte</p>
               <p className="font-medium">{user?.username}</p>

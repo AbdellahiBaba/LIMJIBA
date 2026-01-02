@@ -145,23 +145,23 @@ function AuthenticatedApp() {
 
   return (
     <SidebarProvider style={style as React.CSSProperties}>
-      <div className="flex h-screen w-full">
+      <div className="flex h-screen w-full overflow-hidden">
         <AppSidebar />
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="flex items-center justify-between gap-2 p-2 border-b bg-background sticky top-0 z-50">
+          <header className="flex items-center justify-between gap-1 sm:gap-2 p-2 border-b bg-background sticky top-0 z-50">
             <SidebarTrigger data-testid="button-sidebar-toggle" />
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               {branding.logo && (
                 <img 
                   src={branding.logo} 
                   alt={t("company.name")} 
-                  className="h-6 w-auto hidden sm:block"
+                  className="h-5 sm:h-6 w-auto hidden sm:block"
                 />
               )}
-              <span className="text-xs text-muted-foreground hidden sm:block">
+              <span className="text-xs text-muted-foreground hidden lg:block">
                 {t("company.name")}
               </span>
-              <span className="text-xs font-medium hidden md:block">
+              <span className="text-xs font-medium hidden lg:block">
                 {user?.username}
               </span>
               <LowStockNotifications />

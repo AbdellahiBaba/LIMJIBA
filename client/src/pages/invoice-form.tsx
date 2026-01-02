@@ -293,16 +293,16 @@ export default function InvoiceForm() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex items-center gap-3 sm:gap-4">
         <Button variant="ghost" size="icon" onClick={() => navigate("/invoices")}>
           <ArrowLeft className="h-4 w-4" />
         </Button>
         <div>
-          <h1 className="text-2xl font-semibold" data-testid="text-invoice-form-title">
+          <h1 className="text-xl sm:text-2xl font-semibold" data-testid="text-invoice-form-title">
             {isEditing ? "Edit Invoice" : "New Invoice"}
           </h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-xs sm:text-sm hidden sm:block">
             {isEditing ? "Modify invoice details" : "Create a new invoice"}
           </p>
         </div>

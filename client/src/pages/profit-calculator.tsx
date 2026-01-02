@@ -84,14 +84,14 @@ export default function ProfitCalculator() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-semibold flex items-center gap-2" data-testid="text-profit-title">
-            <Calculator className="h-6 w-6" />
+          <h1 className="text-xl sm:text-2xl font-semibold flex items-center gap-2" data-testid="text-profit-title">
+            <Calculator className="h-5 w-5 sm:h-6 sm:w-6" />
             {t("profit.title")}
           </h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-xs sm:text-sm hidden sm:block">
             {t("profit.description")}
           </p>
         </div>

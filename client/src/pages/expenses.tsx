@@ -280,9 +280,9 @@ export default function ExpensesPage() {
   };
 
   return (
-    <div className={`p-6 space-y-6 ${isRTL ? "rtl" : "ltr"}`} dir={isRTL ? "rtl" : "ltr"}>
-      <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-foreground" data-testid="text-page-title">
+    <div className={`p-3 sm:p-6 space-y-4 sm:space-y-6 ${isRTL ? "rtl" : "ltr"}`} dir={isRTL ? "rtl" : "ltr"}>
+      <div className="flex flex-wrap items-center justify-between gap-3 sm:gap-4">
+        <h1 className="text-xl sm:text-2xl font-bold text-foreground" data-testid="text-page-title">
           {t("expenses.title")}
         </h1>
         <Button onClick={() => setShowExpenseDialog(true)} data-testid="button-add-expense">

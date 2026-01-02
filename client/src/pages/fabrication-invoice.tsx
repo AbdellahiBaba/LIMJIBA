@@ -712,8 +712,8 @@ export default function FabricationInvoice() {
   );
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-center gap-4">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex items-center gap-3 sm:gap-4">
         <Button 
           variant="ghost" 
           size="icon" 
@@ -723,10 +723,10 @@ export default function FabricationInvoice() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold">
+          <h1 className="text-xl sm:text-2xl font-bold">
             {t("invoices.newInvoice")} - {t("nav.stock")}
           </h1>
-          <p className="text-sm text-muted-foreground">
+          <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
             {getLabel("Facture de fabrication avec détails de poids", "فاتورة تصنيع مع تفاصيل الوزن")}
           </p>
         </div>

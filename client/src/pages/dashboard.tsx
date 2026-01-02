@@ -99,18 +99,18 @@ function StatCard({
 
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
+      <CardHeader className="flex flex-row items-center justify-between gap-1 p-3 sm:p-4 pb-1 sm:pb-2">
+        <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground truncate">
           {title}
         </CardTitle>
-        <Icon className={`h-4 w-4 ${iconColors[variant]}`} />
+        <Icon className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${iconColors[variant]}`} />
       </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold" data-testid={`stat-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+      <CardContent className="p-3 sm:p-4 pt-0">
+        <div className="text-lg sm:text-2xl font-bold truncate" data-testid={`stat-${title.toLowerCase().replace(/\s+/g, '-')}`}>
           {value}
         </div>
         {description && (
-          <p className="text-xs text-muted-foreground mt-1">{description}</p>
+          <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 truncate">{description}</p>
         )}
       </CardContent>
     </Card>
@@ -148,13 +148,13 @@ export default function Dashboard() {
   });
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex items-start justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-2xl font-semibold" data-testid="text-dashboard-title">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex items-start justify-between gap-2 sm:gap-4">
+        <div className="flex flex-col gap-1 min-w-0">
+          <h1 className="text-xl sm:text-2xl font-semibold truncate" data-testid="text-dashboard-title">
             {t("dashboard.title")}
           </h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-xs sm:text-sm hidden sm:block">
             {t("company.tagline")}
           </p>
         </div>
@@ -230,7 +230,7 @@ export default function Dashboard() {
 
       {settings.showStatCards && (
         <>
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             {isLoading ? (
               <>
                 <StatCardSkeleton />
@@ -267,7 +267,7 @@ export default function Dashboard() {
             )}
           </div>
 
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
             {isLoading ? (
               <>
                 <StatCardSkeleton />
@@ -306,55 +306,55 @@ export default function Dashboard() {
       )}
 
       {(settings.showQuickActions || settings.showCompanyInfo) && (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
           {settings.showQuickActions && (
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">{t("dashboard.quickActions")}</CardTitle>
+              <CardHeader className="p-3 sm:p-4 pb-2">
+                <CardTitle className="text-base sm:text-lg">{t("dashboard.quickActions")}</CardTitle>
               </CardHeader>
-              <CardContent className="grid gap-3 sm:grid-cols-2">
+              <CardContent className="p-3 sm:p-4 pt-0 grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2">
                 <a
                   href="/invoices/new"
-                  className="flex items-center gap-3 p-4 rounded-md bg-muted hover-elevate"
+                  className="flex items-center gap-2 sm:gap-3 p-2 sm:p-4 rounded-md bg-muted hover-elevate"
                   data-testid="link-new-invoice"
                 >
-                  <FileText className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium text-sm">{t("dashboard.newInvoice")}</p>
-                    <p className="text-xs text-muted-foreground">{t("invoices.newInvoice")}</p>
+                  <FileText className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-xs sm:text-sm truncate">{t("dashboard.newInvoice")}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate hidden sm:block">{t("invoices.newInvoice")}</p>
                   </div>
                 </a>
                 <a
                   href="/pos"
-                  className="flex items-center gap-3 p-4 rounded-md bg-muted hover-elevate"
+                  className="flex items-center gap-2 sm:gap-3 p-2 sm:p-4 rounded-md bg-muted hover-elevate"
                   data-testid="link-open-pos"
                 >
-                  <ShoppingCart className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium text-sm">{t("nav.pos")}</p>
-                    <p className="text-xs text-muted-foreground">{t("dashboard.newSale")}</p>
+                  <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-xs sm:text-sm truncate">{t("nav.pos")}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate hidden sm:block">{t("dashboard.newSale")}</p>
                   </div>
                 </a>
                 <a
                   href="/stock"
-                  className="flex items-center gap-3 p-4 rounded-md bg-muted hover-elevate"
+                  className="flex items-center gap-2 sm:gap-3 p-2 sm:p-4 rounded-md bg-muted hover-elevate"
                   data-testid="link-manage-stock"
                 >
-                  <Package className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium text-sm">{t("nav.stock")}</p>
-                    <p className="text-xs text-muted-foreground">{t("dashboard.addProduct")}</p>
+                  <Package className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-xs sm:text-sm truncate">{t("nav.stock")}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate hidden sm:block">{t("dashboard.addProduct")}</p>
                   </div>
                 </a>
                 <a
                   href="/resellers"
-                  className="flex items-center gap-3 p-4 rounded-md bg-muted hover-elevate"
+                  className="flex items-center gap-2 sm:gap-3 p-2 sm:p-4 rounded-md bg-muted hover-elevate"
                   data-testid="link-resellers"
                 >
-                  <Gift className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="font-medium text-sm">{t("nav.resellers")}</p>
-                    <p className="text-xs text-muted-foreground">{t("resellers.title")}</p>
+                  <Gift className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                  <div className="min-w-0">
+                    <p className="font-medium text-xs sm:text-sm truncate">{t("nav.resellers")}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate hidden sm:block">{t("resellers.title")}</p>
                   </div>
                 </a>
               </CardContent>
@@ -363,21 +363,21 @@ export default function Dashboard() {
 
           {settings.showCompanyInfo && (
             <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">{t("company.name")}</CardTitle>
+              <CardHeader className="p-3 sm:p-4 pb-2">
+                <CardTitle className="text-base sm:text-lg">{t("company.name")}</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-3 text-sm">
+              <CardContent className="p-3 sm:p-4 pt-0 space-y-2 sm:space-y-3 text-xs sm:text-sm">
                 <div className="flex justify-between gap-2">
                   <span className="text-muted-foreground">{t("common.name")}</span>
-                  <span className="font-medium">POLY FLECTA PLASTICA</span>
+                  <span className="font-medium text-right">POLY FLECTA PLASTICA</span>
                 </div>
                 <div className="flex justify-between gap-2">
                   <span className="text-muted-foreground">{t("common.description")}</span>
-                  <span className="font-medium text-right">Fabrication d'Emballage en Plastique</span>
+                  <span className="font-medium text-right text-[10px] sm:text-sm">Fabrication d'Emballage en Plastique</span>
                 </div>
                 <div className="flex justify-between gap-2">
                   <span className="text-muted-foreground">{t("common.address")}</span>
-                  <span className="font-medium text-right">Village Zaitout, Hammam Dalaa - W M'sila</span>
+                  <span className="font-medium text-right text-[10px] sm:text-sm">Village Zaitout, Hammam Dalaa - W M'sila</span>
                 </div>
                 <div className="flex justify-between gap-2">
                   <span className="text-muted-foreground">Carte Artisan</span>
@@ -398,18 +398,18 @@ export default function Dashboard() {
       )}
 
       {(settings.showSalesChart || settings.showTopProducts) && (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
           {settings.showSalesChart && (
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-2">
-                <CardTitle className="text-lg">Ventes Mensuelles</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 p-3 sm:p-4 pb-2">
+                <CardTitle className="text-base sm:text-lg">Ventes Mensuelles</CardTitle>
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-3 sm:p-4 pt-0">
                 {trendsLoading ? (
-                  <Skeleton className="h-[250px] w-full" />
+                  <Skeleton className="h-[180px] sm:h-[250px] w-full" />
                 ) : salesTrends && salesTrends.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={250}>
+                  <ResponsiveContainer width="100%" height={window.innerWidth < 640 ? 180 : 250}>
                     <BarChart data={salesTrends}>
                       <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
                       <XAxis dataKey="month" className="text-xs" />
@@ -426,7 +426,7 @@ export default function Dashboard() {
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                  <div className="h-[180px] sm:h-[250px] flex items-center justify-center text-muted-foreground text-sm">
                     Aucune donnee disponible
                   </div>
                 )}
@@ -436,30 +436,30 @@ export default function Dashboard() {
 
           {settings.showTopProducts && (
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between gap-2">
-                <CardTitle className="text-lg">Produits les Plus Vendus</CardTitle>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 p-3 sm:p-4 pb-2">
+                <CardTitle className="text-base sm:text-lg">Produits les Plus Vendus</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-3 sm:p-4 pt-0">
                 {topLoading ? (
-                  <Skeleton className="h-[250px] w-full" />
+                  <Skeleton className="h-[180px] sm:h-[250px] w-full" />
                 ) : topProducts && topProducts.length > 0 ? (
-                  <div className="space-y-3">
+                  <div className="space-y-2 sm:space-y-3">
                     {topProducts.slice(0, 5).map((product, idx) => (
                       <div key={idx} className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50">
-                        <div className="flex items-center gap-3">
-                          <span className="text-sm font-medium text-muted-foreground w-6">{idx + 1}.</span>
-                          <span className="text-sm font-medium truncate max-w-[150px]">{product.name}</span>
+                        <div className="flex items-center gap-2 sm:gap-3 min-w-0 flex-1">
+                          <span className="text-xs sm:text-sm font-medium text-muted-foreground w-4 sm:w-6 flex-shrink-0">{idx + 1}.</span>
+                          <span className="text-xs sm:text-sm font-medium truncate">{product.name}</span>
                         </div>
-                        <div className="text-right">
-                          <div className="text-sm font-semibold">{product.quantity} vendus</div>
-                          <div className="text-xs text-muted-foreground">{product.revenue.toLocaleString()} DZD</div>
+                        <div className="text-right flex-shrink-0">
+                          <div className="text-xs sm:text-sm font-semibold">{product.quantity} vendus</div>
+                          <div className="text-[10px] sm:text-xs text-muted-foreground">{product.revenue.toLocaleString()} DZD</div>
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                  <div className="h-[180px] sm:h-[250px] flex items-center justify-center text-muted-foreground text-sm">
                     Aucune donnee disponible
                   </div>
                 )}

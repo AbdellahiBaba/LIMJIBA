@@ -284,9 +284,9 @@ export default function POS() {
   }, [handleKeyDown]);
 
   return (
-    <div className="h-[calc(100vh-4rem)] flex flex-col lg:flex-row gap-4 p-4">
+    <div className="h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] flex flex-col lg:flex-row gap-2 sm:gap-4 p-2 sm:p-4">
       <div className="flex-1 flex flex-col min-w-0">
-        <div className="mb-4">
+        <div className="mb-2 sm:mb-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
@@ -310,13 +310,13 @@ export default function POS() {
 
         <ScrollArea className="flex-1">
           {productsLoading ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 min-[400px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
               {[...Array(8)].map((_, i) => (
-                <Skeleton key={i} className="h-32 rounded-md" />
+                <Skeleton key={i} className="h-24 sm:h-32 rounded-md" />
               ))}
             </div>
           ) : filteredProducts && filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 min-[400px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
               {filteredProducts.map((product) => {
                 const inCart = cart.find((item) => item.productId === product.id);
                 const isOutOfStock = product.stockQuantity <= 0;
@@ -325,29 +325,29 @@ export default function POS() {
                     key={product.id}
                     onClick={() => addToCart(product)}
                     disabled={isOutOfStock}
-                    className={`p-4 rounded-md border text-left hover-elevate active-elevate-2 ${
+                    className={`p-2 sm:p-4 rounded-md border text-left hover-elevate active-elevate-2 ${
                       inCart ? "border-primary bg-primary/5" : "bg-card"
                     } ${isOutOfStock ? "opacity-50 cursor-not-allowed" : ""}`}
                     data-testid={`button-product-${product.id}`}
                   >
-                    <div className="flex items-center justify-center w-12 h-12 rounded bg-muted mx-auto mb-2">
-                      <Package className="h-6 w-6 text-muted-foreground" />
+                    <div className="flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded bg-muted mx-auto mb-1 sm:mb-2">
+                      <Package className="h-4 w-4 sm:h-6 sm:w-6 text-muted-foreground" />
                     </div>
-                    <h3 className="font-medium text-sm text-center line-clamp-2 mb-1">
+                    <h3 className="font-medium text-[10px] sm:text-sm text-center line-clamp-2 mb-0.5 sm:mb-1">
                       {product.name}
                     </h3>
-                    <p className="text-center font-mono text-sm text-primary font-semibold">
+                    <p className="text-center font-mono text-[10px] sm:text-sm text-primary font-semibold">
                       {product.unitPrice.toLocaleString()} DZD
                     </p>
-                    <div className="flex justify-center gap-2 mt-2">
+                    <div className="flex flex-col sm:flex-row justify-center items-center gap-1 sm:gap-2 mt-1 sm:mt-2">
                       <Badge
                         variant={isOutOfStock ? "destructive" : "secondary"}
-                        className="text-xs"
+                        className="text-[8px] sm:text-xs px-1 sm:px-2"
                       >
-                        {isOutOfStock ? t("pos.outOfStock") : `${product.stockQuantity} ${t("stock.inStock")}`}
+                        {isOutOfStock ? t("pos.outOfStock") : `${product.stockQuantity}`}
                       </Badge>
                       {inCart && (
-                        <Badge className="text-xs">{inCart.quantity} {t("pos.cart")}</Badge>
+                        <Badge className="text-[8px] sm:text-xs px-1 sm:px-2">{inCart.quantity}</Badge>
                       )}
                     </div>
                   </button>
@@ -355,10 +355,10 @@ export default function POS() {
               })}
             </div>
           ) : (
-            <div className="text-center py-12">
-              <Package className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="font-medium text-lg mb-1">{t("stock.noProducts")}</h3>
-              <p className="text-muted-foreground text-sm">
+            <div className="text-center py-8 sm:py-12">
+              <Package className="h-8 w-8 sm:h-12 sm:w-12 mx-auto text-muted-foreground mb-2 sm:mb-4" />
+              <h3 className="font-medium text-sm sm:text-lg mb-1">{t("stock.noProducts")}</h3>
+              <p className="text-muted-foreground text-xs sm:text-sm">
                 {search ? t("pos.searchProducts") : t("stock.addProduct")}
               </p>
             </div>
@@ -366,14 +366,14 @@ export default function POS() {
         </ScrollArea>
       </div>
 
-      <Card className="lg:w-96 flex flex-col">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg">
-            <ShoppingCart className="h-5 w-5" />
-            {t("pos.cart")}
+      <Card className="lg:w-96 flex flex-col max-h-[40vh] lg:max-h-none">
+        <CardHeader className="p-3 sm:pb-3">
+          <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
+            <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="hidden sm:inline">{t("pos.cart")}</span>
             <Tooltip>
               <TooltipTrigger asChild>
-                <Button variant="ghost" size="icon" className="h-6 w-6 ml-1" data-testid="button-keyboard-help">
+                <Button variant="ghost" size="icon" className="h-6 w-6 ml-1 hidden sm:flex" data-testid="button-keyboard-help">
                   <Keyboard className="h-4 w-4 text-muted-foreground" />
                 </Button>
               </TooltipTrigger>
@@ -389,17 +389,17 @@ export default function POS() {
               </TooltipContent>
             </Tooltip>
             {cart.length > 0 && (
-              <Badge variant="secondary" className="ml-auto">
+              <Badge variant="secondary" className="ml-auto text-xs sm:text-sm">
                 {cart.reduce((sum, item) => sum + item.quantity, 0)} {t("pos.items")}
               </Badge>
             )}
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col min-h-0">
+        <CardContent className="flex-1 flex flex-col min-h-0 p-3 pt-0">
           {cart.length === 0 ? (
-            <div className="flex-1 flex items-center justify-center text-center text-muted-foreground">
+            <div className="flex-1 flex items-center justify-center text-center text-muted-foreground py-4">
               <div>
-                <ShoppingCart className="h-12 w-12 mx-auto mb-2 opacity-50" />
+                <ShoppingCart className="h-8 w-8 sm:h-12 sm:w-12 mx-auto mb-2 opacity-50" />
                 <p className="text-sm">{t("pos.emptyCart")}</p>
                 <p className="text-xs">{t("pos.addToCart")}</p>
               </div>

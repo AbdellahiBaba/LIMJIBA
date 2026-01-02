@@ -195,7 +195,7 @@ export default function InvoiceView() {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-6">
+      <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-64 w-full" />
       </div>
@@ -204,7 +204,7 @@ export default function InvoiceView() {
 
   if (!invoice) {
     return (
-      <div className="p-6 text-center">
+      <div className="p-3 sm:p-6 text-center">
         <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
         <h2 className="text-lg font-medium">Invoice not found</h2>
         <Button variant="outline" onClick={() => navigate("/invoices")} className="mt-4">
@@ -218,17 +218,17 @@ export default function InvoiceView() {
   const StatusIcon = status.icon;
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div className="flex items-center gap-4">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <Button variant="ghost" size="icon" onClick={() => navigate("/invoices")}>
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-semibold" data-testid="text-invoice-title">
+            <h1 className="text-xl sm:text-2xl font-semibold" data-testid="text-invoice-title">
               Invoice {invoice.invoiceNumber}
             </h1>
-            <p className="text-muted-foreground text-sm">
+            <p className="text-muted-foreground text-xs sm:text-sm">
               Created on {formatDateDMY(invoice.date)}
             </p>
           </div>

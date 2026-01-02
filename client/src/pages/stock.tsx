@@ -726,13 +726,13 @@ export default function Stock() {
   };
 
   return (
-    <div className="p-6 space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
-          <h1 className="text-2xl font-semibold" data-testid="text-stock-title">
+          <h1 className="text-xl sm:text-2xl font-semibold" data-testid="text-stock-title">
             {t("stock.title")}
           </h1>
-          <p className="text-muted-foreground text-sm">
+          <p className="text-muted-foreground text-xs sm:text-sm hidden sm:block">
             {t("stock.searchProducts")}
           </p>
         </div>
