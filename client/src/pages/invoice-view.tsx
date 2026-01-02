@@ -486,7 +486,7 @@ export default function InvoiceView() {
                     primaryColor: branding.primaryColor,
                   });
                   if (branding.logo) url.set("logo", branding.logo);
-                  window.open(`/api/invoices/${params.id}/delivery-note?${url.toString()}`, "_blank");
+                  window.open(`/public/invoices/${params.id}/delivery-note?${url.toString()}`, "_blank");
                 }}
                 data-testid="button-download-delivery-note"
               >

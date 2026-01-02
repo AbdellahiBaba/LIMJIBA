@@ -278,6 +278,59 @@ export async function registerRoutes(
   });
 
   
+  // Public delivery note PDF route
+  app.get("/public/invoices/:id/delivery-note", async (req, res) => {
+    try {
+      const invoice = await storage.getInvoiceWithItems(req.params.id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found", id: req.params.id });
+      }
+
+      const branding = {
+        logo: req.query.logo as string | undefined,
+        primaryColor: (req.query.primaryColor as string) || "#1976D2",
+      };
+
+      const html = generateDeliveryNotePDF(invoice, branding);
+      
+      let browser;
+      try {
+        browser = await puppeteer.launch({
+          headless: true,
+          executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
+          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+        });
+        
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'domcontentloaded' });
+        
+        const pdfUint8Array = await page.pdf({
+          format: 'A4',
+          printBackground: true,
+          margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
+        });
+        
+        // Convert Uint8Array to Buffer for proper response handling
+        const pdfBuffer = Buffer.from(pdfUint8Array);
+        
+        const blNum = invoice.invoiceNumber.includes('-') ? 
+          'BL-' + invoice.invoiceNumber.split('-')[1] : 
+          'BL-' + invoice.invoiceNumber;
+        const filename = `${blNum.replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+        res.send(pdfBuffer);
+      } finally {
+        if (browser) {
+          await browser.close();
+        }
+      }
+    } catch (error) {
+      handleError(res, "generate delivery note PDF", error);
+    }
+  });
+
   // Public ticket PDF route (for POS receipt printing)
   app.get("/public/sales/:id/ticket-pdf", async (req, res) => {
     try {
@@ -816,59 +869,6 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       handleError(res, "delete invoice payment", error);
-    }
-  });
-
-  // Delivery Note PDF (protected)
-  app.get("/api/invoices/:id/delivery-note", async (req, res) => {
-    try {
-      const invoice = await storage.getInvoiceWithItems(req.params.id);
-      if (!invoice) {
-        return res.status(404).json({ error: "Invoice not found", id: req.params.id });
-      }
-
-      const branding = {
-        logo: req.query.logo as string | undefined,
-        primaryColor: (req.query.primaryColor as string) || "#1976D2",
-      };
-
-      const html = generateDeliveryNotePDF(invoice, branding);
-      
-      let browser;
-      try {
-        browser = await puppeteer.launch({
-          headless: true,
-          executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
-          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
-        });
-        
-        const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: 'domcontentloaded' });
-        
-        const pdfUint8Array = await page.pdf({
-          format: 'A4',
-          printBackground: true,
-          margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
-        });
-        
-        // Convert Uint8Array to Buffer for proper response handling
-        const pdfBuffer = Buffer.from(pdfUint8Array);
-        
-        const blNum = invoice.invoiceNumber.includes('-') ? 
-          'BL-' + invoice.invoiceNumber.split('-')[1] : 
-          'BL-' + invoice.invoiceNumber;
-        const filename = `${blNum.replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
-        res.setHeader('Content-Length', pdfBuffer.length);
-        res.send(pdfBuffer);
-      } finally {
-        if (browser) {
-          await browser.close();
-        }
-      }
-    } catch (error) {
-      handleError(res, "generate delivery note PDF", error);
     }
   });
 
