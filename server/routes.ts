@@ -1827,7 +1827,7 @@ function generateReceiptHTML(sale: any, query: any = {}): string {
   const logo = query.logo || '';
   const primaryColor = query.primaryColor || '#1976D2';
   const companyPhone = '0550 51 07 46';
-  const companyAddress = 'Village Zaitout, Draa Ben Khedda, Tizi Ouzou';
+  const companyAddress = 'M\'sila, Hammam Dalaa';
   const companyName = 'POLY FLECTA PLASTICA';
   
   // Format date as DD/MM/YYYY
