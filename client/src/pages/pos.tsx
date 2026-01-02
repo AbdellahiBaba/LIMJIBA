@@ -46,6 +46,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import type { Product, CartItem, Reseller, InsertSale, InsertSaleItem } from "@shared/schema";
+import { ReceiptPrintDialog } from "@/components/receipt-print";
 
 export default function POS() {
   const { toast } = useToast();
@@ -59,6 +60,7 @@ export default function POS() {
   const [checkoutDialogOpen, setCheckoutDialogOpen] = useState(false);
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [lastSaleId, setLastSaleId] = useState<string>("");
+  const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
 
   const { data: products, isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -208,29 +210,11 @@ export default function POS() {
 
   const handlePrintReceipt = () => {
     if (lastSaleId) {
-      const params = new URLSearchParams({
-        primaryColor: branding.primaryColor,
-      });
-      if (branding.logo) {
-        params.set("logo", branding.logo);
-      }
-      const receiptUrl = `/api/sales/${lastSaleId}/receipt?${params.toString()}`;
-      
-      // Open receipt in popup window - server-side HTML handles auto-print
-      const printWindow = window.open(
-        receiptUrl, 
-        "receipt_print",
-        "width=350,height=600,menubar=no,toolbar=no,location=no,status=no"
-      );
-      
-      if (printWindow) {
-        printWindow.focus();
-      } else {
-        // Popup was blocked - try normal tab
-        window.open(receiptUrl, "_blank");
-      }
+      setSuccessDialogOpen(false);
+      setReceiptDialogOpen(true);
+    } else {
+      setSuccessDialogOpen(false);
     }
-    setSuccessDialogOpen(false);
   };
 
   // Keyboard shortcuts handler
@@ -650,6 +634,12 @@ export default function POS() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ReceiptPrintDialog
+        saleId={lastSaleId}
+        open={receiptDialogOpen}
+        onClose={() => setReceiptDialogOpen(false)}
+      />
     </div>
   );
 }
