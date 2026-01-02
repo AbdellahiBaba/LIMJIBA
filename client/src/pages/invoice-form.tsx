@@ -186,7 +186,7 @@ export default function InvoiceForm() {
         params_url.set("watermark", branding.watermark);
       }
       
-      window.open(`/api/invoices/${createdInvoice.id}/pdf?${params_url.toString()}`, "_blank");
+      window.open(`/public/invoices/${createdInvoice.id}/pdf?${params_url.toString()}`, "_blank");
       navigate("/invoices");
     },
     onError: (error: Error) => {

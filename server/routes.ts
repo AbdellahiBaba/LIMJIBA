@@ -215,9 +215,9 @@ export async function registerRoutes(
     }
   });
 
-  // ===================== PUBLIC PDF ROUTES (before auth middleware) =====================
+  // ===================== PUBLIC PDF ROUTES (outside /api/invoices prefix) =====================
   
-  app.get("/api/invoices/:id/pdf", async (req, res) => {
+  app.get("/public/invoices/:id/pdf", async (req, res) => {
     try {
       const invoice = await storage.getInvoiceWithItems(req.params.id);
       if (!invoice) {
