@@ -213,7 +213,21 @@ export default function POS() {
       if (branding.logo) {
         params.set("logo", branding.logo);
       }
-      window.open(`/api/sales/${lastSaleId}/receipt?${params.toString()}`, "_blank");
+      const receiptUrl = `/api/sales/${lastSaleId}/receipt?${params.toString()}`;
+      
+      // Open receipt in popup window - server-side HTML handles auto-print
+      const printWindow = window.open(
+        receiptUrl, 
+        "receipt_print",
+        "width=350,height=600,menubar=no,toolbar=no,location=no,status=no"
+      );
+      
+      if (printWindow) {
+        printWindow.focus();
+      } else {
+        // Popup was blocked - try normal tab
+        window.open(receiptUrl, "_blank");
+      }
     }
     setSuccessDialogOpen(false);
   };
@@ -408,16 +422,16 @@ export default function POS() {
                 {cart.map((item) => (
                   <div
                     key={item.productId}
-                    className="flex items-start gap-3 p-2 rounded-md bg-muted/50"
+                    className="flex items-center gap-2 p-2 rounded-md bg-muted/50"
                     data-testid={`cart-item-${item.productId}`}
                   >
                     <div className="flex-1 min-w-0">
                       <p className="font-medium text-sm truncate">{item.productName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {item.unitPrice.toLocaleString()} DZD each
+                        {item.unitPrice.toLocaleString()} DZD
                       </p>
                     </div>
-                    <div className="flex items-center gap-1">
+                    <div className="flex items-center gap-1 shrink-0">
                       <Button
                         variant="outline"
                         size="icon"
@@ -427,7 +441,7 @@ export default function POS() {
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
-                      <span className="w-8 text-center font-mono text-sm">
+                      <span className="w-6 text-center font-mono text-sm">
                         {item.quantity}
                       </span>
                       <Button
@@ -440,14 +454,14 @@ export default function POS() {
                         <Plus className="h-3 w-3" />
                       </Button>
                     </div>
-                    <div className="text-right">
+                    <div className="flex items-center gap-1 shrink-0 min-w-[80px] justify-end">
                       <p className="font-mono text-sm font-medium">
                         {item.total.toLocaleString()}
                       </p>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6"
+                        className="h-7 w-7"
                         onClick={() => removeFromCart(item.productId)}
                         data-testid={`button-remove-${item.productId}`}
                       >
