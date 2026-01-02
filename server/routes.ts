@@ -352,18 +352,20 @@ export async function registerRoutes(
         browser = await puppeteer.launch({
           headless: true,
           executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/nix/store/zi4f80l169xlmivz8vja8wlphq74qqk0-chromium-125.0.6422.141/bin/chromium',
-          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+          timeout: 30000
         });
 
         const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: 'domcontentloaded' });
+        await page.setContent(html, { waitUntil: 'domcontentloaded', timeout: 15000 });
 
         const pdfUint8Array = await page.pdf({
           width: '80mm',
           height: '297mm',
           printBackground: true,
           preferCSSPageSize: false,
-          margin: { top: '5mm', bottom: '5mm', left: '3mm', right: '3mm' }
+          margin: { top: '5mm', bottom: '5mm', left: '3mm', right: '3mm' },
+          timeout: 30000
         });
 
         // Convert Uint8Array to Buffer for proper response handling
