@@ -33,10 +33,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const response = await apiRequest("POST", "/api/auth/login", { username, password });
       return response.json();
     },
-    onSuccess: () => {
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ["/api/auth/session"] });
-    },
     onError: (error: any) => {
       setError(error.message || "Login failed");
     },
@@ -54,7 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   });
 
   const login = async (username: string, password: string) => {
+    setError(null);
     await loginMutation.mutateAsync({ username, password });
+    await refetch();
   };
 
   const logout = async () => {
