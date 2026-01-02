@@ -89,9 +89,11 @@ export default function POS() {
     },
   });
 
-  const filteredProducts = products?.filter((product) =>
-    product.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const filteredProducts = products?.filter((product) => {
+    const searchLower = search.toLowerCase();
+    return product.name.toLowerCase().includes(searchLower) ||
+           (product.barcode && product.barcode.toLowerCase().includes(searchLower));
+  });
 
   const addToCart = (product: Product) => {
     if (product.stockQuantity <= 0) {
@@ -286,9 +288,18 @@ export default function POS() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder={t("pos.searchProducts")}
+              placeholder={t("pos.searchProducts") + " / Code-barres"}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && search.trim()) {
+                  const exactMatch = products?.find(p => p.barcode === search.trim());
+                  if (exactMatch) {
+                    addToCart(exactMatch);
+                    setSearch("");
+                  }
+                }
+              }}
               className="pl-9"
               data-testid="input-pos-search"
             />
