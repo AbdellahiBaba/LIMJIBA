@@ -325,7 +325,8 @@
     "noData": "لا توجد بيانات متاحة",
     "fabricationCosts": "تكاليف التصنيع",
     "manufacturingCosts": "تكاليف الإنتاج",
-    "allCostsIncluded": "المنتجات + التصنيع + الرواتب + المصاريف"
+    "includedInCogs": "مضمنة في تكلفة البضاعة المباعة",
+    "allCostsIncluded": "المنتجات + الرواتب + المصاريف"
   },
   "salaries": {
     "title": "إدارة الرواتب",

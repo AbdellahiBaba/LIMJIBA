@@ -85,7 +85,21 @@ Core entities:
 
 ## Recent Changes
 
-**January 2026:**
+**January 2026 - System Audit & Fixes:**
+- **Neon Database Only**: Removed DATABASE_URL fallback to prevent data split. Only NEON_DATABASE_URL is used.
+- **Fabrication Invoice Logic**: Fabrication invoices are stored in separate `fabrication_invoices` table (NOT revenue). They represent manufacturing costs that flow into product costPrice.
+- **Inventory Auto-Update**: When fabrication invoice is created, products are automatically created/updated with:
+  - Cost Price = unitCost from fabrication item
+  - Stock Quantity = increased by fabrication quantity
+  - Stock movements logged for audit trail
+- **Profit Calculation Fixed**: 
+  - Gross Profit = Revenue - COGS (totalProductCosts from both POS sales AND invoice sales)
+  - Operating Profit = Gross Profit - Salaries - Expenses
+  - Net Profit = Operating Profit
+  - Fabrication costs shown as informational only (already embedded in COGS via costPrice)
+- **Invoice Items in COGS**: Added B2B invoice items to COGS calculation (previously only POS sales were counted)
+
+**January 2026 (Earlier):**
 - Migrated from in-memory storage to PostgreSQL database for data persistence
 - Added Salaries module for employee management and payment tracking
 - Added Expenses module for business expense tracking by category

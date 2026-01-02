@@ -279,12 +279,13 @@ export interface ProfitStats {
   totalSalesRevenue: number;
   totalInvoiceRevenue: number;
   totalRevenue: number;
-  totalProductCosts: number;
-  totalFabricationCosts: number;
+  totalProductCosts: number;       // COGS - Cost of Goods Sold
+  totalFabricationCosts: number;   // Manufacturing costs (informational, already in COGS via costPrice)
   totalSalaries: number;
   totalExpenses: number;
-  grossProfit: number;
-  netProfit: number;
+  grossProfit: number;             // Revenue - COGS
+  operatingProfit: number;         // Gross Profit - Operating Expenses
+  netProfit: number;               // Operating Profit (no taxes)
   profitMargin: number;
   periodStart: string;
   periodEnd: string;

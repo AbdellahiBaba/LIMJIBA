@@ -720,11 +720,8 @@ export class DatabaseStorage implements IStorage {
               throw new Error(`Fabrication item "${item.productName}" must have a valid unitCost > 0`);
             }
             const unitCost = item.unitCost;
-            // Use UUID for unique SKU to avoid collisions
-            const uniqueSku = `FAB-${createdItem.id.substring(0, 8)}`;
             const [newProduct] = await tx.insert(products).values({
               name: item.productName,
-              sku: uniqueSku,
               category: "Fabricated",
               unitPrice: unitCost * 1.3, // Default 30% markup for selling price
               costPrice: unitCost,
@@ -825,6 +822,7 @@ export class DatabaseStorage implements IStorage {
 
       const totalRevenue = totalSalesRevenue + totalInvoiceRevenue;
 
+      // Calculate COGS from POS sales
       let totalProductCosts = 0;
       for (const sale of allSales) {
         const items = await db.select().from(saleItems).where(eq(saleItems.saleId, sale.id));
@@ -832,6 +830,19 @@ export class DatabaseStorage implements IStorage {
           const [product] = await db.select().from(products).where(eq(products.id, item.productId));
           if (product) {
             totalProductCosts += (product.costPrice || 0) * item.quantity;
+          }
+        }
+      }
+      
+      // Also calculate COGS from invoice sales (B2B)
+      for (const inv of allInvoices) {
+        const items = await db.select().from(invoiceItems).where(eq(invoiceItems.invoiceId, inv.id));
+        for (const item of items) {
+          if (item.productId) {
+            const [product] = await db.select().from(products).where(eq(products.id, item.productId));
+            if (product) {
+              totalProductCosts += (product.costPrice || 0) * item.quantity;
+            }
           }
         }
       }
@@ -852,10 +863,17 @@ export class DatabaseStorage implements IStorage {
       );
       const totalFabricationCosts = allFabricationInvoices.reduce((sum, fab) => sum + (fab.totalCost || 0), 0);
 
-      // Gross profit = Revenue - Product Costs (COGS)
-      // Fabrication costs are treated as part of COGS since they represent manufacturing costs
-      const grossProfit = totalRevenue - totalProductCosts - totalFabricationCosts;
-      const netProfit = grossProfit - totalSalaries - totalExpenses;
+      // Gross profit = Revenue - COGS (Cost of Goods Sold)
+      // Note: Fabrication costs are already embedded in product.costPrice and captured in totalProductCosts
+      // when products are sold. We don't subtract totalFabricationCosts again to avoid double-counting.
+      // totalFabricationCosts represents manufacturing costs incurred during the period (for informational purposes).
+      const grossProfit = totalRevenue - totalProductCosts;
+      
+      // Operating Profit = Gross Profit - Operating Expenses
+      const operatingProfit = grossProfit - totalSalaries - totalExpenses;
+      
+      // Net Profit = Operating Profit (no taxes in this system)
+      const netProfit = operatingProfit;
       const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
       return {
@@ -867,6 +885,7 @@ export class DatabaseStorage implements IStorage {
         totalSalaries,
         totalExpenses,
         grossProfit,
+        operatingProfit,
         netProfit,
         profitMargin,
         periodStart: startDate,

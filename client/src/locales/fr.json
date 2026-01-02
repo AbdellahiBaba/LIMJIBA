@@ -325,7 +325,8 @@
     "noData": "Aucune donnée disponible",
     "fabricationCosts": "Coûts de Fabrication",
     "manufacturingCosts": "Coûts de production",
-    "allCostsIncluded": "Produits + Fabrication + Salaires + Charges"
+    "includedInCogs": "Déjà inclus dans coût des produits",
+    "allCostsIncluded": "Produits + Salaires + Charges"
   },
   "salaries": {
     "title": "Gestion des Salaires",

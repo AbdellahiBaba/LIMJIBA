@@ -152,7 +152,7 @@ export default function ProfitCalculator() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-red-600 dark:text-red-400" data-testid="text-total-costs">
-                  {formatCurrency(stats.totalProductCosts + (stats.totalFabricationCosts || 0) + stats.totalSalaries + stats.totalExpenses)}
+                  {formatCurrency(stats.totalProductCosts + stats.totalSalaries + stats.totalExpenses)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
                   {t("profit.allCostsIncluded")}
@@ -266,16 +266,16 @@ export default function ProfitCalculator() {
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-900/20 rounded-md">
+                  <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-dashed border-blue-300 dark:border-blue-600">
                     <div className="flex items-center gap-3">
-                      <Receipt className="h-5 w-5 text-orange-600" />
+                      <Receipt className="h-5 w-5 text-blue-600" />
                       <div>
-                        <p className="font-medium">{t("profit.fabricationCosts")}</p>
-                        <p className="text-xs text-muted-foreground">{t("profit.manufacturingCosts")}</p>
+                        <p className="font-medium text-blue-700 dark:text-blue-300">{t("profit.fabricationCosts")}</p>
+                        <p className="text-xs text-muted-foreground">{t("profit.includedInCogs")}</p>
                       </div>
                     </div>
-                    <span className="font-bold text-orange-600 dark:text-orange-400">
-                      -{formatCurrency(stats.totalFabricationCosts || 0)}
+                    <span className="font-bold text-blue-600 dark:text-blue-400">
+                      {formatCurrency(stats.totalFabricationCosts || 0)}
                     </span>
                   </div>
                   
