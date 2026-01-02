@@ -390,5 +390,9 @@
     },
     "monthlyBreakdown": "Répartition Mensuelle",
     "byCategory": "Par Catégorie"
+  },
+  "settings": {
+    "title": "Paramètres",
+    "description": "Gestion des sauvegardes et configuration"
   }
 }

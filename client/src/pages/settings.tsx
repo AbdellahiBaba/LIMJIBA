@@ -123,10 +123,10 @@ export default function Settings() {
     <div className="p-6 space-y-6 max-w-4xl mx-auto">
       <div>
         <h1 className="text-2xl font-bold" data-testid="text-settings-title">
-          {t("settings.title") || "Parametres"}
+          {t("settings.title")}
         </h1>
         <p className="text-muted-foreground">
-          {t("settings.description") || "Gestion des sauvegardes et configuration"}
+          {t("settings.description")}
         </p>
       </div>
 

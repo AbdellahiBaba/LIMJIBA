@@ -390,5 +390,9 @@
     },
     "monthlyBreakdown": "التوزيع الشهري",
     "byCategory": "حسب الفئة"
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "description": "إدارة النسخ الاحتياطية والتكوين"
   }
 }

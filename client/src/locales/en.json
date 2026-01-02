@@ -390,5 +390,9 @@
     },
     "monthlyBreakdown": "Monthly Breakdown",
     "byCategory": "By Category"
+  },
+  "settings": {
+    "title": "Settings",
+    "description": "Backup management and configuration"
   }
 }
