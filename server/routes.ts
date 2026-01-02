@@ -252,11 +252,14 @@ export async function registerRoutes(
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: 'domcontentloaded' });
         
-        const pdfBuffer = await page.pdf({
+        const pdfUint8Array = await page.pdf({
           format: 'A4',
           printBackground: true,
           margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
         });
+        
+        // Convert Uint8Array to Buffer for proper response handling
+        const pdfBuffer = Buffer.from(pdfUint8Array);
         
         // Send PDF with download headers
         const filename = `${invoice.invoiceNumber.replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
@@ -302,7 +305,7 @@ export async function registerRoutes(
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: 'domcontentloaded' });
 
-        const pdfBuffer = await page.pdf({
+        const pdfUint8Array = await page.pdf({
           width: '80mm',
           height: '297mm',
           printBackground: true,
@@ -310,6 +313,9 @@ export async function registerRoutes(
           margin: { top: '5mm', bottom: '5mm', left: '3mm', right: '3mm' }
         });
 
+        // Convert Uint8Array to Buffer for proper response handling
+        const pdfBuffer = Buffer.from(pdfUint8Array);
+        
         const filename = `Ticket_${sale.saleNumber.replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
         res.setHeader('Content-Type', 'application/pdf');
         res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
@@ -839,11 +845,14 @@ export async function registerRoutes(
         const page = await browser.newPage();
         await page.setContent(html, { waitUntil: 'domcontentloaded' });
         
-        const pdfBuffer = await page.pdf({
+        const pdfUint8Array = await page.pdf({
           format: 'A4',
           printBackground: true,
           margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
         });
+        
+        // Convert Uint8Array to Buffer for proper response handling
+        const pdfBuffer = Buffer.from(pdfUint8Array);
         
         const blNum = invoice.invoiceNumber.includes('-') ? 
           'BL-' + invoice.invoiceNumber.split('-')[1] : 
@@ -1624,9 +1633,8 @@ function generateInvoicePDF(invoice: any, branding: InvoiceBranding = {
       <div class="company">
         <h1>${labels.companyName}</h1>
         <p>${labels.companySubtitle}</p>
-        <p style="margin-top: 10px;">Village Zaitout, Local N°01</p>
-        <p>Draa Ben Khedda, Tizi Ouzou</p>
-        <p>Tel: 0555 123 456</p>
+        <p style="margin-top: 10px;">M'sila, Hammam Dalaa</p>
+        <p>Tel: 0670 04 91 24</p>
       </div>
       <div class="invoice-info">
         <div class="invoice-title">${isBilingual ? `${labels.invoiceFr} / ${labels.invoiceAr}` : labels.invoice}</div>
@@ -1770,9 +1778,8 @@ function generateDeliveryNotePDF(invoice: any, branding: { logo?: string; primar
     <div class="header">
       <div class="company-info">
         <h1>POLY FLECTA PLASTICA</h1>
-        <p>Village Zaitout, Local N°01<br>
-        Commune Hammam Dalaa - W M'sila<br>
-        Tél: 0550 51 07 46</p>
+        <p>M'sila, Hammam Dalaa<br>
+        Tél: 0670 04 91 24</p>
       </div>
       ${logo ? `<img src="${logo}" class="logo" alt="Logo">` : ''}
     </div>
