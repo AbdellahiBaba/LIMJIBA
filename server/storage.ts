@@ -741,15 +741,19 @@ export class DatabaseStorage implements IStorage {
 
   async getProfitStats(startDate: string, endDate: string): Promise<ProfitStats> {
     return await withRetry(async () => {
+      console.log("[getProfitStats] Date range:", startDate, "to", endDate);
+      
       const allSales = await db.select().from(sales).where(
         and(gte(sales.date, startDate), lte(sales.date, endDate))
       );
       const totalSalesRevenue = allSales.reduce((sum, s) => sum + s.total - (s.discount || 0), 0);
+      console.log("[getProfitStats] Sales found:", allSales.length, "Revenue:", totalSalesRevenue);
 
       const allInvoices = await db.select().from(invoices).where(
         and(gte(invoices.date, startDate), lte(invoices.date, endDate))
       );
       const totalInvoiceRevenue = allInvoices.reduce((sum, inv) => sum + inv.totalTTC, 0);
+      console.log("[getProfitStats] Invoices found:", allInvoices.length, "Revenue:", totalInvoiceRevenue);
 
       const totalRevenue = totalSalesRevenue + totalInvoiceRevenue;
 
@@ -764,9 +768,14 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
+      // Get ALL salary payments first to see what's in the database
+      const allSalaryPayments = await db.select().from(salaryPayments);
+      console.log("[getProfitStats] All salary payments in DB:", allSalaryPayments.length, allSalaryPayments.map(p => ({ date: p.paymentDate, amount: p.amount })));
+      
       const allPayments = await db.select().from(salaryPayments).where(
         and(gte(salaryPayments.paymentDate, startDate), lte(salaryPayments.paymentDate, endDate))
       );
+      console.log("[getProfitStats] Filtered salary payments:", allPayments.length, "Total:", allPayments.reduce((sum, p) => sum + p.amount, 0));
       const totalSalaries = allPayments.reduce((sum, p) => sum + p.amount, 0);
 
       const allExpenses = await db.select().from(expenses).where(
