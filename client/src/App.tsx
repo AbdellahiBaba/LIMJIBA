@@ -7,7 +7,10 @@ import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
 import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageProvider, useLanguage } from "@/contexts/language-context";
+import { AuthProvider, useAuth } from "@/contexts/auth-context";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { Button } from "@/components/ui/button";
+import { LogOut, Loader2 } from "lucide-react";
 import Dashboard from "@/pages/dashboard";
 import Stock from "@/pages/stock";
 import Invoices from "@/pages/invoices";
@@ -20,6 +23,7 @@ import Expenses from "@/pages/expenses";
 import Branding from "@/pages/branding";
 import ProfitCalculator from "@/pages/profit-calculator";
 import FabricationInvoice from "@/pages/fabrication-invoice";
+import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
 function Router() {
@@ -42,8 +46,9 @@ function Router() {
   );
 }
 
-function AppContent() {
+function AuthenticatedApp() {
   const { t, branding } = useLanguage();
+  const { logout, user } = useAuth();
   
   const style = {
     "--sidebar-width": "16rem",
@@ -68,8 +73,20 @@ function AppContent() {
               <span className="text-xs text-muted-foreground hidden sm:block">
                 {t("company.name")}
               </span>
+              <span className="text-xs font-medium hidden md:block">
+                {user?.username}
+              </span>
               <LanguageSwitcher />
               <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => logout()}
+                title="Déconnexion"
+                data-testid="button-logout"
+              >
+                <LogOut className="h-4 w-4" />
+              </Button>
             </div>
           </header>
           <main className="flex-1 overflow-auto bg-muted/30">
@@ -81,13 +98,33 @@ function AppContent() {
   );
 }
 
+function AppContent() {
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      </div>
+    );
+  }
+
+  if (!isAuthenticated) {
+    return <Login />;
+  }
+
+  return <AuthenticatedApp />;
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <LanguageProvider>
-          <AppContent />
-          <Toaster />
+          <AuthProvider>
+            <AppContent />
+            <Toaster />
+          </AuthProvider>
         </LanguageProvider>
       </TooltipProvider>
     </QueryClientProvider>

@@ -159,18 +159,31 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Invalid username or password" });
       }
       
-      req.session.userId = user.id;
-      req.session.username = user.username;
-      req.session.isAdmin = user.isAdmin;
-      req.session.isAuthenticated = true;
-      
-      res.json({ 
-        success: true, 
-        user: { 
-          id: user.id, 
-          username: user.username, 
-          isAdmin: user.isAdmin 
-        } 
+      // Regenerate session to prevent session fixation attacks
+      req.session.regenerate((err) => {
+        if (err) {
+          return res.status(500).json({ error: "Session error" });
+        }
+        
+        req.session.userId = user.id;
+        req.session.username = user.username;
+        req.session.isAdmin = user.isAdmin;
+        req.session.isAuthenticated = true;
+        
+        req.session.save((saveErr) => {
+          if (saveErr) {
+            return res.status(500).json({ error: "Session save error" });
+          }
+          
+          res.json({ 
+            success: true, 
+            user: { 
+              id: user.id, 
+              username: user.username, 
+              isAdmin: user.isAdmin 
+            } 
+          });
+        });
       });
     } catch (error) {
       handleError(res, "login", error);
