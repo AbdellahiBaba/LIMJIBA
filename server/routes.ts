@@ -2028,7 +2028,32 @@ function generateReceiptHTML(sale: any, query: any = {}): string {
   
   <div class="receipt-number">${sale.saleNumber}</div>
   
-  <script>window.onload = function() { window.print(); }</script>
+  <button class="no-print print-btn" onclick="window.print()" style="position:fixed;top:10px;right:10px;padding:10px 20px;background:${primaryColor};color:white;border:none;border-radius:4px;cursor:pointer;font-size:14px;">Imprimer</button>
+  
+  <script>
+    // Ensure print happens even if logo fails to load
+    var printed = false;
+    function triggerPrint() {
+      if (!printed) {
+        printed = true;
+        setTimeout(function() { window.print(); }, 100);
+      }
+    }
+    
+    // Handle logo loading
+    var logo = document.querySelector('.logo');
+    if (logo) {
+      logo.onload = triggerPrint;
+      logo.onerror = function() {
+        this.style.display = 'none';
+        triggerPrint();
+      };
+      // Fallback timeout in case image is slow
+      setTimeout(triggerPrint, 2000);
+    } else {
+      triggerPrint();
+    }
+  </script>
 </body>
 </html>
   `;
