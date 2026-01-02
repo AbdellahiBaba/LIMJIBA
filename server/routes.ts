@@ -1826,7 +1826,7 @@ function generateDeliveryNotePDF(invoice: any, branding: { logo?: string; primar
 function generateReceiptHTML(sale: any, query: any = {}): string {
   const logo = query.logo || '';
   const primaryColor = query.primaryColor || '#1976D2';
-  const companyPhone = '0550 51 07 46';
+  const companyPhone = '0670 04 91 24';
   const companyAddress = 'M\'sila, Hammam Dalaa';
   const companyName = 'POLY FLECTA PLASTICA';
   
