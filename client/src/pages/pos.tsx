@@ -208,13 +208,13 @@ export default function POS() {
 
   const handlePrintReceipt = () => {
     if (lastSaleId) {
-      // Build URL with branding params for the PDF
+      // Build URL with branding params for the public PDF route
       const params = new URLSearchParams();
       if (branding.logo) params.set('logo', branding.logo);
       if (branding.primaryColor) params.set('primaryColor', branding.primaryColor);
       const queryString = params.toString();
-      const url = `/api/sales/${lastSaleId}/ticket-pdf${queryString ? '?' + queryString : ''}`;
-      // Open the PDF in a new tab for printing
+      // Use public route (no auth required) so new tab works
+      const url = `/public/sales/${lastSaleId}/ticket-pdf${queryString ? '?' + queryString : ''}`;
       window.open(url, '_blank');
     }
     setSuccessDialogOpen(false);

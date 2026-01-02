@@ -249,7 +249,7 @@ export async function registerRoutes(
         });
         
         const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: 'networkidle0' });
+        await page.setContent(html, { waitUntil: 'domcontentloaded' });
         
         const pdfBuffer = await page.pdf({
           format: 'A4',
@@ -274,6 +274,49 @@ export async function registerRoutes(
   });
 
   
+  // Public ticket PDF route (for POS receipt printing)
+  app.get("/public/sales/:id/ticket-pdf", async (req, res) => {
+    try {
+      const sale = await storage.getSaleWithItems(req.params.id);
+      if (!sale) {
+        return res.status(404).json({ error: "Sale not found", id: req.params.id });
+      }
+
+      const html = generateReceiptHTML(sale, req.query);
+
+      let browser: any = null;
+      try {
+        browser = await puppeteer.launch({
+          headless: true,
+          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
+        });
+
+        const page = await browser.newPage();
+        await page.setContent(html, { waitUntil: 'domcontentloaded' });
+
+        const pdfBuffer = await page.pdf({
+          width: '80mm',
+          height: '297mm',
+          printBackground: true,
+          preferCSSPageSize: false,
+          margin: { top: '5mm', bottom: '5mm', left: '3mm', right: '3mm' }
+        });
+
+        const filename = `Ticket_${sale.saleNumber.replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
+        res.setHeader('Content-Length', pdfBuffer.length);
+        res.send(pdfBuffer);
+      } finally {
+        if (browser) {
+          await browser.close();
+        }
+      }
+    } catch (error) {
+      handleError(res, "generate ticket PDF", error);
+    }
+  });
+
   // ===================== PROTECTED ROUTES =====================
   
   // Apply authentication middleware to all data routes
@@ -785,7 +828,7 @@ export async function registerRoutes(
         });
         
         const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: 'networkidle0' });
+        await page.setContent(html, { waitUntil: 'domcontentloaded' });
         
         const pdfBuffer = await page.pdf({
           format: 'A4',
@@ -865,51 +908,6 @@ export async function registerRoutes(
       res.send(html);
     } catch (error) {
       handleError(res, "generate receipt", error);
-    }
-  });
-
-  // POS Ticket PDF - generates a thermal receipt PDF using Puppeteer
-  app.get("/api/sales/:id/ticket-pdf", async (req, res) => {
-    try {
-      const sale = await storage.getSaleWithItems(req.params.id);
-      if (!sale) {
-        return res.status(404).json({ error: "Sale not found", id: req.params.id });
-      }
-
-      // Use query params for branding (passed from frontend)
-      const html = generateReceiptHTML(sale, req.query);
-
-      let browser: any = null;
-      try {
-        browser = await puppeteer.launch({
-          headless: true,
-          args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
-        });
-
-        const page = await browser.newPage();
-        await page.setContent(html, { waitUntil: 'networkidle0' });
-
-        // Generate PDF optimized for thermal printers (80mm width)
-        const pdfBuffer = await page.pdf({
-          width: '80mm',
-          height: '297mm',
-          printBackground: true,
-          preferCSSPageSize: false,
-          margin: { top: '5mm', bottom: '5mm', left: '3mm', right: '3mm' }
-        });
-
-        const filename = `Ticket_${sale.saleNumber.replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `inline; filename="${filename}"`);
-        res.setHeader('Content-Length', pdfBuffer.length);
-        res.send(pdfBuffer);
-      } finally {
-        if (browser) {
-          await browser.close();
-        }
-      }
-    } catch (error) {
-      handleError(res, "generate ticket PDF", error);
     }
   });
 
