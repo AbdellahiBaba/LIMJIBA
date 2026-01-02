@@ -200,6 +200,7 @@ function WinnerDialog({
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md text-center">
+        <DialogTitle className="sr-only">{t("resellers.congratulations")}</DialogTitle>
         <div className="py-8">
           <div className="w-20 h-20 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center mx-auto mb-4">
             <Trophy className="h-10 w-10 text-yellow-600" />
