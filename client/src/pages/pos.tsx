@@ -46,7 +46,6 @@ import {
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import type { Product, CartItem, Reseller, InsertSale, InsertSaleItem } from "@shared/schema";
-import { ReceiptPrintDialog } from "@/components/receipt-print";
 
 export default function POS() {
   const { toast } = useToast();
@@ -60,7 +59,6 @@ export default function POS() {
   const [checkoutDialogOpen, setCheckoutDialogOpen] = useState(false);
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [lastSaleId, setLastSaleId] = useState<string>("");
-  const [receiptDialogOpen, setReceiptDialogOpen] = useState(false);
 
   const { data: products, isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -210,11 +208,16 @@ export default function POS() {
 
   const handlePrintReceipt = () => {
     if (lastSaleId) {
-      setSuccessDialogOpen(false);
-      setReceiptDialogOpen(true);
-    } else {
-      setSuccessDialogOpen(false);
+      // Build URL with branding params for the PDF
+      const params = new URLSearchParams();
+      if (branding.logo) params.set('logo', branding.logo);
+      if (branding.primaryColor) params.set('primaryColor', branding.primaryColor);
+      const queryString = params.toString();
+      const url = `/api/sales/${lastSaleId}/ticket-pdf${queryString ? '?' + queryString : ''}`;
+      // Open the PDF in a new tab for printing
+      window.open(url, '_blank');
     }
+    setSuccessDialogOpen(false);
   };
 
   // Keyboard shortcuts handler
@@ -635,11 +638,6 @@ export default function POS() {
         </DialogContent>
       </Dialog>
 
-      <ReceiptPrintDialog
-        saleId={lastSaleId}
-        open={receiptDialogOpen}
-        onClose={() => setReceiptDialogOpen(false)}
-      />
     </div>
   );
 }
