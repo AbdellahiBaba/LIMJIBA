@@ -1,6 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import bcrypt from "bcrypt";
+import puppeteer from "puppeteer";
 import { storage } from "./storage";
 import { isTransientError, checkDatabaseHealth, getPoolStats } from "./db";
 import { cache } from "./cache";
@@ -236,8 +237,30 @@ export async function registerRoutes(
       };
 
       const html = generateInvoicePDF(invoice, branding);
-      res.setHeader("Content-Type", "text/html");
-      res.send(html);
+      
+      // Generate actual PDF using Puppeteer
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+      });
+      
+      const page = await browser.newPage();
+      await page.setContent(html, { waitUntil: 'networkidle0' });
+      
+      const pdfBuffer = await page.pdf({
+        format: 'A4',
+        printBackground: true,
+        margin: { top: '10mm', right: '10mm', bottom: '10mm', left: '10mm' },
+      });
+      
+      await browser.close();
+      
+      // Send PDF with download headers
+      const filename = `${invoice.invoiceNumber.replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.setHeader('Content-Length', pdfBuffer.length);
+      res.send(pdfBuffer);
     } catch (error) {
       handleError(res, "generate PDF", error);
     }

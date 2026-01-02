@@ -156,12 +156,12 @@ export default function FabricationInvoice() {
       const response = await apiRequest("POST", "/api/invoices", data);
       return response.json();
     },
-    onSuccess: (createdInvoice: { id: string }) => {
+    onSuccess: async (createdInvoice: { id: string }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       toast({ title: t("invoices.invoiceCreated") });
       
-      // Open PDF for the saved invoice
+      // Download PDF instantly
       const params_url = new URLSearchParams({
         invoiceLanguage: branding.invoiceLanguage,
         primaryColor: branding.primaryColor,
@@ -178,7 +178,21 @@ export default function FabricationInvoice() {
         params_url.set("watermark", branding.watermark);
       }
       
-      window.open(`/public/invoices/${createdInvoice.id}/pdf?${params_url.toString()}`, "_blank");
+      try {
+        const response = await fetch(`/public/invoices/${createdInvoice.id}/pdf?${params_url.toString()}`);
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `${formData.invoiceNumber.replace(/[^a-zA-Z0-9-]/g, '_')}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } catch (err) {
+        console.error('PDF download failed:', err);
+      }
+      
       navigate("/invoices");
     },
     onError: (error: Error) => {
