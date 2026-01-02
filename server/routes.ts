@@ -986,7 +986,9 @@ function generateInvoicePDF(invoice: any, branding: InvoiceBranding = {
     date: isArabic ? "التاريخ" : "Date",
     client: isArabic ? "العميل" : "Client",
     responsible: isArabic ? "المسؤول" : "Responsable",
+    role: isArabic ? "الوظيفة" : "Fonction",
     paymentMode: isArabic ? "طريقة الدفع" : "Mode de Paiement",
+    dueDate: isArabic ? "تاريخ الاستحقاق" : "Échéance",
     designation: isArabic ? "التسمية" : "Désignation",
     quantity: isArabic ? "الكمية" : "Qté",
     unitPrice: isArabic ? "سعر الوحدة" : "P.U",
@@ -1038,6 +1040,9 @@ function generateInvoicePDF(invoice: any, branding: InvoiceBranding = {
     .detail-box { background: #f8f9fa; padding: 15px; border-radius: 4px; border-${isArabic ? 'right' : 'left'}: 3px solid ${branding.accentColor}; }
     .detail-box h3 { color: ${branding.primaryColor}; margin-bottom: 10px; font-size: 13px; }
     .detail-box p { margin: 3px 0; }
+    .meta-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+    .meta-table td { padding: 8px 12px; border: 1px solid #ddd; }
+    .meta-table .label { background: #f5f5f5; font-weight: 500; width: 20%; color: ${branding.primaryColor}; }
     table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
     th { background: ${branding.primaryColor}; color: white; padding: 10px; text-align: ${isArabic ? 'right' : 'left'}; font-weight: 500; }
     td { padding: 10px; border-bottom: 1px solid #ddd; }
@@ -1072,17 +1077,26 @@ function generateInvoicePDF(invoice: any, branding: InvoiceBranding = {
       </div>
     </div>
     
-    <div class="details-grid">
-      <div class="detail-box">
-        <h3>${labels.client}</h3>
-        <p><strong>${invoice.clientName || '-'}</strong></p>
-      </div>
-      <div class="detail-box">
-        <h3>${labels.responsible}</h3>
-        <p><strong>${invoice.responsible}</strong> - ${invoice.role}</p>
-        <p>${labels.paymentMode}: ${invoice.paymentMode}</p>
-      </div>
-    </div>
+    <table class="meta-table">
+      <tr>
+        <td class="label">${labels.responsible}</td>
+        <td>${invoice.responsible}</td>
+        <td class="label">${labels.role}</td>
+        <td>${invoice.role || '-'}</td>
+      </tr>
+      <tr>
+        <td class="label">${labels.paymentMode}</td>
+        <td>${invoice.paymentMode}</td>
+        <td class="label">${labels.dueDate}</td>
+        <td>${invoice.dueDate || '-'}</td>
+      </tr>
+      ${invoice.clientName ? `
+      <tr>
+        <td class="label">${labels.client}</td>
+        <td colspan="3">${invoice.clientName}</td>
+      </tr>
+      ` : ''}
+    </table>
     
     <table>
       <thead>
