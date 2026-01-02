@@ -30,6 +30,7 @@ import type { Product, InsertInvoiceItem } from "@shared/schema";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
@@ -1082,6 +1083,9 @@ export default function FabricationInvoice() {
               <FileText className="h-5 w-5" />
               {t("branding.previewInvoice")}
             </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("branding.previewInvoice")}
+            </DialogDescription>
           </DialogHeader>
           <div className="border rounded-md overflow-hidden">
             <InvoicePreview />

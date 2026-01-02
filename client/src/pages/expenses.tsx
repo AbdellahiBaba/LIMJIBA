@@ -11,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -145,6 +146,9 @@ function ExpenseFormDialog({
           <DialogTitle>
             {expense ? t("expenses.editExpense") : t("expenses.addExpense")}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {expense ? t("expenses.editExpense") : t("expenses.addExpense")}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">

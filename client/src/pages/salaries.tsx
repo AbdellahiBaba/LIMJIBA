@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -150,6 +151,9 @@ function EmployeeFormDialog({
           <DialogTitle>
             {employee ? t("salaries.editEmployee") : t("salaries.addEmployee")}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {employee ? t("salaries.editEmployee") : t("salaries.addEmployee")}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -301,6 +305,9 @@ function PaymentFormDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t("salaries.addPayment")}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {t("salaries.addPayment")}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">

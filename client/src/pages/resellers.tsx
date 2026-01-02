@@ -11,6 +11,7 @@ import { Progress } from "@/components/ui/progress";
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogHeader,
   DialogTitle,
   DialogFooter,
@@ -123,6 +124,9 @@ function ResellerFormDialog({
           <DialogTitle>
             {reseller ? t("resellers.editReseller") : t("resellers.addReseller")}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {reseller ? t("resellers.editReseller") : t("resellers.addReseller")}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -201,6 +205,7 @@ function WinnerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md text-center">
         <DialogTitle className="sr-only">{t("resellers.congratulations")}</DialogTitle>
+        <DialogDescription className="sr-only">{t("resellers.congratulations")}</DialogDescription>
         <div className="py-8">
           <div className="w-20 h-20 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center mx-auto mb-4">
             <Trophy className="h-10 w-10 text-yellow-600" />
