@@ -37,11 +37,12 @@
     "pos": "Point de Vente",
     "sales": "Historique Ventes",
     "resellers": "Revendeurs",
+    "customers": "Clients",
     "salaries": "Salaires",
-    "expenses": "Dépenses",
-    "branding": "Paramètres de Marque",
+    "expenses": "Depenses",
+    "branding": "Parametres de Marque",
     "profit": "Calcul du Profit",
-    "settings": "Paramètres"
+    "settings": "Parametres"
   },
   "dashboard": {
     "title": "Tableau de bord",
