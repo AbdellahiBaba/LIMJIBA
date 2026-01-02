@@ -422,16 +422,18 @@ export default function POS() {
                 {cart.map((item) => (
                   <div
                     key={item.productId}
-                    className="flex items-center gap-2 p-2 rounded-md bg-muted/50"
+                    className="grid grid-cols-[1fr_auto_auto] items-center gap-2 p-2 rounded-md bg-muted/50"
                     data-testid={`cart-item-${item.productId}`}
                   >
-                    <div className="flex-1 min-w-0">
+                    {/* Product name and unit price - flexible width with truncation */}
+                    <div className="min-w-0 overflow-hidden">
                       <p className="font-medium text-sm truncate">{item.productName}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {item.unitPrice.toLocaleString()} DZD
+                      <p className="text-xs text-muted-foreground truncate">
+                        {item.unitPrice.toLocaleString()} DZD × {item.quantity}
                       </p>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0">
+                    {/* Quantity controls - fixed width */}
+                    <div className="flex items-center gap-1">
                       <Button
                         variant="outline"
                         size="icon"
@@ -441,7 +443,7 @@ export default function POS() {
                       >
                         <Minus className="h-3 w-3" />
                       </Button>
-                      <span className="w-6 text-center font-mono text-sm">
+                      <span className="w-8 text-center font-mono text-sm">
                         {item.quantity}
                       </span>
                       <Button
@@ -454,8 +456,9 @@ export default function POS() {
                         <Plus className="h-3 w-3" />
                       </Button>
                     </div>
-                    <div className="flex items-center gap-1 shrink-0 min-w-[80px] justify-end">
-                      <p className="font-mono text-sm font-medium">
+                    {/* Total and delete - fixed width with right alignment */}
+                    <div className="flex items-center gap-1 min-w-[90px] justify-end">
+                      <p className="font-mono text-sm font-medium whitespace-nowrap">
                         {item.total.toLocaleString()}
                       </p>
                       <Button
