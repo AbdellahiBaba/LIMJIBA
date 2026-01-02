@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 import frTranslations from "../locales/fr.json";
 import arTranslations from "../locales/ar.json";
 import enTranslations from "../locales/en.json";
+import { apiRequest } from "@/lib/queryClient";
 
 type Language = "fr" | "ar" | "en";
 type InvoiceLanguage = "fr" | "ar" | "bilingual";
@@ -100,6 +101,30 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     localStorage.setItem("app-language", lang);
   }, []);
 
+  const isInitialLoad = useRef(true);
+
+  // Load branding from database on mount
+  useEffect(() => {
+    const loadBrandingFromDB = async () => {
+      try {
+        const res = await fetch("/api/settings/branding", { credentials: "include" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.value) {
+            const dbBranding = JSON.parse(data.value);
+            setBranding({ ...defaultBranding, ...dbBranding });
+            localStorage.setItem("app-branding", data.value);
+          }
+        }
+      } catch (e) {
+        // Fallback to localStorage if API fails
+        console.log("Using localStorage branding (API unavailable)");
+      }
+      isInitialLoad.current = false;
+    };
+    loadBrandingFromDB();
+  }, []);
+
   const updateBranding = useCallback((settings: Partial<BrandingSettings>) => {
     setBranding((prev) => {
       const updated = { 
@@ -109,7 +134,13 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
           ? { ...prev.companyInfo, ...settings.companyInfo }
           : prev.companyInfo
       };
-      localStorage.setItem("app-branding", JSON.stringify(updated));
+      const jsonValue = JSON.stringify(updated);
+      localStorage.setItem("app-branding", jsonValue);
+      
+      // Save to database
+      apiRequest("PUT", "/api/settings/branding", { value: jsonValue })
+        .catch(e => console.error("Failed to save branding to database:", e));
+      
       return updated;
     });
   }, []);

@@ -218,6 +218,30 @@ export async function registerRoutes(
     }
   });
 
+  // ===================== SETTINGS ROUTES =====================
+  
+  app.get("/api/settings/:key", requireAuth, async (req, res) => {
+    try {
+      const value = await storage.getSetting(req.params.key);
+      res.json({ key: req.params.key, value: value || null });
+    } catch (error) {
+      handleError(res, "getSetting", error);
+    }
+  });
+
+  app.put("/api/settings/:key", requireAuth, async (req, res) => {
+    try {
+      const { value } = req.body;
+      if (typeof value !== "string") {
+        return res.status(400).json({ error: "Value must be a string" });
+      }
+      const setting = await storage.setSetting(req.params.key, value);
+      res.json(setting);
+    } catch (error) {
+      handleError(res, "setSetting", error);
+    }
+  });
+
   // ===================== PUBLIC PDF ROUTES (outside /api/invoices prefix) =====================
   
   app.get("/public/invoices/:id/pdf", async (req, res) => {
@@ -762,25 +786,26 @@ export async function registerRoutes(
       const newInvoice = {
         invoiceNumber: nextNumber,
         date: today,
-        responsible: originalInvoice.invoice.responsible,
-        clientName: originalInvoice.invoice.clientName,
-        clientAddress: originalInvoice.invoice.clientAddress,
-        clientPhone: originalInvoice.invoice.clientPhone,
+        responsible: originalInvoice.responsible,
+        clientName: originalInvoice.clientName,
+        paymentMode: originalInvoice.paymentMode,
+        totalHT: originalInvoice.totalHT,
         status: "pending" as const,
-        subtotal: originalInvoice.invoice.subtotal,
-        tvaAmount: originalInvoice.invoice.tvaAmount,
-        totalTTC: originalInvoice.invoice.totalTTC,
-        hasTva: originalInvoice.invoice.hasTva,
-        tvaRate: originalInvoice.invoice.tvaRate,
-        totalWeight: originalInvoice.invoice.totalWeight,
+        tvaAmount: originalInvoice.tvaAmount,
+        totalTTC: originalInvoice.totalTTC,
+        applyTva: originalInvoice.applyTva,
+        tvaRate: originalInvoice.tvaRate,
+        totalWeight: originalInvoice.totalWeight,
+        role: originalInvoice.role,
       };
       
       const newItems = originalInvoice.items.map((item) => ({
         productId: item.productId,
-        productName: item.productName,
+        designation: item.designation,
         quantity: item.quantity,
         unitPrice: item.unitPrice,
-        weight: item.weight,
+        weightPerUnit: item.weightPerUnit,
+        totalWeight: item.totalWeight,
         total: item.total,
       }));
       

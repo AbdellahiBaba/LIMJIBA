@@ -35,6 +35,7 @@ import {
   type StockMovementWithProduct,
   type Customer,
   type InsertCustomer,
+  type Setting,
   users,
   products,
   invoices,
@@ -50,6 +51,7 @@ import {
   fabricationInvoices,
   fabricationItems,
   stockMovements,
+  settings,
 } from "@shared/schema";
 import { db, withRetry } from "./db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
@@ -137,6 +139,9 @@ export interface IStorage {
 
   exportAllData(): Promise<object>;
   importAllData(data: object): Promise<{ imported: number }>;
+
+  getSetting(key: string): Promise<string | undefined>;
+  setSetting(key: string, value: string): Promise<Setting>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1188,6 +1193,26 @@ export class DatabaseStorage implements IStorage {
       cache.delete(CACHE_KEYS.DASHBOARD_STATS);
 
       return { imported };
+    });
+  }
+
+  async getSetting(key: string): Promise<string | undefined> {
+    return await withRetry(async () => {
+      const [setting] = await db.select().from(settings).where(eq(settings.key, key));
+      return setting?.value;
+    });
+  }
+
+  async setSetting(key: string, value: string): Promise<Setting> {
+    return await withRetry(async () => {
+      const existing = await db.select().from(settings).where(eq(settings.key, key));
+      if (existing.length > 0) {
+        const [updated] = await db.update(settings).set({ value }).where(eq(settings.key, key)).returning();
+        return updated;
+      } else {
+        const [created] = await db.insert(settings).values({ key, value }).returning();
+        return created;
+      }
     });
   }
 }
