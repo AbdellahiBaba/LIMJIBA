@@ -167,6 +167,50 @@ export async function checkDatabaseHealth(): Promise<{ healthy: boolean; latency
   }
 }
 
+async function runMigrations(): Promise<void> {
+  console.log('[DB] Running schema migrations...');
+  const client = await pool.connect();
+  try {
+    // Check and add missing columns to sales table
+    const salesColumns = await client.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'sales' AND table_schema = 'public'
+    `);
+    const existingCols = salesColumns.rows.map((r: any) => r.column_name);
+    
+    if (!existingCols.includes('status')) {
+      await client.query(`ALTER TABLE sales ADD COLUMN status text NOT NULL DEFAULT 'completed'`);
+      console.log('[DB] Added status column to sales');
+    }
+    if (!existingCols.includes('customer_name')) {
+      await client.query(`ALTER TABLE sales ADD COLUMN customer_name text`);
+      console.log('[DB] Added customer_name column to sales');
+    }
+    if (!existingCols.includes('customer_phone')) {
+      await client.query(`ALTER TABLE sales ADD COLUMN customer_phone text`);
+      console.log('[DB] Added customer_phone column to sales');
+    }
+    
+    // Check products table for barcode column
+    const prodColumns = await client.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'products' AND table_schema = 'public'
+    `);
+    const prodCols = prodColumns.rows.map((r: any) => r.column_name);
+    
+    if (!prodCols.includes('barcode')) {
+      await client.query(`ALTER TABLE products ADD COLUMN barcode text`);
+      console.log('[DB] Added barcode column to products');
+    }
+    
+    console.log('[DB] Schema migrations complete');
+  } catch (error) {
+    console.error('[DB] Migration error:', error);
+  } finally {
+    client.release();
+  }
+}
+
 export async function verifyDatabaseConnection(): Promise<boolean> {
   console.log('[DB] Verifying Neon database connection...');
   
@@ -174,6 +218,7 @@ export async function verifyDatabaseConnection(): Promise<boolean> {
     const health = await checkDatabaseHealth();
     if (health.healthy) {
       console.log(`[DB] Neon database connection verified (${health.latencyMs}ms)`);
+      await runMigrations();
       databaseReady = true;
       return true;
     }
