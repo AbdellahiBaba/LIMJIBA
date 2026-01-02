@@ -215,6 +215,34 @@ export async function registerRoutes(
     }
   });
 
+  // ===================== PUBLIC PDF ROUTES (before auth middleware) =====================
+  
+  app.get("/api/invoices/:id/pdf", async (req, res) => {
+    try {
+      const invoice = await storage.getInvoiceWithItems(req.params.id);
+      if (!invoice) {
+        return res.status(404).json({ error: "Invoice not found", id: req.params.id });
+      }
+
+      const branding = {
+        logo: req.query.logo as string | undefined,
+        watermark: req.query.watermark as string | undefined,
+        enableWatermark: req.query.enableWatermark === "true",
+        watermarkOpacity: parseFloat(req.query.watermarkOpacity as string) || 0.12,
+        logoPosition: (req.query.logoPosition as "left" | "center" | "right") || "left",
+        primaryColor: (req.query.primaryColor as string) || "#1976D2",
+        accentColor: (req.query.accentColor as string) || "#42A5F5",
+        invoiceLanguage: (req.query.invoiceLanguage as "fr" | "ar" | "bilingual") || "fr",
+      };
+
+      const html = generateInvoicePDF(invoice, branding);
+      res.setHeader("Content-Type", "text/html");
+      res.send(html);
+    } catch (error) {
+      handleError(res, "generate PDF", error);
+    }
+  });
+
   // ===================== PROTECTED ROUTES =====================
   
   // Apply authentication middleware to all data routes
@@ -493,32 +521,6 @@ export async function registerRoutes(
       res.status(204).send();
     } catch (error) {
       handleError(res, "delete invoice", error);
-    }
-  });
-
-  app.get("/api/invoices/:id/pdf", async (req, res) => {
-    try {
-      const invoice = await storage.getInvoiceWithItems(req.params.id);
-      if (!invoice) {
-        return res.status(404).json({ error: "Invoice not found", id: req.params.id });
-      }
-
-      const branding = {
-        logo: req.query.logo as string | undefined,
-        watermark: req.query.watermark as string | undefined,
-        enableWatermark: req.query.enableWatermark === "true",
-        watermarkOpacity: parseFloat(req.query.watermarkOpacity as string) || 0.12,
-        logoPosition: (req.query.logoPosition as "left" | "center" | "right") || "left",
-        primaryColor: (req.query.primaryColor as string) || "#1976D2",
-        accentColor: (req.query.accentColor as string) || "#42A5F5",
-        invoiceLanguage: (req.query.invoiceLanguage as "fr" | "ar" | "bilingual") || "fr",
-      };
-
-      const html = generateInvoicePDF(invoice, branding);
-      res.setHeader("Content-Type", "text/html");
-      res.send(html);
-    } catch (error) {
-      handleError(res, "generate PDF", error);
     }
   });
 
