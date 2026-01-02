@@ -1,6 +1,6 @@
-import { Switch, Route } from "wouter";
+import { Switch, Route, Link } from "wouter";
 import { queryClient } from "./lib/queryClient";
-import { QueryClientProvider } from "@tanstack/react-query";
+import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { SidebarProvider, SidebarTrigger } from "@/components/ui/sidebar";
@@ -10,7 +10,15 @@ import { LanguageProvider, useLanguage } from "@/contexts/language-context";
 import { AuthProvider, useAuth } from "@/contexts/auth-context";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { Button } from "@/components/ui/button";
-import { LogOut, Loader2 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { LogOut, Loader2, Bell, AlertTriangle, Package } from "lucide-react";
+import type { Product } from "@shared/schema";
 import Dashboard from "@/pages/dashboard";
 import Stock from "@/pages/stock";
 import Invoices from "@/pages/invoices";
@@ -50,6 +58,75 @@ function Router() {
   );
 }
 
+function LowStockNotifications() {
+  const { t } = useLanguage();
+  const { data: products } = useQuery<Product[]>({
+    queryKey: ["/api/products"],
+    refetchInterval: 60000,
+  });
+
+  const lowStockProducts = products?.filter(
+    (p) => p.stockQuantity <= p.lowStockThreshold
+  ) || [];
+
+  const hasAlerts = lowStockProducts.length > 0;
+
+  return (
+    <Popover>
+      <PopoverTrigger asChild>
+        <Button variant="ghost" size="icon" className="relative" data-testid="button-notifications">
+          <Bell className="h-4 w-4" />
+          {hasAlerts && (
+            <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]">
+              {lowStockProducts.length}
+            </Badge>
+          )}
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-80 p-0" align="end">
+        <div className="p-3 border-b">
+          <h4 className="font-medium flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-destructive" />
+            Alertes stock bas
+          </h4>
+        </div>
+        <ScrollArea className="max-h-64">
+          {lowStockProducts.length === 0 ? (
+            <div className="p-4 text-center text-muted-foreground text-sm">
+              Aucune alerte de stock
+            </div>
+          ) : (
+            <div className="p-2 space-y-1">
+              {lowStockProducts.map((product) => (
+                <Link key={product.id} href="/stock">
+                  <div className="flex items-center gap-2 p-2 rounded hover-elevate text-sm cursor-pointer">
+                    <Package className="h-4 w-4 text-muted-foreground" />
+                    <div className="flex-1 min-w-0">
+                      <p className="truncate font-medium">{product.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        Stock: <span className="text-destructive font-medium">{product.stockQuantity}</span> / Seuil: {product.lowStockThreshold}
+                      </p>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+        {lowStockProducts.length > 0 && (
+          <div className="p-2 border-t">
+            <Link href="/stock">
+              <Button variant="outline" size="sm" className="w-full" data-testid="button-view-stock">
+                Voir le stock
+              </Button>
+            </Link>
+          </div>
+        )}
+      </PopoverContent>
+    </Popover>
+  );
+}
+
 function AuthenticatedApp() {
   const { t, branding } = useLanguage();
   const { logout, user } = useAuth();
@@ -80,6 +157,7 @@ function AuthenticatedApp() {
               <span className="text-xs font-medium hidden md:block">
                 {user?.username}
               </span>
+              <LowStockNotifications />
               <LanguageSwitcher />
               <ThemeToggle />
               <Button
