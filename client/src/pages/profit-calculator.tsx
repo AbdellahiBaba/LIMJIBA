@@ -152,10 +152,10 @@ export default function ProfitCalculator() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold text-red-600 dark:text-red-400" data-testid="text-total-costs">
-                  {formatCurrency(stats.totalProductCosts + stats.totalSalaries + stats.totalExpenses)}
+                  {formatCurrency(stats.totalProductCosts + (stats.totalFabricationCosts || 0) + stats.totalSalaries + stats.totalExpenses)}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {t("profit.productsSalariesExpenses")}
+                  {t("profit.allCostsIncluded")}
                 </p>
               </CardContent>
             </Card>
@@ -265,6 +265,19 @@ export default function ProfitCalculator() {
                       -{formatCurrency(stats.totalProductCosts)}
                     </span>
                   </div>
+
+                  <div className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-900/20 rounded-md">
+                    <div className="flex items-center gap-3">
+                      <Receipt className="h-5 w-5 text-orange-600" />
+                      <div>
+                        <p className="font-medium">{t("profit.fabricationCosts")}</p>
+                        <p className="text-xs text-muted-foreground">{t("profit.manufacturingCosts")}</p>
+                      </div>
+                    </div>
+                    <span className="font-bold text-orange-600 dark:text-orange-400">
+                      -{formatCurrency(stats.totalFabricationCosts || 0)}
+                    </span>
+                  </div>
                   
                   <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-md">
                     <div className="flex items-center gap-3">
@@ -295,7 +308,7 @@ export default function ProfitCalculator() {
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md border-t-2 border-red-600">
                     <span className="font-semibold">{t("profit.totalCosts")}</span>
                     <span className="font-bold text-lg text-red-600 dark:text-red-400">
-                      {formatCurrency(stats.totalProductCosts + stats.totalSalaries + stats.totalExpenses)}
+                      {formatCurrency(stats.totalProductCosts + (stats.totalFabricationCosts || 0) + stats.totalSalaries + stats.totalExpenses)}
                     </span>
                   </div>
                 </div>

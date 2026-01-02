@@ -280,6 +280,7 @@ export interface ProfitStats {
   totalInvoiceRevenue: number;
   totalRevenue: number;
   totalProductCosts: number;
+  totalFabricationCosts: number;
   totalSalaries: number;
   totalExpenses: number;
   grossProfit: number;

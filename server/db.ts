@@ -5,29 +5,34 @@ import * as schema from "@shared/schema";
 
 neonConfig.webSocketConstructor = ws;
 
-let connectionString = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
+// CRITICAL: Use ONLY Neon database - no fallback to prevent data split
+const connectionString = process.env.NEON_DATABASE_URL;
 
 if (!connectionString) {
   throw new Error(
-    "NEON_DATABASE_URL or DATABASE_URL must be set. Did you forget to provision a database?",
+    "NEON_DATABASE_URL must be set. This application requires the Neon production database.",
   );
 }
 
-// Clean up connection string - remove psql command prefix, extra quotes, and whitespace
-connectionString = connectionString.trim()
-  .replace(/^psql\s+/i, '')  // Remove 'psql ' prefix if present
-  .replace(/^['"]|['"]$/g, '');  // Remove surrounding quotes
+// Clean up and validate connection string
+const cleanConnectionString = connectionString.trim()
+  .replace(/^psql\s+/i, '')
+  .replace(/^['"]|['"]$/g, '');
 
-// Log connection host only (no credentials) for debugging
+// Log connection details (no credentials) and confirm Neon is being used
 try {
-  const url = new URL(connectionString);
+  const url = new URL(cleanConnectionString);
+  console.log('[DB] NEON DATABASE ONLY MODE');
   console.log('[DB] Connecting to Neon:', url.host);
+  if (!url.host.includes('neon')) {
+    console.warn('[DB] WARNING: Connection string may not be a Neon database!');
+  }
 } catch {
   console.log('[DB] Connecting to Neon database...');
 }
 
 export const pool = new Pool({ 
-  connectionString,
+  connectionString: cleanConnectionString,
   max: 20,
   idleTimeoutMillis: 10000,
   connectionTimeoutMillis: 5000,

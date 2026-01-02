@@ -322,7 +322,10 @@
     "revenueMinusProducts": "الإيرادات - تكلفة المنتجات",
     "salariesPlusExpenses": "الرواتب + المصاريف",
     "period": "الفترة",
-    "noData": "لا توجد بيانات متاحة"
+    "noData": "لا توجد بيانات متاحة",
+    "fabricationCosts": "تكاليف التصنيع",
+    "manufacturingCosts": "تكاليف الإنتاج",
+    "allCostsIncluded": "المنتجات + التصنيع + الرواتب + المصاريف"
   },
   "salaries": {
     "title": "إدارة الرواتب",

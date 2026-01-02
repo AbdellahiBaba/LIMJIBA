@@ -675,15 +675,87 @@ export class DatabaseStorage implements IStorage {
       return await db.transaction(async (tx) => {
         const [created] = await tx.insert(fabricationInvoices).values(invoice).returning();
         const createdItems: FabricationItem[] = [];
+        
         for (const item of items) {
           const [createdItem] = await tx.insert(fabricationItems).values({ ...item, fabricationInvoiceId: created.id }).returning();
           createdItems.push(createdItem);
+          
+          // After fabrication, add manufactured products to inventory
+          // Find existing product by name or create new one
+          const existingProducts = await tx.select().from(products).where(
+            eq(products.name, item.productName)
+          );
+          
+          if (existingProducts.length > 0) {
+            // Update existing product: add quantity and update cost price
+            const existingProduct = existingProducts[0];
+            const previousStock = existingProduct.stockQuantity;
+            const newStock = previousStock + item.quantity;
+            // Validate unitCost - use existing cost price if not provided
+            const unitCost = (item.unitCost && item.unitCost > 0) ? item.unitCost : existingProduct.costPrice;
+            
+            await tx.update(products).set({
+              stockQuantity: newStock,
+              costPrice: unitCost,
+              weightPerUnit: item.weightPerUnit || existingProduct.weightPerUnit,
+            }).where(eq(products.id, existingProduct.id));
+            
+            // Create stock movement for the fabrication
+            await tx.insert(stockMovements).values({
+              productId: existingProduct.id,
+              quantity: item.quantity,
+              movementType: "in",
+              reason: `Fabrication: ${created.invoiceNumber}`,
+              previousStock,
+              newStock,
+              reference: created.invoiceNumber,
+              createdAt: new Date().toISOString(),
+            });
+            
+            console.log(`[Fabrication] Updated product "${item.productName}": +${item.quantity} units, cost=${unitCost}`);
+          } else {
+            // Create new product from fabrication item
+            // Validate that unitCost is provided
+            if (!item.unitCost || item.unitCost <= 0) {
+              throw new Error(`Fabrication item "${item.productName}" must have a valid unitCost > 0`);
+            }
+            const unitCost = item.unitCost;
+            // Use UUID for unique SKU to avoid collisions
+            const uniqueSku = `FAB-${createdItem.id.substring(0, 8)}`;
+            const [newProduct] = await tx.insert(products).values({
+              name: item.productName,
+              sku: uniqueSku,
+              category: "Fabricated",
+              unitPrice: unitCost * 1.3, // Default 30% markup for selling price
+              costPrice: unitCost,
+              stockQuantity: item.quantity,
+              lowStockThreshold: 10,
+              unit: "pcs",
+              weightPerUnit: item.weightPerUnit || 0,
+            }).returning();
+            
+            // Create stock movement for the new product
+            await tx.insert(stockMovements).values({
+              productId: newProduct.id,
+              quantity: item.quantity,
+              movementType: "in",
+              reason: `Fabrication: ${created.invoiceNumber}`,
+              previousStock: 0,
+              newStock: item.quantity,
+              reference: created.invoiceNumber,
+              createdAt: new Date().toISOString(),
+            });
+            
+            console.log(`[Fabrication] Created new product "${item.productName}": ${item.quantity} units, cost=${unitCost}`);
+          }
         }
+        
         return { ...created, items: createdItems };
       });
     });
     
     cache.delete(CACHE_KEYS.FABRICATION_INVOICES);
+    cache.delete(CACHE_KEYS.PRODUCTS); // Also invalidate products cache
     return result;
   }
 
@@ -741,19 +813,15 @@ export class DatabaseStorage implements IStorage {
 
   async getProfitStats(startDate: string, endDate: string): Promise<ProfitStats> {
     return await withRetry(async () => {
-      console.log("[getProfitStats] Date range:", startDate, "to", endDate);
-      
       const allSales = await db.select().from(sales).where(
         and(gte(sales.date, startDate), lte(sales.date, endDate))
       );
       const totalSalesRevenue = allSales.reduce((sum, s) => sum + s.total - (s.discount || 0), 0);
-      console.log("[getProfitStats] Sales found:", allSales.length, "Revenue:", totalSalesRevenue);
 
       const allInvoices = await db.select().from(invoices).where(
         and(gte(invoices.date, startDate), lte(invoices.date, endDate))
       );
       const totalInvoiceRevenue = allInvoices.reduce((sum, inv) => sum + inv.totalTTC, 0);
-      console.log("[getProfitStats] Invoices found:", allInvoices.length, "Revenue:", totalInvoiceRevenue);
 
       const totalRevenue = totalSalesRevenue + totalInvoiceRevenue;
 
@@ -768,14 +836,9 @@ export class DatabaseStorage implements IStorage {
         }
       }
 
-      // Get ALL salary payments first to see what's in the database
-      const allSalaryPayments = await db.select().from(salaryPayments);
-      console.log("[getProfitStats] All salary payments in DB:", allSalaryPayments.length, allSalaryPayments.map(p => ({ date: p.paymentDate, amount: p.amount })));
-      
       const allPayments = await db.select().from(salaryPayments).where(
         and(gte(salaryPayments.paymentDate, startDate), lte(salaryPayments.paymentDate, endDate))
       );
-      console.log("[getProfitStats] Filtered salary payments:", allPayments.length, "Total:", allPayments.reduce((sum, p) => sum + p.amount, 0));
       const totalSalaries = allPayments.reduce((sum, p) => sum + p.amount, 0);
 
       const allExpenses = await db.select().from(expenses).where(
@@ -783,7 +846,15 @@ export class DatabaseStorage implements IStorage {
       );
       const totalExpenses = allExpenses.reduce((sum, e) => sum + e.amount, 0);
 
-      const grossProfit = totalRevenue - totalProductCosts;
+      // Get fabrication costs - these are manufacturing costs, NOT revenue
+      const allFabricationInvoices = await db.select().from(fabricationInvoices).where(
+        and(gte(fabricationInvoices.date, startDate), lte(fabricationInvoices.date, endDate))
+      );
+      const totalFabricationCosts = allFabricationInvoices.reduce((sum, fab) => sum + (fab.totalCost || 0), 0);
+
+      // Gross profit = Revenue - Product Costs (COGS)
+      // Fabrication costs are treated as part of COGS since they represent manufacturing costs
+      const grossProfit = totalRevenue - totalProductCosts - totalFabricationCosts;
       const netProfit = grossProfit - totalSalaries - totalExpenses;
       const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
 
@@ -792,6 +863,7 @@ export class DatabaseStorage implements IStorage {
         totalInvoiceRevenue,
         totalRevenue,
         totalProductCosts,
+        totalFabricationCosts,
         totalSalaries,
         totalExpenses,
         grossProfit,

@@ -322,7 +322,10 @@
     "revenueMinusProducts": "Revenus - Coût des Produits",
     "salariesPlusExpenses": "Salaires + Charges",
     "period": "Période",
-    "noData": "Aucune donnée disponible"
+    "noData": "Aucune donnée disponible",
+    "fabricationCosts": "Coûts de Fabrication",
+    "manufacturingCosts": "Coûts de production",
+    "allCostsIncluded": "Produits + Fabrication + Salaires + Charges"
   },
   "salaries": {
     "title": "Gestion des Salaires",
