@@ -11,8 +11,21 @@ import {
   TrendingUp,
   Clock,
   Gift,
+  BarChart3,
 } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+} from "recharts";
 import type { DashboardStats } from "@shared/schema";
+
+type SalesTrend = { month: string; sales: number; revenue: number };
+type TopProduct = { name: string; quantity: number; revenue: number };
 
 function StatCard({
   title,
@@ -72,6 +85,14 @@ export default function Dashboard() {
   const { t } = useLanguage();
   const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard/stats"],
+  });
+  
+  const { data: salesTrends, isLoading: trendsLoading } = useQuery<SalesTrend[]>({
+    queryKey: ["/api/dashboard/sales-trends"],
+  });
+  
+  const { data: topProducts, isLoading: topLoading } = useQuery<TopProduct[]>({
+    queryKey: ["/api/dashboard/top-products"],
   });
 
   return (
@@ -240,6 +261,72 @@ export default function Dashboard() {
               <span className="text-muted-foreground">{t("common.phone")}</span>
               <span className="font-medium">+213 6 70 04 91 24</span>
             </div>
+          </CardContent>
+        </Card>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
+            <CardTitle className="text-lg">Ventes Mensuelles</CardTitle>
+            <BarChart3 className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {trendsLoading ? (
+              <Skeleton className="h-[250px] w-full" />
+            ) : salesTrends && salesTrends.length > 0 ? (
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={salesTrends}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-muted" />
+                  <XAxis dataKey="month" className="text-xs" />
+                  <YAxis className="text-xs" />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "hsl(var(--card))",
+                      border: "1px solid hsl(var(--border))",
+                      borderRadius: "6px",
+                    }}
+                    labelStyle={{ color: "hsl(var(--foreground))" }}
+                  />
+                  <Bar dataKey="sales" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Ventes" />
+                </BarChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                Aucune donnée disponible
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between gap-2">
+            <CardTitle className="text-lg">Produits les Plus Vendus</CardTitle>
+            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+          </CardHeader>
+          <CardContent>
+            {topLoading ? (
+              <Skeleton className="h-[250px] w-full" />
+            ) : topProducts && topProducts.length > 0 ? (
+              <div className="space-y-3">
+                {topProducts.slice(0, 5).map((product, idx) => (
+                  <div key={idx} className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50">
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm font-medium text-muted-foreground w-6">{idx + 1}.</span>
+                      <span className="text-sm font-medium truncate max-w-[150px]">{product.name}</span>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-semibold">{product.quantity} vendus</div>
+                      <div className="text-xs text-muted-foreground">{product.revenue.toLocaleString()} DZD</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="h-[250px] flex items-center justify-center text-muted-foreground">
+                Aucune donnée disponible
+              </div>
+            )}
           </CardContent>
         </Card>
       </div>

@@ -295,6 +295,64 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/dashboard/sales-trends", async (req, res) => {
+    try {
+      const sales = await storage.getSales();
+      const months: Record<string, { month: string; sales: number; revenue: number }> = {};
+      
+      // Get last 12 months
+      for (let i = 11; i >= 0; i--) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+        const monthNames = ['Jan', 'Fev', 'Mar', 'Avr', 'Mai', 'Jun', 'Jul', 'Aou', 'Sep', 'Oct', 'Nov', 'Dec'];
+        months[key] = { month: monthNames[date.getMonth()], sales: 0, revenue: 0 };
+      }
+      
+      // Aggregate sales by month
+      sales.forEach(sale => {
+        const saleDate = new Date(sale.date);
+        const key = `${saleDate.getFullYear()}-${String(saleDate.getMonth() + 1).padStart(2, '0')}`;
+        if (months[key]) {
+          months[key].sales++;
+          months[key].revenue += Number(sale.total) || 0;
+        }
+      });
+      
+      res.json(Object.values(months));
+    } catch (error) {
+      handleError(res, "get sales trends", error);
+    }
+  });
+
+  app.get("/api/dashboard/top-products", async (req, res) => {
+    try {
+      const sales = await storage.getSales();
+      const productStats: Record<string, { name: string; quantity: number; revenue: number }> = {};
+      
+      for (const sale of sales) {
+        const saleWithItems = await storage.getSaleWithItems(sale.id);
+        if (saleWithItems?.items) {
+          saleWithItems.items.forEach(item => {
+            if (!productStats[item.productId]) {
+              productStats[item.productId] = { name: item.productName, quantity: 0, revenue: 0 };
+            }
+            productStats[item.productId].quantity += item.quantity;
+            productStats[item.productId].revenue += Number(item.total) || 0;
+          });
+        }
+      }
+      
+      const topProducts = Object.values(productStats)
+        .sort((a, b) => b.quantity - a.quantity)
+        .slice(0, 10);
+      
+      res.json(topProducts);
+    } catch (error) {
+      handleError(res, "get top products", error);
+    }
+  });
+
   app.get("/api/products", async (req, res) => {
     try {
       const products = await storage.getProducts();
