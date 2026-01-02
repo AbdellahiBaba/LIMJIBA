@@ -560,6 +560,9 @@ export default function POS() {
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>{t("pos.completeSale")}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("pos.checkout")}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="text-center py-4">
@@ -625,6 +628,7 @@ export default function POS() {
       <Dialog open={successDialogOpen} onOpenChange={setSuccessDialogOpen}>
         <DialogContent className="sm:max-w-sm text-center">
           <DialogTitle className="sr-only">{t("pos.saleComplete")}</DialogTitle>
+          <DialogDescription className="sr-only">{t("pos.transactionSuccess")}</DialogDescription>
           <div className="py-6">
             <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
               <Check className="h-8 w-8 text-green-600" />

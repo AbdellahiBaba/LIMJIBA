@@ -627,6 +627,7 @@ export default function InvoiceForm() {
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Invoice Preview</DialogTitle>
+            <DialogDescription className="sr-only">Preview of the invoice before saving</DialogDescription>
           </DialogHeader>
           <div 
             ref={invoiceRef}

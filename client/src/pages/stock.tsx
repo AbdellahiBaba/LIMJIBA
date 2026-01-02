@@ -162,6 +162,9 @@ function ProductFormDialog({
           <DialogTitle>
             {product ? t("stock.editProduct") : t("stock.addProduct")}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            {product ? t("stock.editProduct") : t("stock.addProduct")}
+          </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -373,6 +376,9 @@ function StockAdjustmentDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{t("stock.adjustStock")}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {t("stock.adjustStock")}
+          </DialogDescription>
         </DialogHeader>
         {product && (
           <form onSubmit={handleSubmit} className="space-y-4">
@@ -511,6 +517,9 @@ function StockHistoryDialog({
       <DialogContent className="sm:max-w-lg">
         <DialogHeader>
           <DialogTitle>{t("stock.stockHistory")}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {t("stock.stockHistory")}
+          </DialogDescription>
         </DialogHeader>
         {product && (
           <div className="space-y-4">
