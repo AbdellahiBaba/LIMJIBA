@@ -1012,6 +1012,13 @@ export async function registerRoutes(
     }
   });
 
+  // ===================== ADMIN-ONLY ROUTES =====================
+  // Employees, Salary Payments, Expenses, Profit Stats - require admin role
+  app.use("/api/employees", requireAdmin);
+  app.use("/api/salary-payments", requireAdmin);
+  app.use("/api/expenses", requireAdmin);
+  app.use("/api/profit-stats", requireAdmin);
+
   app.get("/api/employees", async (req, res) => {
     try {
       const allEmployees = await storage.getEmployees();
@@ -1305,6 +1312,47 @@ export async function registerRoutes(
       res.json(stats);
     } catch (error) {
       handleError(res, "get profit stats", error);
+    }
+  });
+
+  // Backup/Restore API (Admin only)
+  app.get("/api/backup", requireAdmin, async (req, res) => {
+    try {
+      const backup = await storage.exportAllData();
+      const filename = `backup_${new Date().toISOString().split('T')[0]}.json`;
+      res.setHeader('Content-Type', 'application/json');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+      res.json(backup);
+    } catch (error) {
+      handleError(res, "export backup", error);
+    }
+  });
+
+  app.post("/api/restore", requireAdmin, async (req, res) => {
+    try {
+      const data = req.body;
+      if (!data || typeof data !== 'object') {
+        return res.status(400).json({ error: "Invalid backup data" });
+      }
+      
+      // Validate backup structure
+      const backupData = data.data || data;
+      const allowedTables = ['products', 'customers', 'resellers', 'employees', 'expenses'];
+      const validatedData: Record<string, any[]> = {};
+      
+      for (const table of allowedTables) {
+        if (backupData[table] && Array.isArray(backupData[table])) {
+          // Filter out any entries with invalid or suspicious fields
+          validatedData[table] = backupData[table].filter((item: any) => 
+            item && typeof item === 'object' && !Array.isArray(item)
+          );
+        }
+      }
+      
+      const result = await storage.importAllData({ data: validatedData });
+      res.json({ success: true, ...result });
+    } catch (error) {
+      handleError(res, "restore backup", error);
     }
   });
 

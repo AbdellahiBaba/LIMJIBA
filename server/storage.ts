@@ -134,6 +134,9 @@ export interface IStorage {
   createInvoicePayment(payment: InsertInvoicePayment): Promise<InvoicePayment>;
   deleteInvoicePayment(id: string): Promise<boolean>;
   getInvoicePaidAmount(invoiceId: string): Promise<number>;
+
+  exportAllData(): Promise<object>;
+  importAllData(data: object): Promise<{ imported: number }>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -944,6 +947,147 @@ export class DatabaseStorage implements IStorage {
         total: sql<number>`COALESCE(SUM(${invoicePayments.amount}), 0)`
       }).from(invoicePayments).where(eq(invoicePayments.invoiceId, invoiceId));
       return Number(result[0]?.total || 0);
+    });
+  }
+
+  async exportAllData(): Promise<object> {
+    return await withRetry(async () => {
+      const [
+        allProducts,
+        allInvoices,
+        allInvoiceItems,
+        allSales,
+        allSaleItems,
+        allResellers,
+        allEmployees,
+        allSalaryPayments,
+        allExpenses,
+        allFabricationInvoices,
+        allFabricationItems,
+        allCustomers,
+        allStockMovements,
+        allInvoicePayments,
+      ] = await Promise.all([
+        db.select().from(products),
+        db.select().from(invoices),
+        db.select().from(invoiceItems),
+        db.select().from(sales),
+        db.select().from(saleItems),
+        db.select().from(resellers),
+        db.select().from(employees),
+        db.select().from(salaryPayments),
+        db.select().from(expenses),
+        db.select().from(fabricationInvoices),
+        db.select().from(fabricationItems),
+        db.select().from(customers),
+        db.select().from(stockMovements),
+        db.select().from(invoicePayments),
+      ]);
+
+      return {
+        version: "1.0",
+        exportedAt: new Date().toISOString(),
+        data: {
+          products: allProducts,
+          invoices: allInvoices,
+          invoiceItems: allInvoiceItems,
+          sales: allSales,
+          saleItems: allSaleItems,
+          resellers: allResellers,
+          employees: allEmployees,
+          salaryPayments: allSalaryPayments,
+          expenses: allExpenses,
+          fabricationInvoices: allFabricationInvoices,
+          fabricationItems: allFabricationItems,
+          customers: allCustomers,
+          stockMovements: allStockMovements,
+          invoicePayments: allInvoicePayments,
+        }
+      };
+    });
+  }
+
+  async importAllData(backup: any): Promise<{ imported: number }> {
+    return await withRetry(async () => {
+      const data = backup.data || backup;
+      let imported = 0;
+
+      // Import products
+      if (data.products?.length) {
+        for (const product of data.products) {
+          try {
+            await db.insert(products).values({
+              ...product,
+              id: undefined, // Let DB generate new ID
+            }).onConflictDoNothing();
+            imported++;
+          } catch (e) { /* skip duplicates */ }
+        }
+        cache.delete(CACHE_KEYS.PRODUCTS);
+      }
+
+      // Import customers
+      if (data.customers?.length) {
+        for (const customer of data.customers) {
+          try {
+            await db.insert(customers).values({
+              ...customer,
+              id: undefined,
+            }).onConflictDoNothing();
+            imported++;
+          } catch (e) { /* skip duplicates */ }
+        }
+      }
+
+      // Import resellers
+      if (data.resellers?.length) {
+        for (const reseller of data.resellers) {
+          try {
+            await db.insert(resellers).values({
+              ...reseller,
+              id: undefined,
+            }).onConflictDoNothing();
+            imported++;
+          } catch (e) { /* skip duplicates */ }
+        }
+        cache.delete(CACHE_KEYS.RESELLERS);
+      }
+
+      // Import employees
+      if (data.employees?.length) {
+        for (const employee of data.employees) {
+          try {
+            await db.insert(employees).values({
+              ...employee,
+              id: undefined,
+            }).onConflictDoNothing();
+            imported++;
+          } catch (e) { /* skip duplicates */ }
+        }
+        cache.delete(CACHE_KEYS.EMPLOYEES);
+      }
+
+      // Import expenses
+      if (data.expenses?.length) {
+        for (const expense of data.expenses) {
+          try {
+            await db.insert(expenses).values({
+              ...expense,
+              id: undefined,
+            }).onConflictDoNothing();
+            imported++;
+          } catch (e) { /* skip duplicates */ }
+        }
+        cache.delete(CACHE_KEYS.EXPENSES);
+      }
+
+      // Clear all caches after import
+      cache.delete(CACHE_KEYS.INVOICES);
+      cache.delete(CACHE_KEYS.SALES);
+      cache.delete(CACHE_KEYS.FABRICATION_INVOICES);
+      cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+
+      return { imported };
     });
   }
 }
