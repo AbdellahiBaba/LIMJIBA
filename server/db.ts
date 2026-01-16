@@ -2,6 +2,18 @@ import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "@shared/schema";
 
+// ===================== DATABASE ENVIRONMENT CONFIGURATION =====================
+// 
+// ARCHITECTURE:
+// - Production (NODE_ENV=production): MUST use Neon database (NEON_DATABASE_URL)
+// - Development (NODE_ENV=development): Uses Neon if available, falls back to Replit DB
+// - All data writes go to ONE database based on environment
+// - Safety guard prevents accidental Replit DB writes in production
+//
+// =============================================================================
+
+const isProduction = process.env.NODE_ENV === 'production';
+
 // Helper to extract clean connection string from NEON_DATABASE_URL
 // Handles format: psql 'postgresql://...' -> postgresql://...
 function cleanConnectionString(rawUrl: string | undefined): string | undefined {
@@ -12,20 +24,39 @@ function cleanConnectionString(rawUrl: string | undefined): string | undefined {
     .replace(/['"]$/, '');
 }
 
-// Use Neon database (production) first, fall back to Replit database
+// Get available database URLs
 const neonUrl = cleanConnectionString(process.env.NEON_DATABASE_URL);
 const replitUrl = process.env.DATABASE_URL;
-const connectionString = neonUrl || replitUrl;
 
-if (!connectionString) {
+// SAFETY GUARD: In production, Neon is REQUIRED
+if (isProduction && !neonUrl) {
   throw new Error(
-    "Either NEON_DATABASE_URL or DATABASE_URL must be set. This application requires the PostgreSQL database.",
+    "[DB SAFETY] PRODUCTION MODE REQUIRES NEON_DATABASE_URL. " +
+    "Refusing to use Replit DB in production to prevent data fragmentation. " +
+    "Please set NEON_DATABASE_URL environment variable."
   );
 }
 
-// Determine which database is being used
+// Select database based on environment
+// Production: Neon only (enforced above)
+// Development: Prefer Neon, fallback to Replit for local dev
+const connectionString = neonUrl || replitUrl;
 const usingNeon = !!neonUrl;
-console.log('[DB] Using database:', usingNeon ? 'Neon (production)' : 'Replit (development)');
+const databaseProvider = usingNeon ? 'Neon' : 'Replit';
+
+if (!connectionString) {
+  throw new Error(
+    "No database connection available. " +
+    "Set NEON_DATABASE_URL for production or DATABASE_URL for development."
+  );
+}
+
+// Log database selection
+console.log(`[DB] Environment: ${isProduction ? 'PRODUCTION' : 'DEVELOPMENT'}`);
+console.log(`[DB] Database provider: ${databaseProvider}`);
+if (!isProduction && !usingNeon) {
+  console.warn('[DB] WARNING: Using Replit DB in development. Data will NOT sync to production.');
+}
 
 // Log connection details (no credentials)
 try {
@@ -326,6 +357,13 @@ function startBackgroundRecovery() {
   }, 10000);
 }
 
+// Export database info for other modules
+export const dbInfo = {
+  isProduction,
+  provider: databaseProvider,
+  usingNeon,
+};
+
 export function getPoolStats() {
   return {
     totalCount: pool.totalCount,
@@ -333,7 +371,8 @@ export function getPoolStats() {
     waitingCount: pool.waitingCount,
     healthy: poolHealthy,
     lastHealthCheck: new Date(lastHealthCheck).toISOString(),
-    provider: 'postgresql',
+    provider: databaseProvider,
+    isProduction,
   };
 }
 
