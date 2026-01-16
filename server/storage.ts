@@ -36,6 +36,8 @@ import {
   type Customer,
   type InsertCustomer,
   type Setting,
+  type InventoryValuation,
+  type ProductInventoryValue,
   users,
   products,
   invoices,
@@ -119,6 +121,7 @@ export interface IStorage {
 
   getDashboardStats(): Promise<DashboardStats>;
   getProfitStats(startDate: string, endDate: string): Promise<ProfitStats>;
+  getInventoryValuation(): Promise<InventoryValuation>;
 
   getStockMovements(productId?: string): Promise<StockMovementWithProduct[]>;
   createStockMovement(movement: InsertStockMovement): Promise<StockMovement>;
@@ -1124,6 +1127,81 @@ export class DatabaseStorage implements IStorage {
         profitMargin,
         periodStart: startDate,
         periodEnd: endDate,
+      };
+    });
+  }
+
+  /**
+   * GAAP/IFRS Inventory Valuation
+   * 
+   * Calculates total inventory value using the cost method per:
+   * - GAAP ASC 330 (Inventory)
+   * - IFRS IAS 2 (Inventories)
+   * 
+   * Formula: Inventory Value = Sum of (Stock Quantity × Cost Price) for all products
+   * 
+   * Cost Price represents:
+   * - For purchased goods: acquisition cost including purchase price and directly attributable costs
+   * - For manufactured goods: production cost (materials + labor + overhead) from fabrication invoices
+   * 
+   * Products with stock > 0 but costPrice = 0 are flagged as warnings since they
+   * represent incomplete cost data that would understate inventory valuation.
+   */
+  async getInventoryValuation(): Promise<InventoryValuation> {
+    return await withRetry(async () => {
+      const allProducts = await db.select().from(products);
+      
+      const warnings: string[] = [];
+      let totalInventoryValue = 0;
+      let productsWithStock = 0;
+      let productsWithWarnings = 0;
+      
+      const productValues: ProductInventoryValue[] = allProducts.map(product => {
+        // Calculate inventory value: stockQty × costPrice (rounded to 2 decimals)
+        // Per GAAP/IFRS: use historical cost for valuation
+        const inventoryValue = Math.round(product.stockQuantity * product.costPrice * 100) / 100;
+        
+        // Track products with stock
+        if (product.stockQuantity > 0) {
+          productsWithStock++;
+        }
+        
+        // Flag products with stock but no cost price (data quality issue)
+        // Per GAAP/IFRS: inventory must be recorded at cost - zero cost is invalid
+        const hasCostWarning = product.stockQuantity > 0 && product.costPrice <= 0;
+        if (hasCostWarning) {
+          productsWithWarnings++;
+          warnings.push(
+            `Product "${product.name}" has ${product.stockQuantity} units in stock but costPrice = ${product.costPrice}. ` +
+            `This understates inventory value. Update costPrice for accurate valuation.`
+          );
+        }
+        
+        // Accumulate total inventory value
+        totalInventoryValue += inventoryValue;
+        
+        return {
+          id: product.id,
+          name: product.name,
+          category: product.category,
+          stockQuantity: product.stockQuantity,
+          costPrice: product.costPrice,
+          inventoryValue,
+          hasCostWarning,
+        };
+      });
+      
+      // Round total to 2 decimals
+      totalInventoryValue = Math.round(totalInventoryValue * 100) / 100;
+      
+      return {
+        products: productValues,
+        totalInventoryValue,
+        totalProducts: allProducts.length,
+        productsWithStock,
+        productsWithWarnings,
+        warnings,
+        valuationDate: new Date().toISOString(),
       };
     });
   }

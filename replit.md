@@ -95,6 +95,12 @@ Core entities:
   - Server-side enforcement: FAB- prefix or role='Fabrication' auto-sets invoiceType='FABRICATION'
   - Revenue calculation only includes invoices with invoiceType='SALE'
   - Fabrication invoices are excluded from revenue (they are manufacturing costs, not income)
+- **Inventory Valuation**: Full GAAP/IFRS-compliant inventory valuation support
+  - Formula: inventoryValue = stockQuantity × costPrice (rounded to 2 decimals)
+  - API: GET /api/inventory/valuation returns product-level and total valuation
+  - Stock page displays total inventory value card with GAAP/IFRS label
+  - Products with costPrice = 0 but stock > 0 are highlighted as warnings
+  - Includes validation for data quality issues (missing cost prices)
 - **Pre-Transaction Validation**:
   - POS Sales: Validates stock availability, costPrice > 0, and quantity > 0 before sale
   - B2B Invoices: Validates costPrice for product-linked items, allows custom items with 0 cost

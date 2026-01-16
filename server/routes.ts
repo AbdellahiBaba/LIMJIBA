@@ -612,6 +612,27 @@ export async function registerRoutes(
     }
   });
 
+  /**
+   * GAAP/IFRS Inventory Valuation API
+   * 
+   * Returns the total inventory value calculated as:
+   * Sum of (stockQuantity × costPrice) for all products
+   * 
+   * This aligns with:
+   * - GAAP ASC 330: Inventory valued at cost
+   * - IFRS IAS 2: Inventories measured at lower of cost and NRV
+   * 
+   * Includes warnings for products with stock but no cost price.
+   */
+  app.get("/api/inventory/valuation", async (req, res) => {
+    try {
+      const valuation = await storage.getInventoryValuation();
+      res.json(valuation);
+    } catch (error) {
+      handleError(res, "get inventory valuation", error);
+    }
+  });
+
   // CSV Export for products
   app.get("/api/products/export/csv", async (req, res) => {
     try {

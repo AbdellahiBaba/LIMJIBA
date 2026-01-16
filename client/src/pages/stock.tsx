@@ -50,7 +50,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Product, InsertProduct, StockMovementWithProduct } from "@shared/schema";
+import type { Product, InsertProduct, StockMovementWithProduct, InventoryValuation } from "@shared/schema";
 
 const categories = [
   "Sacs en plastique",
@@ -116,6 +116,7 @@ function ProductFormDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/valuation"] });
       toast({ title: t("stock.productAdded") });
       onSuccess();
     },
@@ -130,6 +131,7 @@ function ProductFormDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/valuation"] });
       toast({ title: t("stock.productUpdated") });
       onSuccess();
     },
@@ -345,6 +347,7 @@ function StockAdjustmentDialog({
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/stock-movements"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/valuation"] });
       toast({ title: t("stock.stockAdjusted") });
       onSuccess();
     },
@@ -620,6 +623,7 @@ function ImportExportSection({ t }: { t: (key: string) => string }) {
       
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/valuation"] });
       
       if (result.imported > 0) {
         toast({ title: `${t("stock.importSuccess")}: ${result.imported} ${t("stock.products")}` });
@@ -676,11 +680,16 @@ export default function Stock() {
     queryKey: ["/api/products"],
   });
 
+  const { data: inventoryValuation } = useQuery<InventoryValuation>({
+    queryKey: ["/api/inventory/valuation"],
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/products/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/valuation"] });
       toast({ title: t("stock.productDeleted") });
     },
     onError: (error: Error) => {
@@ -744,6 +753,58 @@ export default function Stock() {
           </Button>
         </div>
       </div>
+
+      {inventoryValuation && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Card className="border-primary/30 bg-primary/5">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {language === "ar" ? "القيمة الإجمالية للمخزون" : language === "en" ? "Total Inventory Value" : "Valeur Totale du Stock"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold text-primary" data-testid="text-total-inventory-value">
+                {inventoryValuation.totalInventoryValue.toLocaleString()} DZD
+              </div>
+              <p className="text-xs text-muted-foreground mt-1">
+                {language === "ar" ? "وفقاً لمعايير GAAP/IFRS" : language === "en" ? "Per GAAP/IFRS standards" : "Selon normes GAAP/IFRS"}
+              </p>
+            </CardContent>
+          </Card>
+          
+          <Card>
+            <CardHeader className="pb-2">
+              <CardTitle className="text-sm font-medium text-muted-foreground">
+                {language === "ar" ? "المنتجات بالمخزون" : language === "en" ? "Products in Stock" : "Produits en Stock"}
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="text-2xl font-bold" data-testid="text-products-with-stock">
+                {inventoryValuation.productsWithStock} / {inventoryValuation.totalProducts}
+              </div>
+            </CardContent>
+          </Card>
+          
+          {inventoryValuation.productsWithWarnings > 0 && (
+            <Card className="border-red-200 dark:border-red-900 bg-red-50 dark:bg-red-950/20">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium flex items-center gap-2 text-red-600 dark:text-red-400">
+                  <AlertTriangle className="h-4 w-4" />
+                  {language === "ar" ? "تحذيرات التكلفة" : language === "en" ? "Cost Warnings" : "Alertes Coût"}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold text-red-600 dark:text-red-400" data-testid="text-cost-warnings">
+                  {inventoryValuation.productsWithWarnings}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                  {language === "ar" ? "منتجات بتكلفة = 0" : language === "en" ? "Products with cost = 0" : "Produits sans prix coût"}
+                </p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
 
       {lowStockProducts && lowStockProducts.length > 0 && (
         <Card className="border-orange-200 dark:border-orange-900 bg-orange-50 dark:bg-orange-950/20">
@@ -815,16 +876,27 @@ export default function Stock() {
                     </TableHead>
                     <TableHead>{t("stock.category")}</TableHead>
                     <TableHead className="text-right">{t("stock.unitPrice")}</TableHead>
+                    <TableHead className="text-right">
+                      {language === "ar" ? "سعر التكلفة" : language === "en" ? "Cost Price" : "Prix Coût"}
+                    </TableHead>
                     <TableHead className="text-right">{t("stock.stock")}</TableHead>
-                    <TableHead className="text-right">{t("stock.value")}</TableHead>
+                    <TableHead className="text-right">
+                      {language === "ar" ? "قيمة المخزون" : language === "en" ? "Inventory Value" : "Valeur Stock"}
+                    </TableHead>
                     <TableHead className="text-right">{t("stock.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredProducts.map((product) => {
                     const isLowStock = product.stockQuantity <= product.lowStockThreshold;
+                    const hasCostWarning = product.stockQuantity > 0 && product.costPrice <= 0;
+                    const inventoryValue = Math.round(product.stockQuantity * product.costPrice * 100) / 100;
                     return (
-                      <TableRow key={product.id} data-testid={`row-product-${product.id}`}>
+                      <TableRow 
+                        key={product.id} 
+                        data-testid={`row-product-${product.id}`}
+                        className={hasCostWarning ? "bg-red-50 dark:bg-red-950/20" : ""}
+                      >
                         <TableCell>
                           <div className="flex items-center gap-2">
                             <div className="w-8 h-8 rounded bg-muted flex items-center justify-center">
@@ -838,6 +910,12 @@ export default function Stock() {
                                   {product.barcode}
                                 </div>
                               )}
+                              {hasCostWarning && (
+                                <div className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1 mt-1">
+                                  <AlertTriangle className="h-3 w-3" />
+                                  {language === "ar" ? "تحديث سعر التكلفة" : language === "en" ? "Update cost price" : "Mettre à jour prix coût"}
+                                </div>
+                              )}
                             </div>
                           </div>
                         </TableCell>
@@ -849,6 +927,12 @@ export default function Stock() {
                         <TableCell className="text-right font-mono">
                           {product.unitPrice.toLocaleString()} DZD
                         </TableCell>
+                        <TableCell className={`text-right font-mono ${hasCostWarning ? "text-red-600 dark:text-red-400 font-medium" : ""}`}>
+                          {product.costPrice.toLocaleString()} DZD
+                          {hasCostWarning && (
+                            <AlertTriangle className="inline-block ml-1 h-3 w-3 text-red-500" />
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">
                           <span className={isLowStock ? "text-orange-600 dark:text-orange-400 font-medium" : ""}>
                             {product.stockQuantity} {product.unit}
@@ -857,8 +941,8 @@ export default function Stock() {
                             <AlertTriangle className="inline-block ml-1 h-3 w-3 text-orange-500" />
                           )}
                         </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {(product.stockQuantity * product.unitPrice).toLocaleString()} DZD
+                        <TableCell className={`text-right font-mono ${hasCostWarning ? "text-red-600 dark:text-red-400" : ""}`} data-testid={`text-inventory-value-${product.id}`}>
+                          {inventoryValue.toLocaleString()} DZD
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
