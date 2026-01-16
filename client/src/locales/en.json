@@ -322,7 +322,24 @@
     "revenueMinusProducts": "Revenue - Product Costs",
     "salariesPlusExpenses": "Salaries + Expenses",
     "period": "Period",
-    "noData": "No data available"
+    "noData": "No data available",
+    "fabricationCosts": "Fabrication Costs",
+    "manufacturingCosts": "Manufacturing costs",
+    "includedInCogs": "Already included in product cost",
+    "allCostsIncluded": "Products + Salaries + Expenses",
+    "assets": "Assets",
+    "balanceSheet": "Balance Sheet",
+    "incomeStatement": "Income Statement",
+    "inventoryValue": "Inventory Value",
+    "unsoldStock": "Unsold stock",
+    "productsInStock": "products in stock",
+    "currentAsset": "Current Asset",
+    "productsMissingCost": "products missing cost price",
+    "note": "Note",
+    "inventoryNote": "Inventory value is an ASSET (balance sheet). It is NOT included in profit calculation. Cost becomes an EXPENSE (COGS) only when sold.",
+    "cogs": "COGS - Cost of Goods Sold",
+    "cogsDescription": "Historical cost of products sold",
+    "expense": "Expense"
   },
   "salaries": {
     "title": "Salary Management",
@@ -386,6 +403,7 @@
       "supplies": "Supplies",
       "taxes": "Taxes",
       "insurance": "Insurance",
+      "utilities": "Utilities",
       "other": "Other"
     },
     "monthlyBreakdown": "Monthly Breakdown",
