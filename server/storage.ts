@@ -992,7 +992,7 @@ export class DatabaseStorage implements IStorage {
 
   async getProfitStats(startDate: string, endDate: string): Promise<ProfitStats> {
     return await withRetry(async () => {
-      // ACCOUNTING: Calculate revenue from sales and invoices
+      // ACCOUNTING: Calculate revenue from POS sales
       const allSales = await db.select().from(sales).where(
         and(gte(sales.date, startDate), lte(sales.date, endDate))
       );
@@ -1000,11 +1000,26 @@ export class DatabaseStorage implements IStorage {
         allSales.reduce((sum, s) => sum + s.total - (s.discount || 0), 0) * 100
       ) / 100;
 
+      // ACCOUNTING: Get all invoices in date range
       const allInvoices = await db.select().from(invoices).where(
         and(gte(invoices.date, startDate), lte(invoices.date, endDate))
       );
+      
+      // CRITICAL: Filter to only SALE invoices for revenue calculation
+      // Fabrication invoices (FAB-) are NOT revenue - they are manufacturing costs
+      // that flow into inventory and COGS when products are sold
+      const salesInvoices = allInvoices.filter(inv => {
+        // Exclude if explicitly marked as FABRICATION
+        if (inv.invoiceType === 'FABRICATION') return false;
+        // Legacy check: exclude by invoice number prefix (FAB-)
+        if (inv.invoiceNumber.startsWith('FAB-')) return false;
+        // Legacy check: exclude by role containing 'fabrication'
+        if (inv.role?.toLowerCase().includes('fabrication')) return false;
+        return true;
+      });
+      
       const totalInvoiceRevenue = Math.round(
-        allInvoices.reduce((sum, inv) => sum + inv.totalTTC, 0) * 100
+        salesInvoices.reduce((sum, inv) => sum + inv.totalTTC, 0) * 100
       ) / 100;
 
       const totalRevenue = Math.round((totalSalesRevenue + totalInvoiceRevenue) * 100) / 100;
@@ -1031,8 +1046,9 @@ export class DatabaseStorage implements IStorage {
         }
       }
       
-      // COGS from B2B invoices - use costPrice stored on invoice item
-      for (const inv of allInvoices) {
+      // COGS from B2B sales invoices only - use costPrice stored on invoice item
+      // Exclude fabrication invoices from COGS (they update inventory, not COGS directly)
+      for (const inv of salesInvoices) {
         const items = await db.select().from(invoiceItems).where(eq(invoiceItems.invoiceId, inv.id));
         for (const item of items) {
           // Prefer stored costPrice on item (captured at invoice time)

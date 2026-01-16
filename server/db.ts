@@ -232,6 +232,27 @@ async function runMigrations(): Promise<void> {
       console.log('[DB] Added cost_price column to invoice_items (historical COGS tracking)');
     }
     
+    // Check invoices table for invoice_type column (distinguishes SALE from FABRICATION)
+    const invoiceColumns = await client.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'invoices' AND table_schema = 'public'
+    `);
+    const invoiceCols = invoiceColumns.rows.map((r: any) => r.column_name);
+    
+    if (!invoiceCols.includes('invoice_type')) {
+      await client.query(`ALTER TABLE invoices ADD COLUMN invoice_type text NOT NULL DEFAULT 'SALE'`);
+      console.log('[DB] Added invoice_type column to invoices');
+      
+      // Set existing invoices with FAB- prefix or Fabrication role to FABRICATION type
+      await client.query(`
+        UPDATE invoices 
+        SET invoice_type = 'FABRICATION' 
+        WHERE invoice_number LIKE 'FAB-%' 
+           OR role ILIKE '%fabrication%'
+      `);
+      console.log('[DB] Updated existing fabrication invoices to FABRICATION type');
+    }
+    
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);
