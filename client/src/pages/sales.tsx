@@ -131,13 +131,12 @@ export default function Sales() {
   };
 
   const handlePrintReceipt = (saleId: string) => {
-    const params = new URLSearchParams({
-      primaryColor: branding.primaryColor,
-    });
-    if (branding.logo) {
-      params.set("logo", branding.logo);
-    }
-    window.open(`/api/sales/${saleId}/receipt?${params.toString()}`, "_blank");
+    const params = new URLSearchParams();
+    if (branding.logo) params.set('logo', branding.logo);
+    if (branding.primaryColor) params.set('primaryColor', branding.primaryColor);
+    const queryString = params.toString();
+    // Use public route (no auth required) so new tab works
+    window.open(`/public/sales/${saleId}/ticket-pdf${queryString ? '?' + queryString : ''}`, '_blank');
   };
 
   const handleDeleteClick = (id: string) => {
