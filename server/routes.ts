@@ -785,6 +785,7 @@ export async function registerRoutes(
       
       const newInvoice = {
         invoiceNumber: nextNumber,
+        invoiceType: originalInvoice.invoiceType || 'SALE',
         date: today,
         responsible: originalInvoice.responsible,
         clientName: originalInvoice.clientName,
