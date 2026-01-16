@@ -1698,7 +1698,7 @@ function generateInvoicePDF(invoice: any, branding: InvoiceBranding = {
         <h1>${labels.companyName}</h1>
         <p>${labels.companySubtitle}</p>
         <p style="margin-top: 10px;">M'sila, Hammam Dalaa</p>
-        <p>Tel: 0670 04 91 24</p>
+        <p>Tel: 0670 04 91 24 / 0670 04 91 36</p>
       </div>
       <div class="invoice-info">
         <div class="invoice-title">${isBilingual ? `${labels.invoiceFr} / ${labels.invoiceAr}` : labels.invoice}</div>
@@ -1912,7 +1912,7 @@ function generateDeliveryNotePDF(invoice: any, branding: { logo?: string; primar
 function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null): string {
   const logo = query.logo || '';
   const primaryColor = query.primaryColor || '#1976D2';
-  const companyPhone = '0670 04 91 24';
+  const companyPhone = '0670 04 91 24 / 0670 04 91 36';
   const companyAddress = 'M\'sila, Hammam Dalaa';
   const companyName = 'POLY FLECTA PLASTICA';
   
