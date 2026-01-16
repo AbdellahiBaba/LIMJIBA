@@ -58,6 +58,7 @@ export type StockMovementWithProduct = StockMovement & { product?: Product };
 export const invoices = pgTable("invoices", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   invoiceNumber: text("invoice_number").notNull().unique(),
+  invoiceType: text("invoice_type").notNull().default("SALE"), // 'SALE' | 'FABRICATION' | 'SERVICE'
   date: text("date").notNull(),
   responsible: text("responsible").notNull(),
   role: text("role").notNull().default("Ventes"),
