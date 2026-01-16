@@ -1,38 +1,26 @@
-import { Pool, neonConfig } from "@neondatabase/serverless";
-import { drizzle } from "drizzle-orm/neon-serverless";
-import ws from "ws";
+import { Pool } from "pg";
+import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "@shared/schema";
 
-neonConfig.webSocketConstructor = ws;
-
-// CRITICAL: Use ONLY Neon database - no fallback to prevent data split
-const connectionString = process.env.NEON_DATABASE_URL;
+// Use Replit's built-in PostgreSQL database (where user data is stored)
+const connectionString = process.env.DATABASE_URL;
 
 if (!connectionString) {
   throw new Error(
-    "NEON_DATABASE_URL must be set. This application requires the Neon production database.",
+    "DATABASE_URL must be set. This application requires the PostgreSQL database.",
   );
 }
 
-// Clean up and validate connection string
-const cleanConnectionString = connectionString.trim()
-  .replace(/^psql\s+/i, '')
-  .replace(/^['"]|['"]$/g, '');
-
-// Log connection details (no credentials) and confirm Neon is being used
+// Log connection details (no credentials)
 try {
-  const url = new URL(cleanConnectionString);
-  console.log('[DB] NEON DATABASE ONLY MODE');
-  console.log('[DB] Connecting to Neon:', url.host);
-  if (!url.host.includes('neon')) {
-    console.warn('[DB] WARNING: Connection string may not be a Neon database!');
-  }
+  const url = new URL(connectionString);
+  console.log('[DB] Connecting to PostgreSQL:', url.host);
 } catch {
-  console.log('[DB] Connecting to Neon database...');
+  console.log('[DB] Connecting to PostgreSQL database...');
 }
 
 export const pool = new Pool({ 
-  connectionString: cleanConnectionString,
+  connectionString,
   max: 20,
   idleTimeoutMillis: 10000,
   connectionTimeoutMillis: 5000,
@@ -262,12 +250,12 @@ async function runMigrations(): Promise<void> {
 }
 
 export async function verifyDatabaseConnection(): Promise<boolean> {
-  console.log('[DB] Verifying Neon database connection...');
+  console.log('[DB] Verifying database connection...');
   
   for (let attempt = 1; attempt <= 10; attempt++) {
     const health = await checkDatabaseHealth();
     if (health.healthy) {
-      console.log(`[DB] Neon database connection verified (${health.latencyMs}ms)`);
+      console.log(`[DB] Database connection verified (${health.latencyMs}ms)`);
       await runMigrations();
       databaseReady = true;
       return true;
@@ -281,7 +269,7 @@ export async function verifyDatabaseConnection(): Promise<boolean> {
     }
   }
   
-  console.error('[DB] Failed to verify Neon database connection after 10 attempts');
+  console.error('[DB] Failed to verify database connection after 10 attempts');
   console.log('[DB] Starting background recovery loop...');
   databaseReady = false;
   
@@ -303,10 +291,10 @@ function startBackgroundRecovery() {
       return;
     }
     
-    console.log('[DB] Background recovery: Attempting to reconnect to Neon...');
+    console.log('[DB] Background recovery: Attempting to reconnect...');
     const health = await checkDatabaseHealth();
     if (health.healthy) {
-      console.log(`[DB] Background recovery: Neon connection restored (${health.latencyMs}ms)`);
+      console.log(`[DB] Background recovery: Connection restored (${health.latencyMs}ms)`);
       databaseReady = true;
       if (recoveryInterval) {
         clearInterval(recoveryInterval);
@@ -325,12 +313,12 @@ export function getPoolStats() {
     waitingCount: pool.waitingCount,
     healthy: poolHealthy,
     lastHealthCheck: new Date(lastHealthCheck).toISOString(),
-    provider: 'neon',
+    provider: 'postgresql',
   };
 }
 
 export async function closePool(): Promise<void> {
-  console.log('[DB] Closing Neon connection pool...');
+  console.log('[DB] Closing connection pool...');
   await pool.end();
-  console.log('[DB] Neon connection pool closed');
+  console.log('[DB] Connection pool closed');
 }

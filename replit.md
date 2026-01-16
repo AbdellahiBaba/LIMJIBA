@@ -69,11 +69,11 @@ Core entities:
 
 **Stock Deduction:** POS sales automatically reduce product stock quantities and update reseller purchase totals.
 
-**Neon PostgreSQL:** Migrated from Replit PostgreSQL to Neon PostgreSQL for better reliability and faster cold-starts:
-- Uses `@neondatabase/serverless` driver with WebSocket support
-- Connection pooling with Neon-optimized settings (max=20, idleTimeout=10s, connectionTimeout=5s)
-- Connection string from `NEON_DATABASE_URL` environment variable
-- Schema management via `drizzle-kit push` (requires `DATABASE_URL` override for migrations)
+**PostgreSQL Database:** Uses Replit's built-in PostgreSQL database for reliable data persistence:
+- Uses standard `pg` driver with Drizzle ORM
+- Connection pooling with optimized settings (max=20, idleTimeout=10s, connectionTimeout=5s)
+- Connection string from `DATABASE_URL` environment variable
+- Schema management via `npm run db:push`
 
 **Cold-Start Optimization:** In-memory caching layer (`server/cache.ts`) provides instant responses during database wake-up:
 - Cache-first pattern for all major collections (products, invoices, sales, resellers, employees, expenses, fabrication_invoices, dashboard_stats)
@@ -112,7 +112,7 @@ Core entities:
 - **Profit Calculator Fixed**: API now correctly fetches data using stored historical costPrice
 
 **January 2026 - System Audit & Fixes:**
-- **Neon Database Only**: Removed DATABASE_URL fallback to prevent data split. Only NEON_DATABASE_URL is used.
+- **Database Connection Fixed**: Switched from Neon to Replit's built-in PostgreSQL to use correct data source. PDF downloads now work correctly.
 - **Fabrication Invoice Logic**: Fabrication invoices are stored in separate `fabrication_invoices` table (NOT revenue). They represent manufacturing costs that flow into product costPrice.
 - **Inventory Auto-Update**: When fabrication invoice is created, products are automatically created/updated with:
   - Cost Price = unitCost from fabrication item
