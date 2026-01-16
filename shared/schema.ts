@@ -296,3 +296,34 @@ export interface ProfitStats {
   periodStart: string;
   periodEnd: string;
 }
+
+/**
+ * GAAP/IFRS Inventory Valuation Types
+ * 
+ * Per GAAP (ASC 330) and IFRS (IAS 2), inventory should be valued at:
+ * - Lower of Cost or Net Realizable Value (LCM/NRV rule)
+ * - Cost includes: purchase price, conversion costs, other costs to bring inventory to present location/condition
+ * 
+ * This system uses cost price (costPrice) for valuation, which represents:
+ * - For purchased goods: the acquisition cost
+ * - For manufactured goods: the production cost (materials + labor + overhead)
+ */
+export interface ProductInventoryValue {
+  id: string;
+  name: string;
+  category: string;
+  stockQuantity: number;
+  costPrice: number;
+  inventoryValue: number;           // stockQuantity * costPrice (rounded to 2 decimals)
+  hasCostWarning: boolean;          // true if costPrice = 0 but stockQuantity > 0
+}
+
+export interface InventoryValuation {
+  products: ProductInventoryValue[];
+  totalInventoryValue: number;       // Sum of all product inventory values
+  totalProducts: number;             // Total product count
+  productsWithStock: number;         // Products where stockQuantity > 0
+  productsWithWarnings: number;      // Products with costPrice = 0 and stock > 0
+  warnings: string[];                // Warning messages for data quality issues
+  valuationDate: string;             // ISO date when valuation was calculated
+}
