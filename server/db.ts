@@ -2,14 +2,30 @@ import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "@shared/schema";
 
-// Use Replit's built-in PostgreSQL database (where user data is stored)
-const connectionString = process.env.DATABASE_URL;
+// Helper to extract clean connection string from NEON_DATABASE_URL
+// Handles format: psql 'postgresql://...' -> postgresql://...
+function cleanConnectionString(rawUrl: string | undefined): string | undefined {
+  if (!rawUrl) return undefined;
+  // Remove 'psql ' prefix and surrounding quotes if present
+  return rawUrl
+    .replace(/^psql\s*['"]?/, '')
+    .replace(/['"]$/, '');
+}
+
+// Use Neon database (production) first, fall back to Replit database
+const neonUrl = cleanConnectionString(process.env.NEON_DATABASE_URL);
+const replitUrl = process.env.DATABASE_URL;
+const connectionString = neonUrl || replitUrl;
 
 if (!connectionString) {
   throw new Error(
-    "DATABASE_URL must be set. This application requires the PostgreSQL database.",
+    "Either NEON_DATABASE_URL or DATABASE_URL must be set. This application requires the PostgreSQL database.",
   );
 }
+
+// Determine which database is being used
+const usingNeon = !!neonUrl;
+console.log('[DB] Using database:', usingNeon ? 'Neon (production)' : 'Replit (development)');
 
 // Log connection details (no credentials)
 try {
@@ -44,9 +60,13 @@ pool.on('error', (err: Error) => {
   databaseReady = false;
 });
 
-pool.on('connect', () => {
+pool.on('connect', async (client) => {
   poolHealthy = true;
   databaseReady = true;
+  // Neon databases have empty search_path, so we must set it explicitly
+  if (usingNeon) {
+    await client.query('SET search_path TO public');
+  }
 });
 
 export const db = drizzle(pool, { schema });

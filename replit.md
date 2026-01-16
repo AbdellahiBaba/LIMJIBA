@@ -69,10 +69,13 @@ Core entities:
 
 **Stock Deduction:** POS sales automatically reduce product stock quantities and update reseller purchase totals.
 
-**PostgreSQL Database:** Uses Replit's built-in PostgreSQL database for reliable data persistence:
+**PostgreSQL Database:** Uses Neon PostgreSQL as production database with automatic fallback:
+- Primary: Neon database (NEON_DATABASE_URL) for production data
+- Fallback: Replit database (DATABASE_URL) for development
 - Uses standard `pg` driver with Drizzle ORM
 - Connection pooling with optimized settings (max=20, idleTimeout=10s, connectionTimeout=5s)
-- Connection string from `DATABASE_URL` environment variable
+- Automatic URL parsing handles `psql 'url'` format from NEON_DATABASE_URL
+- Sets `search_path TO public` automatically for Neon connections
 - Schema management via `npm run db:push`
 
 **Cold-Start Optimization:** In-memory caching layer (`server/cache.ts`) provides instant responses during database wake-up:
