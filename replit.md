@@ -59,8 +59,6 @@ Core entities:
 
 ### Key Design Decisions
 
-**PostgreSQL Database:** Uses Drizzle ORM with PostgreSQL for persistent data storage across restarts.
-
 **Shared Schema Pattern:** Types defined in `shared/schema.ts` and used by both frontend and backend for type safety.
 
 **Industrial Branding:** Custom design tokens matching company branding defined in `design_guidelines.md`.
@@ -69,14 +67,29 @@ Core entities:
 
 **Stock Deduction:** POS sales automatically reduce product stock quantities and update reseller purchase totals.
 
-**PostgreSQL Database:** Uses Neon PostgreSQL as production database with automatic fallback:
-- Primary: Neon database (NEON_DATABASE_URL) for production data
-- Fallback: Replit database (DATABASE_URL) for development
+**PostgreSQL Database Architecture (Environment-Based Routing):**
+
+**Production Mode (NODE_ENV=production):**
+- REQUIRES Neon database (NEON_DATABASE_URL) - throws error if not set
+- Safety guard prevents accidental writes to Replit DB
+- All production data MUST go to Neon to prevent data fragmentation
+
+**Development Mode (NODE_ENV=development):**
+- Prefers Neon database if NEON_DATABASE_URL is set
+- Falls back to Replit database (DATABASE_URL) for local development only
+- Warning logged if using Replit DB: "Data will NOT sync to production"
+
+**Connection Settings:**
 - Uses standard `pg` driver with Drizzle ORM
-- Connection pooling with optimized settings (max=20, idleTimeout=10s, connectionTimeout=5s)
+- Connection pooling: max=20, idleTimeout=10s, connectionTimeout=5s
 - Automatic URL parsing handles `psql 'url'` format from NEON_DATABASE_URL
 - Sets `search_path TO public` automatically for Neon connections
-- Schema management via `npm run db:push`
+
+**Migration Notes (IMPORTANT):**
+- drizzle.config.ts uses DATABASE_URL (cannot be modified)
+- To run migrations against Neon: set DATABASE_URL to the Neon connection string
+- Alternatively: `DATABASE_URL="postgresql://..." npm run db:push`
+- Always verify migration target before running to prevent schema drift
 
 **Cold-Start Optimization:** In-memory caching layer (`server/cache.ts`) provides instant responses during database wake-up:
 - Cache-first pattern for all major collections (products, invoices, sales, resellers, employees, expenses, fabrication_invoices, dashboard_stats)
@@ -115,7 +128,7 @@ Core entities:
 - **Profit Calculator Fixed**: API now correctly fetches data using stored historical costPrice
 
 **January 2026 - System Audit & Fixes:**
-- **Database Connection Fixed**: Switched from Neon to Replit's built-in PostgreSQL to use correct data source. PDF downloads now work correctly.
+- **Database Architecture Updated**: Environment-based database routing now enforces Neon-only in production with safety guards. Development prefers Neon but can fallback to Replit DB. PDF downloads work correctly.
 - **Fabrication Invoice Logic**: Fabrication invoices are stored in separate `fabrication_invoices` table (NOT revenue). They represent manufacturing costs that flow into product costPrice.
 - **Inventory Auto-Update**: When fabrication invoice is created, products are automatically created/updated with:
   - Cost Price = unitCost from fabrication item
