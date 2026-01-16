@@ -208,6 +208,30 @@ async function runMigrations(): Promise<void> {
       console.log('[DB] Added barcode column to products');
     }
     
+    // Check sale_items table for cost_price column (GAAP/IFRS historical COGS tracking)
+    const saleItemsColumns = await client.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'sale_items' AND table_schema = 'public'
+    `);
+    const saleItemsCols = saleItemsColumns.rows.map((r: any) => r.column_name);
+    
+    if (!saleItemsCols.includes('cost_price')) {
+      await client.query(`ALTER TABLE sale_items ADD COLUMN cost_price real NOT NULL DEFAULT 0`);
+      console.log('[DB] Added cost_price column to sale_items (historical COGS tracking)');
+    }
+    
+    // Check invoice_items table for cost_price column (GAAP/IFRS historical COGS tracking)
+    const invoiceItemsColumns = await client.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'invoice_items' AND table_schema = 'public'
+    `);
+    const invoiceItemsCols = invoiceItemsColumns.rows.map((r: any) => r.column_name);
+    
+    if (!invoiceItemsCols.includes('cost_price')) {
+      await client.query(`ALTER TABLE invoice_items ADD COLUMN cost_price real NOT NULL DEFAULT 0`);
+      console.log('[DB] Added cost_price column to invoice_items (historical COGS tracking)');
+    }
+    
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);

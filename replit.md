@@ -89,6 +89,7 @@ Core entities:
 - **Historical COGS Tracking**: Sale and invoice items now store costPrice at time of transaction
   - Prevents retroactive COGS changes when product costs are updated
   - COGS calculation uses stored item costPrice (with fallback for legacy data)
+  - Runtime migrations in `server/db.ts` auto-add `cost_price` columns to sale_items and invoice_items
 - **Pre-Transaction Validation**:
   - POS Sales: Validates stock availability, costPrice > 0, and quantity > 0 before sale
   - B2B Invoices: Validates costPrice for product-linked items, allows custom items with 0 cost
@@ -97,6 +98,7 @@ Core entities:
 - **Cost Breakdown for Fabrication**: Items can use unitCost OR materials+labor+overhead breakdown
 - **Consistent 2-Decimal Rounding**: All monetary calculations rounded to 2 decimal places
 - **Stock Movements on POS**: All POS sales now create stock movement records for audit trail
+- **Profit Calculator Fixed**: API now correctly fetches data using stored historical costPrice
 
 **January 2026 - System Audit & Fixes:**
 - **Neon Database Only**: Removed DATABASE_URL fallback to prevent data split. Only NEON_DATABASE_URL is used.
