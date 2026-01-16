@@ -85,6 +85,19 @@ Core entities:
 
 ## Recent Changes
 
+**January 2026 - GAAP/IFRS Accounting Compliance:**
+- **Historical COGS Tracking**: Sale and invoice items now store costPrice at time of transaction
+  - Prevents retroactive COGS changes when product costs are updated
+  - COGS calculation uses stored item costPrice (with fallback for legacy data)
+- **Pre-Transaction Validation**:
+  - POS Sales: Validates stock availability, costPrice > 0, and quantity > 0 before sale
+  - B2B Invoices: Validates costPrice for product-linked items, allows custom items with 0 cost
+  - Fabrication: Validates quantity > 0, cost breakdown non-negative, unitCost > 0
+  - All transactions require at least one item (no zero-line transactions)
+- **Cost Breakdown for Fabrication**: Items can use unitCost OR materials+labor+overhead breakdown
+- **Consistent 2-Decimal Rounding**: All monetary calculations rounded to 2 decimal places
+- **Stock Movements on POS**: All POS sales now create stock movement records for audit trail
+
 **January 2026 - System Audit & Fixes:**
 - **Neon Database Only**: Removed DATABASE_URL fallback to prevent data split. Only NEON_DATABASE_URL is used.
 - **Fabrication Invoice Logic**: Fabrication invoices are stored in separate `fabrication_invoices` table (NOT revenue). They represent manufacturing costs that flow into product costPrice.

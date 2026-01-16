@@ -84,6 +84,7 @@ export const invoiceItems = pgTable("invoice_items", {
   designation: text("designation").notNull(),
   quantity: integer("quantity").notNull(),
   unitPrice: real("unit_price").notNull(),
+  costPrice: real("cost_price").notNull().default(0),
   weightPerUnit: real("weight_per_unit").notNull().default(0),
   totalWeight: real("total_weight").notNull().default(0),
   total: real("total").notNull(),
@@ -132,6 +133,7 @@ export const saleItems = pgTable("sale_items", {
   productName: text("product_name").notNull(),
   quantity: integer("quantity").notNull(),
   unitPrice: real("unit_price").notNull(),
+  costPrice: real("cost_price").notNull().default(0),
   total: real("total").notNull(),
 });
 
@@ -243,6 +245,9 @@ export const fabricationItems = pgTable("fabrication_items", {
   quantity: integer("quantity").notNull(),
   weightPerUnit: real("weight_per_unit").notNull().default(0),
   totalWeight: real("total_weight").notNull().default(0),
+  materialsCost: real("materials_cost").notNull().default(0),
+  laborCost: real("labor_cost").notNull().default(0),
+  overheadCost: real("overhead_cost").notNull().default(0),
   unitCost: real("unit_cost").notNull().default(0),
   totalCost: real("total_cost").notNull().default(0),
 });

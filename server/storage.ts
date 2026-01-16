@@ -270,12 +270,68 @@ export class DatabaseStorage implements IStorage {
   async createInvoice(invoice: InsertInvoice, items: InsertInvoiceItem[]): Promise<InvoiceWithItems> {
     const result = await withRetry(async () => {
       return await db.transaction(async (tx) => {
+        // ACCOUNTING VALIDATION: Pre-validate all items
+        const validationErrors: string[] = [];
+        const itemsWithCost: (InsertInvoiceItem & { costPrice: number })[] = [];
+        
+        // Validate items array is not empty
+        if (!items || items.length === 0) {
+          throw new Error("Invoice must have at least one item.");
+        }
+        
+        for (const item of items) {
+          // Validate quantity is positive
+          if (item.quantity <= 0) {
+            validationErrors.push(`Item "${item.designation}" has invalid quantity: ${item.quantity}. Quantity must be > 0.`);
+            continue;
+          }
+          
+          let costPrice = item.costPrice || 0;
+          
+          // If item has productId, validate product exists and get costPrice
+          if (item.productId) {
+            const [product] = await tx.select().from(products).where(eq(products.id, item.productId));
+            if (!product) {
+              validationErrors.push(`Product "${item.designation}" (ID: ${item.productId}) not found.`);
+              continue;
+            }
+            
+            // Use product's costPrice if item doesn't have one
+            if (!costPrice || costPrice <= 0) {
+              costPrice = product.costPrice || 0;
+            }
+            
+            // ACCOUNTING: Require costPrice for product-linked items (for accurate COGS)
+            if (costPrice <= 0) {
+              validationErrors.push(
+                `Product "${product.name}" has no cost price. Please set a cost price before invoicing.`
+              );
+              continue;
+            }
+          } else {
+            // Custom item without productId - allow 0 cost (services may have no direct cost)
+            // Log warning for audit purposes
+            if (costPrice <= 0) {
+              console.log(`[Invoice] Custom item "${item.designation}" has no cost price. COGS = 0 for this item.`);
+            }
+          }
+          
+          itemsWithCost.push({ ...item, costPrice: Math.round(costPrice * 100) / 100 });
+        }
+        
+        // If any validation errors, abort transaction
+        if (validationErrors.length > 0) {
+          throw new Error(`Invoice validation failed:\n${validationErrors.join('\n')}`);
+        }
+        
         const [created] = await tx.insert(invoices).values(invoice).returning();
         const createdItems: InvoiceItem[] = [];
-        for (const item of items) {
+        
+        for (const item of itemsWithCost) {
           const [createdItem] = await tx.insert(invoiceItems).values({ ...item, invoiceId: created.id }).returning();
           createdItems.push(createdItem);
         }
+        
         return { ...created, items: createdItems };
       });
     });
@@ -354,18 +410,84 @@ export class DatabaseStorage implements IStorage {
   async createSale(sale: InsertSale, items: InsertSaleItem[]): Promise<SaleWithItems> {
     const result = await withRetry(async () => {
       return await db.transaction(async (tx) => {
+        // ACCOUNTING VALIDATION: Pre-validate all items before creating sale
+        const validationErrors: string[] = [];
+        const productValidations: { product: any; item: InsertSaleItem; costPrice: number }[] = [];
+        
+        // Validate items array is not empty
+        if (!items || items.length === 0) {
+          throw new Error("Sale must have at least one item.");
+        }
+        
+        for (const item of items) {
+          // Validate quantity is positive
+          if (item.quantity <= 0) {
+            validationErrors.push(`Item "${item.productName}" has invalid quantity: ${item.quantity}. Quantity must be > 0.`);
+            continue;
+          }
+          
+          const [product] = await tx.select().from(products).where(eq(products.id, item.productId));
+          
+          if (!product) {
+            validationErrors.push(`Product "${item.productName}" (ID: ${item.productId}) not found.`);
+            continue;
+          }
+          
+          // ACCOUNTING: Validate sufficient stock (prevent negative inventory)
+          if (product.stockQuantity < item.quantity) {
+            validationErrors.push(
+              `Insufficient stock for "${product.name}": requested ${item.quantity}, available ${product.stockQuantity}.`
+            );
+            continue;
+          }
+          
+          // ACCOUNTING: Validate costPrice is set (required for COGS calculation)
+          if (!product.costPrice || product.costPrice <= 0) {
+            validationErrors.push(
+              `Product "${product.name}" has no cost price set. COGS cannot be calculated. Please set a cost price before selling.`
+            );
+            continue;
+          }
+          
+          productValidations.push({ product, item, costPrice: product.costPrice });
+        }
+        
+        // If any validation errors, abort transaction
+        if (validationErrors.length > 0) {
+          throw new Error(`Sale validation failed:\n${validationErrors.join('\n')}`);
+        }
+        
+        // Create the sale record
         const [created] = await tx.insert(sales).values(sale).returning();
         const createdItems: SaleItem[] = [];
         
-        for (const item of items) {
-          const [createdItem] = await tx.insert(saleItems).values({ ...item, saleId: created.id }).returning();
+        for (const { product, item, costPrice } of productValidations) {
+          // ACCOUNTING: Store costPrice with sale item for accurate COGS tracking
+          // This captures the cost at time of sale (prevents retroactive COGS changes)
+          const itemWithCost = {
+            ...item,
+            saleId: created.id,
+            costPrice: Math.round(costPrice * 100) / 100, // Round to 2 decimals
+          };
+          
+          const [createdItem] = await tx.insert(saleItems).values(itemWithCost).returning();
           createdItems.push(createdItem);
           
-          const [product] = await tx.select().from(products).where(eq(products.id, item.productId));
-          if (product) {
-            const newQuantity = Math.max(0, product.stockQuantity - item.quantity);
-            await tx.update(products).set({ stockQuantity: newQuantity }).where(eq(products.id, item.productId));
-          }
+          // Deduct stock and create movement record
+          const newQuantity = product.stockQuantity - item.quantity;
+          await tx.update(products).set({ stockQuantity: newQuantity }).where(eq(products.id, item.productId));
+          
+          // Create stock movement for audit trail
+          await tx.insert(stockMovements).values({
+            productId: product.id,
+            quantity: -item.quantity,
+            movementType: "out",
+            reason: "sale",
+            previousStock: product.stockQuantity,
+            newStock: newQuantity,
+            reference: created.saleNumber,
+            createdAt: new Date().toISOString(),
+          });
         }
 
         if (sale.resellerId) {
@@ -678,15 +800,77 @@ export class DatabaseStorage implements IStorage {
   async createFabricationInvoice(invoice: InsertFabricationInvoice, items: InsertFabricationItem[]): Promise<FabricationInvoiceWithItems> {
     const result = await withRetry(async () => {
       return await db.transaction(async (tx) => {
+        // ACCOUNTING VALIDATION: Pre-validate all fabrication items
+        const validationErrors: string[] = [];
+        
+        // Validate items array is not empty
+        if (!items || items.length === 0) {
+          throw new Error("Fabrication invoice must have at least one item.");
+        }
+        
+        for (const item of items) {
+          // Validate quantity is positive (prevent zero-quantity fabrication)
+          if (!item.quantity || item.quantity <= 0) {
+            validationErrors.push(`Item "${item.productName}" has invalid quantity: ${item.quantity}. Quantity must be > 0.`);
+          }
+          
+          // Validate cost components are non-negative
+          if ((item.materialsCost ?? 0) < 0) {
+            validationErrors.push(`Item "${item.productName}" has negative materials cost.`);
+          }
+          if ((item.laborCost ?? 0) < 0) {
+            validationErrors.push(`Item "${item.productName}" has negative labor cost.`);
+          }
+          if ((item.overheadCost ?? 0) < 0) {
+            validationErrors.push(`Item "${item.productName}" has negative overhead cost.`);
+          }
+          
+          // Calculate total unitCost from components if provided, otherwise use unitCost directly
+          const materialsCost = item.materialsCost || 0;
+          const laborCost = item.laborCost || 0;
+          const overheadCost = item.overheadCost || 0;
+          const calculatedCost = materialsCost + laborCost + overheadCost;
+          const effectiveUnitCost = calculatedCost > 0 ? calculatedCost : (item.unitCost || 0);
+          
+          // Validate that we have a valid unit cost
+          if (effectiveUnitCost <= 0) {
+            validationErrors.push(
+              `Item "${item.productName}" has no valid cost. Provide unitCost or cost breakdown (materials + labor + overhead).`
+            );
+          }
+        }
+        
+        // If any validation errors, abort transaction
+        if (validationErrors.length > 0) {
+          throw new Error(`Fabrication validation failed:\n${validationErrors.join('\n')}`);
+        }
+        
         const [created] = await tx.insert(fabricationInvoices).values(invoice).returning();
         const createdItems: FabricationItem[] = [];
         
         for (const item of items) {
-          const [createdItem] = await tx.insert(fabricationItems).values({ ...item, fabricationInvoiceId: created.id }).returning();
+          // ACCOUNTING: Calculate unitCost from cost breakdown if provided
+          const materialsCost = Math.round((item.materialsCost || 0) * 100) / 100;
+          const laborCost = Math.round((item.laborCost || 0) * 100) / 100;
+          const overheadCost = Math.round((item.overheadCost || 0) * 100) / 100;
+          const calculatedCost = materialsCost + laborCost + overheadCost;
+          const effectiveUnitCost = calculatedCost > 0 ? calculatedCost : Math.round((item.unitCost || 0) * 100) / 100;
+          const totalCost = Math.round(effectiveUnitCost * item.quantity * 100) / 100;
+          
+          const itemWithCalculatedCost = {
+            ...item,
+            fabricationInvoiceId: created.id,
+            materialsCost,
+            laborCost,
+            overheadCost,
+            unitCost: effectiveUnitCost,
+            totalCost,
+          };
+          
+          const [createdItem] = await tx.insert(fabricationItems).values(itemWithCalculatedCost).returning();
           createdItems.push(createdItem);
           
           // After fabrication, add manufactured products to inventory
-          // Find existing product by name or create new one
           const existingProducts = await tx.select().from(products).where(
             eq(products.name, item.productName)
           );
@@ -696,12 +880,10 @@ export class DatabaseStorage implements IStorage {
             const existingProduct = existingProducts[0];
             const previousStock = existingProduct.stockQuantity;
             const newStock = previousStock + item.quantity;
-            // Validate unitCost - use existing cost price if not provided
-            const unitCost = (item.unitCost && item.unitCost > 0) ? item.unitCost : existingProduct.costPrice;
             
             await tx.update(products).set({
               stockQuantity: newStock,
-              costPrice: unitCost,
+              costPrice: effectiveUnitCost,
               weightPerUnit: item.weightPerUnit || existingProduct.weightPerUnit,
             }).where(eq(products.id, existingProduct.id));
             
@@ -717,19 +899,14 @@ export class DatabaseStorage implements IStorage {
               createdAt: new Date().toISOString(),
             });
             
-            console.log(`[Fabrication] Updated product "${item.productName}": +${item.quantity} units, cost=${unitCost}`);
+            console.log(`[Fabrication] Updated product "${item.productName}": +${item.quantity} units, cost=${effectiveUnitCost}`);
           } else {
             // Create new product from fabrication item
-            // Validate that unitCost is provided
-            if (!item.unitCost || item.unitCost <= 0) {
-              throw new Error(`Fabrication item "${item.productName}" must have a valid unitCost > 0`);
-            }
-            const unitCost = item.unitCost;
             const [newProduct] = await tx.insert(products).values({
               name: item.productName,
               category: "Fabricated",
-              unitPrice: unitCost * 1.3, // Default 30% markup for selling price
-              costPrice: unitCost,
+              unitPrice: Math.round(effectiveUnitCost * 1.3 * 100) / 100, // 30% markup
+              costPrice: effectiveUnitCost,
               stockQuantity: item.quantity,
               lowStockThreshold: 10,
               unit: "pcs",
@@ -748,7 +925,7 @@ export class DatabaseStorage implements IStorage {
               createdAt: new Date().toISOString(),
             });
             
-            console.log(`[Fabrication] Created new product "${item.productName}": ${item.quantity} units, cost=${unitCost}`);
+            console.log(`[Fabrication] Created new product "${item.productName}": ${item.quantity} units, cost=${effectiveUnitCost}`);
           }
         }
         
@@ -757,7 +934,7 @@ export class DatabaseStorage implements IStorage {
     });
     
     cache.delete(CACHE_KEYS.FABRICATION_INVOICES);
-    cache.delete(CACHE_KEYS.PRODUCTS); // Also invalidate products cache
+    cache.delete(CACHE_KEYS.PRODUCTS);
     return result;
   }
 
@@ -815,71 +992,107 @@ export class DatabaseStorage implements IStorage {
 
   async getProfitStats(startDate: string, endDate: string): Promise<ProfitStats> {
     return await withRetry(async () => {
+      // ACCOUNTING: Calculate revenue from sales and invoices
       const allSales = await db.select().from(sales).where(
         and(gte(sales.date, startDate), lte(sales.date, endDate))
       );
-      const totalSalesRevenue = allSales.reduce((sum, s) => sum + s.total - (s.discount || 0), 0);
+      const totalSalesRevenue = Math.round(
+        allSales.reduce((sum, s) => sum + s.total - (s.discount || 0), 0) * 100
+      ) / 100;
 
       const allInvoices = await db.select().from(invoices).where(
         and(gte(invoices.date, startDate), lte(invoices.date, endDate))
       );
-      const totalInvoiceRevenue = allInvoices.reduce((sum, inv) => sum + inv.totalTTC, 0);
+      const totalInvoiceRevenue = Math.round(
+        allInvoices.reduce((sum, inv) => sum + inv.totalTTC, 0) * 100
+      ) / 100;
 
-      const totalRevenue = totalSalesRevenue + totalInvoiceRevenue;
+      const totalRevenue = Math.round((totalSalesRevenue + totalInvoiceRevenue) * 100) / 100;
 
-      // Calculate COGS from POS sales
+      // ACCOUNTING: Calculate COGS from stored costPrice on sale items
+      // Using stored costPrice ensures accurate historical cost at time of sale
+      // This prevents retroactive COGS changes when product costs are updated
       let totalProductCosts = 0;
+      
+      // COGS from POS sales - use costPrice stored on sale item
       for (const sale of allSales) {
         const items = await db.select().from(saleItems).where(eq(saleItems.saleId, sale.id));
         for (const item of items) {
-          const [product] = await db.select().from(products).where(eq(products.id, item.productId));
-          if (product) {
-            totalProductCosts += (product.costPrice || 0) * item.quantity;
+          // Prefer stored costPrice on item (captured at sale time)
+          // Fallback to product lookup for legacy data without stored costPrice
+          let itemCost = item.costPrice || 0;
+          if (itemCost <= 0) {
+            const [product] = await db.select().from(products).where(eq(products.id, item.productId));
+            if (product) {
+              itemCost = product.costPrice || 0;
+            }
           }
+          totalProductCosts += itemCost * item.quantity;
         }
       }
       
-      // Also calculate COGS from invoice sales (B2B)
+      // COGS from B2B invoices - use costPrice stored on invoice item
       for (const inv of allInvoices) {
         const items = await db.select().from(invoiceItems).where(eq(invoiceItems.invoiceId, inv.id));
         for (const item of items) {
-          if (item.productId) {
+          // Prefer stored costPrice on item (captured at invoice time)
+          let itemCost = item.costPrice || 0;
+          
+          // Fallback to product lookup for items with productId and no stored cost
+          if (itemCost <= 0 && item.productId) {
             const [product] = await db.select().from(products).where(eq(products.id, item.productId));
             if (product) {
-              totalProductCosts += (product.costPrice || 0) * item.quantity;
+              itemCost = product.costPrice || 0;
             }
           }
+          
+          totalProductCosts += itemCost * item.quantity;
         }
       }
+      
+      // Round COGS to 2 decimal places
+      totalProductCosts = Math.round(totalProductCosts * 100) / 100;
 
       const allPayments = await db.select().from(salaryPayments).where(
         and(gte(salaryPayments.paymentDate, startDate), lte(salaryPayments.paymentDate, endDate))
       );
-      const totalSalaries = allPayments.reduce((sum, p) => sum + p.amount, 0);
+      const totalSalaries = Math.round(
+        allPayments.reduce((sum, p) => sum + p.amount, 0) * 100
+      ) / 100;
 
       const allExpenses = await db.select().from(expenses).where(
         and(gte(expenses.date, startDate), lte(expenses.date, endDate))
       );
-      const totalExpenses = allExpenses.reduce((sum, e) => sum + e.amount, 0);
+      const totalExpenses = Math.round(
+        allExpenses.reduce((sum, e) => sum + e.amount, 0) * 100
+      ) / 100;
 
-      // Get fabrication costs - these are manufacturing costs, NOT revenue
+      // Get fabrication costs - manufacturing costs (informational only)
+      // ACCOUNTING NOTE: Fabrication costs are NOT subtracted from profit because:
+      // 1. They increase inventory value (asset)
+      // 2. They become part of product.costPrice
+      // 3. They flow to COGS only when products are sold (matching principle)
       const allFabricationInvoices = await db.select().from(fabricationInvoices).where(
         and(gte(fabricationInvoices.date, startDate), lte(fabricationInvoices.date, endDate))
       );
-      const totalFabricationCosts = allFabricationInvoices.reduce((sum, fab) => sum + (fab.totalCost || 0), 0);
+      const totalFabricationCosts = Math.round(
+        allFabricationInvoices.reduce((sum, fab) => sum + (fab.totalCost || 0), 0) * 100
+      ) / 100;
 
-      // Gross profit = Revenue - COGS (Cost of Goods Sold)
-      // Note: Fabrication costs are already embedded in product.costPrice and captured in totalProductCosts
-      // when products are sold. We don't subtract totalFabricationCosts again to avoid double-counting.
-      // totalFabricationCosts represents manufacturing costs incurred during the period (for informational purposes).
-      const grossProfit = totalRevenue - totalProductCosts;
+      // ACCOUNTING FORMULAS (GAAP/IFRS compliant):
+      // Gross Profit = Revenue - COGS
+      const grossProfit = Math.round((totalRevenue - totalProductCosts) * 100) / 100;
       
-      // Operating Profit = Gross Profit - Operating Expenses
-      const operatingProfit = grossProfit - totalSalaries - totalExpenses;
+      // Operating Profit = Gross Profit - Operating Expenses (Salaries + Expenses)
+      const operatingProfit = Math.round((grossProfit - totalSalaries - totalExpenses) * 100) / 100;
       
       // Net Profit = Operating Profit (no taxes in this system)
       const netProfit = operatingProfit;
-      const profitMargin = totalRevenue > 0 ? (netProfit / totalRevenue) * 100 : 0;
+      
+      // Profit Margin = Net Profit / Revenue * 100
+      const profitMargin = totalRevenue > 0 
+        ? Math.round((netProfit / totalRevenue) * 10000) / 100 
+        : 0;
 
       return {
         totalSalesRevenue,
