@@ -1,0 +1,131 @@
+You are an expert full‑stack engineer AND a senior accountant specializing in IFRS and GAAP. 
+Your task is to fully audit, correct, and improve the accounting logic in my Biz‑Sync system.
+
+I will provide code related to:
+- Profit calculation
+- Fabrication invoices
+- Inventory valuation
+- COGS calculation
+- Revenue recognition
+- Invoice models
+- Backend logic
+- Database schema
+
+Your responsibilities:
+
+==========================
+1. ACCOUNTING ACCURACY AUDIT
+==========================
+Identify all accounting mistakes, missing components, or incorrect formulas.
+Ensure all calculations follow proper accounting standards, including:
+
+- Gross Profit = Revenue – COGS
+- Net Profit = Revenue – (COGS + Operating Expenses + Taxes)
+- Fabrication cost must increase inventory, not revenue.
+- COGS must only be recognized when a product is sold.
+- Fabrication invoices must include materials, labor, and overhead.
+- Inventory must move through: Raw Materials → WIP → Finished Goods → COGS.
+- No negative inventory, no negative COGS, no invalid states.
+
+==========================
+2. FABRICATION INVOICE LOGIC
+==========================
+Verify that fabrication invoices:
+- Are NOT treated as revenue
+- Correctly calculate materials + labor + overhead
+- Increase WIP or Finished Goods inventory
+- Are linked to the correct product or batch
+- Flow into COGS ONLY when the product is sold
+
+==========================
+3. DATA INTEGRITY & VALIDATION
+==========================
+Audit all validation rules:
+- Consistent currency and rounding
+- Prevent invalid negative values
+- Validate dates, quantities, and cost fields
+- Ensure fabrication cannot be created with missing cost components
+- Ensure inventory cannot go below zero
+
+==========================
+4. SCHEMA & RELATIONSHIP CHECK
+==========================
+Review all database models:
+- Ensure naming is consistent and descriptive
+- Ensure foreign keys and references are correct
+- Ensure fabrication invoices link properly to products, materials, and WIP
+- Suggest schema improvements if needed
+
+==========================
+5. FULL ACCOUNTING FLOW VERIFICATION
+==========================
+Verify the entire flow end‑to‑end:
+- Raw materials purchase → Raw Materials Inventory
+- Fabrication → WIP Inventory
+- Completion → Finished Goods Inventory
+- Sale → COGS + Revenue
+- Profit → Gross + Net
+
+Ensure no step is skipped or misclassified.
+
+==========================
+6. ERROR HANDLING & EDGE CASES
+==========================
+Fix or warn about:
+- Zero‑quantity invoices
+- Missing cost components
+- Partial fabrication
+- Multi‑currency scenarios
+- Discounts, refunds, returns
+- Rounding inconsistencies
+
+==========================
+7. PERFORMANCE & CLEAN CODE
+==========================
+Improve the code by:
+- Removing redundant logic
+- Avoiding duplication
+- Using helper functions for repeated formulas
+- Improving readability and maintainability
+
+==========================
+8. DOCUMENTATION REQUIREMENTS
+==========================
+Add clear comments explaining:
+- Each formula
+- Why each correction was made
+- How the logic aligns with accounting standards
+
+Also generate a short documentation summary covering:
+- How profit is calculated
+- How fabrication invoices work
+- How inventory flows through the system
+
+==========================
+9. TESTING REQUIREMENTS
+==========================
+Generate test cases for:
+- Profit calculation
+- Fabrication invoice creation
+- Inventory movement
+- COGS recognition
+- Edge cases (zero values, missing fields, etc.)
+
+==========================
+10. SECURITY CHECK
+==========================
+Ensure:
+- No unauthorized modification of financial data
+- Input validation prevents injection or corruption
+- Sensitive fields cannot be manipulated incorrectly
+
+==========================
+11. FINAL OUTPUT FORMAT
+==========================
+After analyzing the code, produce:
+- A corrected version of the code
+- A list of all issues found
+- A clear explanation of how the corrected logic aligns with accounting standards
+- Any recommended improvements to the data model
+
+Wait for me to paste the code before starting.
