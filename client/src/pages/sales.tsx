@@ -131,12 +131,8 @@ export default function Sales() {
   };
 
   const handlePrintReceipt = (saleId: string) => {
-    const params = new URLSearchParams();
-    if (branding.logo) params.set('logo', branding.logo);
-    if (branding.primaryColor) params.set('primaryColor', branding.primaryColor);
-    const queryString = params.toString();
-    // Use public route (no auth required) so new tab works
-    window.open(`/public/sales/${saleId}/ticket-pdf${queryString ? '?' + queryString : ''}`, '_blank');
+    // Use public route - branding is fetched from server settings (no URL params needed)
+    window.open(`/public/sales/${saleId}/ticket-pdf`, '_blank');
   };
 
   const handleDeleteClick = (id: string) => {

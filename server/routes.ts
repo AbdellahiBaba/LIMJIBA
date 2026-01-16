@@ -359,6 +359,20 @@ export async function registerRoutes(
     }
   });
 
+  // Public branding endpoint (no auth required for receipts)
+  app.get("/public/branding", async (req, res) => {
+    try {
+      const brandingJson = await storage.getSetting("branding");
+      if (brandingJson) {
+        res.json(JSON.parse(brandingJson));
+      } else {
+        res.json({ primaryColor: "#1976D2", accentColor: "#42A5F5" });
+      }
+    } catch (error) {
+      res.json({ primaryColor: "#1976D2", accentColor: "#42A5F5" });
+    }
+  });
+
   // Public ticket PDF route (for POS receipt printing)
   app.get("/public/sales/:id/ticket-pdf", async (req, res) => {
     try {
@@ -373,7 +387,24 @@ export async function registerRoutes(
         reseller = await storage.getReseller(sale.resellerId);
       }
 
-      const html = generateReceiptHTML(sale, req.query, reseller);
+      // Fetch branding from server settings (not URL params - avoids URL length issues)
+      let branding: any = { primaryColor: "#1976D2" };
+      try {
+        const brandingJson = await storage.getSetting("branding");
+        if (brandingJson) {
+          branding = JSON.parse(brandingJson);
+        }
+      } catch (e) {
+        // Use defaults
+      }
+
+      // Merge with any URL params (URL params override server settings)
+      const queryParams = {
+        logo: req.query.logo || branding.logo || '',
+        primaryColor: req.query.primaryColor || branding.primaryColor || '#1976D2',
+      };
+
+      const html = generateReceiptHTML(sale, queryParams, reseller);
 
       let browser: any = null;
       try {
