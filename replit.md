@@ -90,6 +90,11 @@ Core entities:
   - Prevents retroactive COGS changes when product costs are updated
   - COGS calculation uses stored item costPrice (with fallback for legacy data)
   - Runtime migrations in `server/db.ts` auto-add `cost_price` columns to sale_items and invoice_items
+- **Invoice Type Classification**: Added `invoiceType` field to distinguish SALE vs FABRICATION invoices
+  - Values: 'SALE' | 'FABRICATION' | 'SERVICE'
+  - Server-side enforcement: FAB- prefix or role='Fabrication' auto-sets invoiceType='FABRICATION'
+  - Revenue calculation only includes invoices with invoiceType='SALE'
+  - Fabrication invoices are excluded from revenue (they are manufacturing costs, not income)
 - **Pre-Transaction Validation**:
   - POS Sales: Validates stock availability, costPrice > 0, and quantity > 0 before sale
   - B2B Invoices: Validates costPrice for product-linked items, allows custom items with 0 cost

@@ -732,8 +732,19 @@ export async function registerRoutes(
       }
       
       const invoiceData = insertInvoiceSchema.parse(invoice);
+      
+      // SERVER-SIDE ENFORCEMENT: Auto-detect and set invoiceType based on prefix/role
+      // This prevents fabrication invoices from being misclassified as SALE
+      let enforedInvoiceType = invoiceData.invoiceType || 'SALE';
+      if (invoiceData.invoiceNumber?.startsWith('FAB-')) {
+        enforedInvoiceType = 'FABRICATION';
+      } else if (invoiceData.role?.toLowerCase().includes('fabrication')) {
+        enforedInvoiceType = 'FABRICATION';
+      }
+      
+      const invoiceWithType = { ...invoiceData, invoiceType: enforedInvoiceType };
       const itemsData = z.array(insertInvoiceItemSchema).parse(items);
-      const created = await storage.createInvoice(invoiceData, itemsData);
+      const created = await storage.createInvoice(invoiceWithType, itemsData);
       res.status(201).json(created);
     } catch (error) {
       handleError(res, "create invoice", error);
