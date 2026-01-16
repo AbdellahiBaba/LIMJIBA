@@ -24,8 +24,35 @@ import {
   ShoppingCart,
   Users,
   Building2,
+  Package,
+  AlertTriangle,
 } from "lucide-react";
-import type { ProfitStats } from "@shared/schema";
+import type { ProfitStats, InventoryValuation } from "@shared/schema";
+
+/**
+ * GAAP/IFRS ACCOUNTING PRINCIPLES
+ * 
+ * This component displays financial data following proper accounting standards:
+ * 
+ * 1. INVENTORY (Asset - Balance Sheet)
+ *    - Per GAAP ASC 330 and IFRS IAS 2
+ *    - Inventory is an ASSET representing unsold goods
+ *    - Valued at: Stock Quantity × Cost Price
+ *    - Appears on Balance Sheet under Current Assets
+ *    - NOT included in profit calculations until sold
+ * 
+ * 2. COGS - Cost of Goods Sold (Expense - Income Statement)
+ *    - Per GAAP and IFRS matching principle
+ *    - COGS is an EXPENSE representing cost of goods that were SOLD
+ *    - Calculated from historical cost at time of sale
+ *    - Appears on Income Statement under Cost of Revenue
+ *    - Reduces gross profit when goods are sold
+ * 
+ * KEY DISTINCTION:
+ * - Inventory Value = What we HAVE (unsold stock × cost)
+ * - COGS = What we SOLD (sold quantity × cost at sale time)
+ * - These must NEVER be mixed or confused
+ */
 
 type PeriodType = "month" | "quarter" | "year" | "all";
 
@@ -61,6 +88,8 @@ export default function ProfitCalculator() {
   
   const { startDate, endDate } = getDateRange(period);
   
+  // INCOME STATEMENT DATA: Revenue, COGS, Expenses, Profit
+  // COGS = Cost of goods SOLD (expense) - calculated from historical cost at sale time
   const { data: stats, isLoading, refetch, isFetching } = useQuery<ProfitStats>({
     queryKey: ["/api/profit-stats", startDate, endDate],
     queryFn: async () => {
@@ -68,6 +97,13 @@ export default function ProfitCalculator() {
       if (!res.ok) throw new Error("Failed to fetch profit stats");
       return res.json();
     },
+  });
+
+  // BALANCE SHEET DATA: Inventory is an ASSET (not an expense)
+  // Inventory Value = unsold stock × cost price (current valuation)
+  // This is SEPARATE from COGS and must NOT be mixed with profit calculations
+  const { data: inventoryData, isLoading: inventoryLoading } = useQuery<InventoryValuation>({
+    queryKey: ["/api/inventory/valuation"],
   });
 
   const formatCurrency = (value: number) => {
@@ -198,12 +234,73 @@ export default function ProfitCalculator() {
             </Card>
           </div>
 
+          {/* 
+            BALANCE SHEET SECTION: ASSETS
+            Per GAAP ASC 330 / IFRS IAS 2:
+            - Inventory is a CURRENT ASSET on the Balance Sheet
+            - Represents goods held for sale that have NOT yet been sold
+            - Valued at: Stock Quantity × Cost Price (lower of cost or NRV)
+            - This is NOT an expense - it becomes COGS only when goods are SOLD
+          */}
+          <Card className="border-2 border-primary/20 bg-primary/5">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5 text-primary" />
+                {t("profit.assets")} - {t("profit.balanceSheet")}
+              </CardTitle>
+              <p className="text-xs text-muted-foreground">
+                GAAP ASC 330 / IFRS IAS 2
+              </p>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                <div className="flex items-center justify-between p-4 bg-primary/10 rounded-md">
+                  <div className="flex items-center gap-3">
+                    <Package className="h-6 w-6 text-primary" />
+                    <div>
+                      <p className="font-semibold text-lg">{t("profit.inventoryValue")}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t("profit.unsoldStock")} ({inventoryData?.productsWithStock || 0} {t("profit.productsInStock")})
+                      </p>
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="font-bold text-2xl text-primary" data-testid="text-inventory-value">
+                      {inventoryLoading ? "..." : formatCurrency(inventoryData?.totalInventoryValue || 0)}
+                    </span>
+                    <p className="text-xs text-muted-foreground">{t("profit.currentAsset")}</p>
+                  </div>
+                </div>
+                
+                {inventoryData && inventoryData.productsWithWarnings > 0 && (
+                  <div className="flex items-center gap-2 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-md text-amber-700 dark:text-amber-400">
+                    <AlertTriangle className="h-4 w-4" />
+                    <span className="text-sm">
+                      {inventoryData.productsWithWarnings} {t("profit.productsMissingCost")}
+                    </span>
+                  </div>
+                )}
+
+                <div className="text-xs text-muted-foreground p-3 bg-muted/30 rounded-md">
+                  <strong>{t("profit.note")}:</strong> {t("profit.inventoryNote")}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* 
+            INCOME STATEMENT SECTION: Revenue and Expenses
+            Per GAAP/IFRS matching principle:
+            - Revenue is recognized when goods are sold
+            - COGS is an EXPENSE that matches the cost to the revenue
+            - COGS uses historical cost at time of sale (not current cost)
+          */}
           <div className="grid gap-6 lg:grid-cols-2">
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-green-600" />
-                  {t("profit.revenueBreakdown")}
+                  {t("profit.revenueBreakdown")} - {t("profit.incomeStatement")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -244,26 +341,35 @@ export default function ProfitCalculator() {
               </CardContent>
             </Card>
 
+            {/* 
+              EXPENSES SECTION (Income Statement)
+              COGS is an expense - represents cost of goods that were SOLD
+              This is calculated from historical cost at time of sale, NOT current inventory
+            */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingDown className="h-5 w-5 text-red-600" />
-                  {t("profit.costsBreakdown")}
+                  {t("profit.costsBreakdown")} - {t("profit.incomeStatement")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-md">
+                  {/* COGS - Cost of Goods SOLD (Expense, not Asset) */}
+                  <div className="flex items-center justify-between p-3 bg-red-50 dark:bg-red-900/20 rounded-md border-l-4 border-red-600">
                     <div className="flex items-center gap-3">
                       <Receipt className="h-5 w-5 text-red-600" />
                       <div>
-                        <p className="font-medium">{t("profit.productCosts")}</p>
-                        <p className="text-xs text-muted-foreground">{t("profit.costOfGoods")}</p>
+                        <p className="font-medium">{t("profit.cogs")}</p>
+                        <p className="text-xs text-muted-foreground">{t("profit.cogsDescription")}</p>
                       </div>
                     </div>
-                    <span className="font-bold text-red-600 dark:text-red-400">
-                      -{formatCurrency(stats.totalProductCosts)}
-                    </span>
+                    <div className="text-right">
+                      <span className="font-bold text-red-600 dark:text-red-400" data-testid="text-cogs">
+                        -{formatCurrency(stats.totalProductCosts)}
+                      </span>
+                      <p className="text-xs text-muted-foreground">{t("profit.expense")}</p>
+                    </div>
                   </div>
 
                   <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-dashed border-blue-300 dark:border-blue-600">

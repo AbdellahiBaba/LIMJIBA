@@ -326,7 +326,20 @@
     "fabricationCosts": "Coûts de Fabrication",
     "manufacturingCosts": "Coûts de production",
     "includedInCogs": "Déjà inclus dans coût des produits",
-    "allCostsIncluded": "Produits + Salaires + Charges"
+    "allCostsIncluded": "Produits + Salaires + Charges",
+    "assets": "Actifs",
+    "balanceSheet": "Bilan",
+    "incomeStatement": "Compte de Résultat",
+    "inventoryValue": "Valeur du Stock",
+    "unsoldStock": "Stock non vendu",
+    "productsInStock": "produits en stock",
+    "currentAsset": "Actif Circulant",
+    "productsMissingCost": "produits sans prix de revient",
+    "note": "Note",
+    "inventoryNote": "La valeur du stock est un ACTIF (bilan). Elle n'est PAS incluse dans le calcul des bénéfices. Le coût devient une CHARGE (CMV) uniquement lors de la vente.",
+    "cogs": "CMV - Coût des Marchandises Vendues",
+    "cogsDescription": "Coût historique des produits vendus",
+    "expense": "Charge"
   },
   "salaries": {
     "title": "Gestion des Salaires",

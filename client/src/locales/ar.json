@@ -326,7 +326,20 @@
     "fabricationCosts": "تكاليف التصنيع",
     "manufacturingCosts": "تكاليف الإنتاج",
     "includedInCogs": "مضمنة في تكلفة البضاعة المباعة",
-    "allCostsIncluded": "المنتجات + الرواتب + المصاريف"
+    "allCostsIncluded": "المنتجات + الرواتب + المصاريف",
+    "assets": "الأصول",
+    "balanceSheet": "الميزانية العمومية",
+    "incomeStatement": "قائمة الدخل",
+    "inventoryValue": "قيمة المخزون",
+    "unsoldStock": "المخزون غير المباع",
+    "productsInStock": "منتج في المخزون",
+    "currentAsset": "أصل متداول",
+    "productsMissingCost": "منتج بدون سعر تكلفة",
+    "note": "ملاحظة",
+    "inventoryNote": "قيمة المخزون هي أصل (ميزانية). لا يتم تضمينها في حساب الربح. تصبح التكلفة مصروفاً فقط عند البيع.",
+    "cogs": "تكلفة البضاعة المباعة",
+    "cogsDescription": "التكلفة التاريخية للمنتجات المباعة",
+    "expense": "مصروف"
   },
   "salaries": {
     "title": "إدارة الرواتب",
