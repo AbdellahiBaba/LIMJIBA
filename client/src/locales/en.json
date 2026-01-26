@@ -189,7 +189,9 @@
     "discountAmount": "Discount (DZD)",
     "reseller": "Reseller",
     "outOfStock": "Out of stock",
-    "cannotExceedStock": "Quantity exceeds available stock"
+    "cannotExceedStock": "Quantity exceeds available stock",
+    "addNewReseller": "Add New Reseller",
+    "resellerAdded": "Reseller added successfully"
   },
   "resellers": {
     "title": "Reseller Program",
@@ -210,6 +212,8 @@
     "resellerAdded": "Reseller added successfully",
     "resellerUpdated": "Reseller updated successfully",
     "resellerDeleted": "Reseller deleted successfully",
+    "nameRequired": "Name is required",
+    "phone": "Phone",
     "progress": "Progress",
     "wonAt": "Won on",
     "totalResellers": "Total Resellers",

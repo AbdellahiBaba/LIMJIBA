@@ -189,7 +189,9 @@
     "discountAmount": "الخصم (DZD)",
     "reseller": "الموزع",
     "outOfStock": "نفذ المخزون",
-    "cannotExceedStock": "لا يمكن تجاوز المخزون المتاح"
+    "cannotExceedStock": "لا يمكن تجاوز المخزون المتاح",
+    "addNewReseller": "إضافة موزع جديد",
+    "resellerAdded": "تمت إضافة الموزع بنجاح"
   },
   "resellers": {
     "title": "برنامج الموزعين",
@@ -210,6 +212,8 @@
     "resellerAdded": "تمت إضافة الموزع بنجاح",
     "resellerUpdated": "تم تحديث الموزع بنجاح",
     "resellerDeleted": "تم حذف الموزع بنجاح",
+    "nameRequired": "الاسم مطلوب",
+    "phone": "الهاتف",
     "progress": "التقدم",
     "wonAt": "فاز بتاريخ",
     "totalResellers": "إجمالي الموزعين",

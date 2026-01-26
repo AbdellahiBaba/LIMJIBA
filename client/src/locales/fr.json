@@ -189,7 +189,9 @@
     "discountAmount": "Remise (DZD)",
     "reseller": "Revendeur",
     "outOfStock": "Rupture de stock",
-    "cannotExceedStock": "Quantité supérieure au stock disponible"
+    "cannotExceedStock": "Quantité supérieure au stock disponible",
+    "addNewReseller": "Ajouter un revendeur",
+    "resellerAdded": "Revendeur ajouté avec succès"
   },
   "resellers": {
     "title": "Programme Revendeurs",
@@ -210,6 +212,8 @@
     "resellerAdded": "Revendeur ajouté avec succès",
     "resellerUpdated": "Revendeur mis à jour avec succès",
     "resellerDeleted": "Revendeur supprimé avec succès",
+    "nameRequired": "Le nom est requis",
+    "phone": "Téléphone",
     "progress": "Progression",
     "wonAt": "Gagné le",
     "totalResellers": "Total Revendeurs",

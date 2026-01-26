@@ -45,7 +45,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import type { Product, CartItem, Reseller, InsertSale, InsertSaleItem } from "@shared/schema";
+import { UserPlus } from "lucide-react";
+import type { Product, CartItem, Reseller, InsertSale, InsertSaleItem, InsertReseller } from "@shared/schema";
 
 export default function POS() {
   const { toast } = useToast();
@@ -60,6 +61,9 @@ export default function POS() {
   const [checkoutDialogOpen, setCheckoutDialogOpen] = useState(false);
   const [successDialogOpen, setSuccessDialogOpen] = useState(false);
   const [lastSaleId, setLastSaleId] = useState<string>("");
+  const [addResellerDialogOpen, setAddResellerDialogOpen] = useState(false);
+  const [newResellerName, setNewResellerName] = useState("");
+  const [newResellerPhone, setNewResellerPhone] = useState("");
 
   const { data: products, isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -91,6 +95,41 @@ export default function POS() {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
+
+  const createResellerMutation = useMutation({
+    mutationFn: async (data: InsertReseller) => {
+      const response = await apiRequest("POST", "/api/resellers", data);
+      return response.json() as Promise<Reseller>;
+    },
+    onSuccess: (newReseller) => {
+      queryClient.invalidateQueries({ queryKey: ["/api/resellers"] });
+      setSelectedReseller(newReseller.id);
+      setAddResellerDialogOpen(false);
+      setNewResellerName("");
+      setNewResellerPhone("");
+      toast({ title: t("pos.resellerAdded") || "Reseller added successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
+    },
+  });
+
+  const handleAddReseller = () => {
+    if (!newResellerName.trim()) {
+      toast({ title: t("resellers.nameRequired") || "Name is required", variant: "destructive" });
+      return;
+    }
+    createResellerMutation.mutate({
+      name: newResellerName.trim(),
+      phone: newResellerPhone.trim() || null,
+      email: null,
+      totalPurchases: 0,
+      rewardThreshold: 100000,
+      inRewardPool: false,
+      isWinner: false,
+      wonAt: null,
+    });
+  };
 
   const filteredProducts = products?.filter((product) => {
     const searchLower = search.toLowerCase();
@@ -522,19 +561,36 @@ export default function POS() {
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">{t("pos.reseller")}</Label>
-                  <Select value={selectedReseller} onValueChange={setSelectedReseller}>
-                    <SelectTrigger className="h-9" data-testid="select-reseller">
-                      <SelectValue placeholder={t("pos.noReseller")} />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">{t("pos.noReseller")}</SelectItem>
-                      {resellers?.map((reseller) => (
-                        <SelectItem key={reseller.id} value={reseller.id}>
-                          {reseller.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex gap-1">
+                    <Select value={selectedReseller} onValueChange={setSelectedReseller}>
+                      <SelectTrigger className="h-9 flex-1" data-testid="select-reseller">
+                        <SelectValue placeholder={t("pos.noReseller")} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">{t("pos.noReseller")}</SelectItem>
+                        {resellers?.map((reseller) => (
+                          <SelectItem key={reseller.id} value={reseller.id}>
+                            {reseller.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          size="icon"
+                          variant="outline"
+                          onClick={() => setAddResellerDialogOpen(true)}
+                          data-testid="button-add-reseller"
+                        >
+                          <UserPlus className="h-4 w-4" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        {t("pos.addNewReseller") || "Add New Reseller"}
+                      </TooltipContent>
+                    </Tooltip>
+                  </div>
                 </div>
               </div>
 
@@ -649,6 +705,49 @@ export default function POS() {
             <Button onClick={handlePrintReceipt} data-testid="button-print-receipt">
               <Printer className="h-4 w-4 mr-2" />
               {t("pos.printReceipt")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={addResellerDialogOpen} onOpenChange={setAddResellerDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("pos.addNewReseller") || "Add New Reseller"}</DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("pos.addNewReseller") || "Add New Reseller"}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>{t("resellers.resellerName") || "Reseller Name"}</Label>
+              <Input
+                value={newResellerName}
+                onChange={(e) => setNewResellerName(e.target.value)}
+                placeholder={t("resellers.resellerName") || "Reseller Name"}
+                data-testid="input-new-reseller-name"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>{t("resellers.phone") || "Phone"}</Label>
+              <Input
+                value={newResellerPhone}
+                onChange={(e) => setNewResellerPhone(e.target.value)}
+                placeholder={t("resellers.phone") || "Phone"}
+                data-testid="input-new-reseller-phone"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setAddResellerDialogOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={handleAddReseller}
+              disabled={createResellerMutation.isPending}
+              data-testid="button-save-reseller"
+            >
+              {createResellerMutation.isPending ? t("common.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>
