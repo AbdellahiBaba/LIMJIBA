@@ -186,6 +186,7 @@
     "transactionSuccess": "تمت معالجة المعاملة بنجاح.",
     "done": "تم",
     "discountPercent": "الخصم (%)",
+    "discountAmount": "الخصم (DZD)",
     "reseller": "الموزع",
     "outOfStock": "نفذ المخزون",
     "cannotExceedStock": "لا يمكن تجاوز المخزون المتاح"

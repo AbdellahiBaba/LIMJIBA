@@ -186,6 +186,7 @@
     "transactionSuccess": "The transaction was processed successfully.",
     "done": "Done",
     "discountPercent": "Discount (%)",
+    "discountAmount": "Discount (DZD)",
     "reseller": "Reseller",
     "outOfStock": "Out of stock",
     "cannotExceedStock": "Quantity exceeds available stock"

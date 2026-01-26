@@ -186,6 +186,7 @@
     "transactionSuccess": "La transaction a été traitée avec succès.",
     "done": "Terminé",
     "discountPercent": "Remise (%)",
+    "discountAmount": "Remise (DZD)",
     "reseller": "Revendeur",
     "outOfStock": "Rupture de stock",
     "cannotExceedStock": "Quantité supérieure au stock disponible"

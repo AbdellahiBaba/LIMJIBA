@@ -53,7 +53,8 @@ export default function POS() {
   const { branding } = useBranding();
   const [search, setSearch] = useState("");
   const [cart, setCart] = useState<CartItem[]>([]);
-  const [discount, setDiscount] = useState(0);
+  const [discountPercent, setDiscountPercent] = useState(0);
+  const [discountAmount, setDiscountAmount] = useState(0);
   const [paymentMode, setPaymentMode] = useState("CASH");
   const [selectedReseller, setSelectedReseller] = useState<string>("none");
   const [checkoutDialogOpen, setCheckoutDialogOpen] = useState(false);
@@ -82,7 +83,8 @@ export default function POS() {
       setCheckoutDialogOpen(false);
       setSuccessDialogOpen(true);
       setCart([]);
-      setDiscount(0);
+      setDiscountPercent(0);
+      setDiscountAmount(0);
       setSelectedReseller("none");
     },
     onError: (error: Error) => {
@@ -163,13 +165,15 @@ export default function POS() {
 
   const clearCart = () => {
     setCart([]);
-    setDiscount(0);
+    setDiscountPercent(0);
+    setDiscountAmount(0);
     setSelectedReseller("none");
   };
 
   const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
-  const discountAmount = (subtotal * discount) / 100;
-  const total = subtotal - discountAmount;
+  const percentDiscount = (subtotal * discountPercent) / 100;
+  const totalDiscount = percentDiscount + discountAmount;
+  const total = Math.max(0, subtotal - totalDiscount);
 
   const handleCheckout = () => {
     if (cart.length === 0) {
@@ -198,7 +202,7 @@ export default function POS() {
         date: today,
         paymentMode,
         total,
-        discount: discountAmount,
+        discount: totalDiscount,
         resellerId: selectedReseller !== "none" ? selectedReseller : null,
         status: paymentMode === "CREDIT" ? "credit" : "completed",
       },
@@ -470,10 +474,15 @@ export default function POS() {
                   <span className="text-muted-foreground">{t("pos.subtotal")}</span>
                   <span className="font-mono font-medium">{subtotal.toLocaleString()} DZD</span>
                 </div>
-                {discountAmount > 0 && (
+                {totalDiscount > 0 && (
                   <div className="flex justify-between text-sm">
-                    <span className="text-green-600 dark:text-green-400">{t("pos.discount")} ({discount}%)</span>
-                    <span className="font-mono font-medium text-green-600 dark:text-green-400">-{discountAmount.toLocaleString()} DZD</span>
+                    <span className="text-green-600 dark:text-green-400">
+                      {t("pos.discount")}
+                      {discountPercent > 0 && ` (${discountPercent}%)`}
+                      {discountPercent > 0 && discountAmount > 0 && " +"}
+                      {discountAmount > 0 && ` ${discountAmount.toLocaleString()} DZD`}
+                    </span>
+                    <span className="font-mono font-medium text-green-600 dark:text-green-400">-{totalDiscount.toLocaleString()} DZD</span>
                   </div>
                 )}
                 <Separator />
@@ -485,17 +494,30 @@ export default function POS() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">{t("pos.discountPercent")}</Label>
                   <Input
                     type="number"
                     min="0"
                     max="100"
-                    value={discount}
-                    onChange={(e) => setDiscount(parseFloat(e.target.value) || 0)}
+                    value={discountPercent || ""}
+                    onChange={(e) => setDiscountPercent(parseFloat(e.target.value) || 0)}
+                    placeholder="%"
                     className="h-9"
-                    data-testid="input-discount"
+                    data-testid="input-discount-percent"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">{t("pos.discountAmount") || "Remise (DZD)"}</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={discountAmount || ""}
+                    onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}
+                    placeholder="DZD"
+                    className="h-9"
+                    data-testid="input-discount-amount"
                   />
                 </div>
                 <div className="space-y-1.5">
