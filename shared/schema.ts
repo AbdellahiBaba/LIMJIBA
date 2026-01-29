@@ -70,7 +70,8 @@ export const invoices = pgTable("invoices", {
   tvaAmount: real("tva_amount").notNull().default(0),
   totalTTC: real("total_ttc").notNull(),
   totalWeight: real("total_weight").notNull().default(0),
-  status: text("status").notNull().default("pending"),
+  amountPaid: real("amount_paid").default(0),
+  status: text("status").notNull().default("pending"), // 'pending' | 'partial' | 'paid'
   clientName: text("client_name"),
 });
 
@@ -117,8 +118,9 @@ export const sales = pgTable("sales", {
   paymentMode: text("payment_mode").notNull(),
   total: real("total").notNull(),
   discount: real("discount").default(0),
+  amountPaid: real("amount_paid").default(0),
   resellerId: varchar("reseller_id"),
-  status: text("status").notNull().default("completed"),
+  status: text("status").notNull().default("completed"), // 'completed' | 'partial' | 'credit'
   customerName: text("customer_name"),
   customerPhone: text("customer_phone"),
 });
@@ -141,6 +143,21 @@ export const saleItems = pgTable("sale_items", {
 export const insertSaleItemSchema = createInsertSchema(saleItems).omit({ id: true, saleId: true });
 export type InsertSaleItem = z.infer<typeof insertSaleItemSchema>;
 export type SaleItem = typeof saleItems.$inferSelect;
+
+export const salePayments = pgTable("sale_payments", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  saleId: varchar("sale_id").notNull(),
+  amount: real("amount").notNull(),
+  paymentDate: text("payment_date").notNull(),
+  paymentMethod: text("payment_method").notNull(),
+  reference: text("reference"),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertSalePaymentSchema = createInsertSchema(salePayments).omit({ id: true });
+export type InsertSalePayment = z.infer<typeof insertSalePaymentSchema>;
+export type SalePayment = typeof salePayments.$inferSelect;
 
 export const resellers = pgTable("resellers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

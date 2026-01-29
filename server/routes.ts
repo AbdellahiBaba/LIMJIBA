@@ -1058,6 +1058,76 @@ export async function registerRoutes(
     }
   });
 
+  // Update sale (for partial payments)
+  app.patch("/api/sales/:id", async (req, res) => {
+    try {
+      const updated = await storage.updateSale(req.params.id, req.body);
+      if (!updated) {
+        return res.status(404).json({ error: "Sale not found", id: req.params.id });
+      }
+      res.json(updated);
+    } catch (error) {
+      handleError(res, "update sale", error);
+    }
+  });
+
+  // Sale payments for partial payment tracking
+  app.get("/api/sales/:id/payments", async (req, res) => {
+    try {
+      const payments = await storage.getSalePayments(req.params.id);
+      res.json(payments);
+    } catch (error) {
+      handleError(res, "get sale payments", error);
+    }
+  });
+
+  app.post("/api/sales/:id/payments", async (req, res) => {
+    try {
+      const { amount, paymentMethod, reference, notes } = req.body;
+      if (!amount || amount <= 0) {
+        return res.status(400).json({ error: "Invalid payment amount" });
+      }
+
+      const sale = await storage.getSale(req.params.id);
+      if (!sale) {
+        return res.status(404).json({ error: "Sale not found" });
+      }
+
+      const today = new Date();
+      const paymentDate = `${String(today.getDate()).padStart(2, '0')}/${String(today.getMonth() + 1).padStart(2, '0')}/${today.getFullYear()}`;
+
+      const payment = await storage.createSalePayment({
+        saleId: req.params.id,
+        amount: parseFloat(amount),
+        paymentDate,
+        paymentMethod: paymentMethod || "CASH",
+        reference: reference || null,
+        notes: notes || null,
+        createdAt: today.toISOString(),
+      });
+
+      // Update sale's amountPaid and status
+      const newAmountPaid = (sale.amountPaid || 0) + parseFloat(amount);
+      const remaining = sale.total - newAmountPaid;
+      let newStatus = sale.status;
+      
+      if (remaining <= 0) {
+        newStatus = "completed";
+      } else if (newAmountPaid > 0) {
+        newStatus = "partial";
+      }
+
+      await storage.updateSale(req.params.id, {
+        amountPaid: Math.round(newAmountPaid * 100) / 100,
+        status: newStatus,
+      });
+
+      res.status(201).json(payment);
+    } catch (error) {
+      handleError(res, "create sale payment", error);
+    }
+  });
+
   // CSV Export endpoints
   app.get("/api/sales/export/csv", async (req, res) => {
     try {

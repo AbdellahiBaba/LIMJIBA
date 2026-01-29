@@ -191,7 +191,24 @@
     "outOfStock": "Rupture de stock",
     "cannotExceedStock": "Quantité supérieure au stock disponible",
     "addNewReseller": "Ajouter un revendeur",
-    "resellerAdded": "Revendeur ajouté avec succès"
+    "resellerAdded": "Revendeur ajouté avec succès",
+    "amountPaid": "Montant payé",
+    "remainingBalance": "Reste à payer",
+    "partialPayment": "Paiement partiel",
+    "noPayment": "Aucun paiement (Crédit)",
+    "transfer": "Virement"
+  },
+  "sales": {
+    "title": "Ventes",
+    "recordPayment": "Enregistrer paiement",
+    "paymentRecorded": "Paiement enregistré avec succès",
+    "remainingBalance": "Reste à payer",
+    "total": "Total",
+    "alreadyPaid": "Déjà payé",
+    "remaining": "Reste",
+    "paymentAmount": "Montant du paiement",
+    "paymentMethod": "Mode de paiement",
+    "partial": "Partiel"
   },
   "resellers": {
     "title": "Programme Revendeurs",

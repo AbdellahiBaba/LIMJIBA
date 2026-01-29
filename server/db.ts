@@ -292,6 +292,45 @@ async function runMigrations(): Promise<void> {
       console.log('[DB] Updated existing fabrication invoices to FABRICATION type');
     }
     
+    // Add amount_paid column to invoices for partial payments
+    if (!invoiceCols.includes('amount_paid')) {
+      await client.query(`ALTER TABLE invoices ADD COLUMN amount_paid real DEFAULT 0`);
+      console.log('[DB] Added amount_paid column to invoices');
+    }
+    
+    // Add amount_paid column to sales for partial payments
+    if (!existingCols.includes('amount_paid')) {
+      await client.query(`ALTER TABLE sales ADD COLUMN amount_paid real DEFAULT 0`);
+      console.log('[DB] Added amount_paid column to sales');
+      
+      // Set amount_paid = total for all existing completed sales
+      await client.query(`UPDATE sales SET amount_paid = total WHERE status = 'completed'`);
+      console.log('[DB] Updated existing completed sales with amount_paid = total');
+    }
+    
+    // Create sale_payments table if it doesn't exist
+    const salePaymentsExists = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'sale_payments'
+      )
+    `);
+    if (!salePaymentsExists.rows[0].exists) {
+      await client.query(`
+        CREATE TABLE sale_payments (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          sale_id VARCHAR NOT NULL,
+          amount REAL NOT NULL,
+          payment_date TEXT NOT NULL,
+          payment_method TEXT NOT NULL,
+          reference TEXT,
+          notes TEXT,
+          created_at TEXT NOT NULL
+        )
+      `);
+      console.log('[DB] Created sale_payments table');
+    }
+    
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);

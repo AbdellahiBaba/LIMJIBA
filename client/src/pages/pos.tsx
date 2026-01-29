@@ -64,6 +64,7 @@ export default function POS() {
   const [addResellerDialogOpen, setAddResellerDialogOpen] = useState(false);
   const [newResellerName, setNewResellerName] = useState("");
   const [newResellerPhone, setNewResellerPhone] = useState("");
+  const [amountPaidInput, setAmountPaidInput] = useState<string>("");
 
   const { data: products, isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -219,8 +220,12 @@ export default function POS() {
       toast({ title: "Cart is empty", variant: "destructive" });
       return;
     }
+    setAmountPaidInput(total.toString());
     setCheckoutDialogOpen(true);
   };
+
+  const amountPaid = parseFloat(amountPaidInput) || 0;
+  const remainingBalance = Math.max(0, total - amountPaid);
 
   const completeSale = () => {
     const today = new Date().toISOString().split("T")[0];
@@ -235,6 +240,14 @@ export default function POS() {
       total: item.total,
     }));
 
+    // Determine status based on payment
+    let status = "completed";
+    if (amountPaid <= 0) {
+      status = "credit";
+    } else if (amountPaid < total) {
+      status = "partial";
+    }
+
     createSaleMutation.mutate({
       sale: {
         saleNumber,
@@ -242,8 +255,9 @@ export default function POS() {
         paymentMode,
         total,
         discount: totalDiscount,
+        amountPaid: Math.round(amountPaid * 100) / 100,
         resellerId: selectedReseller !== "none" ? selectedReseller : null,
-        status: paymentMode === "CREDIT" ? "credit" : "completed",
+        status,
       },
       items: saleItems,
     });
@@ -660,7 +674,10 @@ export default function POS() {
                 <Button
                   type="button"
                   variant={paymentMode === "CREDIT" ? "default" : "outline"}
-                  onClick={() => setPaymentMode("CREDIT")}
+                  onClick={() => {
+                    setPaymentMode("CREDIT");
+                    setAmountPaidInput("0");
+                  }}
                   className="flex-col h-auto py-3"
                   data-testid="button-payment-credit"
                 >
@@ -668,6 +685,37 @@ export default function POS() {
                   <span className="text-xs">{t("pos.credit")}</span>
                 </Button>
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t("pos.amountPaid") || "Amount Paid"}</Label>
+              <Input
+                type="number"
+                min="0"
+                max={total}
+                value={amountPaidInput}
+                onChange={(e) => setAmountPaidInput(e.target.value)}
+                className="text-lg font-mono"
+                data-testid="input-amount-paid"
+              />
+              {remainingBalance > 0 && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t("pos.remainingBalance") || "Remaining"}</span>
+                  <span className="font-mono font-medium text-orange-600 dark:text-orange-400">
+                    {remainingBalance.toLocaleString()} DZD
+                  </span>
+                </div>
+              )}
+              {amountPaid > 0 && amountPaid < total && (
+                <Badge variant="outline" className="w-full justify-center text-orange-600 border-orange-600">
+                  {t("pos.partialPayment") || "Partial Payment"}
+                </Badge>
+              )}
+              {amountPaid <= 0 && (
+                <Badge variant="outline" className="w-full justify-center text-red-600 border-red-600">
+                  {t("pos.noPayment") || "No Payment (Credit)"}
+                </Badge>
+              )}
             </div>
           </div>
           <DialogFooter>

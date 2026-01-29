@@ -37,6 +37,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import { Label } from "@/components/ui/label";
 import {
   Search,
   MoreHorizontal,
@@ -49,12 +50,14 @@ import {
   Banknote,
   ArrowUpDown,
   Download,
+  DollarSign,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Sale, SaleWithItems } from "@shared/schema";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   completed: { label: "Payé", color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200", icon: CheckCircle },
+  partial: { label: "Partiel", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200", icon: Clock },
   credit: { label: "Crédit", color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200", icon: Clock },
   pending: { label: "En attente", color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200", icon: Clock },
 };
@@ -75,6 +78,10 @@ export default function Sales() {
   const [viewSale, setViewSale] = useState<SaleWithItems | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [saleToDelete, setSaleToDelete] = useState<string | null>(null);
+  const [paymentDialogOpen, setPaymentDialogOpen] = useState(false);
+  const [paymentSale, setPaymentSale] = useState<Sale | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState<string>("");
+  const [paymentMethod, setPaymentMethod] = useState<string>("CASH");
 
   const { data: sales, isLoading } = useQuery<Sale[]>({
     queryKey: ["/api/sales"],
@@ -104,6 +111,22 @@ export default function Sales() {
       if (viewSale) {
         setViewSale({ ...viewSale, status: "completed" });
       }
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
+    },
+  });
+
+  const recordPaymentMutation = useMutation({
+    mutationFn: ({ id, amount, paymentMethod }: { id: string; amount: number; paymentMethod: string }) =>
+      apiRequest("POST", `/api/sales/${id}/payments`, { amount, paymentMethod }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({ title: t("sales.paymentRecorded") || "Payment recorded successfully" });
+      setPaymentDialogOpen(false);
+      setPaymentSale(null);
+      setPaymentAmount("");
     },
     onError: (error: Error) => {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
@@ -148,6 +171,27 @@ export default function Sales() {
 
   const handleExportCSV = () => {
     window.open("/api/sales/export/csv", "_blank");
+  };
+
+  const handleRecordPayment = (sale: Sale) => {
+    const remaining = sale.total - (sale.amountPaid || 0);
+    setPaymentSale(sale);
+    setPaymentAmount(remaining.toString());
+    setPaymentMethod("CASH");
+    setPaymentDialogOpen(true);
+  };
+
+  const confirmRecordPayment = () => {
+    if (paymentSale && paymentAmount) {
+      const amount = parseFloat(paymentAmount);
+      if (amount > 0) {
+        recordPaymentMutation.mutate({
+          id: paymentSale.id,
+          amount,
+          paymentMethod,
+        });
+      }
+    }
   };
 
   if (isLoading) {
@@ -196,6 +240,7 @@ export default function Sales() {
               <SelectContent>
                 <SelectItem value="all">Tous les statuts</SelectItem>
                 <SelectItem value="completed">Payé</SelectItem>
+                <SelectItem value="partial">Partiel</SelectItem>
                 <SelectItem value="credit">Crédit</SelectItem>
                 <SelectItem value="pending">En attente</SelectItem>
               </SelectContent>
@@ -264,6 +309,12 @@ export default function Sales() {
                                 <Printer className="h-4 w-4 mr-2" />
                                 Imprimer ticket
                               </DropdownMenuItem>
+                              {(sale.status === "credit" || sale.status === "partial") && (
+                                <DropdownMenuItem onClick={() => handleRecordPayment(sale)}>
+                                  <DollarSign className="h-4 w-4 mr-2" />
+                                  {t("sales.recordPayment") || "Enregistrer paiement"}
+                                </DropdownMenuItem>
+                              )}
                               {sale.status === "credit" && (
                                 <DropdownMenuItem 
                                   onClick={() => updateStatusMutation.mutate({ id: sale.id, status: "completed" })}
@@ -387,6 +438,96 @@ export default function Sales() {
               disabled={deleteMutation.isPending}
             >
               Supprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t("sales.recordPayment") || "Enregistrer un paiement"}</DialogTitle>
+            <DialogDescription>
+              {paymentSale?.saleNumber} - {t("sales.remainingBalance") || "Reste à payer"}: {((paymentSale?.total || 0) - (paymentSale?.amountPaid || 0)).toLocaleString()} DZD
+            </DialogDescription>
+          </DialogHeader>
+          {paymentSale && (
+            <div className="space-y-4">
+              <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t("sales.total") || "Total"}:</span>
+                  <span className="font-mono font-medium">{paymentSale.total.toLocaleString()} DZD</span>
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">{t("sales.alreadyPaid") || "Déjà payé"}:</span>
+                  <span className="font-mono font-medium text-green-600">{(paymentSale.amountPaid || 0).toLocaleString()} DZD</span>
+                </div>
+                <div className="flex justify-between text-sm font-bold">
+                  <span>{t("sales.remaining") || "Reste"}:</span>
+                  <span className="font-mono text-orange-600">{(paymentSale.total - (paymentSale.amountPaid || 0)).toLocaleString()} DZD</span>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t("sales.paymentAmount") || "Montant du paiement"}</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max={paymentSale.total - (paymentSale.amountPaid || 0)}
+                  value={paymentAmount}
+                  onChange={(e) => setPaymentAmount(e.target.value)}
+                  className="text-lg font-mono"
+                  data-testid="input-payment-amount"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label>{t("sales.paymentMethod") || "Mode de paiement"}</Label>
+                <div className="grid grid-cols-3 gap-2">
+                  <Button
+                    type="button"
+                    variant={paymentMethod === "CASH" ? "default" : "outline"}
+                    onClick={() => setPaymentMethod("CASH")}
+                    className="flex-col h-auto py-2"
+                    size="sm"
+                  >
+                    <Banknote className="h-4 w-4 mb-1" />
+                    <span className="text-xs">{t("pos.cash") || "Espèces"}</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={paymentMethod === "CARD" ? "default" : "outline"}
+                    onClick={() => setPaymentMethod("CARD")}
+                    className="flex-col h-auto py-2"
+                    size="sm"
+                  >
+                    <CreditCard className="h-4 w-4 mb-1" />
+                    <span className="text-xs">{t("pos.card") || "Carte"}</span>
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={paymentMethod === "TRANSFER" ? "default" : "outline"}
+                    onClick={() => setPaymentMethod("TRANSFER")}
+                    className="flex-col h-auto py-2"
+                    size="sm"
+                  >
+                    <ArrowUpDown className="h-4 w-4 mb-1" />
+                    <span className="text-xs">{t("pos.transfer") || "Virement"}</span>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>
+              {t("common.cancel") || "Annuler"}
+            </Button>
+            <Button 
+              onClick={confirmRecordPayment}
+              disabled={recordPaymentMutation.isPending || !paymentAmount || parseFloat(paymentAmount) <= 0}
+              data-testid="button-confirm-payment"
+            >
+              {recordPaymentMutation.isPending ? (t("common.saving") || "Enregistrement...") : (t("sales.recordPayment") || "Enregistrer")}
             </Button>
           </DialogFooter>
         </DialogContent>

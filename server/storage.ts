@@ -13,6 +13,8 @@ import {
   type InsertSale,
   type SaleItem,
   type InsertSaleItem,
+  type SalePayment,
+  type InsertSalePayment,
   type Reseller,
   type InsertReseller,
   type InvoiceWithItems,
@@ -49,6 +51,7 @@ import {
   customers,
   employees,
   salaryPayments,
+  salePayments,
   expenses,
   fabricationInvoices,
   fabricationItems,
@@ -139,6 +142,12 @@ export interface IStorage {
   createInvoicePayment(payment: InsertInvoicePayment): Promise<InvoicePayment>;
   deleteInvoicePayment(id: string): Promise<boolean>;
   getInvoicePaidAmount(invoiceId: string): Promise<number>;
+
+  getSalePayments(saleId: string): Promise<SalePayment[]>;
+  createSalePayment(payment: InsertSalePayment): Promise<SalePayment>;
+  deleteSalePayment(id: string): Promise<boolean>;
+  getSalePaidAmount(saleId: string): Promise<number>;
+  updateSale(id: string, data: Partial<InsertSale>): Promise<Sale | undefined>;
 
   exportAllData(): Promise<object>;
   importAllData(data: object): Promise<{ imported: number }>;
@@ -1359,6 +1368,45 @@ export class DatabaseStorage implements IStorage {
         total: sql<number>`COALESCE(SUM(${invoicePayments.amount}), 0)`
       }).from(invoicePayments).where(eq(invoicePayments.invoiceId, invoiceId));
       return Number(result[0]?.total || 0);
+    });
+  }
+
+  async getSalePayments(saleId: string): Promise<SalePayment[]> {
+    return await withRetry(async () => {
+      return await db.select().from(salePayments).where(eq(salePayments.saleId, saleId)).orderBy(desc(salePayments.createdAt));
+    });
+  }
+
+  async createSalePayment(payment: InsertSalePayment): Promise<SalePayment> {
+    return await withRetry(async () => {
+      const [newPayment] = await db.insert(salePayments).values(payment).returning();
+      cache.delete(CACHE_KEYS.SALES);
+      return newPayment;
+    });
+  }
+
+  async deleteSalePayment(id: string): Promise<boolean> {
+    return await withRetry(async () => {
+      const result = await db.delete(salePayments).where(eq(salePayments.id, id)).returning();
+      cache.delete(CACHE_KEYS.SALES);
+      return result.length > 0;
+    });
+  }
+
+  async getSalePaidAmount(saleId: string): Promise<number> {
+    return await withRetry(async () => {
+      const result = await db.select({
+        total: sql<number>`COALESCE(SUM(${salePayments.amount}), 0)`
+      }).from(salePayments).where(eq(salePayments.saleId, saleId));
+      return Number(result[0]?.total || 0);
+    });
+  }
+
+  async updateSale(id: string, data: Partial<InsertSale>): Promise<Sale | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(sales).set(data).where(eq(sales.id, id)).returning();
+      cache.delete(CACHE_KEYS.SALES);
+      return updated || undefined;
     });
   }
 

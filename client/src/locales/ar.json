@@ -191,7 +191,24 @@
     "outOfStock": "نفذ المخزون",
     "cannotExceedStock": "لا يمكن تجاوز المخزون المتاح",
     "addNewReseller": "إضافة موزع جديد",
-    "resellerAdded": "تمت إضافة الموزع بنجاح"
+    "resellerAdded": "تمت إضافة الموزع بنجاح",
+    "amountPaid": "المبلغ المدفوع",
+    "remainingBalance": "المبلغ المتبقي",
+    "partialPayment": "دفع جزئي",
+    "noPayment": "بدون دفع (آجل)",
+    "transfer": "تحويل"
+  },
+  "sales": {
+    "title": "المبيعات",
+    "recordPayment": "تسجيل دفعة",
+    "paymentRecorded": "تم تسجيل الدفعة بنجاح",
+    "remainingBalance": "المبلغ المتبقي",
+    "total": "المجموع",
+    "alreadyPaid": "المدفوع مسبقاً",
+    "remaining": "المتبقي",
+    "paymentAmount": "مبلغ الدفعة",
+    "paymentMethod": "طريقة الدفع",
+    "partial": "جزئي"
   },
   "resellers": {
     "title": "برنامج الموزعين",

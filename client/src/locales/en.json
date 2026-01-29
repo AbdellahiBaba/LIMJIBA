@@ -191,7 +191,24 @@
     "outOfStock": "Out of stock",
     "cannotExceedStock": "Quantity exceeds available stock",
     "addNewReseller": "Add New Reseller",
-    "resellerAdded": "Reseller added successfully"
+    "resellerAdded": "Reseller added successfully",
+    "amountPaid": "Amount Paid",
+    "remainingBalance": "Remaining Balance",
+    "partialPayment": "Partial Payment",
+    "noPayment": "No Payment (Credit)",
+    "transfer": "Transfer"
+  },
+  "sales": {
+    "title": "Sales",
+    "recordPayment": "Record Payment",
+    "paymentRecorded": "Payment recorded successfully",
+    "remainingBalance": "Remaining Balance",
+    "total": "Total",
+    "alreadyPaid": "Already Paid",
+    "remaining": "Remaining",
+    "paymentAmount": "Payment Amount",
+    "paymentMethod": "Payment Method",
+    "partial": "Partial"
   },
   "resellers": {
     "title": "Reseller Program",
