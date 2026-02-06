@@ -976,6 +976,46 @@ export async function registerRoutes(
     }
   });
 
+  // Sale lookup by ticket number (must be before :id route)
+  app.get("/api/sales/lookup", async (req, res) => {
+    try {
+      const saleNumber = req.query.saleNumber as string;
+      if (!saleNumber) {
+        return res.status(400).json({ error: "saleNumber query parameter is required" });
+      }
+      const sale = await storage.getSaleByNumber(saleNumber);
+      if (!sale) {
+        return res.status(404).json({ error: "Sale not found with this ticket number" });
+      }
+      const saleWithItems = await storage.getSaleWithItems(sale.id);
+      if (!saleWithItems) {
+        return res.status(404).json({ error: "Sale not found" });
+      }
+      const returnedQuantities = await storage.getReturnedQuantities(sale.id);
+      res.json({ ...saleWithItems, returnedQuantities });
+    } catch (error) {
+      handleError(res, "lookup sale by number", error);
+    }
+  });
+
+  // CSV Export (must be before :id route)
+  app.get("/api/sales/export/csv", async (req, res) => {
+    try {
+      const sales = await storage.getSales();
+      const csvHeader = "Sale Number,Date,Payment Mode,Status,Discount,Total,Customer Name,Customer Phone\n";
+      const csvRows = sales.map(sale => 
+        `"${sale.saleNumber}","${sale.date}","${sale.paymentMode}","${sale.status || 'completed'}","${sale.discount || 0}","${sale.total}","${sale.customerName || ''}","${sale.customerPhone || ''}"`
+      ).join("\n");
+      const csv = csvHeader + csvRows;
+      
+      res.setHeader("Content-Type", "text/csv");
+      res.setHeader("Content-Disposition", `attachment; filename=sales_export_${new Date().toISOString().split('T')[0]}.csv`);
+      res.send(csv);
+    } catch (error) {
+      handleError(res, "export sales csv", error);
+    }
+  });
+
   app.get("/api/sales/:id", async (req, res) => {
     try {
       const sale = await storage.getSaleWithItems(req.params.id);
@@ -1128,28 +1168,6 @@ export async function registerRoutes(
     }
   });
 
-  // Sale Returns
-  app.get("/api/sales/lookup", async (req, res) => {
-    try {
-      const saleNumber = req.query.saleNumber as string;
-      if (!saleNumber) {
-        return res.status(400).json({ error: "saleNumber query parameter is required" });
-      }
-      const sale = await storage.getSaleByNumber(saleNumber);
-      if (!sale) {
-        return res.status(404).json({ error: "Sale not found with this ticket number" });
-      }
-      const saleWithItems = await storage.getSaleWithItems(sale.id);
-      if (!saleWithItems) {
-        return res.status(404).json({ error: "Sale not found" });
-      }
-      const returnedQuantities = await storage.getReturnedQuantities(sale.id);
-      res.json({ ...saleWithItems, returnedQuantities });
-    } catch (error) {
-      handleError(res, "lookup sale by number", error);
-    }
-  });
-
   app.get("/api/sales/:id/returns", async (req, res) => {
     try {
       const returns = await storage.getSaleReturns(req.params.id);
@@ -1233,24 +1251,6 @@ export async function registerRoutes(
       res.json({ returnNumber: nextNumber });
     } catch (error) {
       handleError(res, "get next return number", error);
-    }
-  });
-
-  // CSV Export endpoints
-  app.get("/api/sales/export/csv", async (req, res) => {
-    try {
-      const sales = await storage.getSales();
-      const csvHeader = "Sale Number,Date,Payment Mode,Status,Discount,Total,Customer Name,Customer Phone\n";
-      const csvRows = sales.map(sale => 
-        `"${sale.saleNumber}","${sale.date}","${sale.paymentMode}","${sale.status || 'completed'}","${sale.discount || 0}","${sale.total}","${sale.customerName || ''}","${sale.customerPhone || ''}"`
-      ).join("\n");
-      const csv = csvHeader + csvRows;
-      
-      res.setHeader("Content-Type", "text/csv");
-      res.setHeader("Content-Disposition", `attachment; filename=sales_export_${new Date().toISOString().split('T')[0]}.csv`);
-      res.send(csv);
-    } catch (error) {
-      handleError(res, "export sales csv", error);
     }
   });
 

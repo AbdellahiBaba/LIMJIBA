@@ -691,7 +691,7 @@ export default function POS() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <Button
                   variant="outline"
                   onClick={clearCart}
@@ -699,6 +699,21 @@ export default function POS() {
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   {t("pos.clear")}
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setReturnDialogOpen(true);
+                    setReturnTicketNumber("");
+                    setReturnLookupData(null);
+                    setReturnLookupError("");
+                    setReturnQuantities({});
+                    setReturnReason("");
+                  }}
+                  data-testid="button-return"
+                >
+                  <RotateCcw className="h-4 w-4 mr-2" />
+                  {t("pos.return") || "Retour"}
                 </Button>
                 <Button
                   onClick={handleCheckout}
@@ -880,6 +895,220 @@ export default function POS() {
             >
               {createResellerMutation.isPending ? t("common.saving") : t("common.save")}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={returnDialogOpen} onOpenChange={(open) => {
+        setReturnDialogOpen(open);
+        if (!open) {
+          setReturnLookupData(null);
+          setReturnLookupError("");
+          setReturnQuantities({});
+          setReturnReason("");
+        }
+      }}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <RotateCcw className="h-5 w-5" />
+              {t("pos.productReturn") || "Retour Produit"}
+            </DialogTitle>
+            <DialogDescription className="sr-only">
+              {t("pos.returnDescription") || "Process a product return"}
+            </DialogDescription>
+          </DialogHeader>
+
+          {!returnLookupData ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label>{t("pos.ticketNumber") || "N° Ticket de Caisse"}</Label>
+                <div className="flex gap-2">
+                  <Input
+                    value={returnTicketNumber}
+                    onChange={(e) => setReturnTicketNumber(e.target.value)}
+                    placeholder="POS-0001"
+                    onKeyDown={(e) => { if (e.key === "Enter") lookupSaleForReturn(); }}
+                    data-testid="input-return-ticket"
+                  />
+                  <Button
+                    onClick={lookupSaleForReturn}
+                    disabled={returnLookupLoading}
+                    data-testid="button-lookup-sale"
+                  >
+                    {returnLookupLoading ? t("common.loading") : (t("pos.search") || "Rechercher")}
+                  </Button>
+                </div>
+              </div>
+              {returnLookupError && (
+                <div className="p-3 rounded-md bg-destructive/10 text-destructive text-sm" data-testid="text-return-error">
+                  {returnLookupError}
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => { setReturnLookupData(null); setReturnQuantities({}); setReturnReason(""); }}
+                data-testid="button-back-to-lookup"
+              >
+                <ArrowLeft className="h-4 w-4 mr-1" />
+                {t("pos.backToSearch") || "Retour"}
+              </Button>
+
+              <div className="p-3 rounded-md bg-muted space-y-1">
+                <div className="flex justify-between gap-2 text-sm">
+                  <span className="text-muted-foreground">{t("pos.ticketNumber") || "Ticket"}:</span>
+                  <span className="font-semibold" data-testid="text-return-sale-number">{returnLookupData.saleNumber}</span>
+                </div>
+                <div className="flex justify-between gap-2 text-sm">
+                  <span className="text-muted-foreground">Date:</span>
+                  <span>{returnLookupData.date?.split('-').reverse().join('/')}</span>
+                </div>
+                <div className="flex justify-between gap-2 text-sm">
+                  <span className="text-muted-foreground">Total:</span>
+                  <span className="font-mono font-semibold">{returnLookupData.total?.toLocaleString()} DZD</span>
+                </div>
+                <div className="flex justify-between gap-2 text-sm">
+                  <span className="text-muted-foreground">{t("pos.status") || "Statut"}:</span>
+                  <Badge variant={returnLookupData.status === 'completed' ? 'default' : 'secondary'}>
+                    {returnLookupData.status === 'completed' ? (t("pos.paid") || 'Payé') :
+                     returnLookupData.status === 'partial' ? (t("pos.partialPayment") || 'Partiel') :
+                     (t("pos.noPayment") || 'Crédit')}
+                  </Badge>
+                </div>
+                {returnLookupData.customerName && (
+                  <div className="flex justify-between gap-2 text-sm">
+                    <span className="text-muted-foreground">Client:</span>
+                    <span>{returnLookupData.customerName}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm font-semibold">{t("pos.selectItemsToReturn") || "Sélectionner les articles à retourner"}</Label>
+                <div className="space-y-2">
+                  {returnLookupData.items.map((item: any) => {
+                    const alreadyReturned = returnLookupData.returnedQuantities?.[item.productId] || 0;
+                    const maxReturnable = item.quantity - alreadyReturned;
+                    const currentReturnQty = returnQuantities[item.productId] || 0;
+                    return (
+                      <div key={item.productId} className="p-3 rounded-md border bg-card" data-testid={`return-item-${item.productId}`}>
+                        <div className="flex justify-between items-start mb-2">
+                          <div>
+                            <span className="font-medium text-sm">{item.productName}</span>
+                            <div className="text-xs text-muted-foreground">
+                              {t("pos.soldQty") || "Vendu"}: {item.quantity}
+                              {alreadyReturned > 0 && (
+                                <span className="text-orange-500 ml-2">
+                                  ({t("pos.alreadyReturned") || "Déjà retourné"}: {alreadyReturned})
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          <span className="font-mono text-sm">{item.unitPrice?.toLocaleString()} DZD</span>
+                        </div>
+                        {maxReturnable > 0 ? (
+                          <div className="flex items-center gap-2">
+                            <Label className="text-xs whitespace-nowrap">{t("pos.returnQty") || "Qté retour"}:</Label>
+                            <div className="flex items-center gap-1">
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                className="h-7 w-7"
+                                onClick={() => setReturnQuantities(prev => ({
+                                  ...prev,
+                                  [item.productId]: Math.max(0, currentReturnQty - 1)
+                                }))}
+                                disabled={currentReturnQty <= 0}
+                                data-testid={`button-return-minus-${item.productId}`}
+                              >
+                                <Minus className="h-3 w-3" />
+                              </Button>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={maxReturnable}
+                                value={currentReturnQty || ""}
+                                onChange={(e) => {
+                                  const val = Math.min(Math.max(0, parseInt(e.target.value) || 0), maxReturnable);
+                                  setReturnQuantities(prev => ({ ...prev, [item.productId]: val }));
+                                }}
+                                className="w-16 h-7 text-center"
+                                data-testid={`input-return-qty-${item.productId}`}
+                              />
+                              <Button
+                                size="icon"
+                                variant="outline"
+                                className="h-7 w-7"
+                                onClick={() => setReturnQuantities(prev => ({
+                                  ...prev,
+                                  [item.productId]: Math.min(maxReturnable, currentReturnQty + 1)
+                                }))}
+                                disabled={currentReturnQty >= maxReturnable}
+                                data-testid={`button-return-plus-${item.productId}`}
+                              >
+                                <Plus className="h-3 w-3" />
+                              </Button>
+                            </div>
+                            <span className="text-xs text-muted-foreground">/ {maxReturnable}</span>
+                            {currentReturnQty > 0 && (
+                              <span className="ml-auto font-mono text-sm font-semibold text-primary">
+                                {(currentReturnQty * item.unitPrice).toLocaleString()} DZD
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <Badge variant="secondary" className="text-xs">
+                            {t("pos.fullyReturned") || "Entièrement retourné"}
+                          </Badge>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Label className="text-sm">{t("pos.returnReason") || "Motif du retour"}</Label>
+                <Input
+                  value={returnReason}
+                  onChange={(e) => setReturnReason(e.target.value)}
+                  placeholder={t("pos.returnReasonPlaceholder") || "Ex: Produit défectueux, erreur..."}
+                  data-testid="input-return-reason"
+                />
+              </div>
+
+              {returnRefundTotal > 0 && (
+                <div className="p-3 rounded-md bg-primary/5 border border-primary/20">
+                  <div className="flex justify-between items-center">
+                    <span className="font-semibold">{t("pos.refundTotal") || "Total remboursement"}:</span>
+                    <span className="font-mono text-xl font-bold text-primary" data-testid="text-refund-total">
+                      {Math.round(returnRefundTotal * 100 / 100).toLocaleString()} DZD
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setReturnDialogOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            {returnLookupData && (
+              <Button
+                onClick={handleProcessReturn}
+                disabled={processReturnMutation.isPending || returnRefundTotal <= 0}
+                data-testid="button-confirm-return"
+              >
+                {processReturnMutation.isPending
+                  ? (t("common.loading"))
+                  : (t("pos.confirmReturn") || "Confirmer le retour")}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
