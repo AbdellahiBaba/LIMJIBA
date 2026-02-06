@@ -2036,6 +2036,7 @@ function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null): 
   
   const statusLabels: Record<string, string> = {
     'completed': 'Payé',
+    'partial': 'Partiel',
     'credit': 'Crédit',
     'pending': 'En attente'
   };
@@ -2188,8 +2189,30 @@ function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null): 
       letter-spacing: 0.5px;
     }
     .status-completed { background: #e8f5e9; color: #2e7d32; }
+    .status-partial { background: #e3f2fd; color: #1565c0; }
     .status-credit { background: #fff3e0; color: #e65100; }
     .status-pending { background: #f5f5f5; color: #616161; }
+    .payment-section {
+      margin-top: 8px;
+      padding: 10px 12px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      border-left: 3px solid ${primaryColor};
+    }
+    .payment-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 4px 0;
+      font-size: 11px;
+    }
+    .payment-row span:first-child { color: #666; font-weight: 500; }
+    .payment-row span:last-child { font-weight: 600; font-family: 'SF Mono', 'Consolas', monospace; }
+    .payment-row.paid { color: #2e7d32; }
+    .payment-row.paid span { color: #2e7d32; }
+    .payment-row.remaining { color: #e65100; }
+    .payment-row.remaining span { color: #e65100; }
+    .payment-row.remaining span:last-child { font-size: 13px; font-weight: 800; }
     .footer { 
       text-align: center; 
       margin-top: 18px;
@@ -2317,6 +2340,50 @@ function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null): 
       <span>${sale.total.toLocaleString('fr-FR')} DA</span>
     </div>
   </div>
+  
+  ${(() => {
+    const amountPaid = Number(sale.amountPaid) || 0;
+    const remaining = Math.max(0, Math.round((sale.total - amountPaid) * 100) / 100);
+    const status = sale.status || 'completed';
+    if (status === 'completed' && amountPaid >= sale.total) {
+      return `
+      <div class="payment-section">
+        <div class="payment-row paid">
+          <span>Montant Payé:</span>
+          <span>${sale.total.toLocaleString('fr-FR')} DA</span>
+        </div>
+        <div class="payment-row paid" style="font-weight:700;">
+          <span>Statut:</span>
+          <span style="font-family:inherit;">PAYÉ EN TOTALITÉ</span>
+        </div>
+      </div>`;
+    } else if (status === 'partial' || (amountPaid > 0 && amountPaid < sale.total)) {
+      return `
+      <div class="payment-section">
+        <div class="payment-row paid">
+          <span>Montant Payé:</span>
+          <span>${amountPaid.toLocaleString('fr-FR')} DA</span>
+        </div>
+        <div class="payment-row remaining">
+          <span>Reste à Payer:</span>
+          <span>${remaining.toLocaleString('fr-FR')} DA</span>
+        </div>
+      </div>`;
+    } else if (status === 'credit' || amountPaid === 0) {
+      return `
+      <div class="payment-section">
+        <div class="payment-row">
+          <span>Montant Payé:</span>
+          <span>0 DA</span>
+        </div>
+        <div class="payment-row remaining">
+          <span>Crédit Restant:</span>
+          <span>${sale.total.toLocaleString('fr-FR')} DA</span>
+        </div>
+      </div>`;
+    }
+    return '';
+  })()}
   
   <div class="footer">
     <div class="footer-thanks">Merci pour votre achat!</div>
