@@ -331,6 +331,51 @@ async function runMigrations(): Promise<void> {
       console.log('[DB] Created sale_payments table');
     }
     
+    // Create sale_returns table if it doesn't exist
+    const saleReturnsExists = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'sale_returns'
+      )
+    `);
+    if (!saleReturnsExists.rows[0].exists) {
+      await client.query(`
+        CREATE TABLE sale_returns (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          sale_id VARCHAR NOT NULL,
+          return_number TEXT NOT NULL UNIQUE,
+          return_date TEXT NOT NULL,
+          total_refund REAL NOT NULL,
+          reason TEXT,
+          created_by TEXT,
+          created_at TEXT NOT NULL
+        )
+      `);
+      console.log('[DB] Created sale_returns table');
+    }
+    
+    // Create sale_return_items table if it doesn't exist
+    const saleReturnItemsExists = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'sale_return_items'
+      )
+    `);
+    if (!saleReturnItemsExists.rows[0].exists) {
+      await client.query(`
+        CREATE TABLE sale_return_items (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          return_id VARCHAR NOT NULL,
+          product_id VARCHAR NOT NULL,
+          product_name TEXT NOT NULL,
+          quantity INTEGER NOT NULL,
+          unit_price REAL NOT NULL,
+          total REAL NOT NULL
+        )
+      `);
+      console.log('[DB] Created sale_return_items table');
+    }
+    
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);

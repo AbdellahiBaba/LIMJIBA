@@ -1128,6 +1128,114 @@ export async function registerRoutes(
     }
   });
 
+  // Sale Returns
+  app.get("/api/sales/lookup", async (req, res) => {
+    try {
+      const saleNumber = req.query.saleNumber as string;
+      if (!saleNumber) {
+        return res.status(400).json({ error: "saleNumber query parameter is required" });
+      }
+      const sale = await storage.getSaleByNumber(saleNumber);
+      if (!sale) {
+        return res.status(404).json({ error: "Sale not found with this ticket number" });
+      }
+      const saleWithItems = await storage.getSaleWithItems(sale.id);
+      if (!saleWithItems) {
+        return res.status(404).json({ error: "Sale not found" });
+      }
+      const returnedQuantities = await storage.getReturnedQuantities(sale.id);
+      res.json({ ...saleWithItems, returnedQuantities });
+    } catch (error) {
+      handleError(res, "lookup sale by number", error);
+    }
+  });
+
+  app.get("/api/sales/:id/returns", async (req, res) => {
+    try {
+      const returns = await storage.getSaleReturns(req.params.id);
+      res.json(returns);
+    } catch (error) {
+      handleError(res, "get sale returns", error);
+    }
+  });
+
+  app.post("/api/sales/:id/returns", async (req, res) => {
+    try {
+      const sale = await storage.getSale(req.params.id);
+      if (!sale) {
+        return res.status(404).json({ error: "Sale not found" });
+      }
+
+      const { items, reason } = req.body;
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ error: "At least one return item is required" });
+      }
+
+      const saleWithItems = await storage.getSaleWithItems(req.params.id);
+      if (!saleWithItems) {
+        return res.status(404).json({ error: "Sale not found" });
+      }
+
+      const returnedQuantities = await storage.getReturnedQuantities(req.params.id);
+
+      for (const item of items) {
+        if (!item.productId || !item.quantity || item.quantity <= 0) {
+          return res.status(400).json({ error: "Each item must have productId and positive quantity" });
+        }
+        const saleItem = saleWithItems.items.find((si: any) => si.productId === item.productId);
+        if (!saleItem) {
+          return res.status(400).json({ error: `Product ${item.productId} was not in this sale` });
+        }
+        const alreadyReturned = returnedQuantities[item.productId] || 0;
+        const maxReturnable = saleItem.quantity - alreadyReturned;
+        if (item.quantity > maxReturnable) {
+          return res.status(400).json({ error: `Cannot return more than ${maxReturnable} of ${saleItem.productName}` });
+        }
+      }
+
+      const returnNumber = await storage.getNextReturnNumber();
+      const now = new Date();
+      const returnDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+
+      const returnItems: any[] = items.map((item: any) => {
+        const saleItem = saleWithItems.items.find((si: any) => si.productId === item.productId)!;
+        return {
+          productId: item.productId,
+          productName: saleItem.productName,
+          quantity: item.quantity,
+          unitPrice: saleItem.unitPrice,
+          total: Math.round(item.quantity * saleItem.unitPrice * 100) / 100,
+        };
+      });
+
+      const totalRefund = returnItems.reduce((sum: number, i: any) => sum + i.total, 0);
+
+      const returnData = {
+        saleId: req.params.id,
+        returnNumber,
+        returnDate,
+        totalRefund: Math.round(totalRefund * 100) / 100,
+        reason: reason || null,
+        createdBy: (req.session as any)?.userId || 'system',
+        createdAt: now.toISOString(),
+      };
+
+      const result = await storage.processReturn(req.params.id, returnData, returnItems);
+      res.status(201).json(result);
+    } catch (error) {
+      handleError(res, "process sale return", error);
+    }
+  });
+
+  app.get("/api/returns/next-number", async (req, res) => {
+    try {
+      const nextNumber = await storage.getNextReturnNumber();
+      res.json({ returnNumber: nextNumber });
+    } catch (error) {
+      handleError(res, "get next return number", error);
+    }
+  });
+
   // CSV Export endpoints
   app.get("/api/sales/export/csv", async (req, res) => {
     try {

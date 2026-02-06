@@ -159,6 +159,37 @@ export const insertSalePaymentSchema = createInsertSchema(salePayments).omit({ i
 export type InsertSalePayment = z.infer<typeof insertSalePaymentSchema>;
 export type SalePayment = typeof salePayments.$inferSelect;
 
+export const saleReturns = pgTable("sale_returns", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  saleId: varchar("sale_id").notNull(),
+  returnNumber: text("return_number").notNull().unique(),
+  returnDate: text("return_date").notNull(),
+  totalRefund: real("total_refund").notNull(),
+  reason: text("reason"),
+  createdBy: text("created_by"),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertSaleReturnSchema = createInsertSchema(saleReturns).omit({ id: true });
+export type InsertSaleReturn = z.infer<typeof insertSaleReturnSchema>;
+export type SaleReturn = typeof saleReturns.$inferSelect;
+
+export const saleReturnItems = pgTable("sale_return_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  returnId: varchar("return_id").notNull(),
+  productId: varchar("product_id").notNull(),
+  productName: text("product_name").notNull(),
+  quantity: integer("quantity").notNull(),
+  unitPrice: real("unit_price").notNull(),
+  total: real("total").notNull(),
+});
+
+export const insertSaleReturnItemSchema = createInsertSchema(saleReturnItems).omit({ id: true, returnId: true });
+export type InsertSaleReturnItem = z.infer<typeof insertSaleReturnItemSchema>;
+export type SaleReturnItem = typeof saleReturnItems.$inferSelect;
+
+export type SaleReturnWithItems = SaleReturn & { items: SaleReturnItem[] };
+
 export const resellers = pgTable("resellers", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),

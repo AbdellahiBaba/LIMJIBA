@@ -40,6 +40,11 @@ import {
   type Setting,
   type InventoryValuation,
   type ProductInventoryValue,
+  type SaleReturn,
+  type InsertSaleReturn,
+  type SaleReturnItem,
+  type InsertSaleReturnItem,
+  type SaleReturnWithItems,
   users,
   products,
   invoices,
@@ -52,6 +57,8 @@ import {
   employees,
   salaryPayments,
   salePayments,
+  saleReturns,
+  saleReturnItems,
   expenses,
   fabricationInvoices,
   fabricationItems,
@@ -148,6 +155,12 @@ export interface IStorage {
   deleteSalePayment(id: string): Promise<boolean>;
   getSalePaidAmount(saleId: string): Promise<number>;
   updateSale(id: string, data: Partial<InsertSale>): Promise<Sale | undefined>;
+
+  getSaleByNumber(saleNumber: string): Promise<Sale | undefined>;
+  getSaleReturns(saleId: string): Promise<SaleReturnWithItems[]>;
+  getReturnedQuantities(saleId: string): Promise<Record<string, number>>;
+  processReturn(saleId: string, returnData: InsertSaleReturn, items: InsertSaleReturnItem[]): Promise<SaleReturnWithItems>;
+  getNextReturnNumber(): Promise<string>;
 
   exportAllData(): Promise<object>;
   importAllData(data: object): Promise<{ imported: number }>;
@@ -1407,6 +1420,123 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db.update(sales).set(data).where(eq(sales.id, id)).returning();
       cache.delete(CACHE_KEYS.SALES);
       return updated || undefined;
+    });
+  }
+
+  async getSaleByNumber(saleNumber: string): Promise<Sale | undefined> {
+    return await withRetry(async () => {
+      const [sale] = await db.select().from(sales).where(eq(sales.saleNumber, saleNumber));
+      return sale || undefined;
+    });
+  }
+
+  async getSaleReturns(saleId: string): Promise<SaleReturnWithItems[]> {
+    return await withRetry(async () => {
+      const returns = await db.select().from(saleReturns).where(eq(saleReturns.saleId, saleId)).orderBy(desc(saleReturns.createdAt));
+      const result: SaleReturnWithItems[] = [];
+      for (const ret of returns) {
+        const items = await db.select().from(saleReturnItems).where(eq(saleReturnItems.returnId, ret.id));
+        result.push({ ...ret, items });
+      }
+      return result;
+    });
+  }
+
+  async getReturnedQuantities(saleId: string): Promise<Record<string, number>> {
+    return await withRetry(async () => {
+      const returns = await db.select().from(saleReturns).where(eq(saleReturns.saleId, saleId));
+      const quantities: Record<string, number> = {};
+      for (const ret of returns) {
+        const items = await db.select().from(saleReturnItems).where(eq(saleReturnItems.returnId, ret.id));
+        for (const item of items) {
+          quantities[item.productId] = (quantities[item.productId] || 0) + item.quantity;
+        }
+      }
+      return quantities;
+    });
+  }
+
+  async getNextReturnNumber(): Promise<string> {
+    return await withRetry(async () => {
+      const allReturns = await db.select({ returnNumber: saleReturns.returnNumber }).from(saleReturns);
+      let maxNum = 0;
+      for (const r of allReturns) {
+        const match = r.returnNumber.match(/RET-(\d+)/);
+        if (match) {
+          const num = parseInt(match[1]);
+          if (num > maxNum) maxNum = num;
+        }
+      }
+      return `RET-${String(maxNum + 1).padStart(4, '0')}`;
+    });
+  }
+
+  async processReturn(saleId: string, returnData: InsertSaleReturn, items: InsertSaleReturnItem[]): Promise<SaleReturnWithItems> {
+    return await withRetry(async () => {
+      return await db.transaction(async (tx) => {
+        const [saleRecord] = await tx.select().from(sales).where(eq(sales.id, saleId));
+        if (!saleRecord) throw new Error("Sale not found");
+
+        const [createdReturn] = await tx.insert(saleReturns).values(returnData).returning();
+
+        const createdItems: SaleReturnItem[] = [];
+        let totalRefund = 0;
+
+        for (const item of items) {
+          const [createdItem] = await tx.insert(saleReturnItems).values({
+            ...item,
+            returnId: createdReturn.id,
+          }).returning();
+          createdItems.push(createdItem);
+          totalRefund += item.total;
+
+          const [product] = await tx.select().from(products).where(eq(products.id, item.productId));
+          if (product) {
+            const previousStock = product.stockQuantity;
+            const newStock = previousStock + item.quantity;
+            await tx.update(products).set({ stockQuantity: newStock }).where(eq(products.id, item.productId));
+
+            await tx.insert(stockMovements).values({
+              productId: item.productId,
+              movementType: 'in',
+              reason: 'return',
+              quantity: item.quantity,
+              previousStock,
+              newStock,
+              reference: createdReturn.returnNumber,
+              createdAt: new Date().toISOString(),
+              createdBy: returnData.createdBy || 'system',
+            });
+          }
+        }
+
+        const newTotal = Math.round((saleRecord.total - totalRefund) * 100) / 100;
+        const currentAmountPaid = Number(saleRecord.amountPaid) || 0;
+        const clampedAmountPaid = Math.min(currentAmountPaid, Math.max(0, newTotal));
+
+        let newStatus: string;
+        if (newTotal <= 0) {
+          newStatus = 'completed';
+        } else if (clampedAmountPaid >= newTotal) {
+          newStatus = 'completed';
+        } else if (clampedAmountPaid > 0) {
+          newStatus = 'partial';
+        } else {
+          newStatus = 'credit';
+        }
+
+        await tx.update(sales).set({
+          total: Math.max(0, newTotal),
+          amountPaid: clampedAmountPaid,
+          status: newStatus,
+        }).where(eq(sales.id, saleId));
+
+        cache.delete(CACHE_KEYS.SALES);
+        cache.delete(CACHE_KEYS.PRODUCTS);
+        cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+
+        return { ...createdReturn, items: createdItems };
+      });
     });
   }
 

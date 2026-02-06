@@ -38,6 +38,8 @@ import {
   Check,
   Printer,
   Keyboard,
+  RotateCcw,
+  ArrowLeft,
 } from "lucide-react";
 import {
   Tooltip,
@@ -65,6 +67,13 @@ export default function POS() {
   const [newResellerName, setNewResellerName] = useState("");
   const [newResellerPhone, setNewResellerPhone] = useState("");
   const [amountPaidInput, setAmountPaidInput] = useState<string>("");
+  const [returnDialogOpen, setReturnDialogOpen] = useState(false);
+  const [returnTicketNumber, setReturnTicketNumber] = useState("");
+  const [returnLookupData, setReturnLookupData] = useState<any>(null);
+  const [returnLookupError, setReturnLookupError] = useState("");
+  const [returnLookupLoading, setReturnLookupLoading] = useState(false);
+  const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({});
+  const [returnReason, setReturnReason] = useState("");
 
   const { data: products, isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -114,6 +123,80 @@ export default function POS() {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
+
+  const lookupSaleForReturn = async () => {
+    if (!returnTicketNumber.trim()) {
+      setReturnLookupError(t("pos.enterTicketNumber") || "Please enter a ticket number");
+      return;
+    }
+    setReturnLookupLoading(true);
+    setReturnLookupError("");
+    setReturnLookupData(null);
+    setReturnQuantities({});
+    try {
+      const response = await fetch(`/api/sales/lookup?saleNumber=${encodeURIComponent(returnTicketNumber.trim())}`, {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        const err = await response.json();
+        setReturnLookupError(err.error || t("pos.saleNotFound") || "Sale not found");
+        return;
+      }
+      const data = await response.json();
+      setReturnLookupData(data);
+    } catch (e: any) {
+      setReturnLookupError(e.message || t("common.error"));
+    } finally {
+      setReturnLookupLoading(false);
+    }
+  };
+
+  const processReturnMutation = useMutation({
+    mutationFn: async (data: { saleId: string; items: { productId: string; quantity: number }[]; reason: string }) => {
+      const response = await apiRequest("POST", `/api/sales/${data.saleId}/returns`, {
+        items: data.items,
+        reason: data.reason,
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({ title: t("pos.returnProcessed") || "Return processed successfully" });
+      setReturnDialogOpen(false);
+      setReturnTicketNumber("");
+      setReturnLookupData(null);
+      setReturnQuantities({});
+      setReturnReason("");
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
+    },
+  });
+
+  const handleProcessReturn = () => {
+    if (!returnLookupData) return;
+    const itemsToReturn = Object.entries(returnQuantities)
+      .filter(([_, qty]) => qty > 0)
+      .map(([productId, quantity]) => ({ productId, quantity }));
+    if (itemsToReturn.length === 0) {
+      toast({ title: t("pos.selectItemsToReturn") || "Select at least one item to return", variant: "destructive" });
+      return;
+    }
+    processReturnMutation.mutate({
+      saleId: returnLookupData.id,
+      items: itemsToReturn,
+      reason: returnReason,
+    });
+  };
+
+  const returnRefundTotal = returnLookupData
+    ? returnLookupData.items.reduce((sum: number, item: any) => {
+        const qty = returnQuantities[item.productId] || 0;
+        return sum + (qty * item.unitPrice);
+      }, 0)
+    : 0;
 
   const handleAddReseller = () => {
     if (!newResellerName.trim()) {
