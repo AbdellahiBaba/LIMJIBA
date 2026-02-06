@@ -51,9 +51,10 @@ import {
   ArrowUpDown,
   Download,
   DollarSign,
+  User,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Sale, SaleWithItems } from "@shared/schema";
+import type { Sale, SaleWithItems, Reseller } from "@shared/schema";
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   completed: { label: "Payé", color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200", icon: CheckCircle },
@@ -86,6 +87,19 @@ export default function Sales() {
   const { data: sales, isLoading } = useQuery<Sale[]>({
     queryKey: ["/api/sales"],
   });
+
+  const { data: resellers } = useQuery<Reseller[]>({
+    queryKey: ["/api/resellers"],
+  });
+
+  const resellerMap = new Map(resellers?.map(r => [r.id, r.name]) || []);
+
+  const getClientName = (sale: Sale) => {
+    if (sale.resellerId && resellerMap.has(sale.resellerId)) {
+      return resellerMap.get(sale.resellerId) || "";
+    }
+    return sale.customerName || "";
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/sales/${id}`),
@@ -134,8 +148,11 @@ export default function Sales() {
   });
 
   const filteredSales = sales?.filter((sale) => {
+    const searchLower = search.toLowerCase();
+    const clientName = getClientName(sale).toLowerCase();
     const matchesSearch =
-      sale.saleNumber.toLowerCase().includes(search.toLowerCase());
+      sale.saleNumber.toLowerCase().includes(searchLower) ||
+      clientName.includes(searchLower);
     const matchesStatus =
       statusFilter === "all" || sale.status === statusFilter;
     return matchesSearch && matchesStatus;
@@ -258,8 +275,9 @@ export default function Sales() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>Numéro</TableHead>
+                    <TableHead>Client</TableHead>
                     <TableHead>Date</TableHead>
-                    <TableHead>Paiement</TableHead>
+                    <TableHead className="hidden sm:table-cell">Paiement</TableHead>
                     <TableHead>Statut</TableHead>
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead className="w-[50px]"></TableHead>
@@ -277,8 +295,18 @@ export default function Sales() {
                         <TableCell className="font-medium">
                           {sale.saleNumber}
                         </TableCell>
+                        <TableCell data-testid={`text-client-${sale.id}`}>
+                          {getClientName(sale) ? (
+                            <div className="flex items-center gap-1.5">
+                              <User className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
+                              <span className="truncate max-w-[120px]">{getClientName(sale)}</span>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground text-xs">—</span>
+                          )}
+                        </TableCell>
                         <TableCell>{formatDateDMY(sale.date)}</TableCell>
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           <div className="flex items-center gap-2">
                             <PaymentIcon className="h-4 w-4 text-muted-foreground" />
                             <span>{payment.label}</span>
@@ -357,6 +385,12 @@ export default function Sales() {
                 <div>
                   <span className="text-muted-foreground">Date:</span>
                   <p className="font-medium">{formatDateDMY(viewSale.date)}</p>
+                </div>
+                <div>
+                  <span className="text-muted-foreground">Client:</span>
+                  <p className="font-medium" data-testid="text-detail-client">
+                    {getClientName(viewSale) || "—"}
+                  </p>
                 </div>
                 <div>
                   <span className="text-muted-foreground">Paiement:</span>
