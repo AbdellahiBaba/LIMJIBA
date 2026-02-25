@@ -156,6 +156,7 @@ export interface IStorage {
   getSalePaidAmount(saleId: string): Promise<number>;
   updateSale(id: string, data: Partial<InsertSale>): Promise<Sale | undefined>;
 
+  updateSaleWithItems(id: string, saleData: Partial<InsertSale>, items: InsertSaleItem[]): Promise<SaleWithItems | undefined>;
   getSaleByNumber(saleNumber: string): Promise<Sale | undefined>;
   getSaleReturns(saleId: string): Promise<SaleReturnWithItems[]>;
   getReturnedQuantities(saleId: string): Promise<Record<string, number>>;
@@ -1421,6 +1422,84 @@ export class DatabaseStorage implements IStorage {
       cache.delete(CACHE_KEYS.SALES);
       return updated || undefined;
     });
+  }
+
+  async updateSaleWithItems(id: string, saleData: Partial<InsertSale>, newItems: InsertSaleItem[]): Promise<SaleWithItems | undefined> {
+    const result = await withRetry(async () => {
+      return await db.transaction(async (tx) => {
+        const [existingSale] = await tx.select().from(sales).where(eq(sales.id, id));
+        if (!existingSale) return undefined;
+
+        const oldItems = await tx.select().from(saleItems).where(eq(saleItems.saleId, id));
+
+        for (const oldItem of oldItems) {
+          const [product] = await tx.select().from(products).where(eq(products.id, oldItem.productId));
+          if (product) {
+            const restoredStock = product.stockQuantity + oldItem.quantity;
+            await tx.update(products).set({ stockQuantity: restoredStock }).where(eq(products.id, oldItem.productId));
+            await tx.insert(stockMovements).values({
+              productId: product.id,
+              quantity: oldItem.quantity,
+              movementType: "in",
+              reason: "sale_edit_restore",
+              previousStock: product.stockQuantity,
+              newStock: restoredStock,
+              reference: existingSale.saleNumber,
+              createdAt: new Date().toISOString(),
+            });
+          }
+        }
+
+        await tx.delete(saleItems).where(eq(saleItems.saleId, id));
+
+        if (!newItems || newItems.length === 0) {
+          throw new Error("Sale must have at least one item.");
+        }
+
+        const createdItems: SaleItem[] = [];
+        for (const item of newItems) {
+          if (item.quantity <= 0) {
+            throw new Error(`Item "${item.productName}" has invalid quantity.`);
+          }
+          const [product] = await tx.select().from(products).where(eq(products.id, item.productId));
+          if (!product) {
+            throw new Error(`Product "${item.productName}" not found.`);
+          }
+          if (product.stockQuantity < item.quantity) {
+            throw new Error(`Insufficient stock for "${product.name}": requested ${item.quantity}, available ${product.stockQuantity}.`);
+          }
+
+          const costPrice = product.costPrice || 0;
+          const [createdItem] = await tx.insert(saleItems).values({
+            ...item,
+            saleId: id,
+            costPrice: Math.round(costPrice * 100) / 100,
+          }).returning();
+          createdItems.push(createdItem);
+
+          const newStock = product.stockQuantity - item.quantity;
+          await tx.update(products).set({ stockQuantity: newStock }).where(eq(products.id, item.productId));
+          await tx.insert(stockMovements).values({
+            productId: product.id,
+            quantity: -item.quantity,
+            movementType: "out",
+            reason: "sale_edit_deduct",
+            previousStock: product.stockQuantity,
+            newStock,
+            reference: existingSale.saleNumber,
+            createdAt: new Date().toISOString(),
+          });
+        }
+
+        const [updatedSale] = await tx.update(sales).set(saleData).where(eq(sales.id, id)).returning();
+        return { ...updatedSale, items: createdItems };
+      });
+    });
+
+    cache.delete(CACHE_KEYS.SALES);
+    cache.delete(CACHE_KEYS.PRODUCTS);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+    return result || undefined;
   }
 
   async getSaleByNumber(saleNumber: string): Promise<Sale | undefined> {

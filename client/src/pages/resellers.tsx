@@ -1,13 +1,14 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useLanguage } from "@/contexts/language-context";
+import { useLanguage, useBranding } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
   DialogContent,
@@ -25,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Plus,
   Search,
@@ -36,9 +38,30 @@ import {
   Sparkles,
   Settings,
   Check,
+  Printer,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Reseller, InsertReseller } from "@shared/schema";
+
+type PrintField = "name" | "phone" | "email" | "totalPurchases" | "rewardThreshold" | "progress" | "status";
+
+interface PrintFieldConfig {
+  key: PrintField;
+  label: string;
+}
+
+const PRINT_FIELDS: PrintFieldConfig[] = [
+  { key: "name", label: "Nom" },
+  { key: "phone", label: "Téléphone" },
+  { key: "email", label: "Email" },
+  { key: "totalPurchases", label: "Total achats" },
+  { key: "rewardThreshold", label: "Seuil récompense" },
+  { key: "progress", label: "Progression" },
+  { key: "status", label: "Statut" },
+];
+
+const DEFAULT_ADMIN_FIELDS: PrintField[] = ["name", "phone", "email", "totalPurchases", "rewardThreshold", "progress", "status"];
+const DEFAULT_CUSTOMER_FIELDS: PrintField[] = ["name", "phone", "totalPurchases", "progress"];
 
 function ResellerFormDialog({
   open,
@@ -234,11 +257,16 @@ function WinnerDialog({
 export default function Resellers() {
   const { toast } = useToast();
   const { t } = useLanguage();
+  const { branding } = useBranding();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingReseller, setEditingReseller] = useState<Reseller | undefined>();
   const [winnerDialogOpen, setWinnerDialogOpen] = useState(false);
   const [selectedWinner, setSelectedWinner] = useState<Reseller | null>(null);
+  const [printDialogOpen, setPrintDialogOpen] = useState(false);
+  const [adminFields, setAdminFields] = useState<PrintField[]>([...DEFAULT_ADMIN_FIELDS]);
+  const [customerFields, setCustomerFields] = useState<PrintField[]>([...DEFAULT_CUSTOMER_FIELDS]);
+  const [printTab, setPrintTab] = useState<string>("admin");
 
   const { data: resellers, isLoading } = useQuery<Reseller[]>({
     queryKey: ["/api/resellers"],
@@ -305,6 +333,68 @@ export default function Resellers() {
     setEditingReseller(undefined);
   };
 
+  const toggleField = (copy: "admin" | "customer", field: PrintField) => {
+    const setter = copy === "admin" ? setAdminFields : setCustomerFields;
+    setter(prev => prev.includes(field) ? prev.filter(f => f !== field) : [...prev, field]);
+  };
+
+  const handlePrint = () => {
+    const resellersToPrint = filteredResellers || [];
+    if (resellersToPrint.length === 0) {
+      toast({ title: "Aucun revendeur à imprimer", variant: "destructive" });
+      return;
+    }
+
+    const companyName = branding?.companyName || "POLY FLECTA PLASTICA";
+
+    const buildTable = (fields: PrintField[], copyTitle: string) => {
+      const headers = fields.map(f => PRINT_FIELDS.find(pf => pf.key === f)?.label || f).map(h => `<th style="border:1px solid #333;padding:6px 10px;text-align:left;background:#f0f0f0;font-size:11px;">${h}</th>`).join("");
+
+      const rows = resellersToPrint.map(r => {
+        const progress = Math.min((r.totalPurchases / r.rewardThreshold) * 100, 100);
+        const cellMap: Record<PrintField, string> = {
+          name: r.name,
+          phone: r.phone || "-",
+          email: r.email || "-",
+          totalPurchases: `${r.totalPurchases.toLocaleString()} DZD`,
+          rewardThreshold: `${r.rewardThreshold.toLocaleString()} DZD`,
+          progress: `${Math.round(progress)}%`,
+          status: r.isWinner ? "🏆 Gagnant" : r.inRewardPool ? "🎁 Éligible" : "Actif",
+        };
+        const cells = fields.map(f => `<td style="border:1px solid #ccc;padding:5px 10px;font-size:11px;">${cellMap[f]}</td>`).join("");
+        return `<tr>${cells}</tr>`;
+      }).join("");
+
+      return `
+        <div style="page-break-after:always;padding:20px;">
+          <div style="text-align:center;margin-bottom:15px;">
+            <h2 style="margin:0;font-size:16px;">${companyName}</h2>
+            <p style="margin:4px 0;font-size:12px;color:#666;">Liste des revendeurs — ${copyTitle}</p>
+            <p style="margin:2px 0;font-size:10px;color:#999;">Imprimé le: ${new Date().toLocaleDateString("fr-FR")}</p>
+          </div>
+          <table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;">
+            <thead><tr>${headers}</tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+          <p style="text-align:right;font-size:10px;color:#999;margin-top:10px;">Total: ${resellersToPrint.length} revendeur(s)</p>
+        </div>`;
+    };
+
+    let html = `<html><head><title>Revendeurs</title><style>@media print { body { margin: 0; } }</style></head><body>`;
+    html += buildTable(adminFields, "Copie Admin");
+    html += buildTable(customerFields, "Copie Client");
+    html += `</body></html>`;
+
+    const printWindow = window.open("", "_blank");
+    if (printWindow) {
+      printWindow.document.write(html);
+      printWindow.document.close();
+      printWindow.focus();
+      setTimeout(() => printWindow.print(), 300);
+    }
+    setPrintDialogOpen(false);
+  };
+
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
@@ -316,10 +406,16 @@ export default function Resellers() {
             {t("resellers.eligibleResellers")}
           </p>
         </div>
-        <Button onClick={handleNew} data-testid="button-add-reseller">
-          <Plus className="h-4 w-4 mr-2" />
-          {t("resellers.addReseller")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setPrintDialogOpen(true)} data-testid="button-print-resellers">
+            <Printer className="h-4 w-4 mr-2" />
+            Imprimer
+          </Button>
+          <Button onClick={handleNew} data-testid="button-add-reseller">
+            <Plus className="h-4 w-4 mr-2" />
+            {t("resellers.addReseller")}
+          </Button>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
@@ -545,6 +641,84 @@ export default function Resellers() {
         winner={selectedWinner}
         t={t}
       />
+
+      <Dialog open={printDialogOpen} onOpenChange={setPrintDialogOpen}>
+        <DialogContent className="sm:max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Imprimer la liste des revendeurs</DialogTitle>
+            <DialogDescription>
+              Personnalisez les informations visibles pour chaque copie
+            </DialogDescription>
+          </DialogHeader>
+          <Tabs value={printTab} onValueChange={setPrintTab}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="admin" data-testid="tab-admin-copy">Copie Admin</TabsTrigger>
+              <TabsTrigger value="customer" data-testid="tab-customer-copy">Copie Client</TabsTrigger>
+            </TabsList>
+            <TabsContent value="admin" className="mt-4">
+              <p className="text-sm text-muted-foreground mb-3">
+                Sélectionnez les champs à afficher dans la copie admin
+              </p>
+              <div className="space-y-3">
+                {PRINT_FIELDS.map(field => (
+                  <div key={field.key} className="flex items-center gap-3">
+                    <Checkbox
+                      id={`admin-${field.key}`}
+                      checked={adminFields.includes(field.key)}
+                      onCheckedChange={() => toggleField("admin", field.key)}
+                      data-testid={`checkbox-admin-${field.key}`}
+                    />
+                    <Label htmlFor={`admin-${field.key}`} className="text-sm cursor-pointer">
+                      {field.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+            <TabsContent value="customer" className="mt-4">
+              <p className="text-sm text-muted-foreground mb-3">
+                Sélectionnez les champs à afficher dans la copie client
+              </p>
+              <div className="space-y-3">
+                {PRINT_FIELDS.map(field => (
+                  <div key={field.key} className="flex items-center gap-3">
+                    <Checkbox
+                      id={`customer-${field.key}`}
+                      checked={customerFields.includes(field.key)}
+                      onCheckedChange={() => toggleField("customer", field.key)}
+                      data-testid={`checkbox-customer-${field.key}`}
+                    />
+                    <Label htmlFor={`customer-${field.key}`} className="text-sm cursor-pointer">
+                      {field.label}
+                    </Label>
+                  </div>
+                ))}
+              </div>
+            </TabsContent>
+          </Tabs>
+          <div className="bg-muted/50 rounded-lg p-3 mt-2">
+            <p className="text-xs text-muted-foreground">
+              <strong>Admin:</strong> {adminFields.length} champ(s) sélectionné(s) — <strong>Client:</strong> {customerFields.length} champ(s) sélectionné(s)
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              {filteredResellers?.length || 0} revendeur(s) seront imprimés (2 copies par page)
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPrintDialogOpen(false)}>
+              Annuler
+            </Button>
+            <Button
+              onClick={handlePrint}
+              disabled={adminFields.length === 0 && customerFields.length === 0}
+              data-testid="button-confirm-print"
+            >
+              <Printer className="h-4 w-4 mr-2" />
+              Imprimer (2 copies)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

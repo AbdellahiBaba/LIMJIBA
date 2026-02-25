@@ -101,6 +101,22 @@ Core entities:
 
 ## Recent Changes
 
+**February 2026 - Sales Editing & Reseller Print:**
+- **Sales Ticket Editing**: Full edit capability for existing sales via "Modifier" action
+  - Edit dialog allows adding/removing products, changing quantities and unit prices
+  - Product search with autocomplete for adding new items
+  - Discount editing with real-time total recalculation
+  - Stock automatically restored then re-deducted in a single transaction
+  - Stock movements logged for audit trail (sale_edit_restore / sale_edit_deduct)
+  - API: PUT /api/sales/:id/edit with items array, discount, customerName, customerPhone
+  - Storage: updateSaleWithItems() handles full item replacement with stock management
+- **Reseller List Print Customization**: Two-copy print system (Admin + Customer)
+  - Print dialog with field visibility toggles per copy
+  - 7 toggleable fields: Name, Phone, Email, Total Purchases, Reward Threshold, Progress, Status
+  - Admin copy defaults to all fields; Customer copy defaults to basic info
+  - Both copies print on separate pages with company header and date
+  - Respects current search filter (only prints filtered resellers)
+
 **January 2026 - GAAP/IFRS Accounting Compliance:**
 - **Historical COGS Tracking**: Sale and invoice items now store costPrice at time of transaction
   - Prevents retroactive COGS changes when product costs are updated

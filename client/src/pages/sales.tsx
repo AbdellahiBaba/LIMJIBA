@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLanguage, useBranding } from "@/contexts/language-context";
@@ -38,6 +38,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Label } from "@/components/ui/label";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Search,
   MoreHorizontal,
@@ -52,9 +53,22 @@ import {
   Download,
   DollarSign,
   User,
+  Edit,
+  Plus,
+  Minus,
+  X,
+  Save,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import type { Sale, SaleWithItems, Reseller } from "@shared/schema";
+import type { Sale, SaleWithItems, SaleItem, Product, Reseller } from "@shared/schema";
+
+interface EditItem {
+  productId: string;
+  productName: string;
+  quantity: number;
+  unitPrice: number;
+  total: number;
+}
 
 const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
   completed: { label: "Payé", color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200", icon: CheckCircle },
@@ -83,6 +97,11 @@ export default function Sales() {
   const [paymentSale, setPaymentSale] = useState<Sale | null>(null);
   const [paymentAmount, setPaymentAmount] = useState<string>("");
   const [paymentMethod, setPaymentMethod] = useState<string>("CASH");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editSale, setEditSale] = useState<SaleWithItems | null>(null);
+  const [editItems, setEditItems] = useState<EditItem[]>([]);
+  const [editDiscount, setEditDiscount] = useState<string>("0");
+  const [editProductSearch, setEditProductSearch] = useState("");
 
   const { data: sales, isLoading } = useQuery<Sale[]>({
     queryKey: ["/api/sales"],
@@ -90,6 +109,10 @@ export default function Sales() {
 
   const { data: resellers } = useQuery<Reseller[]>({
     queryKey: ["/api/resellers"],
+  });
+
+  const { data: products } = useQuery<Product[]>({
+    queryKey: ["/api/products"],
   });
 
   const resellerMap = new Map(resellers?.map(r => [r.id, r.name]) || []);
@@ -146,6 +169,99 @@ export default function Sales() {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
+
+  const editSaleMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: any }) =>
+      apiRequest("PUT", `/api/sales/${id}/edit`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({ title: "Vente modifiée avec succès" });
+      setEditDialogOpen(false);
+      setEditSale(null);
+      setEditItems([]);
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
+    },
+  });
+
+  const filteredProducts = useMemo(() => {
+    if (!editProductSearch || !products) return [];
+    const search = editProductSearch.toLowerCase();
+    return products.filter(p =>
+      p.name.toLowerCase().includes(search) &&
+      !editItems.some(ei => ei.productId === p.id)
+    ).slice(0, 5);
+  }, [editProductSearch, products, editItems]);
+
+  const editSubtotal = editItems.reduce((sum, item) => sum + item.total, 0);
+  const editTotal = Math.max(0, editSubtotal - (parseFloat(editDiscount) || 0));
+
+  const handleEditSale = async (id: string) => {
+    try {
+      const response = await fetch(`/api/sales/${id}`, { credentials: "include" });
+      if (response.ok) {
+        const data: SaleWithItems = await response.json();
+        setEditSale(data);
+        setEditItems(data.items.map(item => ({
+          productId: item.productId,
+          productName: item.productName,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          total: item.total,
+        })));
+        setEditDiscount(String(data.discount || 0));
+        setEditProductSearch("");
+        setEditDialogOpen(true);
+      }
+    } catch (error) {
+      toast({ title: t("common.error"), variant: "destructive" });
+    }
+  };
+
+  const addEditItem = (product: Product) => {
+    setEditItems(prev => [...prev, {
+      productId: product.id,
+      productName: product.name,
+      quantity: 1,
+      unitPrice: product.unitPrice,
+      total: product.unitPrice,
+    }]);
+    setEditProductSearch("");
+  };
+
+  const removeEditItem = (index: number) => {
+    setEditItems(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const updateEditItemQuantity = (index: number, qty: number) => {
+    if (qty < 1) return;
+    setEditItems(prev => prev.map((item, i) =>
+      i === index ? { ...item, quantity: qty, total: Math.round(qty * item.unitPrice * 100) / 100 } : item
+    ));
+  };
+
+  const updateEditItemPrice = (index: number, price: number) => {
+    if (price < 0) return;
+    setEditItems(prev => prev.map((item, i) =>
+      i === index ? { ...item, unitPrice: price, total: Math.round(item.quantity * price * 100) / 100 } : item
+    ));
+  };
+
+  const confirmEditSale = () => {
+    if (!editSale || editItems.length === 0) return;
+    editSaleMutation.mutate({
+      id: editSale.id,
+      data: {
+        items: editItems,
+        discount: parseFloat(editDiscount) || 0,
+        customerName: editSale.customerName,
+        customerPhone: editSale.customerPhone,
+      },
+    });
+  };
 
   const filteredSales = sales?.filter((sale) => {
     const searchLower = search.toLowerCase();
@@ -332,6 +448,10 @@ export default function Sales() {
                               <DropdownMenuItem onClick={() => handleViewSale(sale.id)}>
                                 <Eye className="h-4 w-4 mr-2" />
                                 Voir détails
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => handleEditSale(sale.id)}>
+                                <Edit className="h-4 w-4 mr-2" />
+                                Modifier
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handlePrintReceipt(sale.id)}>
                                 <Printer className="h-4 w-4 mr-2" />
@@ -562,6 +682,156 @@ export default function Sales() {
               data-testid="button-confirm-payment"
             >
               {recordPaymentMutation.isPending ? (t("common.saving") || "Enregistrement...") : (t("sales.recordPayment") || "Enregistrer")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={editDialogOpen} onOpenChange={(open) => { if (!open) { setEditDialogOpen(false); setEditSale(null); } }}>
+        <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle>Modifier la vente</DialogTitle>
+            <DialogDescription>{editSale?.saleNumber}</DialogDescription>
+          </DialogHeader>
+          {editSale && (
+            <div className="flex-1 overflow-hidden flex flex-col gap-4">
+              <div className="space-y-2">
+                <Label>Ajouter un produit</Label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Rechercher un produit..."
+                    value={editProductSearch}
+                    onChange={(e) => setEditProductSearch(e.target.value)}
+                    className="pl-9"
+                    data-testid="input-edit-product-search"
+                  />
+                </div>
+                {filteredProducts.length > 0 && (
+                  <div className="border rounded-md divide-y max-h-32 overflow-y-auto">
+                    {filteredProducts.map(product => (
+                      <button
+                        key={product.id}
+                        className="w-full flex items-center justify-between px-3 py-2 text-sm hover:bg-muted/50 transition-colors"
+                        onClick={() => addEditItem(product)}
+                        data-testid={`button-add-product-${product.id}`}
+                      >
+                        <span>{product.name}</span>
+                        <span className="text-muted-foreground font-mono">{product.unitPrice.toLocaleString("fr-FR")} DA</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <ScrollArea className="flex-1 max-h-[280px]">
+                <div className="space-y-2 pr-3">
+                  {editItems.length === 0 ? (
+                    <p className="text-center text-muted-foreground text-sm py-4">Aucun article</p>
+                  ) : (
+                    editItems.map((item, index) => (
+                      <div key={index} className="border rounded-lg p-3 space-y-2" data-testid={`edit-item-${index}`}>
+                        <div className="flex items-center justify-between">
+                          <span className="font-medium text-sm truncate flex-1">{item.productName}</span>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive"
+                            onClick={() => removeEditItem(index)}
+                            data-testid={`button-remove-item-${index}`}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-1">
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => updateEditItemQuantity(index, item.quantity - 1)}
+                            >
+                              <Minus className="h-3 w-3" />
+                            </Button>
+                            <Input
+                              type="number"
+                              min="1"
+                              value={item.quantity}
+                              onChange={(e) => updateEditItemQuantity(index, parseInt(e.target.value) || 1)}
+                              className="w-16 h-7 text-center text-sm"
+                              data-testid={`input-edit-qty-${index}`}
+                            />
+                            <Button
+                              variant="outline"
+                              size="icon"
+                              className="h-7 w-7"
+                              onClick={() => updateEditItemQuantity(index, item.quantity + 1)}
+                            >
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                          </div>
+                          <div className="flex items-center gap-1 flex-1">
+                            <Label className="text-xs text-muted-foreground whitespace-nowrap">Prix:</Label>
+                            <Input
+                              type="number"
+                              min="0"
+                              step="0.01"
+                              value={item.unitPrice}
+                              onChange={(e) => updateEditItemPrice(index, parseFloat(e.target.value) || 0)}
+                              className="h-7 text-sm font-mono"
+                              data-testid={`input-edit-price-${index}`}
+                            />
+                          </div>
+                          <span className="font-mono text-sm font-medium whitespace-nowrap">
+                            {item.total.toLocaleString("fr-FR")} DA
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </ScrollArea>
+
+              <div className="border-t pt-3 space-y-2">
+                <div className="flex items-center gap-3">
+                  <Label className="text-sm whitespace-nowrap">Remise (DA):</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={editDiscount}
+                    onChange={(e) => setEditDiscount(e.target.value)}
+                    className="h-8 text-sm font-mono w-28"
+                    data-testid="input-edit-discount"
+                  />
+                </div>
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">Sous-total:</span>
+                  <span className="font-mono">{editSubtotal.toLocaleString("fr-FR")} DA</span>
+                </div>
+                {(parseFloat(editDiscount) || 0) > 0 && (
+                  <div className="flex justify-between text-sm text-muted-foreground">
+                    <span>Remise:</span>
+                    <span className="font-mono">-{(parseFloat(editDiscount) || 0).toLocaleString("fr-FR")} DA</span>
+                  </div>
+                )}
+                <div className="flex justify-between font-bold">
+                  <span>Total:</span>
+                  <span className="font-mono text-lg">{editTotal.toLocaleString("fr-FR")} DA</span>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => { setEditDialogOpen(false); setEditSale(null); }}>
+              Annuler
+            </Button>
+            <Button
+              onClick={confirmEditSale}
+              disabled={editSaleMutation.isPending || editItems.length === 0}
+              data-testid="button-save-edit-sale"
+            >
+              <Save className="h-4 w-4 mr-2" />
+              {editSaleMutation.isPending ? "Enregistrement..." : "Enregistrer"}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1098,6 +1098,58 @@ export async function registerRoutes(
     }
   });
 
+  app.put("/api/sales/:id/edit", async (req, res) => {
+    try {
+      const { items, discount, customerName, customerPhone } = req.body;
+      if (!items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ error: "Sale must have at least one item" });
+      }
+
+      const existingSale = await storage.getSale(req.params.id);
+      if (!existingSale) {
+        return res.status(404).json({ error: "Sale not found" });
+      }
+
+      const newTotal = Math.round(items.reduce((sum: number, item: any) => sum + (item.quantity * item.unitPrice), 0) * 100) / 100;
+      const finalTotal = Math.round((newTotal - (discount || 0)) * 100) / 100;
+
+      const amountPaid = existingSale.amountPaid || 0;
+      let newStatus = existingSale.status;
+      if (amountPaid >= finalTotal) {
+        newStatus = "completed";
+      } else if (amountPaid > 0) {
+        newStatus = "partial";
+      } else if (existingSale.status === "completed") {
+        newStatus = "completed";
+      }
+
+      const saleData: any = {
+        total: finalTotal,
+        discount: discount || 0,
+        status: newStatus,
+      };
+      if (customerName !== undefined) saleData.customerName = customerName;
+      if (customerPhone !== undefined) saleData.customerPhone = customerPhone;
+
+      const saleItems = items.map((item: any) => ({
+        productId: item.productId,
+        productName: item.productName,
+        quantity: item.quantity,
+        unitPrice: item.unitPrice,
+        costPrice: 0,
+        total: Math.round(item.quantity * item.unitPrice * 100) / 100,
+      }));
+
+      const updated = await storage.updateSaleWithItems(req.params.id, saleData, saleItems);
+      if (!updated) {
+        return res.status(404).json({ error: "Sale not found" });
+      }
+      res.json(updated);
+    } catch (error) {
+      handleError(res, "edit sale with items", error);
+    }
+  });
+
   // Update sale (for partial payments)
   app.patch("/api/sales/:id", async (req, res) => {
     try {
