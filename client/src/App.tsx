@@ -35,6 +35,7 @@ import FabricationInvoice from "@/pages/fabrication-invoice";
 import Sales from "@/pages/sales";
 import Customers from "@/pages/customers";
 import Settings from "@/pages/settings";
+import QuickInvoice from "@/pages/quick-invoice";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
@@ -56,6 +57,7 @@ function Router() {
       <Route path="/branding" component={Branding} />
       <Route path="/profit" component={ProfitCalculator} />
       <Route path="/settings" component={Settings} />
+      <Route path="/quick-invoice" component={QuickInvoice} />
       <Route component={NotFound} />
     </Switch>
   );

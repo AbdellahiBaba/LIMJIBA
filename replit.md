@@ -2,11 +2,7 @@
 
 ## Overview
 
-A professionally branded business management system for an industrial plastic packaging manufacturer. The application provides comprehensive modules: Invoice Generation (standard + fabrication), Stock/Inventory Management, Point-of-Sale (POS), Reseller Rewards Program, Salaries Management, Business Expenses Tracking, and Profit Analytics. Built as a full-stack TypeScript application with React frontend and Express backend, using PostgreSQL database for persistent data storage.
-
-**Company:** POLY FLECTA PLASTICA  
-**Industry:** Industrial plastic packaging manufacturing  
-**Status:** MVP Complete - All modules functional with persistent database
+A professionally branded business management system for an industrial plastic packaging manufacturer, POLY FLECTA PLASTICA. The application provides comprehensive modules for Invoice Generation (standard and fabrication), Stock/Inventory Management, Point-of-Sale (POS), Reseller Rewards Program, Salaries Management, Business Expenses Tracking, and Profit Analytics. The primary goal is to streamline business operations and provide robust analytics for better decision-making.
 
 ## User Preferences
 
@@ -14,258 +10,80 @@ Preferred communication style: Simple, everyday language.
 
 ## System Architecture
 
-### Frontend Architecture
+### Frontend
 - **Framework:** React 18 with TypeScript
-- **Routing:** Wouter (lightweight router)
-- **State Management:** TanStack React Query for server state and caching
-- **UI Components:** shadcn/ui component library built on Radix UI primitives
-- **Styling:** Tailwind CSS with industrial branding (blue #1976D2 theme)
-- **Typography:** Roboto font family (Material Design)
-- **Build Tool:** Vite with HMR support
-- **Localization:** French, Arabic, and Bilingual modes with RTL support
+- **Routing:** Wouter
+- **State Management:** TanStack React Query
+- **UI Components:** shadcn/ui on Radix UI
+- **Styling:** Tailwind CSS with industrial branding (blue #1976D2 theme) and Roboto font.
+- **Build Tool:** Vite
+- **Localization:** French, Arabic, and Bilingual modes with RTL support.
 
-### Core Modules
-1. **Dashboard** - Business statistics with stat cards (products, sales, invoices, resellers, low stock alerts)
-2. **Stock Management** - Full CRUD for products with cost price and weight tracking, low stock alerts
-3. **Invoice Generation** - Standard invoices (FA- prefix) and Fabrication invoices (FAB- prefix) with PDF generation
-4. **POS (Point of Sale)** - Product grid, cart system, checkout with payment modes, receipt printing with branding
-5. **Sales Management** - View sales history, filter by status (completed/credit), update status, delete sales
-6. **Reseller Rewards** - Track purchases, threshold-based reward pool, random winner draw
-7. **Salaries Management** - Employee records, monthly salary payments, payment history
-8. **Expenses Tracking** - Business expenses by category (electricity, rent, supplies, etc.)
-9. **Profit Calculator** - Net profit analysis with automated data from sales, salaries, and expenses
-
-### Backend Architecture
+### Backend
 - **Runtime:** Node.js with Express
 - **Language:** TypeScript
-- **API Design:** RESTful endpoints under `/api/*` prefix
+- **API Design:** RESTful endpoints (`/api/*`)
 - **Database:** PostgreSQL with Drizzle ORM
-- **Storage Class:** DatabaseStorage (persistent)
+- **Storage:** Persistent DatabaseStorage.
+
+### Core Modules
+- **Dashboard:** Business statistics, sales, invoices, low stock alerts.
+- **Stock Management:** CRUD for products, cost price, weight, low stock alerts.
+- **Invoice Generation:** Standard (FA-) and Fabrication (FAB-) invoices with PDF generation.
+- **Quick Invoice (Facture Rapide):** Standalone invoice generator, independent from system (no stock/sales/accounting impact), all fields editable, preview and print-ready.
+- **POS (Point of Sale):** Product grid, cart, checkout, payment modes, receipt printing.
+- **Sales Management:** View, filter, update, and delete sales history.
+- **Reseller Rewards:** Track purchases, reward pool, random winner draw.
+- **Salaries Management:** Employee records and monthly salary payments.
+- **Expenses Tracking:** Categorized business expenses.
+- **Profit Calculator:** Net profit analysis from sales, salaries, and expenses.
 
 ### Data Storage
-- **Type:** PostgreSQL database (Drizzle ORM)
-- **Schema Location:** `shared/schema.ts` (shared types between frontend/backend)
-- **Migrations:** `npm run db:push` for schema updates
-
-Core entities:
-- Products (inventory with stock, cost price, weight per unit)
-- Invoices and InvoiceItems (B2B billing with PDF generation)
-- FabricationInvoices and FabricationItems (manufacturing invoices)
-- Sales and SaleItems (POS transactions with automatic stock deduction)
-- Resellers (partner program with purchase tracking and reward pool)
-- Employees (staff management with monthly salary)
-- SalaryPayments (payment records by month/year)
-- Expenses (business expenses by category)
+- **Type:** PostgreSQL database using Drizzle ORM.
+- **Schema:** Shared `shared/schema.ts` for type safety between frontend/backend.
+- **Key Entities:** Products, Invoices, Fabrication Invoices, Sales, Resellers, Employees, Salary Payments, Expenses.
 
 ### Key Design Decisions
-
-**Shared Schema Pattern:** Types defined in `shared/schema.ts` and used by both frontend and backend for type safety.
-
-**Industrial Branding:** Custom design tokens matching company branding defined in `design_guidelines.md`.
-
-**Multilingual Support:** French/Arabic/Bilingual modes with RTL layout for Arabic.
-
-**Stock Deduction:** POS sales automatically reduce product stock quantities and update reseller purchase totals.
-
-**PostgreSQL Database Architecture (Environment-Based Routing):**
-
-**Production Mode (NODE_ENV=production):**
-- REQUIRES Neon database (NEON_DATABASE_URL) - throws error if not set
-- Safety guard prevents accidental writes to Replit DB
-- All production data MUST go to Neon to prevent data fragmentation
-
-**Development Mode (NODE_ENV=development):**
-- Prefers Neon database if NEON_DATABASE_URL is set
-- Falls back to Replit database (DATABASE_URL) for local development only
-- Warning logged if using Replit DB: "Data will NOT sync to production"
-
-**Connection Settings:**
-- Uses standard `pg` driver with Drizzle ORM
-- Connection pooling: max=20, idleTimeout=10s, connectionTimeout=5s
-- Automatic URL parsing handles `psql 'url'` format from NEON_DATABASE_URL
-- Sets `search_path TO public` automatically for Neon connections
-
-**Migration Notes (IMPORTANT):**
-- drizzle.config.ts uses DATABASE_URL (cannot be modified)
-- To run migrations against Neon: set DATABASE_URL to the Neon connection string
-- Alternatively: `DATABASE_URL="postgresql://..." npm run db:push`
-- Always verify migration target before running to prevent schema drift
-
-**Cold-Start Optimization:** In-memory caching layer (`server/cache.ts`) provides instant responses during database wake-up:
-- Cache-first pattern for all major collections (products, invoices, sales, resellers, employees, expenses, fabrication_invoices, dashboard_stats)
-- 30-second TTL for frequently changing business data
-- All mutations invalidate relevant caches to prevent stale data
-- Server starts immediately; DB verification runs in background
-- All DB operations wrapped in withRetry() for automatic error recovery
-- Health endpoints always return 200 with status in response body
-
-## Recent Changes
-
-**February 2026 - Sales Editing & Reseller Print:**
-- **Sales Ticket Editing**: Full edit capability for existing sales via "Modifier" action
-  - Edit dialog allows adding/removing products, changing quantities and unit prices
-  - Product search with autocomplete for adding new items
-  - Discount editing with real-time total recalculation
-  - Stock automatically restored then re-deducted in a single transaction
-  - Stock movements logged for audit trail (sale_edit_restore / sale_edit_deduct)
-  - API: PUT /api/sales/:id/edit with items array, discount, customerName, customerPhone
-  - Storage: updateSaleWithItems() handles full item replacement with stock management
-- **Reseller List Print Customization**: Two-copy print system (Admin + Customer)
-  - Print dialog with field visibility toggles per copy
-  - 7 toggleable fields: Name, Phone, Email, Total Purchases, Reward Threshold, Progress, Status
-  - Admin copy defaults to all fields; Customer copy defaults to basic info
-  - Both copies print on separate pages with company header and date
-  - Respects current search filter (only prints filtered resellers)
-
-**January 2026 - GAAP/IFRS Accounting Compliance:**
-- **Historical COGS Tracking**: Sale and invoice items now store costPrice at time of transaction
-  - Prevents retroactive COGS changes when product costs are updated
-  - COGS calculation uses stored item costPrice (with fallback for legacy data)
-  - Runtime migrations in `server/db.ts` auto-add `cost_price` columns to sale_items and invoice_items
-- **Invoice Type Classification**: Added `invoiceType` field to distinguish SALE vs FABRICATION invoices
-  - Values: 'SALE' | 'FABRICATION' | 'SERVICE'
-  - Server-side enforcement: FAB- prefix or role='Fabrication' auto-sets invoiceType='FABRICATION'
-  - Revenue calculation only includes invoices with invoiceType='SALE'
-  - Fabrication invoices are excluded from revenue (they are manufacturing costs, not income)
-- **Inventory Valuation**: Full GAAP/IFRS-compliant inventory valuation support
-  - Formula: inventoryValue = stockQuantity × costPrice (rounded to 2 decimals)
-  - API: GET /api/inventory/valuation returns product-level and total valuation
-  - Stock page displays total inventory value card with GAAP/IFRS label
-  - Products with costPrice = 0 but stock > 0 are highlighted as warnings
-  - Includes validation for data quality issues (missing cost prices)
-- **Pre-Transaction Validation**:
-  - POS Sales: Validates stock availability, costPrice > 0, and quantity > 0 before sale
-  - B2B Invoices: Validates costPrice for product-linked items, allows custom items with 0 cost
-  - Fabrication: Validates quantity > 0, cost breakdown non-negative, unitCost > 0
-  - All transactions require at least one item (no zero-line transactions)
-- **Cost Breakdown for Fabrication**: Items can use unitCost OR materials+labor+overhead breakdown
-- **Consistent 2-Decimal Rounding**: All monetary calculations rounded to 2 decimal places
-- **Stock Movements on POS**: All POS sales now create stock movement records for audit trail
-- **Profit Calculator Fixed**: API now correctly fetches data using stored historical costPrice
-
-**January 2026 - System Audit & Fixes:**
-- **Database Architecture Updated**: Environment-based database routing now enforces Neon-only in production with safety guards. Development prefers Neon but can fallback to Replit DB. PDF downloads work correctly.
-- **Fabrication Invoice Logic**: Fabrication invoices are stored in separate `fabrication_invoices` table (NOT revenue). They represent manufacturing costs that flow into product costPrice.
-- **Inventory Auto-Update**: When fabrication invoice is created, products are automatically created/updated with:
-  - Cost Price = unitCost from fabrication item
-  - Stock Quantity = increased by fabrication quantity
-  - Stock movements logged for audit trail
-- **Profit Calculation Fixed**: 
-  - Gross Profit = Revenue - COGS (totalProductCosts from both POS sales AND invoice sales)
-  - Operating Profit = Gross Profit - Salaries - Expenses
-  - Net Profit = Operating Profit
-  - Fabrication costs shown as informational only (already embedded in COGS via costPrice)
-- **Invoice Items in COGS**: Added B2B invoice items to COGS calculation (previously only POS sales were counted)
-
-**January 2026 (Earlier):**
-- Migrated from in-memory storage to PostgreSQL database for data persistence
-- Added Salaries module for employee management and payment tracking
-- Added Expenses module for business expense tracking by category
-- Added Fabrication Invoice module for manufacturing invoices
-- Extended products table with costPrice and weightPerUnit fields
-- Added automated profit statistics endpoint (/api/profit-stats)
-- Added translations for all new modules in French and Arabic
-- Updated sidebar navigation with Salaries and Expenses links
-
-## File Structure
-
-```
-client/src/
-├── pages/
-│   ├── dashboard.tsx          # Main dashboard with stats
-│   ├── stock.tsx              # Product/inventory management
-│   ├── invoices.tsx           # Invoice list
-│   ├── invoice-form.tsx       # Create new standard invoice
-│   ├── invoice-view.tsx       # View invoice details
-│   ├── fabrication-invoice.tsx # Create fabrication invoice
-│   ├── pos.tsx                # Point of sale interface
-│   ├── resellers.tsx          # Reseller rewards program
-│   ├── salaries.tsx           # Employee and salary management
-│   ├── expenses.tsx           # Business expense tracking
-│   ├── profit-calculator.tsx  # Net profit analysis
-│   └── branding.tsx           # Company branding settings
-├── components/
-│   ├── app-sidebar.tsx        # Main navigation sidebar
-│   ├── theme-toggle.tsx       # Dark/light mode toggle
-│   └── language-switcher.tsx  # Language selection
-├── contexts/
-│   └── language-context.tsx   # i18n and branding context
-├── locales/
-│   ├── fr.json                # French translations
-│   └── ar.json                # Arabic translations
-└── lib/
-    └── queryClient.ts         # React Query configuration
-
-server/
-├── routes.ts                  # All API endpoints
-├── storage.ts                 # DatabaseStorage implementation
-├── db.ts                      # Drizzle database connection
-└── index.ts                   # Express server entry
-
-shared/
-└── schema.ts                  # TypeScript types, Drizzle schemas, Zod validation
-```
-
-## API Endpoints
-
-### Products
-- GET /api/products - List all products
-- GET /api/products/:id - Get single product
-- POST /api/products - Create product
-- PATCH /api/products/:id - Update product
-- DELETE /api/products/:id - Delete product
-
-### Invoices
-- GET /api/invoices - List all invoices
-- GET /api/invoices/:id - Get invoice with items
-- POST /api/invoices - Create invoice with items
-- DELETE /api/invoices/:id - Delete invoice
-
-### Fabrication Invoices
-- GET /api/fabrication-invoices - List all
-- GET /api/fabrication-invoices/:id - Get with items
-- GET /api/fabrication-invoices/next-number - Get next invoice number
-- POST /api/fabrication-invoices - Create
-- DELETE /api/fabrication-invoices/:id - Delete
-
-### Employees
-- GET /api/employees - List all employees
-- GET /api/employees/:id - Get single employee
-- POST /api/employees - Create employee
-- PATCH /api/employees/:id - Update employee
-- DELETE /api/employees/:id - Delete employee
-
-### Salary Payments
-- GET /api/salary-payments - List all payments
-- POST /api/salary-payments - Create payment
-- DELETE /api/salary-payments/:id - Delete payment
-
-### Expenses
-- GET /api/expenses - List all expenses
-- GET /api/expenses/:id - Get single expense
-- POST /api/expenses - Create expense
-- PATCH /api/expenses/:id - Update expense
-- DELETE /api/expenses/:id - Delete expense
-
-### Analytics
-- GET /api/profit-stats?startDate=&endDate= - Get profit statistics for date range
+- **Shared Schema Pattern:** Centralized type definitions for consistent data structures.
+- **Industrial Branding:** Custom design tokens aligned with company branding.
+- **Multilingual Support:** French/Arabic/Bilingual modes with RTL for Arabic.
+- **Stock Deduction:** POS sales automatically update product stock and reseller purchase totals.
+- **PostgreSQL Database Architecture:**
+    - Production: Requires Neon database (`NEON_DATABASE_URL`) with safety guards.
+    - Development: Prefers Neon, falls back to Replit DB (`DATABASE_URL`).
+    - Standard `pg` driver with Drizzle ORM, connection pooling, and automatic `search_path`.
+    - Migrations via `drizzle-kit` targeting the specified `DATABASE_URL`.
+- **Cold-Start Optimization:** In-memory caching (`server/cache.ts`) for frequently accessed data with 30-second TTL.
+    - Cache-first pattern for major collections.
+    - Mutations invalidate relevant caches.
+    - Database operations wrapped with retry logic for error recovery.
+    - Health endpoints provide status.
+- **GAAP/IFRS Compliance:**
+    - Historical COGS tracking: `costPrice` stored at transaction time for accurate profit calculation.
+    - Invoice Type Classification: `invoiceType` field ('SALE', 'FABRICATION', 'SERVICE') to distinguish revenue.
+    - Inventory Valuation: GAAP/IFRS-compliant `stockQuantity × costPrice`.
+    - Pre-Transaction Validation: Stock, costPrice, and quantity checks for sales and invoices.
+    - Consistent 2-Decimal Rounding for all monetary calculations.
+    - Stock movements logged for audit trail on POS sales.
+    - Corrected profit calculation incorporating all relevant costs and revenues.
+- **Fabrication Invoice Logic:** Stored separately as manufacturing costs, not revenue. Automatically updates product `costPrice` and `stockQuantity` upon creation.
 
 ## External Dependencies
 
 ### Frontend Libraries
-- @tanstack/react-query: Server state management
-- Radix UI: Accessible primitive components
-- Lucide React: Icon library
-- date-fns: Date formatting
+- @tanstack/react-query
+- Radix UI
+- Lucide React
+- date-fns
 
 ### Backend Libraries
-- express: Web framework
-- drizzle-orm: PostgreSQL ORM
-- drizzle-zod: Schema validation
-- zod: Runtime validation
-- pg: PostgreSQL driver
+- express
+- drizzle-orm
+- drizzle-zod
+- zod
+- pg
 
 ### Build Tools
-- Vite: Frontend bundler
-- tsx: TypeScript execution
-- drizzle-kit: Database migrations
+- Vite
+- tsx
+- drizzle-kit

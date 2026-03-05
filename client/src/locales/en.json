@@ -34,6 +34,7 @@
     "dashboard": "Dashboard",
     "stock": "Stock Management",
     "invoices": "Invoices",
+    "quickInvoice": "Quick Invoice",
     "pos": "Point of Sale",
     "sales": "Sales History",
     "resellers": "Resellers",

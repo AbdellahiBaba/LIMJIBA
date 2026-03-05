@@ -17,6 +17,7 @@ import { Badge } from "@/components/ui/badge";
 import {
   LayoutDashboard,
   FileText,
+  FilePen,
   Package,
   ShoppingCart,
   Gift,
@@ -49,6 +50,13 @@ export function AppSidebar() {
       url: "/invoices",
       icon: FileText,
       testId: "nav-invoices",
+      adminOnly: false,
+    },
+    {
+      title: t("nav.quickInvoice") || "Facture Rapide",
+      url: "/quick-invoice",
+      icon: FilePen,
+      testId: "nav-quick-invoice",
       adminOnly: false,
     },
     {
