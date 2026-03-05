@@ -218,6 +218,45 @@ export async function registerRoutes(
     }
   });
 
+  // ===================== QUICK INVOICES ROUTES =====================
+
+  app.get("/api/quick-invoices", requireAuth, async (req, res) => {
+    try {
+      const invoices = await storage.getQuickInvoices();
+      res.json(invoices);
+    } catch (error) {
+      handleError(res, "getQuickInvoices", error);
+    }
+  });
+
+  app.get("/api/quick-invoices/:id", requireAuth, async (req, res) => {
+    try {
+      const invoice = await storage.getQuickInvoice(req.params.id);
+      if (!invoice) return res.status(404).json({ error: "Quick invoice not found" });
+      res.json(invoice);
+    } catch (error) {
+      handleError(res, "getQuickInvoice", error);
+    }
+  });
+
+  app.post("/api/quick-invoices", requireAuth, async (req, res) => {
+    try {
+      const invoice = await storage.createQuickInvoice(req.body);
+      res.status(201).json(invoice);
+    } catch (error) {
+      handleError(res, "createQuickInvoice", error);
+    }
+  });
+
+  app.delete("/api/quick-invoices/:id", requireAuth, async (req, res) => {
+    try {
+      await storage.deleteQuickInvoice(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      handleError(res, "deleteQuickInvoice", error);
+    }
+  });
+
   // ===================== SETTINGS ROUTES =====================
   
   app.get("/api/settings/:key", requireAuth, async (req, res) => {

@@ -1,5 +1,8 @@
 import { useState } from "react";
 import { useBranding } from "@/contexts/language-context";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +24,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Printer, Eye, FileText } from "lucide-react";
+import { Plus, Trash2, Printer, Eye, FileText, History, Search, Download } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -30,6 +33,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import type { QuickInvoice as QuickInvoiceType } from "@shared/schema";
 
 interface QuickLineItem {
   id: string;
@@ -87,7 +91,11 @@ function formatDateDMY(dateStr: string): string {
 
 export default function QuickInvoice() {
   const { branding } = useBranding();
+  const { toast } = useToast();
   const [showPreview, setShowPreview] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [historySearch, setHistorySearch] = useState("");
+  const [viewingInvoice, setViewingInvoice] = useState<QuickInvoiceType | null>(null);
 
   const today = new Date().toISOString().split("T")[0];
 
@@ -109,6 +117,85 @@ export default function QuickInvoice() {
   const [items, setItems] = useState<QuickLineItem[]>([
     { id: crypto.randomUUID(), designation: "", quantity: 0, unitPrice: 0, weightPerUnit: 0, totalWeight: 0, total: 0 },
   ]);
+
+  const { data: savedInvoices = [] } = useQuery<QuickInvoiceType[]>({
+    queryKey: ["/api/quick-invoices"],
+  });
+
+  const saveMutation = useMutation({
+    mutationFn: async (data: object) => {
+      const res = await apiRequest("POST", "/api/quick-invoices", data);
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quick-invoices"] });
+      toast({ title: "Facture sauvegardée", description: "Une copie a été enregistrée." });
+    },
+    onError: () => {
+      toast({ title: "Erreur", description: "Impossible de sauvegarder la facture.", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/quick-invoices/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/quick-invoices"] });
+      toast({ title: "Supprimée", description: "La facture a été supprimée." });
+    },
+  });
+
+  const saveInvoiceCopy = () => {
+    const filteredItems = items.filter(item => item.designation && item.quantity > 0);
+    if (filteredItems.length === 0) return;
+    saveMutation.mutate({
+      invoiceNumber: formData.invoiceNumber || "SANS-NUM",
+      date: formData.date,
+      responsible: formData.responsible || null,
+      role: formData.role || null,
+      paymentMode: formData.paymentMode,
+      dueDate: formData.dueDate || null,
+      clientName: formData.clientName || null,
+      clientAddress: formData.clientAddress || null,
+      clientPhone: formData.clientPhone || null,
+      applyTva: formData.applyTva,
+      tvaRate: formData.tvaRate,
+      totalHT: totalHT,
+      tvaAmount: tvaAmount,
+      totalTTC: totalTTC,
+      totalWeight: totalWeight,
+      notes: formData.notes || null,
+      items: JSON.stringify(filteredItems),
+      createdAt: new Date().toISOString(),
+    });
+  };
+
+  const loadInvoice = (inv: QuickInvoiceType) => {
+    setFormData({
+      invoiceNumber: inv.invoiceNumber,
+      date: inv.date,
+      responsible: inv.responsible || "",
+      role: inv.role || "",
+      paymentMode: inv.paymentMode,
+      dueDate: inv.dueDate || "",
+      clientName: inv.clientName || "",
+      clientAddress: inv.clientAddress || "",
+      clientPhone: inv.clientPhone || "",
+      applyTva: inv.applyTva,
+      tvaRate: inv.tvaRate,
+      notes: inv.notes || "",
+    });
+    try {
+      const parsed = JSON.parse(inv.items);
+      setItems(parsed.map((item: QuickLineItem) => ({ ...item, id: crypto.randomUUID() })));
+    } catch {
+      setItems([{ id: crypto.randomUUID(), designation: "", quantity: 0, unitPrice: 0, weightPerUnit: 0, totalWeight: 0, total: 0 }]);
+    }
+    setViewingInvoice(null);
+    setShowHistory(false);
+    toast({ title: "Facture chargée", description: `Facture ${inv.invoiceNumber} chargée dans le formulaire.` });
+  };
 
   const addItem = () => {
     setItems([...items, { id: crypto.randomUUID(), designation: "", quantity: 0, unitPrice: 0, weightPerUnit: 0, totalWeight: 0, total: 0 }]);
@@ -259,6 +346,8 @@ export default function QuickInvoice() {
       printWindow.focus();
       setTimeout(() => printWindow.print(), 300);
     }
+
+    saveInvoiceCopy();
   };
 
   return (
@@ -274,6 +363,10 @@ export default function QuickInvoice() {
           </p>
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={() => setShowHistory(true)} data-testid="button-history-quick">
+            <History className="h-4 w-4 mr-2" />
+            Historique ({savedInvoices.length})
+          </Button>
           <Button variant="outline" onClick={() => setShowPreview(true)} data-testid="button-preview-quick">
             <Eye className="h-4 w-4 mr-2" />
             Aperçu
@@ -287,7 +380,7 @@ export default function QuickInvoice() {
 
       <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
         <p className="text-sm text-amber-800 dark:text-amber-200">
-          Cette facture est indépendante du système. Elle ne sera pas sauvegardée, n'affectera pas le stock, les ventes ou la comptabilité.
+          Cette facture est indépendante du système. Elle n'affectera pas le stock, les ventes ou la comptabilité. Une copie sera automatiquement sauvegardée lors de l'impression.
         </p>
       </div>
 
@@ -708,6 +801,171 @@ export default function QuickInvoice() {
             <Button onClick={() => { setShowPreview(false); handlePrint(); }} data-testid="button-print-from-preview">
               <Printer className="h-4 w-4 mr-2" />
               Imprimer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={showHistory} onOpenChange={setShowHistory}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <History className="h-5 w-5" />
+              Historique des factures rapides
+            </DialogTitle>
+            <DialogDescription>
+              {savedInvoices.length} facture(s) sauvegardée(s)
+            </DialogDescription>
+          </DialogHeader>
+          <div className="relative mb-4">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Rechercher par numéro, client..."
+              value={historySearch}
+              onChange={(e) => setHistorySearch(e.target.value)}
+              className="pl-9"
+              data-testid="input-history-search"
+            />
+          </div>
+          {savedInvoices.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
+              <p>Aucune facture sauvegardée</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>N° Facture</TableHead>
+                  <TableHead>Date</TableHead>
+                  <TableHead>Client</TableHead>
+                  <TableHead className="text-right">Total TTC</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {savedInvoices
+                  .filter((inv) => {
+                    if (!historySearch) return true;
+                    const q = historySearch.toLowerCase();
+                    return (
+                      inv.invoiceNumber.toLowerCase().includes(q) ||
+                      (inv.clientName || "").toLowerCase().includes(q) ||
+                      (inv.responsible || "").toLowerCase().includes(q)
+                    );
+                  })
+                  .map((inv) => (
+                    <TableRow key={inv.id} data-testid={`row-qi-${inv.id}`}>
+                      <TableCell className="font-medium">{inv.invoiceNumber}</TableCell>
+                      <TableCell>{formatDateDMY(inv.date)}</TableCell>
+                      <TableCell>{inv.clientName || "—"}</TableCell>
+                      <TableCell className="text-right font-medium">{(inv.totalTTC || 0).toLocaleString()} DZD</TableCell>
+                      <TableCell className="text-right">
+                        <div className="flex justify-end gap-1">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => setViewingInvoice(inv)}
+                            data-testid={`button-view-qi-${inv.id}`}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => loadInvoice(inv)}
+                            data-testid={`button-load-qi-${inv.id}`}
+                          >
+                            <Download className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="text-destructive hover:text-destructive"
+                            onClick={() => {
+                              if (confirm("Supprimer cette facture ?")) {
+                                deleteMutation.mutate(inv.id);
+                              }
+                            }}
+                            data-testid={`button-delete-qi-${inv.id}`}
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+              </TableBody>
+            </Table>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowHistory(false)}>
+              Fermer
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={!!viewingInvoice} onOpenChange={() => setViewingInvoice(null)}>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>Facture {viewingInvoice?.invoiceNumber}</DialogTitle>
+            <DialogDescription>Détails de la facture sauvegardée</DialogDescription>
+          </DialogHeader>
+          {viewingInvoice && (() => {
+            let parsedItems: QuickLineItem[] = [];
+            try { parsedItems = JSON.parse(viewingInvoice.items); } catch {}
+            return (
+              <div className="space-y-4">
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div><span className="text-muted-foreground">Date:</span> {formatDateDMY(viewingInvoice.date)}</div>
+                  <div><span className="text-muted-foreground">Mode:</span> {viewingInvoice.paymentMode}</div>
+                  {viewingInvoice.clientName && <div><span className="text-muted-foreground">Client:</span> {viewingInvoice.clientName}</div>}
+                  {viewingInvoice.responsible && <div><span className="text-muted-foreground">Responsable:</span> {viewingInvoice.responsible}</div>}
+                  {viewingInvoice.clientPhone && <div><span className="text-muted-foreground">Tél:</span> {viewingInvoice.clientPhone}</div>}
+                  {viewingInvoice.dueDate && <div><span className="text-muted-foreground">Échéance:</span> {formatDateDMY(viewingInvoice.dueDate)}</div>}
+                </div>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>#</TableHead>
+                      <TableHead>Désignation</TableHead>
+                      <TableHead className="text-center">Qté</TableHead>
+                      <TableHead className="text-right">Prix U.</TableHead>
+                      <TableHead className="text-right">Montant</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {parsedItems.map((item, i) => (
+                      <TableRow key={i}>
+                        <TableCell>{i + 1}</TableCell>
+                        <TableCell>{item.designation}</TableCell>
+                        <TableCell className="text-center">{item.quantity}</TableCell>
+                        <TableCell className="text-right">{(item.unitPrice || 0).toLocaleString()} DZD</TableCell>
+                        <TableCell className="text-right font-medium">{(item.total || 0).toLocaleString()} DZD</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+                <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
+                  <span className="font-semibold">Total TTC</span>
+                  <span className="text-lg font-bold text-primary">{(viewingInvoice.totalTTC || 0).toLocaleString()} DZD</span>
+                </div>
+                {viewingInvoice.notes && (
+                  <div className="p-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-md">
+                    <p className="text-sm"><strong>Notes:</strong> {viewingInvoice.notes}</p>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => setViewingInvoice(null)}>
+              Fermer
+            </Button>
+            <Button onClick={() => { if (viewingInvoice) { loadInvoice(viewingInvoice); } }}>
+              <Download className="h-4 w-4 mr-2" />
+              Charger dans le formulaire
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -376,6 +376,40 @@ async function runMigrations(): Promise<void> {
       console.log('[DB] Created sale_return_items table');
     }
     
+    // Create quick_invoices table if it doesn't exist
+    const quickInvoicesExists = await client.query(`
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' AND table_name = 'quick_invoices'
+      )
+    `);
+    if (!quickInvoicesExists.rows[0].exists) {
+      await client.query(`
+        CREATE TABLE quick_invoices (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          invoice_number TEXT NOT NULL,
+          date TEXT NOT NULL,
+          responsible TEXT,
+          role TEXT,
+          payment_mode TEXT NOT NULL DEFAULT 'A TERME',
+          due_date TEXT,
+          client_name TEXT,
+          client_address TEXT,
+          client_phone TEXT,
+          apply_tva BOOLEAN NOT NULL DEFAULT false,
+          tva_rate REAL NOT NULL DEFAULT 0.19,
+          total_ht REAL NOT NULL DEFAULT 0,
+          tva_amount REAL NOT NULL DEFAULT 0,
+          total_ttc REAL NOT NULL DEFAULT 0,
+          total_weight REAL NOT NULL DEFAULT 0,
+          notes TEXT,
+          items TEXT NOT NULL,
+          created_at TEXT NOT NULL
+        )
+      `);
+      console.log('[DB] Created quick_invoices table');
+    }
+    
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);
