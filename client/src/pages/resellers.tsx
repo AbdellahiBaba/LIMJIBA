@@ -263,6 +263,8 @@ export default function Resellers() {
   const [editingReseller, setEditingReseller] = useState<Reseller | undefined>();
   const [winnerDialogOpen, setWinnerDialogOpen] = useState(false);
   const [selectedWinner, setSelectedWinner] = useState<Reseller | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [resellerToDelete, setResellerToDelete] = useState<Reseller | null>(null);
   const [printDialogOpen, setPrintDialogOpen] = useState(false);
   const [adminFields, setAdminFields] = useState<PrintField[]>([...DEFAULT_ADMIN_FIELDS]);
   const [customerFields, setCustomerFields] = useState<PrintField[]>([...DEFAULT_CUSTOMER_FIELDS]);
@@ -277,12 +279,25 @@ export default function Resellers() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/resellers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: t("resellers.resellerDeleted") });
+      toast({ title: `Revendeur "${resellerToDelete?.name || ""}" supprimé avec succès` });
+      setDeleteDialogOpen(false);
+      setResellerToDelete(null);
     },
     onError: (error: Error) => {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
+
+  const handleDeleteClick = (reseller: Reseller) => {
+    setResellerToDelete(reseller);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (resellerToDelete) {
+      deleteMutation.mutate(resellerToDelete.id);
+    }
+  };
 
   const drawWinnerMutation = useMutation({
     mutationFn: async () => {
@@ -594,7 +609,7 @@ export default function Resellers() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => deleteMutation.mutate(reseller.id)}
+                              onClick={() => handleDeleteClick(reseller)}
                               data-testid={`button-delete-${reseller.id}`}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
@@ -641,6 +656,30 @@ export default function Resellers() {
         winner={selectedWinner}
         t={t}
       />
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir supprimer le revendeur <strong>{resellerToDelete?.name}</strong> ? Cette action est irréversible.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteMutation.isPending}
+              data-testid="button-confirm-delete"
+            >
+              {deleteMutation.isPending ? t("common.loading") : t("common.delete") || "Supprimer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={printDialogOpen} onOpenChange={setPrintDialogOpen}>
         <DialogContent className="sm:max-w-lg">

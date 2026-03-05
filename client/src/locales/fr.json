@@ -55,7 +55,12 @@
     "quickActions": "Actions Rapides",
     "newInvoice": "Nouvelle Facture",
     "newSale": "Nouvelle Vente",
-    "addProduct": "Ajouter Produit"
+    "addProduct": "Ajouter Produit",
+    "quickInvoices": "Factures Rapides",
+    "quickInvoicesValue": "Valeur Factures Rapides",
+    "recentActivity": "Activite Recente",
+    "viewAll": "Voir Tout",
+    "lowStockItems": "Articles en Rupture"
   },
   "stock": {
     "title": "Gestion de Stock",

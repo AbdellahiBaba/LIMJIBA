@@ -55,7 +55,12 @@
     "quickActions": "Quick Actions",
     "newInvoice": "New Invoice",
     "newSale": "New Sale",
-    "addProduct": "Add Product"
+    "addProduct": "Add Product",
+    "quickInvoices": "Quick Invoices",
+    "quickInvoicesValue": "Quick Invoices Value",
+    "recentActivity": "Recent Activity",
+    "viewAll": "View All",
+    "lowStockItems": "Low Stock Items"
   },
   "stock": {
     "title": "Stock Management",

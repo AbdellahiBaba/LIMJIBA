@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useBranding } from "@/contexts/language-context";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
 import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
 import {
   Table,
   TableBody,
@@ -24,7 +25,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Plus, Trash2, Printer, Eye, FileText, History, Search, Download } from "lucide-react";
+import { Plus, Trash2, Printer, Eye, FileText, History, Search, Download, RotateCcw, Package, Weight, DollarSign, Percent, Loader2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -50,7 +51,7 @@ function numberToFrenchWords(n: number): string {
   const teens = ["dix", "onze", "douze", "treize", "quatorze", "quinze", "seize", "dix-sept", "dix-huit", "dix-neuf"];
   const tens = ["", "", "vingt", "trente", "quarante", "cinquante", "soixante", "soixante", "quatre-vingt", "quatre-vingt"];
 
-  if (n === 0) return "zero";
+  if (n === 0) return "zéro";
   if (n < 10) return units[n];
   if (n < 20) return teens[n - 10];
   if (n < 100) {
@@ -112,6 +113,8 @@ export default function QuickInvoice() {
     applyTva: false,
     tvaRate: 0.19,
     notes: "",
+    discountType: "percent" as "percent" | "fixed",
+    discountValue: 0,
   });
 
   const [items, setItems] = useState<QuickLineItem[]>([
@@ -122,6 +125,16 @@ export default function QuickInvoice() {
     queryKey: ["/api/quick-invoices"],
   });
 
+  const { data: nextNumberData } = useQuery<{ nextNumber: string }>({
+    queryKey: ["/api/quick-invoices/next-number"],
+  });
+
+  useEffect(() => {
+    if (nextNumberData?.nextNumber && !formData.invoiceNumber) {
+      setFormData(prev => ({ ...prev, invoiceNumber: nextNumberData.nextNumber }));
+    }
+  }, [nextNumberData]);
+
   const saveMutation = useMutation({
     mutationFn: async (data: object) => {
       const res = await apiRequest("POST", "/api/quick-invoices", data);
@@ -129,7 +142,8 @@ export default function QuickInvoice() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/quick-invoices"] });
-      toast({ title: "Facture sauvegardée", description: "Une copie a été enregistrée." });
+      queryClient.invalidateQueries({ queryKey: ["/api/quick-invoices/next-number"] });
+      toast({ title: "Facture sauvegardée", description: "Une copie a été enregistrée dans l'historique." });
     },
     onError: () => {
       toast({ title: "Erreur", description: "Impossible de sauvegarder la facture.", variant: "destructive" });
@@ -142,7 +156,8 @@ export default function QuickInvoice() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/quick-invoices"] });
-      toast({ title: "Supprimée", description: "La facture a été supprimée." });
+      queryClient.invalidateQueries({ queryKey: ["/api/quick-invoices/next-number"] });
+      toast({ title: "Supprimée", description: "La facture a été supprimée de l'historique." });
     },
   });
 
@@ -163,7 +178,7 @@ export default function QuickInvoice() {
       tvaRate: formData.tvaRate,
       totalHT: totalHT,
       tvaAmount: tvaAmount,
-      totalTTC: totalTTC,
+      totalTTC: finalTotal,
       totalWeight: totalWeight,
       notes: formData.notes || null,
       items: JSON.stringify(filteredItems),
@@ -185,6 +200,8 @@ export default function QuickInvoice() {
       applyTva: inv.applyTva,
       tvaRate: inv.tvaRate,
       notes: inv.notes || "",
+      discountType: "percent",
+      discountValue: 0,
     });
     try {
       const parsed = JSON.parse(inv.items);
@@ -195,6 +212,29 @@ export default function QuickInvoice() {
     setViewingInvoice(null);
     setShowHistory(false);
     toast({ title: "Facture chargée", description: `Facture ${inv.invoiceNumber} chargée dans le formulaire.` });
+  };
+
+  const resetForm = async () => {
+    await queryClient.invalidateQueries({ queryKey: ["/api/quick-invoices/next-number"] });
+    const freshData = await queryClient.fetchQuery<{ nextNumber: string }>({ queryKey: ["/api/quick-invoices/next-number"] });
+    setFormData({
+      invoiceNumber: freshData?.nextNumber || "",
+      date: new Date().toISOString().split("T")[0],
+      responsible: "",
+      role: "",
+      paymentMode: "A TERME",
+      dueDate: "",
+      clientName: "",
+      clientAddress: "",
+      clientPhone: "",
+      applyTva: false,
+      tvaRate: 0.19,
+      notes: "",
+      discountType: "percent",
+      discountValue: 0,
+    });
+    setItems([{ id: crypto.randomUUID(), designation: "", quantity: 0, unitPrice: 0, weightPerUnit: 0, totalWeight: 0, total: 0 }]);
+    toast({ title: "Formulaire réinitialisé", description: "Prêt pour une nouvelle facture." });
   };
 
   const addItem = () => {
@@ -223,10 +263,16 @@ export default function QuickInvoice() {
     }));
   };
 
+  const filledItems = items.filter(item => item.designation && item.quantity > 0);
   const totalHT = Math.round(items.reduce((sum, item) => sum + item.total, 0) * 100) / 100;
-  const tvaAmount = formData.applyTva ? Math.round(totalHT * formData.tvaRate * 100) / 100 : 0;
-  const totalTTC = Math.round((totalHT + tvaAmount) * 100) / 100;
+  const discountAmount = formData.discountType === "percent"
+    ? Math.round(totalHT * (formData.discountValue / 100) * 100) / 100
+    : Math.round(Math.min(formData.discountValue, totalHT) * 100) / 100;
+  const afterDiscount = Math.round((totalHT - discountAmount) * 100) / 100;
+  const tvaAmount = formData.applyTva ? Math.round(afterDiscount * formData.tvaRate * 100) / 100 : 0;
+  const finalTotal = Math.round((afterDiscount + tvaAmount) * 100) / 100;
   const totalWeight = items.reduce((sum, item) => sum + item.totalWeight, 0);
+  const hasWeight = items.some(item => item.weightPerUnit > 0);
 
   const handlePrint = () => {
     const companyName = branding?.companyInfo?.name || branding?.companyName || "POLY FLECTA PLASTICA";
@@ -235,19 +281,37 @@ export default function QuickInvoice() {
     const phone = branding?.companyInfo?.phone || "";
     const primaryColor = branding?.primaryColor || "#1976D2";
 
-    const filteredItems = items.filter(item => item.designation && item.quantity > 0);
+    const printItems = filledItems;
 
-    const itemRows = filteredItems.map((item, i) => `
+    const weightColsHtml = hasWeight;
+
+    const itemRows = printItems.map((item, i) => `
       <tr style="background:${i % 2 === 0 ? '#f9f9f9' : '#fff'};">
         <td style="border:1px solid #ddd;padding:8px;text-align:center;">${i + 1}</td>
         <td style="border:1px solid #ddd;padding:8px;">${item.designation}</td>
         <td style="border:1px solid #ddd;padding:8px;text-align:center;">${item.quantity}</td>
-        <td style="border:1px solid #ddd;padding:8px;text-align:center;">${item.weightPerUnit > 0 ? item.weightPerUnit.toFixed(2) : '-'}</td>
-        <td style="border:1px solid #ddd;padding:8px;text-align:center;font-weight:500;">${item.totalWeight.toFixed(2)} kg</td>
+        ${weightColsHtml ? `<td style="border:1px solid #ddd;padding:8px;text-align:center;">${item.weightPerUnit > 0 ? item.weightPerUnit.toFixed(2) : '-'}</td>
+        <td style="border:1px solid #ddd;padding:8px;text-align:center;font-weight:500;">${item.totalWeight.toFixed(2)} kg</td>` : ''}
         <td style="border:1px solid #ddd;padding:8px;text-align:right;">${item.unitPrice.toLocaleString()} DZD</td>
         <td style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:500;">${item.total.toLocaleString()} DZD</td>
       </tr>
     `).join("");
+
+    const clientSection = formData.clientName ? `
+      <div style="flex:1;padding:12px;background:${primaryColor}10;border-radius:6px;">
+        <h4 style="margin:0 0 6px;color:${primaryColor};font-size:13px;">Client</h4>
+        <p style="margin:2px 0;font-size:13px;font-weight:500;">${formData.clientName}</p>
+        ${formData.clientAddress ? `<p style="margin:2px 0;font-size:11px;color:#666;">${formData.clientAddress}</p>` : ''}
+        ${formData.clientPhone ? `<p style="margin:2px 0;font-size:11px;color:#666;">Tél: ${formData.clientPhone}</p>` : ''}
+      </div>` : '';
+
+    const detailsSection = `
+      <div style="flex:1;padding:12px;background:#f5f5f5;border-radius:6px;">
+        <h4 style="margin:0 0 6px;color:${primaryColor};font-size:13px;">Détails</h4>
+        <p style="margin:2px 0;font-size:11px;"><span style="color:#666;">Mode:</span> ${formData.paymentMode}</p>
+        ${formData.responsible ? `<p style="margin:2px 0;font-size:11px;"><span style="color:#666;">Responsable:</span> ${formData.responsible}</p>` : ''}
+        ${formData.role ? `<p style="margin:2px 0;font-size:11px;"><span style="color:#666;">Service:</span> ${formData.role}</p>` : ''}
+      </div>`;
 
     const html = `<!DOCTYPE html>
 <html><head><title>Facture ${formData.invoiceNumber}</title>
@@ -266,25 +330,15 @@ export default function QuickInvoice() {
     </div>
     <div style="text-align:right;">
       <h3 style="margin:0;font-size:24px;color:${primaryColor};">FACTURE</h3>
-      <p style="margin:4px 0;font-size:13px;color:#666;">N°: ${formData.invoiceNumber || '---'}</p>
+      <p style="margin:4px 0;font-size:13px;color:#666;">N°: ${formData.invoiceNumber}</p>
       <p style="margin:2px 0;font-size:13px;color:#666;">Date: ${formatDateDMY(formData.date)}</p>
       ${formData.dueDate ? `<p style="margin:2px 0;font-size:12px;color:#999;">Échéance: ${formatDateDMY(formData.dueDate)}</p>` : ''}
     </div>
   </div>
 
   <div style="display:flex;gap:20px;margin-bottom:20px;">
-    <div style="flex:1;padding:12px;background:${primaryColor}10;border-radius:6px;">
-      <h4 style="margin:0 0 6px;color:${primaryColor};font-size:13px;">Client</h4>
-      <p style="margin:2px 0;font-size:13px;font-weight:500;">${formData.clientName || '---'}</p>
-      ${formData.clientAddress ? `<p style="margin:2px 0;font-size:11px;color:#666;">${formData.clientAddress}</p>` : ''}
-      ${formData.clientPhone ? `<p style="margin:2px 0;font-size:11px;color:#666;">Tél: ${formData.clientPhone}</p>` : ''}
-    </div>
-    <div style="flex:1;padding:12px;background:#f5f5f5;border-radius:6px;">
-      <h4 style="margin:0 0 6px;color:${primaryColor};font-size:13px;">Détails</h4>
-      <p style="margin:2px 0;font-size:11px;"><span style="color:#666;">Mode:</span> ${formData.paymentMode}</p>
-      ${formData.responsible ? `<p style="margin:2px 0;font-size:11px;"><span style="color:#666;">Responsable:</span> ${formData.responsible}</p>` : ''}
-      ${formData.role ? `<p style="margin:2px 0;font-size:11px;"><span style="color:#666;">Service:</span> ${formData.role}</p>` : ''}
-    </div>
+    ${clientSection}
+    ${detailsSection}
   </div>
 
   <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:15px;">
@@ -293,8 +347,8 @@ export default function QuickInvoice() {
         <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);width:30px;text-align:center;">#</th>
         <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:left;">Désignation</th>
         <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:center;width:50px;">Qté</th>
-        <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:center;width:70px;">Poids/U</th>
-        <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:center;width:80px;">Poids Total</th>
+        ${weightColsHtml ? `<th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:center;width:70px;">Poids/U</th>
+        <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:center;width:80px;">Poids Total</th>` : ''}
         <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:right;width:90px;">Prix U.</th>
         <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:right;width:100px;">Montant</th>
       </tr>
@@ -302,25 +356,29 @@ export default function QuickInvoice() {
     <tbody>${itemRows}</tbody>
     <tfoot>
       <tr style="background:#f0f0f0;">
-        <td colspan="4" style="border:1px solid #ddd;padding:8px;font-weight:600;">Total H.T</td>
-        <td style="border:1px solid #ddd;padding:8px;text-align:center;font-weight:600;">${totalWeight.toFixed(2)} kg</td>
+        <td colspan="${weightColsHtml ? 4 : 2}" style="border:1px solid #ddd;padding:8px;font-weight:600;">Total H.T</td>
+        ${weightColsHtml ? `<td style="border:1px solid #ddd;padding:8px;text-align:center;font-weight:600;">${totalWeight.toFixed(2)} kg</td>` : ''}
         <td style="border:1px solid #ddd;padding:8px;"></td>
         <td style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:600;">${totalHT.toLocaleString()} DZD</td>
       </tr>
+      ${discountAmount > 0 ? `<tr style="background:#fff3e0;">
+        <td colspan="${weightColsHtml ? 6 : 4}" style="border:1px solid #ddd;padding:8px;text-align:right;color:#e65100;">Remise ${formData.discountType === 'percent' ? `(${formData.discountValue}%)` : ''}</td>
+        <td style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:500;color:#e65100;">-${discountAmount.toLocaleString()} DZD</td>
+      </tr>` : ''}
       ${formData.applyTva ? `<tr style="background:#fafafa;">
-        <td colspan="6" style="border:1px solid #ddd;padding:8px;text-align:right;">TVA (${(formData.tvaRate * 100).toFixed(0)}%)</td>
+        <td colspan="${weightColsHtml ? 6 : 4}" style="border:1px solid #ddd;padding:8px;text-align:right;">TVA (${(formData.tvaRate * 100).toFixed(0)}%)</td>
         <td style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:500;">${tvaAmount.toLocaleString()} DZD</td>
       </tr>` : ''}
       <tr style="background:#e0e0e0;">
-        <td colspan="6" style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:700;">Total T.T.C</td>
-        <td style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:700;color:${primaryColor};">${totalTTC.toLocaleString()} DZD</td>
+        <td colspan="${weightColsHtml ? 6 : 4}" style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:700;">Total T.T.C</td>
+        <td style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:700;color:${primaryColor};">${finalTotal.toLocaleString()} DZD</td>
       </tr>
     </tfoot>
   </table>
 
   <div style="padding:12px;background:${primaryColor}08;border:1px solid ${primaryColor}30;border-radius:6px;margin-bottom:20px;">
     <p style="margin:0;font-size:12px;"><strong>Arrêté la présente facture à la somme de:</strong></p>
-    <p style="margin:4px 0 0;font-size:14px;color:${primaryColor};font-weight:500;">${numberToFrenchWords(Math.floor(totalTTC))} dinars algériens${formData.applyTva ? ' (TTC)' : ''}</p>
+    <p style="margin:4px 0 0;font-size:14px;color:${primaryColor};font-weight:500;">${numberToFrenchWords(Math.floor(finalTotal))} dinars algériens${formData.applyTva ? ' (TTC)' : ''}</p>
   </div>
 
   ${formData.notes ? `<div style="margin-bottom:20px;padding:10px;background:#fffde7;border:1px solid #fff9c4;border-radius:4px;">
@@ -359,30 +417,65 @@ export default function QuickInvoice() {
             Facture Rapide
           </h1>
           <p className="text-muted-foreground text-xs sm:text-sm">
-            Facture indépendante — non enregistrée dans le système
+            Facture de service indépendante — sauvegardée automatiquement
           </p>
         </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={() => setShowHistory(true)} data-testid="button-history-quick">
-            <History className="h-4 w-4 mr-2" />
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={resetForm} data-testid="button-new-quick">
+            <RotateCcw className="h-4 w-4 mr-1" />
+            Nouvelle
+          </Button>
+          <Button variant="outline" size="sm" onClick={() => setShowHistory(true)} data-testid="button-history-quick">
+            <History className="h-4 w-4 mr-1" />
             Historique ({savedInvoices.length})
           </Button>
-          <Button variant="outline" onClick={() => setShowPreview(true)} data-testid="button-preview-quick">
-            <Eye className="h-4 w-4 mr-2" />
+          <Button variant="outline" size="sm" onClick={() => setShowPreview(true)} data-testid="button-preview-quick">
+            <Eye className="h-4 w-4 mr-1" />
             Aperçu
           </Button>
-          <Button onClick={handlePrint} data-testid="button-print-quick">
-            <Printer className="h-4 w-4 mr-2" />
+          <Button size="sm" onClick={handlePrint} disabled={filledItems.length === 0 || saveMutation.isPending} data-testid="button-print-quick">
+            {saveMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Printer className="h-4 w-4 mr-1" />}
             Imprimer
           </Button>
         </div>
       </div>
 
-      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 rounded-lg p-3">
-        <p className="text-sm text-amber-800 dark:text-amber-200">
-          Cette facture est indépendante du système. Elle n'affectera pas le stock, les ventes ou la comptabilité. Une copie sera automatiquement sauvegardée lors de l'impression.
-        </p>
-      </div>
+      {filledItems.length > 0 && (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
+            <Package className="h-4 w-4 text-blue-600" />
+            <div>
+              <p className="text-xs text-muted-foreground">Articles</p>
+              <p className="font-semibold text-sm" data-testid="text-qi-item-count">{filledItems.length}</p>
+            </div>
+          </div>
+          {hasWeight && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
+              <Weight className="h-4 w-4 text-green-600" />
+              <div>
+                <p className="text-xs text-muted-foreground">Poids total</p>
+                <p className="font-semibold text-sm">{totalWeight.toFixed(2)} kg</p>
+              </div>
+            </div>
+          )}
+          {discountAmount > 0 && (
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800">
+              <Percent className="h-4 w-4 text-orange-600" />
+              <div>
+                <p className="text-xs text-muted-foreground">Remise</p>
+                <p className="font-semibold text-sm">-{discountAmount.toLocaleString()} DZD</p>
+              </div>
+            </div>
+          )}
+          <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
+            <DollarSign className="h-4 w-4 text-primary" />
+            <div>
+              <p className="text-xs text-muted-foreground">Total TTC</p>
+              <p className="font-semibold text-sm text-primary" data-testid="text-qi-summary-total">{finalTotal.toLocaleString()} DZD</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <Card>
         <CardHeader>
@@ -391,12 +484,12 @@ export default function QuickInvoice() {
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
-              <Label htmlFor="qi-number">Numéro de facture</Label>
+              <Label htmlFor="qi-number">N° Facture</Label>
               <Input
                 id="qi-number"
                 value={formData.invoiceNumber}
                 onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
-                placeholder="Ex: 001/2026"
+                placeholder="Auto-généré"
                 data-testid="input-qi-number"
               />
             </div>
@@ -448,7 +541,7 @@ export default function QuickInvoice() {
                 id="qi-client-address"
                 value={formData.clientAddress}
                 onChange={(e) => setFormData({ ...formData, clientAddress: e.target.value })}
-                placeholder="Adresse (optionnel)"
+                placeholder="Adresse"
                 data-testid="input-qi-client-address"
               />
             </div>
@@ -458,7 +551,7 @@ export default function QuickInvoice() {
                 id="qi-client-phone"
                 value={formData.clientPhone}
                 onChange={(e) => setFormData({ ...formData, clientPhone: e.target.value })}
-                placeholder="Tél (optionnel)"
+                placeholder="Tél"
                 data-testid="input-qi-client-phone"
               />
             </div>
@@ -493,7 +586,7 @@ export default function QuickInvoice() {
               />
             </div>
           </div>
-          <div className="flex items-center gap-4 pt-4 border-t">
+          <div className="flex flex-wrap items-center gap-4 pt-4 border-t">
             <div className="flex items-center gap-2">
               <Switch
                 id="qi-tva"
@@ -501,7 +594,7 @@ export default function QuickInvoice() {
                 onCheckedChange={(checked) => setFormData({ ...formData, applyTva: checked })}
                 data-testid="switch-qi-tva"
               />
-              <Label htmlFor="qi-tva" className="font-medium">Appliquer TVA</Label>
+              <Label htmlFor="qi-tva" className="font-medium">TVA</Label>
             </div>
             {formData.applyTva && (
               <div className="flex items-center gap-2">
@@ -519,13 +612,39 @@ export default function QuickInvoice() {
                 <span className="text-sm text-muted-foreground">({(formData.tvaRate * 100).toFixed(0)}%)</span>
               </div>
             )}
+            <div className="border-l pl-4 flex items-center gap-2">
+              <Label className="text-sm font-medium">Remise:</Label>
+              <Select
+                value={formData.discountType}
+                onValueChange={(v) => setFormData({ ...formData, discountType: v as "percent" | "fixed" })}
+              >
+                <SelectTrigger className="w-24" data-testid="select-qi-discount-type">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="percent">%</SelectItem>
+                  <SelectItem value="fixed">DZD</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input
+                type="number"
+                min="0"
+                step={formData.discountType === "percent" ? "1" : "100"}
+                max={formData.discountType === "percent" ? "100" : undefined}
+                value={formData.discountValue || ""}
+                onChange={(e) => setFormData({ ...formData, discountValue: parseFloat(e.target.value) || 0 })}
+                className="w-24"
+                placeholder="0"
+                data-testid="input-qi-discount"
+              />
+            </div>
           </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2">
-          <CardTitle className="text-lg">Articles</CardTitle>
+          <CardTitle className="text-lg">Articles / Services</CardTitle>
           <Button type="button" variant="outline" size="sm" onClick={addItem} data-testid="button-qi-add-item">
             <Plus className="h-4 w-4 mr-1" />
             Ajouter
@@ -536,18 +655,19 @@ export default function QuickInvoice() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10 text-center">#</TableHead>
                   <TableHead className="min-w-[70px]">Qté</TableHead>
                   <TableHead className="min-w-[200px]">Désignation</TableHead>
                   <TableHead className="min-w-[100px]">Prix U. (DZD)</TableHead>
                   <TableHead className="min-w-[80px]">Poids/U (kg)</TableHead>
-                  <TableHead className="min-w-[80px] text-right">Poids Total</TableHead>
                   <TableHead className="min-w-[100px] text-right">Montant (DZD)</TableHead>
                   <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {items.map((item) => (
+                {items.map((item, index) => (
                   <TableRow key={item.id}>
+                    <TableCell className="text-center text-muted-foreground font-mono text-xs">{index + 1}</TableCell>
                     <TableCell>
                       <Input
                         type="number"
@@ -555,6 +675,7 @@ export default function QuickInvoice() {
                         value={item.quantity || ""}
                         onChange={(e) => updateItem(item.id, "quantity", parseInt(e.target.value) || 0)}
                         className="w-20"
+                        placeholder="0"
                         data-testid={`input-qi-qty-${item.id}`}
                       />
                     </TableCell>
@@ -562,7 +683,7 @@ export default function QuickInvoice() {
                       <Input
                         value={item.designation}
                         onChange={(e) => updateItem(item.id, "designation", e.target.value)}
-                        placeholder="Description de l'article"
+                        placeholder="Description du service ou article"
                         data-testid={`input-qi-designation-${item.id}`}
                       />
                     </TableCell>
@@ -574,6 +695,7 @@ export default function QuickInvoice() {
                         value={item.unitPrice || ""}
                         onChange={(e) => updateItem(item.id, "unitPrice", parseFloat(e.target.value) || 0)}
                         className="w-24"
+                        placeholder="0"
                         data-testid={`input-qi-price-${item.id}`}
                       />
                     </TableCell>
@@ -585,14 +707,12 @@ export default function QuickInvoice() {
                         value={item.weightPerUnit || ""}
                         onChange={(e) => updateItem(item.id, "weightPerUnit", parseFloat(e.target.value) || 0)}
                         className="w-20"
+                        placeholder="—"
                         data-testid={`input-qi-weight-${item.id}`}
                       />
                     </TableCell>
-                    <TableCell className="text-right font-mono">
-                      {item.totalWeight.toFixed(2)} kg
-                    </TableCell>
                     <TableCell className="text-right font-mono font-medium">
-                      {item.total.toLocaleString()} DZD
+                      {item.total > 0 ? `${item.total.toLocaleString()} DZD` : "—"}
                     </TableCell>
                     <TableCell>
                       <Button
@@ -612,27 +732,35 @@ export default function QuickInvoice() {
             </Table>
           </div>
 
-          <div className="mt-6 flex flex-col items-end gap-2">
-            <div className="flex gap-8 text-sm">
-              <span className="text-muted-foreground">Poids total:</span>
-              <span className="font-mono font-medium">{totalWeight.toFixed(2)} kg</span>
-            </div>
+          <div className="mt-6 flex flex-col items-end gap-1">
+            {hasWeight && (
+              <div className="flex gap-8 text-sm">
+                <span className="text-muted-foreground">Poids total:</span>
+                <span className="font-mono font-medium">{totalWeight.toFixed(2)} kg</span>
+              </div>
+            )}
             <div className="flex gap-8 text-sm">
               <span className="text-muted-foreground">Total H.T:</span>
               <span className="font-mono font-medium" data-testid="text-qi-total-ht">{totalHT.toLocaleString()} DZD</span>
             </div>
+            {discountAmount > 0 && (
+              <div className="flex gap-8 text-sm text-orange-600">
+                <span>Remise {formData.discountType === "percent" ? `(${formData.discountValue}%)` : ""}:</span>
+                <span className="font-mono font-medium">-{discountAmount.toLocaleString()} DZD</span>
+              </div>
+            )}
             {formData.applyTva && (
               <div className="flex gap-8 text-sm">
                 <span className="text-muted-foreground">TVA ({(formData.tvaRate * 100).toFixed(0)}%):</span>
                 <span className="font-mono font-medium">{tvaAmount.toLocaleString()} DZD</span>
               </div>
             )}
-            <div className="flex gap-8 text-lg font-semibold">
+            <div className="flex gap-8 text-lg font-semibold border-t pt-2 mt-1">
               <span>Total T.T.C:</span>
-              <span className="font-mono" data-testid="text-qi-total-ttc">{totalTTC.toLocaleString()} DZD</span>
+              <span className="font-mono text-primary" data-testid="text-qi-total-ttc">{finalTotal.toLocaleString()} DZD</span>
             </div>
             <p className="text-sm text-muted-foreground italic mt-1">
-              {numberToFrenchWords(Math.floor(totalTTC))} dinars algériens
+              {numberToFrenchWords(Math.floor(finalTotal))} dinars algériens
             </p>
           </div>
         </CardContent>
@@ -640,7 +768,7 @@ export default function QuickInvoice() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Notes (optionnel)</CardTitle>
+          <CardTitle className="text-lg">Notes</CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea
@@ -658,8 +786,8 @@ export default function QuickInvoice() {
           <Eye className="h-4 w-4 mr-2" />
           Aperçu
         </Button>
-        <Button onClick={handlePrint} data-testid="button-print-quick-bottom">
-          <Printer className="h-4 w-4 mr-2" />
+        <Button onClick={handlePrint} disabled={filledItems.length === 0 || saveMutation.isPending} data-testid="button-print-quick-bottom">
+          {saveMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Printer className="h-4 w-4 mr-2" />}
           Imprimer la facture
         </Button>
       </div>
@@ -697,19 +825,21 @@ export default function QuickInvoice() {
                 </div>
                 <div className="text-right">
                   <h3 className="text-2xl font-bold" style={{ color: branding.primaryColor }}>FACTURE</h3>
-                  <p className="text-sm text-gray-600 mt-1">N°: {formData.invoiceNumber || "---"}</p>
+                  <p className="text-sm text-gray-600 mt-1">N°: {formData.invoiceNumber}</p>
                   <p className="text-sm text-gray-600">Date: {formatDateDMY(formData.date)}</p>
                   {formData.dueDate && <p className="text-xs text-gray-500">Échéance: {formatDateDMY(formData.dueDate)}</p>}
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-8 mb-6">
-                <div className="p-4 rounded-md" style={{ backgroundColor: `${branding.primaryColor}10` }}>
-                  <h4 className="font-semibold mb-2" style={{ color: branding.primaryColor }}>Client</h4>
-                  <p className="text-sm font-medium">{formData.clientName || "---"}</p>
-                  {formData.clientAddress && <p className="text-xs text-gray-500">{formData.clientAddress}</p>}
-                  {formData.clientPhone && <p className="text-xs text-gray-500">Tél: {formData.clientPhone}</p>}
-                </div>
+                {formData.clientName && (
+                  <div className="p-4 rounded-md" style={{ backgroundColor: `${branding.primaryColor}10` }}>
+                    <h4 className="font-semibold mb-2" style={{ color: branding.primaryColor }}>Client</h4>
+                    <p className="text-sm font-medium">{formData.clientName}</p>
+                    {formData.clientAddress && <p className="text-xs text-gray-500">{formData.clientAddress}</p>}
+                    {formData.clientPhone && <p className="text-xs text-gray-500">Tél: {formData.clientPhone}</p>}
+                  </div>
+                )}
                 <div className="p-4 rounded-md bg-gray-50">
                   <h4 className="font-semibold mb-2" style={{ color: branding.primaryColor }}>Détails</h4>
                   <p className="text-xs"><span className="text-gray-600">Mode:</span> {formData.paymentMode}</p>
@@ -724,20 +854,24 @@ export default function QuickInvoice() {
                     <th className="text-white p-3 text-center border border-white/20 w-12">#</th>
                     <th className="text-white p-3 text-left border border-white/20">Désignation</th>
                     <th className="text-white p-3 text-center border border-white/20 w-16">Qté</th>
-                    <th className="text-white p-3 text-center border border-white/20 w-20">Poids/U</th>
-                    <th className="text-white p-3 text-center border border-white/20 w-24">Poids Total</th>
+                    {hasWeight && <>
+                      <th className="text-white p-3 text-center border border-white/20 w-20">Poids/U</th>
+                      <th className="text-white p-3 text-center border border-white/20 w-24">Poids Total</th>
+                    </>}
                     <th className="text-white p-3 text-right border border-white/20 w-24">Prix U.</th>
                     <th className="text-white p-3 text-right border border-white/20 w-28">Montant</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {items.filter(item => item.designation).map((item, index) => (
+                  {filledItems.map((item, index) => (
                     <tr key={item.id} className={index % 2 === 0 ? "bg-gray-50" : "bg-white"}>
                       <td className="p-3 text-center border">{index + 1}</td>
                       <td className="p-3 border">{item.designation}</td>
                       <td className="p-3 text-center border">{item.quantity}</td>
-                      <td className="p-3 text-center border">{item.weightPerUnit > 0 ? item.weightPerUnit.toFixed(2) : "-"}</td>
-                      <td className="p-3 text-center border font-medium">{item.totalWeight.toFixed(2)} kg</td>
+                      {hasWeight && <>
+                        <td className="p-3 text-center border">{item.weightPerUnit > 0 ? item.weightPerUnit.toFixed(2) : "—"}</td>
+                        <td className="p-3 text-center border font-medium">{item.totalWeight.toFixed(2)} kg</td>
+                      </>}
                       <td className="p-3 text-right border">{item.unitPrice.toLocaleString()} DZD</td>
                       <td className="p-3 text-right border font-medium">{item.total.toLocaleString()} DZD</td>
                     </tr>
@@ -745,21 +879,29 @@ export default function QuickInvoice() {
                 </tbody>
                 <tfoot>
                   <tr className="bg-gray-100">
-                    <td colSpan={4} className="p-3 border font-semibold">Total H.T</td>
-                    <td className="p-3 text-center border font-semibold">{totalWeight.toFixed(2)} kg</td>
+                    <td colSpan={hasWeight ? 4 : 2} className="p-3 border font-semibold">Total H.T</td>
+                    {hasWeight && <td className="p-3 text-center border font-semibold">{totalWeight.toFixed(2)} kg</td>}
                     <td className="p-3 border"></td>
                     <td className="p-3 text-right border font-semibold">{totalHT.toLocaleString()} DZD</td>
                   </tr>
+                  {discountAmount > 0 && (
+                    <tr className="bg-orange-50">
+                      <td colSpan={hasWeight ? 6 : 4} className="p-3 border text-right text-orange-700">
+                        Remise {formData.discountType === "percent" ? `(${formData.discountValue}%)` : ""}
+                      </td>
+                      <td className="p-3 text-right border font-medium text-orange-700">-{discountAmount.toLocaleString()} DZD</td>
+                    </tr>
+                  )}
                   {formData.applyTva && (
                     <tr className="bg-gray-50">
-                      <td colSpan={6} className="p-3 border text-right">TVA ({(formData.tvaRate * 100).toFixed(0)}%)</td>
+                      <td colSpan={hasWeight ? 6 : 4} className="p-3 border text-right">TVA ({(formData.tvaRate * 100).toFixed(0)}%)</td>
                       <td className="p-3 text-right border font-medium">{tvaAmount.toLocaleString()} DZD</td>
                     </tr>
                   )}
                   <tr className="bg-gray-200">
-                    <td colSpan={6} className="p-3 border text-right font-bold">Total T.T.C</td>
+                    <td colSpan={hasWeight ? 6 : 4} className="p-3 border text-right font-bold">Total T.T.C</td>
                     <td className="p-3 text-right border font-bold" style={{ color: branding.primaryColor }}>
-                      {totalTTC.toLocaleString()} DZD
+                      {finalTotal.toLocaleString()} DZD
                     </td>
                   </tr>
                 </tfoot>
@@ -771,7 +913,7 @@ export default function QuickInvoice() {
               >
                 <p className="text-sm"><span className="font-semibold">Arrêté la présente facture à la somme de:</span></p>
                 <p className="text-lg font-medium mt-1" style={{ color: branding.primaryColor }}>
-                  {numberToFrenchWords(Math.floor(totalTTC))} dinars algériens
+                  {numberToFrenchWords(Math.floor(finalTotal))} dinars algériens
                   {formData.applyTva && " (TTC)"}
                 </p>
               </div>
@@ -798,7 +940,7 @@ export default function QuickInvoice() {
             <Button variant="outline" onClick={() => setShowPreview(false)}>
               Fermer
             </Button>
-            <Button onClick={() => { setShowPreview(false); handlePrint(); }} data-testid="button-print-from-preview">
+            <Button onClick={() => { setShowPreview(false); handlePrint(); }} disabled={filledItems.length === 0} data-testid="button-print-from-preview">
               <Printer className="h-4 w-4 mr-2" />
               Imprimer
             </Button>
@@ -831,6 +973,7 @@ export default function QuickInvoice() {
             <div className="text-center py-8 text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
               <p>Aucune facture sauvegardée</p>
+              <p className="text-xs mt-1">Les factures seront automatiquement enregistrées lors de l'impression</p>
             </div>
           ) : (
             <Table>
@@ -856,7 +999,9 @@ export default function QuickInvoice() {
                   })
                   .map((inv) => (
                     <TableRow key={inv.id} data-testid={`row-qi-${inv.id}`}>
-                      <TableCell className="font-medium">{inv.invoiceNumber}</TableCell>
+                      <TableCell className="font-medium">
+                        <Badge variant="outline" className="font-mono">{inv.invoiceNumber}</Badge>
+                      </TableCell>
                       <TableCell>{formatDateDMY(inv.date)}</TableCell>
                       <TableCell>{inv.clientName || "—"}</TableCell>
                       <TableCell className="text-right font-medium">{(inv.totalTTC || 0).toLocaleString()} DZD</TableCell>
@@ -866,6 +1011,7 @@ export default function QuickInvoice() {
                             variant="ghost"
                             size="sm"
                             onClick={() => setViewingInvoice(inv)}
+                            title="Voir les détails"
                             data-testid={`button-view-qi-${inv.id}`}
                           >
                             <Eye className="h-4 w-4" />
@@ -874,6 +1020,7 @@ export default function QuickInvoice() {
                             variant="ghost"
                             size="sm"
                             onClick={() => loadInvoice(inv)}
+                            title="Charger dans le formulaire"
                             data-testid={`button-load-qi-${inv.id}`}
                           >
                             <Download className="h-4 w-4" />
@@ -882,8 +1029,9 @@ export default function QuickInvoice() {
                             variant="ghost"
                             size="sm"
                             className="text-destructive hover:text-destructive"
+                            disabled={deleteMutation.isPending}
                             onClick={() => {
-                              if (confirm("Supprimer cette facture ?")) {
+                              if (confirm("Supprimer cette facture de l'historique ?")) {
                                 deleteMutation.mutate(inv.id);
                               }
                             }}

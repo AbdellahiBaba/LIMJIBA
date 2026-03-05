@@ -27,10 +27,10 @@ Preferred communication style: Simple, everyday language.
 - **Storage:** Persistent DatabaseStorage.
 
 ### Core Modules
-- **Dashboard:** Business statistics, sales, invoices, low stock alerts.
+- **Dashboard:** Business statistics, sales, invoices, low stock alerts, quick invoices stat, recent activity feed, clickable low stock alerts.
 - **Stock Management:** CRUD for products, cost price, weight, low stock alerts.
 - **Invoice Generation:** Standard (FA-) and Fabrication (FAB-) invoices with PDF generation.
-- **Quick Invoice (Facture Rapide):** Standalone invoice generator, independent from system (no stock/sales/accounting impact), all fields editable, preview and print-ready.
+- **Quick Invoice (Facture Rapide):** Standalone service invoice generator with auto-numbering (FR-XXXX/YYYY), discount support (% or fixed), saved copies in history, preview and print-ready. Independent from main system (no stock/sales/accounting impact).
 - **POS (Point of Sale):** Product grid, cart, checkout, payment modes, receipt printing.
 - **Sales Management:** View, filter, update, and delete sales history.
 - **Reseller Rewards:** Track purchases, reward pool, random winner draw.

@@ -129,7 +129,8 @@ export default function Sales() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: "Vente supprimée" });
+      const saleNum = sales?.find(s => s.id === saleToDelete)?.saleNumber || "";
+      toast({ title: `Vente ${saleNum} supprimée avec succès` });
       setDeleteDialogOpen(false);
       setSaleToDelete(null);
     },
@@ -177,7 +178,7 @@ export default function Sales() {
       queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: "Vente modifiée avec succès" });
+      toast({ title: `Vente ${editSale?.saleNumber || ""} modifiée avec succès` });
       setEditDialogOpen(false);
       setEditSale(null);
       setEditItems([]);
@@ -382,8 +383,14 @@ export default function Sales() {
         </CardHeader>
         <CardContent>
           {!filteredSales || filteredSales.length === 0 ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Aucune vente trouvée
+            <div className="text-center py-12">
+              <DollarSign className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="font-medium text-lg mb-1">Aucune vente trouvée</h3>
+              <p className="text-muted-foreground text-sm">
+                {search || statusFilter !== "all"
+                  ? "Essayez d'ajuster votre recherche ou vos filtres"
+                  : "Les ventes apparaîtront ici"}
+              </p>
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -590,8 +597,9 @@ export default function Sales() {
               variant="destructive" 
               onClick={confirmDelete}
               disabled={deleteMutation.isPending}
+              data-testid="button-confirm-delete"
             >
-              Supprimer
+              {deleteMutation.isPending ? "Suppression..." : "Supprimer"}
             </Button>
           </DialogFooter>
         </DialogContent>

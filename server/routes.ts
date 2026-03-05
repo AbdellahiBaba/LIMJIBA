@@ -229,6 +229,27 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/quick-invoices/next-number", requireAuth, async (req, res) => {
+    try {
+      const invoices = await storage.getQuickInvoices();
+      const currentYear = new Date().getFullYear();
+      let maxNum = 0;
+      for (const inv of invoices) {
+        const match = inv.invoiceNumber.match(/^FR-(\d+)\/(\d{4})$/);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          const year = parseInt(match[2], 10);
+          if (year === currentYear && num > maxNum) maxNum = num;
+        }
+      }
+      const nextNum = maxNum + 1;
+      const nextNumber = `FR-${String(nextNum).padStart(4, "0")}/${currentYear}`;
+      res.json({ nextNumber });
+    } catch (error) {
+      handleError(res, "getNextQuickInvoiceNumber", error);
+    }
+  });
+
   app.get("/api/quick-invoices/:id", requireAuth, async (req, res) => {
     try {
       const invoice = await storage.getQuickInvoice(req.params.id);
@@ -564,6 +585,70 @@ export async function registerRoutes(
       res.json(topProducts);
     } catch (error) {
       handleError(res, "get top products", error);
+    }
+  });
+
+  app.get("/api/dashboard/recent-activity", async (req, res) => {
+    try {
+      const [allSales, allInvoices, allExpenses, allQuickInvoices] = await Promise.all([
+        storage.getSales(),
+        storage.getInvoices(),
+        storage.getExpenses(),
+        storage.getQuickInvoices(),
+      ]);
+
+      type ActivityItem = { id: string; type: "sale" | "invoice" | "expense" | "quick_invoice"; description: string; amount: number; date: string; reference: string };
+      const activities: ActivityItem[] = [];
+
+      allSales.slice(0, 10).forEach(s => {
+        activities.push({
+          id: s.id,
+          type: "sale",
+          description: s.customerName || "POS Sale",
+          amount: s.total || 0,
+          date: s.date,
+          reference: s.saleNumber,
+        });
+      });
+
+      allInvoices.slice(0, 10).forEach(inv => {
+        activities.push({
+          id: inv.id,
+          type: "invoice",
+          description: inv.clientName || "Invoice",
+          amount: inv.totalTTC || 0,
+          date: inv.date,
+          reference: inv.invoiceNumber,
+        });
+      });
+
+      allExpenses.slice(0, 10).forEach(exp => {
+        activities.push({
+          id: exp.id,
+          type: "expense",
+          description: exp.name,
+          amount: exp.amount || 0,
+          date: exp.date,
+          reference: exp.category,
+        });
+      });
+
+      allQuickInvoices.slice(0, 10).forEach(qi => {
+        activities.push({
+          id: qi.id,
+          type: "quick_invoice",
+          description: qi.clientName || "Quick Invoice",
+          amount: qi.totalTTC || 0,
+          date: qi.date,
+          reference: qi.invoiceNumber,
+        });
+      });
+
+      activities.sort((a, b) => b.date.localeCompare(a.date));
+
+      res.json(activities.slice(0, 5));
+    } catch (error) {
+      handleError(res, "get recent activity", error);
     }
   });
 

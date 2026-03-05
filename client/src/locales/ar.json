@@ -55,7 +55,12 @@
     "quickActions": "إجراءات سريعة",
     "newInvoice": "فاتورة جديدة",
     "newSale": "بيع جديد",
-    "addProduct": "إضافة منتج"
+    "addProduct": "إضافة منتج",
+    "quickInvoices": "الفواتير السريعة",
+    "quickInvoicesValue": "قيمة الفواتير السريعة",
+    "recentActivity": "النشاط الأخير",
+    "viewAll": "عرض الكل",
+    "lowStockItems": "منتجات بمخزون منخفض"
   },
   "stock": {
     "title": "إدارة المخزون",

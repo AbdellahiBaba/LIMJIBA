@@ -416,6 +416,10 @@ export default function SalariesPage() {
   const [showEmployeeDialog, setShowEmployeeDialog] = useState(false);
   const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   const [editingEmployee, setEditingEmployee] = useState<Employee | undefined>();
+  const [deleteEmployeeDialogOpen, setDeleteEmployeeDialogOpen] = useState(false);
+  const [employeeToDelete, setEmployeeToDelete] = useState<Employee | null>(null);
+  const [deletePaymentDialogOpen, setDeletePaymentDialogOpen] = useState(false);
+  const [paymentToDelete, setPaymentToDelete] = useState<SalaryPaymentWithEmployee | null>(null);
 
   const { data: employees = [], isLoading: loadingEmployees } = useQuery<Employee[]>({
     queryKey: ["/api/employees"],
@@ -429,7 +433,12 @@ export default function SalariesPage() {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/employees/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
-      toast({ title: t("salaries.employeeDeleted") });
+      toast({ title: `Employé "${employeeToDelete?.name || ""}" supprimé avec succès` });
+      setDeleteEmployeeDialogOpen(false);
+      setEmployeeToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 
@@ -437,9 +446,36 @@ export default function SalariesPage() {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/salary-payments/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/salary-payments"] });
-      toast({ title: t("salaries.paymentDeleted") });
+      toast({ title: `Paiement supprimé avec succès` });
+      setDeletePaymentDialogOpen(false);
+      setPaymentToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
+
+  const handleDeleteEmployeeClick = (employee: Employee) => {
+    setEmployeeToDelete(employee);
+    setDeleteEmployeeDialogOpen(true);
+  };
+
+  const confirmDeleteEmployee = () => {
+    if (employeeToDelete) {
+      deleteEmployeeMutation.mutate(employeeToDelete.id);
+    }
+  };
+
+  const handleDeletePaymentClick = (payment: SalaryPaymentWithEmployee) => {
+    setPaymentToDelete(payment);
+    setDeletePaymentDialogOpen(true);
+  };
+
+  const confirmDeletePayment = () => {
+    if (paymentToDelete) {
+      deletePaymentMutation.mutate(paymentToDelete.id);
+    }
+  };
 
   const filteredEmployees = employees.filter((emp) =>
     emp.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -572,8 +608,10 @@ export default function SalariesPage() {
                   ))}
                 </div>
               ) : filteredEmployees.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">
-                  {t("salaries.noEmployees")}
+                <div className="text-center py-12">
+                  <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="font-medium text-lg mb-1">{t("salaries.noEmployees")}</h3>
+                  <p className="text-muted-foreground text-sm">{t("salaries.addEmployee")}</p>
                 </div>
               ) : (
                 <Table>
@@ -610,11 +648,7 @@ export default function SalariesPage() {
                             <Button
                               size="icon"
                               variant="ghost"
-                              onClick={() => {
-                                if (confirm(t("salaries.confirmDeleteEmployee"))) {
-                                  deleteEmployeeMutation.mutate(employee.id);
-                                }
-                              }}
+                              onClick={() => handleDeleteEmployeeClick(employee)}
                               data-testid={`button-delete-employee-${employee.id}`}
                             >
                               <Trash2 className="h-4 w-4" />
@@ -647,8 +681,10 @@ export default function SalariesPage() {
                   ))}
                 </div>
               ) : payments.length === 0 ? (
-                <div className="p-8 text-center text-muted-foreground">
-                  {t("salaries.noPayments")}
+                <div className="text-center py-12">
+                  <Wallet className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+                  <h3 className="font-medium text-lg mb-1">{t("salaries.noPayments")}</h3>
+                  <p className="text-muted-foreground text-sm">{t("salaries.addPayment")}</p>
                 </div>
               ) : (
                 <Table>
@@ -676,11 +712,7 @@ export default function SalariesPage() {
                           <Button
                             size="icon"
                             variant="ghost"
-                            onClick={() => {
-                              if (confirm(t("salaries.confirmDeletePayment"))) {
-                                deletePaymentMutation.mutate(payment.id);
-                              }
-                            }}
+                            onClick={() => handleDeletePaymentClick(payment)}
                             data-testid={`button-delete-payment-${payment.id}`}
                           >
                             <Trash2 className="h-4 w-4" />
@@ -711,6 +743,54 @@ export default function SalariesPage() {
         onSuccess={() => setShowPaymentDialog(false)}
         t={t}
       />
+
+      <Dialog open={deleteEmployeeDialogOpen} onOpenChange={setDeleteEmployeeDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir supprimer l'employé <strong>{employeeToDelete?.name}</strong> ? Cette action est irréversible.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteEmployeeDialogOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeleteEmployee}
+              disabled={deleteEmployeeMutation.isPending}
+              data-testid="button-confirm-delete-employee"
+            >
+              {deleteEmployeeMutation.isPending ? t("common.loading") : t("common.delete") || "Supprimer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={deletePaymentDialogOpen} onOpenChange={setDeletePaymentDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir supprimer ce paiement ? Cette action est irréversible.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeletePaymentDialogOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDeletePayment}
+              disabled={deletePaymentMutation.isPending}
+              data-testid="button-confirm-delete-payment"
+            >
+              {deletePaymentMutation.isPending ? t("common.loading") : t("common.delete") || "Supprimer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

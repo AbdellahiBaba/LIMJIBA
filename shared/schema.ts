@@ -319,6 +319,17 @@ export interface DashboardStats {
   todayRevenue: number;
   activeResellers: number;
   rewardPoolCount: number;
+  quickInvoicesCount: number;
+  quickInvoicesTotal: number;
+}
+
+export interface RecentActivity {
+  id: string;
+  type: "sale" | "invoice" | "expense" | "quick_invoice";
+  description: string;
+  amount: number;
+  date: string;
+  reference: string;
 }
 
 export interface CartItem {

@@ -235,6 +235,8 @@ export default function ExpensesPage() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [showExpenseDialog, setShowExpenseDialog] = useState(false);
   const [editingExpense, setEditingExpense] = useState<Expense | undefined>();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [expenseToDelete, setExpenseToDelete] = useState<Expense | null>(null);
 
   const { data: expenses = [], isLoading } = useQuery<Expense[]>({
     queryKey: ["/api/expenses"],
@@ -244,9 +246,25 @@ export default function ExpensesPage() {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/expenses/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
-      toast({ title: t("expenses.expenseDeleted") });
+      toast({ title: `Dépense "${expenseToDelete?.name || ""}" supprimée avec succès` });
+      setDeleteDialogOpen(false);
+      setExpenseToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
+
+  const handleDeleteClick = (expense: Expense) => {
+    setExpenseToDelete(expense);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (expenseToDelete) {
+      deleteMutation.mutate(expenseToDelete.id);
+    }
+  };
 
   const filteredExpenses = expenses.filter((exp) => {
     const matchesSearch = exp.name.toLowerCase().includes(searchQuery.toLowerCase());
@@ -403,8 +421,14 @@ export default function ExpensesPage() {
               ))}
             </div>
           ) : filteredExpenses.length === 0 ? (
-            <div className="p-8 text-center text-muted-foreground">
-              {t("expenses.noExpenses")}
+            <div className="text-center py-12">
+              <Receipt className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <h3 className="font-medium text-lg mb-1">{t("expenses.noExpenses")}</h3>
+              <p className="text-muted-foreground text-sm">
+                {searchQuery || categoryFilter !== "all"
+                  ? t("common.search")
+                  : t("expenses.addExpense")}
+              </p>
             </div>
           ) : (
             <Table>
@@ -441,11 +465,7 @@ export default function ExpensesPage() {
                         <Button
                           size="icon"
                           variant="ghost"
-                          onClick={() => {
-                            if (confirm(t("expenses.confirmDelete"))) {
-                              deleteMutation.mutate(expense.id);
-                            }
-                          }}
+                          onClick={() => handleDeleteClick(expense)}
                           data-testid={`button-delete-expense-${expense.id}`}
                         >
                           <Trash2 className="h-4 w-4" />
@@ -467,6 +487,30 @@ export default function ExpensesPage() {
         onSuccess={handleCloseDialog}
         t={t}
       />
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir supprimer la dépense <strong>{expenseToDelete?.name}</strong> ? Cette action est irréversible.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteMutation.isPending}
+              data-testid="button-confirm-delete"
+            >
+              {deleteMutation.isPending ? t("common.loading") : t("common.delete") || "Supprimer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -675,6 +675,8 @@ export default function Stock() {
   const [adjustingProduct, setAdjustingProduct] = useState<Product | null>(null);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [historyProduct, setHistoryProduct] = useState<Product | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
 
   const { data: products, isLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -690,12 +692,25 @@ export default function Stock() {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/valuation"] });
-      toast({ title: t("stock.productDeleted") });
+      toast({ title: `Produit "${productToDelete?.name || ""}" supprimé avec succès` });
+      setDeleteDialogOpen(false);
+      setProductToDelete(null);
     },
     onError: (error: Error) => {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
+
+  const handleDeleteClick = (product: Product) => {
+    setProductToDelete(product);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDelete = () => {
+    if (productToDelete) {
+      deleteMutation.mutate(productToDelete.id);
+    }
+  };
 
   const filteredProducts = products?.filter((product) => {
     const matchesSearch = 
@@ -973,7 +988,7 @@ export default function Stock() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              onClick={() => deleteMutation.mutate(product.id)}
+                              onClick={() => handleDeleteClick(product)}
                               data-testid={`button-delete-${product.id}`}
                             >
                               <Trash2 className="h-4 w-4 text-destructive" />
@@ -1028,6 +1043,30 @@ export default function Stock() {
         t={t}
         language={language}
       />
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogDescription>
+              Êtes-vous sûr de vouloir supprimer le produit <strong>{productToDelete?.name}</strong> ? Cette action est irréversible.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              disabled={deleteMutation.isPending}
+              data-testid="button-confirm-delete"
+            >
+              {deleteMutation.isPending ? t("common.loading") : t("common.delete") || "Supprimer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useLanguage } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
@@ -22,6 +23,11 @@ import {
   Gift,
   BarChart3,
   Settings2,
+  Zap,
+  Activity,
+  ArrowRight,
+  Receipt,
+  Wallet,
 } from "lucide-react";
 import {
   BarChart,
@@ -32,10 +38,11 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import type { DashboardStats } from "@shared/schema";
+import type { DashboardStats, RecentActivity } from "@shared/schema";
 
 type SalesTrend = { month: string; sales: number; revenue: number };
 type TopProduct = { name: string; quantity: number; revenue: number };
+type LowStockProduct = { id: string; name: string; stockQuantity: number; lowStockThreshold: number };
 
 interface DashboardSettings {
   showStatCards: boolean;
@@ -43,6 +50,8 @@ interface DashboardSettings {
   showCompanyInfo: boolean;
   showSalesChart: boolean;
   showTopProducts: boolean;
+  showRecentActivity: boolean;
+  showLowStock: boolean;
 }
 
 const defaultSettings: DashboardSettings = {
@@ -51,6 +60,8 @@ const defaultSettings: DashboardSettings = {
   showCompanyInfo: true,
   showSalesChart: true,
   showTopProducts: true,
+  showRecentActivity: true,
+  showLowStock: true,
 };
 
 function useDashboardSettings() {
@@ -84,12 +95,14 @@ function StatCard({
   icon: Icon,
   description,
   variant = "default",
+  onClick,
 }: {
   title: string;
   value: string | number;
   icon: React.ComponentType<{ className?: string }>;
   description?: string;
   variant?: "default" | "warning" | "success";
+  onClick?: () => void;
 }) {
   const iconColors = {
     default: "text-primary",
@@ -98,7 +111,7 @@ function StatCard({
   };
 
   return (
-    <Card>
+    <Card className={onClick ? "cursor-pointer hover-elevate" : ""} onClick={onClick}>
       <CardHeader className="flex flex-row items-center justify-between gap-1 p-3 sm:p-4 pb-1 sm:pb-2">
         <CardTitle className="text-xs sm:text-sm font-medium text-muted-foreground truncate">
           {title}
@@ -120,16 +133,43 @@ function StatCard({
 function StatCardSkeleton() {
   return (
     <Card>
-      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+      <CardHeader className="flex flex-row items-center justify-between gap-2 p-3 sm:p-4 pb-1 sm:pb-2">
         <Skeleton className="h-4 w-24" />
         <Skeleton className="h-4 w-4" />
       </CardHeader>
-      <CardContent>
+      <CardContent className="p-3 sm:p-4 pt-0">
         <Skeleton className="h-8 w-16 mb-1" />
         <Skeleton className="h-3 w-32" />
       </CardContent>
     </Card>
   );
+}
+
+function getActivityIcon(type: string) {
+  switch (type) {
+    case "sale": return ShoppingCart;
+    case "invoice": return FileText;
+    case "expense": return Wallet;
+    case "quick_invoice": return Zap;
+    default: return Activity;
+  }
+}
+
+function getActivityColor(type: string) {
+  switch (type) {
+    case "sale": return "text-green-500";
+    case "invoice": return "text-primary";
+    case "expense": return "text-orange-500";
+    case "quick_invoice": return "text-blue-500";
+    default: return "text-muted-foreground";
+  }
+}
+
+function getActivityBadgeVariant(type: string): "default" | "secondary" | "destructive" | "outline" {
+  switch (type) {
+    case "expense": return "destructive";
+    default: return "secondary";
+  }
 }
 
 export default function Dashboard() {
@@ -146,6 +186,18 @@ export default function Dashboard() {
   const { data: topProducts, isLoading: topLoading } = useQuery<TopProduct[]>({
     queryKey: ["/api/dashboard/top-products"],
   });
+
+  const { data: recentActivity, isLoading: activityLoading } = useQuery<RecentActivity[]>({
+    queryKey: ["/api/dashboard/recent-activity"],
+  });
+
+  const { data: lowStockProducts, isLoading: lowStockLoading } = useQuery<LowStockProduct[]>({
+    queryKey: ["/api/dashboard/low-stock"],
+  });
+
+  const navigateToStockLowFilter = () => {
+    window.location.href = "/stock?filter=low";
+  };
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
@@ -196,6 +248,24 @@ export default function Dashboard() {
                   />
                 </div>
                 <div className="flex items-center justify-between">
+                  <Label htmlFor="showRecentActivity" className="text-sm">Activite recente</Label>
+                  <Switch
+                    id="showRecentActivity"
+                    checked={settings.showRecentActivity}
+                    onCheckedChange={(v) => updateSetting("showRecentActivity", v)}
+                    data-testid="switch-recent-activity"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="showLowStock" className="text-sm">Stock bas</Label>
+                  <Switch
+                    id="showLowStock"
+                    checked={settings.showLowStock}
+                    onCheckedChange={(v) => updateSetting("showLowStock", v)}
+                    data-testid="switch-low-stock"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
                   <Label htmlFor="showSalesChart" className="text-sm">Graphique ventes</Label>
                   <Switch
                     id="showSalesChart"
@@ -230,9 +300,10 @@ export default function Dashboard() {
 
       {settings.showStatCards && (
         <>
-          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
             {isLoading ? (
               <>
+                <StatCardSkeleton />
                 <StatCardSkeleton />
                 <StatCardSkeleton />
                 <StatCardSkeleton />
@@ -250,6 +321,8 @@ export default function Dashboard() {
                   value={stats?.lowStockCount ?? 0}
                   icon={AlertTriangle}
                   variant={stats?.lowStockCount && stats.lowStockCount > 0 ? "warning" : "default"}
+                  onClick={stats?.lowStockCount && stats.lowStockCount > 0 ? navigateToStockLowFilter : undefined}
+                  description={stats?.lowStockCount && stats.lowStockCount > 0 ? t("dashboard.lowStockItems") : undefined}
                 />
                 <StatCard
                   title={t("dashboard.invoicesThisMonth")}
@@ -262,6 +335,12 @@ export default function Dashboard() {
                   value={stats?.todaySales ?? 0}
                   icon={ShoppingCart}
                   variant="success"
+                />
+                <StatCard
+                  title={t("dashboard.quickInvoices")}
+                  value={stats?.quickInvoicesCount ?? 0}
+                  description={`${(stats?.quickInvoicesTotal ?? 0).toLocaleString()} DZD`}
+                  icon={Zap}
                 />
               </>
             )}
@@ -303,6 +382,128 @@ export default function Dashboard() {
             )}
           </div>
         </>
+      )}
+
+      {(settings.showRecentActivity || settings.showLowStock) && (
+        <div className="grid gap-4 sm:gap-6 lg:grid-cols-2">
+          {settings.showRecentActivity && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 p-3 sm:p-4 pb-2">
+                <CardTitle className="text-base sm:text-lg">{t("dashboard.recentActivity")}</CardTitle>
+                <Activity className="h-4 w-4 text-muted-foreground" />
+              </CardHeader>
+              <CardContent className="p-3 sm:p-4 pt-0">
+                {activityLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <div key={i} className="flex items-center gap-3">
+                        <Skeleton className="h-8 w-8 rounded-md flex-shrink-0" />
+                        <div className="flex-1 space-y-1">
+                          <Skeleton className="h-4 w-3/4" />
+                          <Skeleton className="h-3 w-1/2" />
+                        </div>
+                        <Skeleton className="h-4 w-16" />
+                      </div>
+                    ))}
+                  </div>
+                ) : recentActivity && recentActivity.length > 0 ? (
+                  <div className="space-y-2">
+                    {recentActivity.map((activity) => {
+                      const IconComp = getActivityIcon(activity.type);
+                      const colorClass = getActivityColor(activity.type);
+                      return (
+                        <div
+                          key={activity.id}
+                          className="flex items-center gap-3 p-2 rounded-md bg-muted/50"
+                          data-testid={`activity-item-${activity.id}`}
+                        >
+                          <div className={`flex-shrink-0 ${colorClass}`}>
+                            <IconComp className="h-4 w-4" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs sm:text-sm font-medium truncate" data-testid={`activity-desc-${activity.id}`}>
+                              {activity.description}
+                            </p>
+                            <p className="text-[10px] sm:text-xs text-muted-foreground truncate">
+                              {activity.reference} - {activity.date}
+                            </p>
+                          </div>
+                          <div className="flex-shrink-0 flex items-center gap-2">
+                            <Badge variant={getActivityBadgeVariant(activity.type)} className="text-[10px]">
+                              {activity.type === "expense" ? "-" : "+"}{(activity.amount || 0).toLocaleString()} DZD
+                            </Badge>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="h-[180px] flex items-center justify-center text-muted-foreground text-sm">
+                    {t("common.noData")}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {settings.showLowStock && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between gap-2 p-3 sm:p-4 pb-2">
+                <CardTitle className="text-base sm:text-lg">{t("dashboard.lowStockAlerts")}</CardTitle>
+                <AlertTriangle className="h-4 w-4 text-orange-500" />
+              </CardHeader>
+              <CardContent className="p-3 sm:p-4 pt-0">
+                {lowStockLoading ? (
+                  <div className="space-y-3">
+                    {[1, 2, 3].map(i => (
+                      <div key={i} className="flex items-center gap-3">
+                        <Skeleton className="h-4 w-4 flex-shrink-0" />
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-4 w-12" />
+                      </div>
+                    ))}
+                  </div>
+                ) : lowStockProducts && lowStockProducts.length > 0 ? (
+                  <div className="space-y-2">
+                    {lowStockProducts.slice(0, 5).map((product) => (
+                      <a
+                        key={product.id}
+                        href={`/stock?filter=low&highlight=${product.id}`}
+                        className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50 hover-elevate"
+                        data-testid={`low-stock-item-${product.id}`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <AlertTriangle className="h-3 w-3 text-orange-500 flex-shrink-0" />
+                          <span className="text-xs sm:text-sm font-medium truncate">{product.name}</span>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <Badge variant={product.stockQuantity === 0 ? "destructive" : "secondary"} className="text-[10px]">
+                            {product.stockQuantity} / {product.lowStockThreshold}
+                          </Badge>
+                          <ArrowRight className="h-3 w-3 text-muted-foreground" />
+                        </div>
+                      </a>
+                    ))}
+                    {lowStockProducts.length > 5 && (
+                      <a
+                        href="/stock?filter=low"
+                        className="flex items-center justify-center gap-1 p-2 text-xs text-primary hover-elevate rounded-md"
+                        data-testid="link-view-all-low-stock"
+                      >
+                        {t("dashboard.viewAll")} ({lowStockProducts.length})
+                        <ArrowRight className="h-3 w-3" />
+                      </a>
+                    )}
+                  </div>
+                ) : (
+                  <div className="h-[120px] flex items-center justify-center text-muted-foreground text-sm">
+                    {t("common.noData")}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
       )}
 
       {(settings.showQuickActions || settings.showCompanyInfo) && (
@@ -347,14 +548,14 @@ export default function Dashboard() {
                   </div>
                 </a>
                 <a
-                  href="/resellers"
+                  href="/quick-invoice"
                   className="flex items-center gap-2 sm:gap-3 p-2 sm:p-4 rounded-md bg-muted hover-elevate"
-                  data-testid="link-resellers"
+                  data-testid="link-quick-invoice"
                 >
-                  <Gift className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                  <Zap className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
                   <div className="min-w-0">
-                    <p className="font-medium text-xs sm:text-sm truncate">{t("nav.resellers")}</p>
-                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate hidden sm:block">{t("resellers.title")}</p>
+                    <p className="font-medium text-xs sm:text-sm truncate">{t("nav.quickInvoice")}</p>
+                    <p className="text-[10px] sm:text-xs text-muted-foreground truncate hidden sm:block">{t("dashboard.quickInvoices")}</p>
                   </div>
                 </a>
               </CardContent>
@@ -427,7 +628,7 @@ export default function Dashboard() {
                   </ResponsiveContainer>
                 ) : (
                   <div className="h-[180px] sm:h-[250px] flex items-center justify-center text-muted-foreground text-sm">
-                    Aucune donnee disponible
+                    {t("common.noData")}
                   </div>
                 )}
               </CardContent>
@@ -442,7 +643,20 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="p-3 sm:p-4 pt-0">
                 {topLoading ? (
-                  <Skeleton className="h-[180px] sm:h-[250px] w-full" />
+                  <div className="space-y-3">
+                    {[1, 2, 3, 4, 5].map(i => (
+                      <div key={i} className="flex items-center justify-between gap-2 p-2">
+                        <div className="flex items-center gap-3 flex-1">
+                          <Skeleton className="h-4 w-6" />
+                          <Skeleton className="h-4 w-3/4" />
+                        </div>
+                        <div className="text-right">
+                          <Skeleton className="h-4 w-16 mb-1" />
+                          <Skeleton className="h-3 w-20" />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 ) : topProducts && topProducts.length > 0 ? (
                   <div className="space-y-2 sm:space-y-3">
                     {topProducts.slice(0, 5).map((product, idx) => (
@@ -460,7 +674,7 @@ export default function Dashboard() {
                   </div>
                 ) : (
                   <div className="h-[180px] sm:h-[250px] flex items-center justify-center text-muted-foreground text-sm">
-                    Aucune donnee disponible
+                    {t("common.noData")}
                   </div>
                 )}
               </CardContent>

@@ -1008,6 +1008,8 @@ export class DatabaseStorage implements IStorage {
       const today = new Date().toISOString().split("T")[0];
       const todaySalesData = allSales.filter((s) => s.date === today);
 
+      const allQuickInvoices = await db.select().from(quickInvoices);
+
       return {
         totalProducts: allProducts.length,
         lowStockCount: allProducts.filter((p) => p.stockQuantity <= p.lowStockThreshold).length,
@@ -1017,6 +1019,8 @@ export class DatabaseStorage implements IStorage {
         todayRevenue: todaySalesData.reduce((sum, s) => sum + s.total, 0),
         activeResellers: allResellers.length,
         rewardPoolCount: allResellers.filter((r) => r.inRewardPool).length,
+        quickInvoicesCount: allQuickInvoices.length,
+        quickInvoicesTotal: allQuickInvoices.reduce((sum, qi) => sum + (qi.totalTTC || 0), 0),
       };
     });
     
