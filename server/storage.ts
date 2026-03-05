@@ -45,6 +45,8 @@ import {
   type SaleReturnItem,
   type InsertSaleReturnItem,
   type SaleReturnWithItems,
+  type QuickInvoice,
+  type InsertQuickInvoice,
   users,
   products,
   invoices,
@@ -64,6 +66,7 @@ import {
   fabricationItems,
   stockMovements,
   settings,
+  quickInvoices,
 } from "@shared/schema";
 import { db, withRetry } from "./db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
@@ -162,6 +165,11 @@ export interface IStorage {
   getReturnedQuantities(saleId: string): Promise<Record<string, number>>;
   processReturn(saleId: string, returnData: InsertSaleReturn, items: InsertSaleReturnItem[]): Promise<SaleReturnWithItems>;
   getNextReturnNumber(): Promise<string>;
+
+  getQuickInvoices(): Promise<QuickInvoice[]>;
+  getQuickInvoice(id: string): Promise<QuickInvoice | undefined>;
+  createQuickInvoice(invoice: InsertQuickInvoice): Promise<QuickInvoice>;
+  deleteQuickInvoice(id: string): Promise<boolean>;
 
   exportAllData(): Promise<object>;
   importAllData(data: object): Promise<{ imported: number }>;
@@ -1757,6 +1765,33 @@ export class DatabaseStorage implements IStorage {
       cache.delete(CACHE_KEYS.DASHBOARD_STATS);
 
       return { imported };
+    });
+  }
+
+  async getQuickInvoices(): Promise<QuickInvoice[]> {
+    return await withRetry(async () => {
+      return await db.select().from(quickInvoices).orderBy(desc(quickInvoices.createdAt));
+    });
+  }
+
+  async getQuickInvoice(id: string): Promise<QuickInvoice | undefined> {
+    return await withRetry(async () => {
+      const [invoice] = await db.select().from(quickInvoices).where(eq(quickInvoices.id, id));
+      return invoice;
+    });
+  }
+
+  async createQuickInvoice(invoice: InsertQuickInvoice): Promise<QuickInvoice> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(quickInvoices).values(invoice).returning();
+      return created;
+    });
+  }
+
+  async deleteQuickInvoice(id: string): Promise<boolean> {
+    return await withRetry(async () => {
+      const result = await db.delete(quickInvoices).where(eq(quickInvoices.id, id));
+      return true;
     });
   }
 

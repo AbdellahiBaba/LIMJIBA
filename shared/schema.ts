@@ -356,6 +356,32 @@ export interface ProfitStats {
  * - For purchased goods: the acquisition cost
  * - For manufactured goods: the production cost (materials + labor + overhead)
  */
+export const quickInvoices = pgTable("quick_invoices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  invoiceNumber: text("invoice_number").notNull(),
+  date: text("date").notNull(),
+  responsible: text("responsible"),
+  role: text("role"),
+  paymentMode: text("payment_mode").notNull().default("A TERME"),
+  dueDate: text("due_date"),
+  clientName: text("client_name"),
+  clientAddress: text("client_address"),
+  clientPhone: text("client_phone"),
+  applyTva: boolean("apply_tva").notNull().default(false),
+  tvaRate: real("tva_rate").notNull().default(0.19),
+  totalHT: real("total_ht").notNull().default(0),
+  tvaAmount: real("tva_amount").notNull().default(0),
+  totalTTC: real("total_ttc").notNull().default(0),
+  totalWeight: real("total_weight").notNull().default(0),
+  notes: text("notes"),
+  items: text("items").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertQuickInvoiceSchema = createInsertSchema(quickInvoices).omit({ id: true });
+export type InsertQuickInvoice = z.infer<typeof insertQuickInvoiceSchema>;
+export type QuickInvoice = typeof quickInvoices.$inferSelect;
+
 export interface ProductInventoryValue {
   id: string;
   name: string;
