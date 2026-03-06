@@ -48,6 +48,8 @@ import {
   Star,
   ChevronDown,
   User,
+  PauseCircle,
+  PlayCircle,
 } from "lucide-react";
 import {
   Tooltip,
@@ -56,7 +58,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus } from "lucide-react";
-import type { Product, CartItem, Reseller, Sale, InsertSale, InsertSaleItem, InsertReseller } from "@shared/schema";
+import type { Product, CartItem, Reseller, Sale, InsertSale, InsertSaleItem, InsertReseller, ParkedSale } from "@shared/schema";
 
 export default function POS() {
   const { toast } = useToast();
@@ -84,6 +86,9 @@ export default function POS() {
   const [returnReason, setReturnReason] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [recentSalesOpen, setRecentSalesOpen] = useState(false);
+  const [parkDialogOpen, setParkDialogOpen] = useState(false);
+  const [parkLabel, setParkLabel] = useState("");
+  const [parkedSalesOpen, setParkedSalesOpen] = useState(false);
 
   const { data: products, isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -91,6 +96,10 @@ export default function POS() {
 
   const { data: resellers } = useQuery<Reseller[]>({
     queryKey: ["/api/resellers"],
+  });
+
+  const { data: parkedSales } = useQuery<ParkedSale[]>({
+    queryKey: ["/api/parked-sales"],
   });
 
   const { data: allSales } = useQuery<Sale[]>({
@@ -139,6 +148,65 @@ export default function POS() {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
+
+  const parkSaleMutation = useMutation({
+    mutationFn: async (data: { label: string; customerName: string | null; items: string; discount: number }) => {
+      const response = await apiRequest("POST", "/api/parked-sales", {
+        ...data,
+        createdAt: new Date().toISOString(),
+      });
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/parked-sales"] });
+      setParkDialogOpen(false);
+      setParkLabel("");
+      clearCart();
+      toast({ title: "Vente mise en attente" });
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
+    },
+  });
+
+  const deleteParkedMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/parked-sales/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/parked-sales"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
+    },
+  });
+
+  const handleParkSale = () => {
+    if (cart.length === 0) {
+      toast({ title: "Cart is empty", variant: "destructive" });
+      return;
+    }
+    parkSaleMutation.mutate({
+      label: parkLabel.trim() || `Vente ${new Date().toLocaleTimeString()}`,
+      customerName: customerName.trim() || null,
+      items: JSON.stringify(cart),
+      discount: totalDiscount,
+    });
+  };
+
+  const handleResumeSale = (parkedSale: ParkedSale) => {
+    try {
+      const items: CartItem[] = JSON.parse(parkedSale.items);
+      setCart(items);
+      setCustomerName(parkedSale.customerName || "");
+      setDiscountAmount(parkedSale.discount || 0);
+      setDiscountPercent(0);
+      deleteParkedMutation.mutate(parkedSale.id);
+      toast({ title: "Vente reprise" });
+    } catch {
+      toast({ title: "Erreur lors de la reprise", variant: "destructive" });
+    }
+  };
 
   const lookupSaleForReturn = async () => {
     if (!returnTicketNumber.trim()) {
@@ -403,6 +471,15 @@ export default function POS() {
       return;
     }
 
+    // F3: Park sale
+    if (e.key === "F3") {
+      e.preventDefault();
+      if (cart.length > 0) {
+        setParkDialogOpen(true);
+      }
+      return;
+    }
+
     // F4: Complete sale (when checkout dialog is open)
     if (e.key === "F4" && checkoutDialogOpen) {
       e.preventDefault();
@@ -592,6 +669,7 @@ export default function POS() {
                   <p className="font-semibold mb-2">Raccourcis clavier:</p>
                   <p><kbd className="bg-muted px-1 rounded">1-9</kbd> Ajouter produit</p>
                   <p><kbd className="bg-muted px-1 rounded">F2</kbd> Paiement</p>
+                  <p><kbd className="bg-muted px-1 rounded">F3</kbd> Mettre en attente</p>
                   <p><kbd className="bg-muted px-1 rounded">F4</kbd> Confirmer vente</p>
                   <p><kbd className="bg-muted px-1 rounded">Suppr</kbd> Retirer dernier</p>
                   <p><kbd className="bg-muted px-1 rounded">Échap</kbd> Vider panier</p>
@@ -779,7 +857,7 @@ export default function POS() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <Button
                   variant="outline"
                   onClick={clearCart}
@@ -804,6 +882,15 @@ export default function POS() {
                   {t("pos.return") || "Retour"}
                 </Button>
                 <Button
+                  variant="outline"
+                  onClick={() => setParkDialogOpen(true)}
+                  disabled={cart.length === 0}
+                  data-testid="button-park-sale"
+                >
+                  <PauseCircle className="h-4 w-4 mr-2" />
+                  F3
+                </Button>
+                <Button
                   onClick={handleCheckout}
                   data-testid="button-checkout"
                 >
@@ -811,6 +898,60 @@ export default function POS() {
                   {t("pos.checkout")}
                 </Button>
               </div>
+            </div>
+          )}
+
+          {parkedSales && parkedSales.length > 0 && (
+            <div className="mt-3 border-t pt-2">
+              <Collapsible open={parkedSalesOpen} onOpenChange={setParkedSalesOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-between" data-testid="button-toggle-parked-sales">
+                    <span className="flex items-center gap-2 text-sm">
+                      <PauseCircle className="h-4 w-4" />
+                      Ventes en attente
+                      <Badge variant="secondary" className="ml-1">{parkedSales.length}</Badge>
+                    </span>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${parkedSalesOpen ? "rotate-180" : ""}`} />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-2 pt-2">
+                    {parkedSales.map((ps) => {
+                      let itemCount = 0;
+                      try { itemCount = JSON.parse(ps.items).length; } catch {}
+                      return (
+                        <div key={ps.id} className="flex items-center justify-between gap-2 p-2 rounded-md border text-sm" data-testid={`parked-sale-${ps.id}`}>
+                          <div className="min-w-0">
+                            <p className="font-medium truncate" data-testid={`text-parked-label-${ps.id}`}>{ps.label}</p>
+                            <p className="text-xs text-muted-foreground">
+                              {itemCount} article{itemCount !== 1 ? "s" : ""}
+                              {ps.customerName && ` - ${ps.customerName}`}
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 flex-shrink-0">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => handleResumeSale(ps)}
+                              data-testid={`button-resume-sale-${ps.id}`}
+                            >
+                              <PlayCircle className="h-4 w-4" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              onClick={() => deleteParkedMutation.mutate(ps.id)}
+                              data-testid={`button-delete-parked-${ps.id}`}
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </Button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           )}
 
@@ -1021,6 +1162,46 @@ export default function POS() {
               data-testid="button-save-reseller"
             >
               {createResellerMutation.isPending ? t("common.saving") : t("common.save")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={parkDialogOpen} onOpenChange={setParkDialogOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <PauseCircle className="h-5 w-5" />
+              Mettre en attente
+            </DialogTitle>
+            <DialogDescription className="sr-only">Mettre la vente en attente</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Label</Label>
+              <Input
+                value={parkLabel}
+                onChange={(e) => setParkLabel(e.target.value)}
+                placeholder="Ex: Client Ahmed, Table 3..."
+                onKeyDown={(e) => { if (e.key === "Enter") handleParkSale(); }}
+                data-testid="input-park-label"
+                autoFocus
+              />
+            </div>
+            <div className="text-sm text-muted-foreground">
+              {cart.reduce((sum, item) => sum + item.quantity, 0)} article(s) - {total.toLocaleString()} DZD
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setParkDialogOpen(false)} data-testid="button-cancel-park">
+              {t("common.cancel")}
+            </Button>
+            <Button
+              onClick={handleParkSale}
+              disabled={parkSaleMutation.isPending}
+              data-testid="button-confirm-park"
+            >
+              {parkSaleMutation.isPending ? t("common.loading") : "Mettre en attente"}
             </Button>
           </DialogFooter>
         </DialogContent>

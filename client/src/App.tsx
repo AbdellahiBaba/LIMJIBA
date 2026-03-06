@@ -22,6 +22,7 @@ import {
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { LogOut, Loader2, Bell, AlertTriangle, Package, Search } from "lucide-react";
 import type { Product } from "@shared/schema";
+import { lazy, Suspense } from "react";
 import Dashboard from "@/pages/dashboard";
 import Stock from "@/pages/stock";
 import Invoices from "@/pages/invoices";
@@ -39,6 +40,10 @@ import Customers from "@/pages/customers";
 import Settings from "@/pages/settings";
 import QuickInvoice from "@/pages/quick-invoice";
 import CustomerPortal from "@/pages/customer-portal";
+import Suppliers from "@/pages/suppliers";
+import PurchaseOrders from "@/pages/purchase-orders";
+import Reports from "@/pages/reports";
+import AuditLog from "@/pages/audit-log";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
@@ -55,10 +60,14 @@ function Router() {
       <Route path="/sales" component={Sales} />
       <Route path="/resellers" component={Resellers} />
       <Route path="/customers" component={Customers} />
+      <Route path="/suppliers" component={Suppliers} />
+      <Route path="/purchase-orders" component={PurchaseOrders} />
       <Route path="/salaries" component={Salaries} />
       <Route path="/expenses" component={Expenses} />
       <Route path="/branding" component={Branding} />
       <Route path="/profit" component={ProfitCalculator} />
+      <Route path="/reports" component={Reports} />
+      <Route path="/audit-log" component={AuditLog} />
       <Route path="/settings" component={Settings} />
       <Route path="/quick-invoice" component={QuickInvoice} />
       <Route path="/portal/:customerId" component={CustomerPortal} />

@@ -8,16 +8,31 @@ export const users = pgTable("users", {
   username: text("username").notNull().unique(),
   password: text("password").notNull(),
   isAdmin: boolean("is_admin").notNull().default(false),
+  displayName: text("display_name"),
+  role: text("role").notNull().default("staff"),
+  permissions: text("permissions").notNull().default("[]"),
+  isActive: boolean("is_active").notNull().default(true),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
   username: true,
   password: true,
   isAdmin: true,
+  displayName: true,
+  role: true,
+  permissions: true,
+  isActive: true,
 });
 
 export type InsertUser = z.infer<typeof insertUserSchema>;
 export type User = typeof users.$inferSelect;
+
+export const ALL_PERMISSIONS = [
+  "dashboard", "pos", "stock", "invoices", "sales", "customers",
+  "resellers", "expenses", "salaries", "reports", "suppliers",
+  "purchase_orders", "branding", "settings", "audit_log"
+] as const;
+export type Permission = typeof ALL_PERMISSIONS[number];
 
 export const products = pgTable("products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -74,6 +89,7 @@ export const invoices = pgTable("invoices", {
   amountPaid: real("amount_paid").default(0),
   status: text("status").notNull().default("pending"), // 'pending' | 'partial' | 'paid'
   clientName: text("client_name"),
+  deliveryStatus: text("delivery_status").notNull().default("none"), // 'none' | 'prepared' | 'shipped' | 'delivered'
 });
 
 export const insertInvoiceSchema = createInsertSchema(invoices).omit({ id: true });
@@ -393,6 +409,89 @@ export const quickInvoices = pgTable("quick_invoices", {
 export const insertQuickInvoiceSchema = createInsertSchema(quickInvoices).omit({ id: true });
 export type InsertQuickInvoice = z.infer<typeof insertQuickInvoiceSchema>;
 export type QuickInvoice = typeof quickInvoices.$inferSelect;
+
+// ===================== SUPPLIERS & PURCHASE ORDERS =====================
+
+export const suppliers = pgTable("suppliers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  phone: text("phone"),
+  email: text("email"),
+  address: text("address"),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertSupplierSchema = createInsertSchema(suppliers).omit({ id: true });
+export type InsertSupplier = z.infer<typeof insertSupplierSchema>;
+export type Supplier = typeof suppliers.$inferSelect;
+
+export const purchaseOrders = pgTable("purchase_orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderNumber: text("order_number").notNull().unique(),
+  supplierId: varchar("supplier_id").notNull(),
+  date: text("date").notNull(),
+  status: text("status").notNull().default("draft"), // 'draft' | 'ordered' | 'received' | 'cancelled'
+  totalAmount: real("total_amount").notNull().default(0),
+  notes: text("notes"),
+  createdAt: text("created_at").notNull(),
+  receivedAt: text("received_at"),
+  receivedBy: text("received_by"),
+});
+
+export const insertPurchaseOrderSchema = createInsertSchema(purchaseOrders).omit({ id: true });
+export type InsertPurchaseOrder = z.infer<typeof insertPurchaseOrderSchema>;
+export type PurchaseOrder = typeof purchaseOrders.$inferSelect;
+
+export const purchaseOrderItems = pgTable("purchase_order_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  purchaseOrderId: varchar("purchase_order_id").notNull(),
+  productId: varchar("product_id"),
+  productName: text("product_name").notNull(),
+  quantity: integer("quantity").notNull(),
+  unitCost: real("unit_cost").notNull(),
+  total: real("total").notNull(),
+});
+
+export const insertPurchaseOrderItemSchema = createInsertSchema(purchaseOrderItems).omit({ id: true, purchaseOrderId: true });
+export type InsertPurchaseOrderItem = z.infer<typeof insertPurchaseOrderItemSchema>;
+export type PurchaseOrderItem = typeof purchaseOrderItems.$inferSelect;
+
+export type PurchaseOrderWithItems = PurchaseOrder & { items: PurchaseOrderItem[]; supplier?: Supplier };
+
+// ===================== PARKED SALES =====================
+
+export const parkedSales = pgTable("parked_sales", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  label: text("label").notNull(),
+  customerName: text("customer_name"),
+  items: text("items").notNull(), // JSON string of cart items
+  discount: real("discount").default(0),
+  createdAt: text("created_at").notNull(),
+  createdBy: text("created_by"),
+});
+
+export const insertParkedSaleSchema = createInsertSchema(parkedSales).omit({ id: true });
+export type InsertParkedSale = z.infer<typeof insertParkedSaleSchema>;
+export type ParkedSale = typeof parkedSales.$inferSelect;
+
+// ===================== AUDIT LOG =====================
+
+export const auditLogs = pgTable("audit_logs", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  userId: varchar("user_id"),
+  username: text("username").notNull(),
+  action: text("action").notNull(), // 'login' | 'logout' | 'create' | 'update' | 'delete'
+  entity: text("entity").notNull(), // 'sale' | 'invoice' | 'product' | 'customer' etc
+  entityId: varchar("entity_id"),
+  details: text("details"), // JSON string with additional info
+  ipAddress: text("ip_address"),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true });
+export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
+export type AuditLog = typeof auditLogs.$inferSelect;
 
 export interface ProductInventoryValue {
   id: string;

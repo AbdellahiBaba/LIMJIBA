@@ -34,6 +34,8 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Separator } from "@/components/ui/separator";
+import { Progress } from "@/components/ui/progress";
+import { Textarea } from "@/components/ui/textarea";
 import {
   ArrowLeft,
   Printer,
@@ -44,6 +46,12 @@ import {
   Plus,
   Trash2,
   Banknote,
+  Package,
+  Truck,
+  PackageCheck,
+  CircleDashed,
+  Mail,
+  Copy,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { InvoiceWithItems, InvoicePayment } from "@shared/schema";
@@ -102,6 +110,12 @@ export default function InvoiceView() {
   const [paymentAmount, setPaymentAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("cash");
   const [paymentReference, setPaymentReference] = useState("");
+  const [paymentNotes, setPaymentNotes] = useState("");
+  const [paymentDate, setPaymentDate] = useState(() => new Date().toISOString().split("T")[0]);
+  const [emailDialogOpen, setEmailDialogOpen] = useState(false);
+  const [emailTo, setEmailTo] = useState("");
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailBody, setEmailBody] = useState("");
 
   const { data: invoice, isLoading } = useQuery<InvoiceWithItems>({
     queryKey: ["/api/invoices", params.id],
@@ -127,7 +141,7 @@ export default function InvoiceView() {
   });
 
   const addPaymentMutation = useMutation({
-    mutationFn: (data: { amount: number; paymentMethod: string; paymentDate: string; reference?: string }) =>
+    mutationFn: (data: { invoiceId: string; amount: number; paymentMethod: string; paymentDate: string; reference?: string; notes?: string; createdAt: string }) =>
       apiRequest("POST", `/api/invoices/${params.id}/payments`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices", params.id] });
@@ -137,6 +151,8 @@ export default function InvoiceView() {
       setPaymentDialogOpen(false);
       setPaymentAmount("");
       setPaymentReference("");
+      setPaymentNotes("");
+      setPaymentDate(new Date().toISOString().split("T")[0]);
     },
     onError: (error: Error) => {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
@@ -157,6 +173,19 @@ export default function InvoiceView() {
     },
   });
 
+  const updateDeliveryStatusMutation = useMutation({
+    mutationFn: (status: string) =>
+      apiRequest("PATCH", `/api/invoices/${params.id}/delivery-status`, { status }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices", params.id] });
+      queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
+      toast({ title: "Statut de livraison mis à jour" });
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
+    },
+  });
+
   const handleAddPayment = () => {
     const amount = parseFloat(paymentAmount);
     if (isNaN(amount) || amount <= 0) {
@@ -164,10 +193,13 @@ export default function InvoiceView() {
       return;
     }
     addPaymentMutation.mutate({
+      invoiceId: params.id!,
       amount,
       paymentMethod,
-      paymentDate: new Date().toISOString().split("T")[0],
+      paymentDate: paymentDate,
       reference: paymentReference || undefined,
+      notes: paymentNotes || undefined,
+      createdAt: new Date().toISOString(),
     });
   };
 
@@ -221,7 +253,7 @@ export default function InvoiceView() {
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div className="flex items-center gap-3 sm:gap-4">
-          <Button variant="ghost" size="icon" onClick={() => navigate("/invoices")}>
+          <Button variant="ghost" size="icon" onClick={() => navigate("/invoices")} data-testid="button-back-invoices">
             <ArrowLeft className="h-4 w-4" />
           </Button>
           <div>
@@ -423,18 +455,23 @@ export default function InvoiceView() {
             <CardContent className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Total facture:</span>
-                <span className="font-mono">{invoice.totalTTC.toLocaleString()} DZD</span>
+                <span className="font-mono" data-testid="text-invoice-total">{invoice.totalTTC.toLocaleString()} DZD</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">Payé:</span>
-                <span className="font-mono text-green-600">{(paymentsData?.paidAmount || 0).toLocaleString()} DZD</span>
+                <span className="font-mono text-green-600" data-testid="text-paid-amount">{(paymentsData?.paidAmount || 0).toLocaleString()} DZD</span>
               </div>
               <div className="flex justify-between font-medium">
                 <span>Restant:</span>
-                <span className={`font-mono ${remainingAmount > 0 ? "text-destructive" : "text-green-600"}`}>
+                <span className={`font-mono ${remainingAmount > 0 ? "text-destructive" : "text-green-600"}`} data-testid="text-remaining-amount">
                   {remainingAmount.toLocaleString()} DZD
                 </span>
               </div>
+              <Progress
+                value={invoice.totalTTC > 0 ? Math.min(((paymentsData?.paidAmount || 0) / invoice.totalTTC) * 100, 100) : 0}
+                className="h-2"
+                data-testid="progress-payment"
+              />
               
               {paymentsData?.payments && paymentsData.payments.length > 0 && (
                 <>
@@ -462,6 +499,71 @@ export default function InvoiceView() {
                   </div>
                 </>
               )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-sm flex items-center gap-2">
+                <Truck className="h-4 w-4" />
+                Statut de livraison
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Select
+                value={invoice.deliveryStatus || "none"}
+                onValueChange={(value) => updateDeliveryStatusMutation.mutate(value)}
+              >
+                <SelectTrigger data-testid="select-delivery-status">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">Non défini</SelectItem>
+                  <SelectItem value="prepared">Préparé</SelectItem>
+                  <SelectItem value="shipped">Expédié</SelectItem>
+                  <SelectItem value="delivered">Livré</SelectItem>
+                </SelectContent>
+              </Select>
+              <Badge
+                variant="outline"
+                className={
+                  invoice.deliveryStatus === "prepared"
+                    ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+                    : invoice.deliveryStatus === "shipped"
+                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                    : invoice.deliveryStatus === "delivered"
+                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                    : "bg-muted text-muted-foreground"
+                }
+                data-testid="badge-delivery-status"
+              >
+                {invoice.deliveryStatus === "prepared" && <Package className="h-3 w-3 mr-1" />}
+                {invoice.deliveryStatus === "shipped" && <Truck className="h-3 w-3 mr-1" />}
+                {invoice.deliveryStatus === "delivered" && <PackageCheck className="h-3 w-3 mr-1" />}
+                {(!invoice.deliveryStatus || invoice.deliveryStatus === "none") && <CircleDashed className="h-3 w-3 mr-1" />}
+                {invoice.deliveryStatus === "prepared"
+                  ? "Préparé"
+                  : invoice.deliveryStatus === "shipped"
+                  ? "Expédié"
+                  : invoice.deliveryStatus === "delivered"
+                  ? "Livré"
+                  : "Non défini"}
+              </Badge>
+              <Button
+                variant="outline"
+                className="w-full"
+                onClick={() => {
+                  const url = new URLSearchParams({
+                    primaryColor: branding.primaryColor,
+                  });
+                  if (branding.logo) url.set("logo", branding.logo);
+                  window.open(`/public/invoices/${params.id}/delivery-note?${url.toString()}`, "_blank");
+                }}
+                data-testid="button-print-delivery-note"
+              >
+                <Printer className="h-4 w-4 mr-2" />
+                Imprimer BL
+              </Button>
             </CardContent>
           </Card>
 
@@ -496,7 +598,26 @@ export default function InvoiceView() {
               <Button
                 variant="outline"
                 className="w-full"
+                onClick={() => {
+                  if (invoice) {
+                    setEmailTo(invoice.clientName ? "" : "");
+                    setEmailSubject(`Facture ${invoice.invoiceNumber} - POLY FLECTA PLASTICA`);
+                    setEmailBody(
+                      `Bonjour,\n\nVeuillez trouver ci-joint la facture ${invoice.invoiceNumber} du ${formatDateDMY(invoice.date)} d'un montant de ${invoice.totalTTC.toLocaleString()} DZD.\n\nCordialement,\nPOLY FLECTA PLASTICA\nTél: +213 6 70 04 91 24`
+                    );
+                    setEmailDialogOpen(true);
+                  }
+                }}
+                data-testid="button-email-invoice"
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Envoyer par email
+              </Button>
+              <Button
+                variant="outline"
+                className="w-full"
                 onClick={() => navigate("/invoices")}
+                data-testid="button-return-list"
               >
                 Retour à la liste
               </Button>
@@ -525,6 +646,15 @@ export default function InvoiceView() {
               />
             </div>
             <div className="space-y-2">
+              <Label>Date de paiement</Label>
+              <Input
+                type="date"
+                value={paymentDate}
+                onChange={(e) => setPaymentDate(e.target.value)}
+                data-testid="input-payment-date"
+              />
+            </div>
+            <div className="space-y-2">
               <Label>Mode de paiement</Label>
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                 <SelectTrigger data-testid="select-payment-method">
@@ -547,9 +677,18 @@ export default function InvoiceView() {
                 data-testid="input-payment-reference"
               />
             </div>
+            <div className="space-y-2">
+              <Label>Notes (optionnel)</Label>
+              <Textarea
+                value={paymentNotes}
+                onChange={(e) => setPaymentNotes(e.target.value)}
+                placeholder="Notes supplémentaires..."
+                data-testid="input-payment-notes"
+              />
+            </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setPaymentDialogOpen(false)} data-testid="button-cancel-payment">
               Annuler
             </Button>
             <Button
@@ -559,6 +698,82 @@ export default function InvoiceView() {
             >
               {addPaymentMutation.isPending ? "Enregistrement..." : "Enregistrer"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={emailDialogOpen} onOpenChange={setEmailDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Mail className="h-5 w-5" />
+              Envoyer la facture par email
+            </DialogTitle>
+            <DialogDescription>
+              Préparez le brouillon d'email. Le contenu sera copié dans votre presse-papiers.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label>Destinataire (email)</Label>
+              <Input
+                type="email"
+                value={emailTo}
+                onChange={(e) => setEmailTo(e.target.value)}
+                placeholder="client@exemple.com"
+                data-testid="input-email-to"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Objet</Label>
+              <Input
+                value={emailSubject}
+                onChange={(e) => setEmailSubject(e.target.value)}
+                data-testid="input-email-subject"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label>Message</Label>
+              <Textarea
+                value={emailBody}
+                onChange={(e) => setEmailBody(e.target.value)}
+                rows={6}
+                data-testid="input-email-body"
+              />
+            </div>
+          </div>
+          <DialogFooter className="flex flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setEmailDialogOpen(false)} data-testid="button-cancel-email">
+              Annuler
+            </Button>
+            <Button
+              onClick={() => {
+                const draft = `À: ${emailTo}\nObjet: ${emailSubject}\n\n${emailBody}`;
+                navigator.clipboard.writeText(draft).then(() => {
+                  toast({ title: "Brouillon copié dans le presse-papiers" });
+                  setEmailDialogOpen(false);
+                }).catch(() => {
+                  toast({ title: "Impossible de copier", variant: "destructive" });
+                });
+              }}
+              data-testid="button-copy-email-draft"
+            >
+              <Copy className="h-4 w-4 mr-2" />
+              Copier le brouillon
+            </Button>
+            {emailTo && (
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  const mailtoUrl = `mailto:${emailTo}?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+                  window.open(mailtoUrl);
+                }}
+                data-testid="button-open-email-client"
+              >
+                <Mail className="h-4 w-4 mr-2" />
+                Ouvrir dans l'email
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>

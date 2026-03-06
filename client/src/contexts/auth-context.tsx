@@ -6,6 +6,20 @@ interface User {
   id: string;
   username: string;
   isAdmin: boolean;
+  displayName?: string;
+  role?: string;
+  permissions?: string;
+}
+
+export function hasPermission(user: User | null, module: string): boolean {
+  if (!user) return false;
+  if (user.isAdmin) return true;
+  try {
+    const perms: string[] = JSON.parse(user.permissions || "[]");
+    return perms.includes(module);
+  } catch {
+    return false;
+  }
 }
 
 interface AuthContextType {

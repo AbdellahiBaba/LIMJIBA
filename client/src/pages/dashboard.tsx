@@ -31,6 +31,10 @@ import {
   Wallet,
   CreditCard,
   Crown,
+  GripVertical,
+  ChevronUp,
+  ChevronDown,
+  Minus,
 } from "lucide-react";
 import {
   BarChart,
@@ -78,7 +82,20 @@ interface DashboardSettings {
   showTopProducts: boolean;
   showRecentActivity: boolean;
   showLowStock: boolean;
+  widgetOrder: string[];
+  collapsedWidgets: string[];
 }
+
+const defaultWidgetOrder = [
+  "statCards",
+  "revenueExpenses",
+  "recentActivity",
+  "lowStock",
+  "quickActions",
+  "companyInfo",
+  "salesChart",
+  "topProducts",
+];
 
 const defaultSettings: DashboardSettings = {
   showStatCards: true,
@@ -88,6 +105,8 @@ const defaultSettings: DashboardSettings = {
   showTopProducts: true,
   showRecentActivity: true,
   showLowStock: true,
+  widgetOrder: defaultWidgetOrder,
+  collapsedWidgets: [],
 };
 
 function useDashboardSettings() {
@@ -108,11 +127,33 @@ function useDashboardSettings() {
     setSettings(prev => ({ ...prev, [key]: value }));
   };
 
+  const moveWidget = (widgetKey: string, direction: "up" | "down") => {
+    setSettings(prev => {
+      const order = [...(prev.widgetOrder || defaultWidgetOrder)];
+      const idx = order.indexOf(widgetKey);
+      if (idx < 0) return prev;
+      const newIdx = direction === "up" ? idx - 1 : idx + 1;
+      if (newIdx < 0 || newIdx >= order.length) return prev;
+      [order[idx], order[newIdx]] = [order[newIdx], order[idx]];
+      return { ...prev, widgetOrder: order };
+    });
+  };
+
+  const toggleCollapsed = (widgetKey: string) => {
+    setSettings(prev => {
+      const collapsed = [...(prev.collapsedWidgets || [])];
+      const idx = collapsed.indexOf(widgetKey);
+      if (idx >= 0) collapsed.splice(idx, 1);
+      else collapsed.push(widgetKey);
+      return { ...prev, collapsedWidgets: collapsed };
+    });
+  };
+
   const resetToDefaults = () => {
     setSettings(defaultSettings);
   };
 
-  return { settings, updateSetting, resetToDefaults };
+  return { settings, updateSetting, moveWidget, toggleCollapsed, resetToDefaults };
 }
 
 function StatCard({
@@ -202,7 +243,7 @@ function getActivityBadgeVariant(type: string): "default" | "secondary" | "destr
 
 export default function Dashboard() {
   const { t } = useLanguage();
-  const { settings, updateSetting, resetToDefaults } = useDashboardSettings();
+  const { settings, updateSetting, moveWidget, toggleCollapsed, resetToDefaults } = useDashboardSettings();
   const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>("month");
 
   const { data: stats, isLoading } = useQuery<DashboardStats>({
@@ -265,73 +306,47 @@ export default function Dashboard() {
               <Settings2 className="h-4 w-4" />
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-64" align="end">
+          <PopoverContent className="w-72" align="end">
             <div className="space-y-4">
               <h4 className="font-medium text-sm">Personnaliser l'affichage</h4>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="showStatCards" className="text-sm">Statistiques</Label>
-                  <Switch
-                    id="showStatCards"
-                    checked={settings.showStatCards}
-                    onCheckedChange={(v) => updateSetting("showStatCards", v)}
-                    data-testid="switch-stat-cards"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="showQuickActions" className="text-sm">Actions rapides</Label>
-                  <Switch
-                    id="showQuickActions"
-                    checked={settings.showQuickActions}
-                    onCheckedChange={(v) => updateSetting("showQuickActions", v)}
-                    data-testid="switch-quick-actions"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="showCompanyInfo" className="text-sm">Info entreprise</Label>
-                  <Switch
-                    id="showCompanyInfo"
-                    checked={settings.showCompanyInfo}
-                    onCheckedChange={(v) => updateSetting("showCompanyInfo", v)}
-                    data-testid="switch-company-info"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="showRecentActivity" className="text-sm">Activite recente</Label>
-                  <Switch
-                    id="showRecentActivity"
-                    checked={settings.showRecentActivity}
-                    onCheckedChange={(v) => updateSetting("showRecentActivity", v)}
-                    data-testid="switch-recent-activity"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="showLowStock" className="text-sm">Stock bas</Label>
-                  <Switch
-                    id="showLowStock"
-                    checked={settings.showLowStock}
-                    onCheckedChange={(v) => updateSetting("showLowStock", v)}
-                    data-testid="switch-low-stock"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="showSalesChart" className="text-sm">Graphique ventes</Label>
-                  <Switch
-                    id="showSalesChart"
-                    checked={settings.showSalesChart}
-                    onCheckedChange={(v) => updateSetting("showSalesChart", v)}
-                    data-testid="switch-sales-chart"
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <Label htmlFor="showTopProducts" className="text-sm">Top produits</Label>
-                  <Switch
-                    id="showTopProducts"
-                    checked={settings.showTopProducts}
-                    onCheckedChange={(v) => updateSetting("showTopProducts", v)}
-                    data-testid="switch-top-products"
-                  />
-                </div>
+              <div className="space-y-2">
+                {(settings.widgetOrder || defaultWidgetOrder).map((key, idx) => {
+                  const widgetLabels: Record<string, { label: string; settingKey: keyof DashboardSettings }> = {
+                    statCards: { label: "Statistiques", settingKey: "showStatCards" },
+                    revenueExpenses: { label: "Revenus/Dépenses", settingKey: "showStatCards" },
+                    recentActivity: { label: "Activité récente", settingKey: "showRecentActivity" },
+                    lowStock: { label: "Stock bas", settingKey: "showLowStock" },
+                    quickActions: { label: "Actions rapides", settingKey: "showQuickActions" },
+                    companyInfo: { label: "Info entreprise", settingKey: "showCompanyInfo" },
+                    salesChart: { label: "Graphique ventes", settingKey: "showSalesChart" },
+                    topProducts: { label: "Top produits", settingKey: "showTopProducts" },
+                  };
+                  const w = widgetLabels[key];
+                  if (!w) return null;
+                  return (
+                    <div key={key} className="flex items-center gap-1 py-1 px-1 rounded hover:bg-muted/50">
+                      <GripVertical className="h-3 w-3 text-muted-foreground flex-shrink-0" />
+                      <Label className="text-xs flex-1 truncate">{w.label}</Label>
+                      <div className="flex items-center gap-0.5 flex-shrink-0">
+                        <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => moveWidget(key, "up")} disabled={idx === 0}
+                          data-testid={`button-move-up-${key}`}>
+                          <ChevronUp className="h-3 w-3" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-5 w-5" onClick={() => moveWidget(key, "down")}
+                          disabled={idx === (settings.widgetOrder || defaultWidgetOrder).length - 1}
+                          data-testid={`button-move-down-${key}`}>
+                          <ChevronDown className="h-3 w-3" />
+                        </Button>
+                        <Switch
+                          checked={settings[w.settingKey] as boolean}
+                          onCheckedChange={(v) => updateSetting(w.settingKey, v)}
+                          className="scale-75"
+                          data-testid={`switch-${key}`}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
               <Button
                 variant="outline"
@@ -340,7 +355,7 @@ export default function Dashboard() {
                 onClick={resetToDefaults}
                 data-testid="button-reset-dashboard"
               >
-                Reinitialiser
+                Réinitialiser
               </Button>
             </div>
           </PopoverContent>

@@ -45,6 +45,24 @@ function requireAdmin(req: Request, res: Response, next: NextFunction) {
   }
 }
 
+function requirePermission(module: string) {
+  return (req: Request, res: Response, next: NextFunction) => {
+    if (!req.session?.isAuthenticated) {
+      return res.status(401).json({ error: "Authentication required" });
+    }
+    if (req.session?.isAdmin) {
+      return next();
+    }
+    try {
+      const permissions: string[] = JSON.parse(req.session?.permissions || "[]");
+      if (permissions.includes(module)) {
+        return next();
+      }
+    } catch {}
+    res.status(403).json({ error: `Permission '${module}' required` });
+  };
+}
+
 function logError(context: string, error: unknown): string {
   const errorMessage = error instanceof Error ? error.message : String(error);
   const errorStack = error instanceof Error ? error.stack : undefined;
@@ -163,7 +181,10 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Invalid username or password" });
       }
       
-      // Regenerate session to prevent session fixation attacks
+      if (user.isActive === false) {
+        return res.status(401).json({ error: "Account is deactivated" });
+      }
+
       req.session.regenerate((err) => {
         if (err) {
           return res.status(500).json({ error: "Session error" });
@@ -173,18 +194,37 @@ export async function registerRoutes(
         req.session.username = user.username;
         req.session.isAdmin = user.isAdmin;
         req.session.isAuthenticated = true;
+        req.session.permissions = user.permissions || "[]";
+        req.session.role = user.role || "staff";
+        req.session.displayName = user.displayName || user.username;
         
-        req.session.save((saveErr) => {
+        req.session.save(async (saveErr) => {
           if (saveErr) {
             return res.status(500).json({ error: "Session save error" });
           }
+
+          try {
+            await storage.createAuditLog({
+              userId: user.id,
+              username: user.username,
+              action: "login",
+              entity: "auth",
+              entityId: user.id,
+              details: JSON.stringify({ ip: req.ip }),
+              ipAddress: req.ip || null,
+              createdAt: new Date().toISOString(),
+            });
+          } catch (e) {}
           
           res.json({ 
             success: true, 
             user: { 
               id: user.id, 
               username: user.username, 
-              isAdmin: user.isAdmin 
+              isAdmin: user.isAdmin,
+              displayName: user.displayName || user.username,
+              role: user.role || "staff",
+              permissions: user.permissions || "[]",
             } 
           });
         });
@@ -212,6 +252,9 @@ export async function registerRoutes(
           id: req.session.userId,
           username: req.session.username,
           isAdmin: req.session.isAdmin,
+          displayName: req.session.displayName || req.session.username,
+          role: req.session.role || "staff",
+          permissions: req.session.permissions || "[]",
         },
       });
     } else {
@@ -276,6 +319,414 @@ export async function registerRoutes(
       res.json({ success: true });
     } catch (error) {
       handleError(res, "deleteQuickInvoice", error);
+    }
+  });
+
+  // ===================== USER MANAGEMENT ROUTES (Admin Only) =====================
+
+  app.get("/api/users", requireAdmin, async (req, res) => {
+    try {
+      const allUsers = await storage.getUsers();
+      const safeUsers = allUsers.map(u => ({ ...u, password: undefined }));
+      res.json(safeUsers);
+    } catch (error) {
+      handleError(res, "getUsers", error);
+    }
+  });
+
+  app.post("/api/users", requireAdmin, async (req, res) => {
+    try {
+      const { username, password, isAdmin, displayName, role, permissions } = req.body;
+      if (!username || !password) return res.status(400).json({ error: "Username and password required" });
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const user = await storage.createUser({
+        username,
+        password: hashedPassword,
+        isAdmin: isAdmin || false,
+        displayName: displayName || username,
+        role: role || "staff",
+        permissions: permissions || "[]",
+        isActive: true,
+      });
+      await storage.createAuditLog({
+        userId: req.session.userId,
+        username: req.session.username || "system",
+        action: "create",
+        entity: "user",
+        entityId: user.id,
+        details: JSON.stringify({ username: user.username, role: user.role }),
+        ipAddress: req.ip || null,
+        createdAt: new Date().toISOString(),
+      });
+      res.status(201).json({ ...user, password: undefined });
+    } catch (error) {
+      handleError(res, "createUser", error);
+    }
+  });
+
+  app.patch("/api/users/:id", requireAdmin, async (req, res) => {
+    try {
+      const { password, ...rest } = req.body;
+      const updateData: any = { ...rest };
+      if (password) {
+        updateData.password = await bcrypt.hash(password, 10);
+      }
+      const user = await storage.updateUser(req.params.id, updateData);
+      if (!user) return res.status(404).json({ error: "User not found" });
+      await storage.createAuditLog({
+        userId: req.session.userId,
+        username: req.session.username || "system",
+        action: "update",
+        entity: "user",
+        entityId: req.params.id,
+        details: JSON.stringify({ fields: Object.keys(rest) }),
+        ipAddress: req.ip || null,
+        createdAt: new Date().toISOString(),
+      });
+      res.json({ ...user, password: undefined });
+    } catch (error) {
+      handleError(res, "updateUser", error);
+    }
+  });
+
+  app.delete("/api/users/:id", requireAdmin, async (req, res) => {
+    try {
+      if (req.params.id === req.session.userId) {
+        return res.status(400).json({ error: "Cannot delete your own account" });
+      }
+      await storage.deleteUser(req.params.id);
+      await storage.createAuditLog({
+        userId: req.session.userId,
+        username: req.session.username || "system",
+        action: "delete",
+        entity: "user",
+        entityId: req.params.id,
+        details: null,
+        ipAddress: req.ip || null,
+        createdAt: new Date().toISOString(),
+      });
+      res.json({ success: true });
+    } catch (error) {
+      handleError(res, "deleteUser", error);
+    }
+  });
+
+  // ===================== SUPPLIER ROUTES =====================
+
+  app.get("/api/suppliers", requirePermission("suppliers"), async (req, res) => {
+    try {
+      const allSuppliers = await storage.getSuppliers();
+      res.json(allSuppliers);
+    } catch (error) {
+      handleError(res, "getSuppliers", error);
+    }
+  });
+
+  app.get("/api/suppliers/:id", requireAuth, async (req, res) => {
+    try {
+      const supplier = await storage.getSupplier(req.params.id);
+      if (!supplier) return res.status(404).json({ error: "Supplier not found" });
+      res.json(supplier);
+    } catch (error) {
+      handleError(res, "getSupplier", error);
+    }
+  });
+
+  app.post("/api/suppliers", requirePermission("suppliers"), async (req, res) => {
+    try {
+      const supplier = await storage.createSupplier({
+        ...req.body,
+        createdAt: new Date().toISOString(),
+      });
+      await storage.createAuditLog({
+        userId: req.session.userId,
+        username: req.session.username || "system",
+        action: "create",
+        entity: "supplier",
+        entityId: supplier.id,
+        details: JSON.stringify({ name: supplier.name }),
+        ipAddress: req.ip || null,
+        createdAt: new Date().toISOString(),
+      });
+      res.status(201).json(supplier);
+    } catch (error) {
+      handleError(res, "createSupplier", error);
+    }
+  });
+
+  app.patch("/api/suppliers/:id", requireAuth, async (req, res) => {
+    try {
+      const supplier = await storage.updateSupplier(req.params.id, req.body);
+      if (!supplier) return res.status(404).json({ error: "Supplier not found" });
+      res.json(supplier);
+    } catch (error) {
+      handleError(res, "updateSupplier", error);
+    }
+  });
+
+  app.delete("/api/suppliers/:id", requireAdmin, async (req, res) => {
+    try {
+      await storage.deleteSupplier(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      handleError(res, "deleteSupplier", error);
+    }
+  });
+
+  // ===================== PURCHASE ORDER ROUTES =====================
+
+  app.get("/api/purchase-orders/next-number", requireAuth, async (req, res) => {
+    try {
+      const nextNumber = await storage.getNextPONumber();
+      res.json({ nextNumber });
+    } catch (error) {
+      handleError(res, "getNextPONumber", error);
+    }
+  });
+
+  app.get("/api/purchase-orders", requirePermission("suppliers"), async (req, res) => {
+    try {
+      const pos = await storage.getPurchaseOrders();
+      res.json(pos);
+    } catch (error) {
+      handleError(res, "getPurchaseOrders", error);
+    }
+  });
+
+  app.get("/api/purchase-orders/:id", requireAuth, async (req, res) => {
+    try {
+      const po = await storage.getPurchaseOrder(req.params.id);
+      if (!po) return res.status(404).json({ error: "Purchase order not found" });
+      res.json(po);
+    } catch (error) {
+      handleError(res, "getPurchaseOrder", error);
+    }
+  });
+
+  app.post("/api/purchase-orders", requirePermission("suppliers"), async (req, res) => {
+    try {
+      const { items, ...poData } = req.body;
+      const po = await storage.createPurchaseOrder(
+        { ...poData, createdAt: new Date().toISOString() },
+        items || []
+      );
+      await storage.createAuditLog({
+        userId: req.session.userId,
+        username: req.session.username || "system",
+        action: "create",
+        entity: "purchase_order",
+        entityId: po.id,
+        details: JSON.stringify({ orderNumber: po.orderNumber }),
+        ipAddress: req.ip || null,
+        createdAt: new Date().toISOString(),
+      });
+      res.status(201).json(po);
+    } catch (error) {
+      handleError(res, "createPurchaseOrder", error);
+    }
+  });
+
+  app.post("/api/purchase-orders/:id/receive", requireAuth, async (req, res) => {
+    try {
+      const receivedBy = req.session.username || "unknown";
+      const po = await storage.receivePurchaseOrder(req.params.id, receivedBy);
+      if (!po) return res.status(404).json({ error: "Purchase order not found" });
+      await storage.createAuditLog({
+        userId: req.session.userId,
+        username: req.session.username || "system",
+        action: "update",
+        entity: "purchase_order",
+        entityId: po.id,
+        details: JSON.stringify({ action: "received", orderNumber: po.orderNumber }),
+        ipAddress: req.ip || null,
+        createdAt: new Date().toISOString(),
+      });
+      res.json(po);
+    } catch (error) {
+      handleError(res, "receivePurchaseOrder", error);
+    }
+  });
+
+  app.patch("/api/purchase-orders/:id/status", requireAuth, async (req, res) => {
+    try {
+      const { status } = req.body;
+      const po = await storage.updatePurchaseOrderStatus(req.params.id, status);
+      if (!po) return res.status(404).json({ error: "Purchase order not found" });
+      res.json(po);
+    } catch (error) {
+      handleError(res, "updatePOStatus", error);
+    }
+  });
+
+  app.delete("/api/purchase-orders/:id", requireAdmin, async (req, res) => {
+    try {
+      await storage.deletePurchaseOrder(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      handleError(res, "deletePurchaseOrder", error);
+    }
+  });
+
+  // ===================== PARKED SALES ROUTES =====================
+
+  app.get("/api/parked-sales", requireAuth, async (req, res) => {
+    try {
+      const parked = await storage.getParkedSales();
+      res.json(parked);
+    } catch (error) {
+      handleError(res, "getParkedSales", error);
+    }
+  });
+
+  app.post("/api/parked-sales", requireAuth, async (req, res) => {
+    try {
+      const parked = await storage.createParkedSale({
+        ...req.body,
+        createdAt: new Date().toISOString(),
+        createdBy: req.session.username || "unknown",
+      });
+      res.status(201).json(parked);
+    } catch (error) {
+      handleError(res, "createParkedSale", error);
+    }
+  });
+
+  app.delete("/api/parked-sales/:id", requireAuth, async (req, res) => {
+    try {
+      await storage.deleteParkedSale(req.params.id);
+      res.json({ success: true });
+    } catch (error) {
+      handleError(res, "deleteParkedSale", error);
+    }
+  });
+
+  // ===================== AUDIT LOG ROUTES =====================
+
+  app.get("/api/audit-logs", requireAdmin, async (req, res) => {
+    try {
+      const filters: any = {};
+      if (req.query.userId) filters.userId = req.query.userId;
+      if (req.query.action) filters.action = req.query.action;
+      if (req.query.entity) filters.entity = req.query.entity;
+      if (req.query.startDate) filters.startDate = req.query.startDate;
+      if (req.query.endDate) filters.endDate = req.query.endDate;
+      const logs = await storage.getAuditLogs(Object.keys(filters).length > 0 ? filters : undefined);
+      res.json(logs);
+    } catch (error) {
+      handleError(res, "getAuditLogs", error);
+    }
+  });
+
+  // ===================== DELIVERY STATUS ROUTES =====================
+
+  app.patch("/api/invoices/:id/delivery-status", requireAuth, async (req, res) => {
+    try {
+      const { status } = req.body;
+      if (!["none", "prepared", "shipped", "delivered"].includes(status)) {
+        return res.status(400).json({ error: "Invalid delivery status" });
+      }
+      const invoice = await storage.updateInvoiceDeliveryStatus(req.params.id, status);
+      if (!invoice) return res.status(404).json({ error: "Invoice not found" });
+      await storage.createAuditLog({
+        userId: req.session.userId,
+        username: req.session.username || "system",
+        action: "update",
+        entity: "invoice",
+        entityId: req.params.id,
+        details: JSON.stringify({ field: "deliveryStatus", value: status }),
+        ipAddress: req.ip || null,
+        createdAt: new Date().toISOString(),
+      });
+      res.json(invoice);
+    } catch (error) {
+      handleError(res, "updateDeliveryStatus", error);
+    }
+  });
+
+  // ===================== REPORTS ROUTES =====================
+
+  app.get("/api/reports/pnl", requirePermission("reports"), async (req, res) => {
+    try {
+      const start = (req.query.start as string) || "2020-01-01";
+      const end = (req.query.end as string) || new Date().toISOString().split("T")[0];
+      const profitStats = await storage.getProfitStats(start, end);
+      res.json(profitStats);
+    } catch (error) {
+      handleError(res, "getPnLReport", error);
+    }
+  });
+
+  app.get("/api/reports/sales-analysis", requirePermission("reports"), async (req, res) => {
+    try {
+      const allSales = await storage.getSales();
+      const allProducts = await storage.getProducts();
+      const allCustomers = await storage.getCustomers();
+      
+      const salesByMonth: Record<string, number> = {};
+      const salesByCustomer: Record<string, { name: string; total: number; count: number }> = {};
+      
+      for (const sale of allSales) {
+        const month = sale.date.substring(0, 7);
+        salesByMonth[month] = (salesByMonth[month] || 0) + sale.total;
+        
+        const custName = sale.customerName || "Walk-in";
+        if (!salesByCustomer[custName]) salesByCustomer[custName] = { name: custName, total: 0, count: 0 };
+        salesByCustomer[custName].total += sale.total;
+        salesByCustomer[custName].count += 1;
+      }
+      
+      const topCustomers = Object.values(salesByCustomer)
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 10);
+      
+      res.json({
+        totalSales: allSales.length,
+        totalRevenue: allSales.reduce((sum, s) => sum + s.total, 0),
+        salesByMonth,
+        topCustomers,
+        averageOrderValue: allSales.length > 0 ? allSales.reduce((sum, s) => sum + s.total, 0) / allSales.length : 0,
+      });
+    } catch (error) {
+      handleError(res, "getSalesAnalysis", error);
+    }
+  });
+
+  app.get("/api/reports/product-performance", requirePermission("reports"), async (req, res) => {
+    try {
+      const allSales = await storage.getSales();
+      const allProducts = await storage.getProducts();
+      const productPerformance: Record<string, { name: string; revenue: number; cost: number; quantity: number; margin: number }> = {};
+      
+      for (const sale of allSales) {
+        const saleWithItems = await storage.getSaleWithItems(sale.id);
+        if (saleWithItems?.items) {
+          for (const item of saleWithItems.items) {
+            if (!productPerformance[item.productId]) {
+              productPerformance[item.productId] = { name: item.productName, revenue: 0, cost: 0, quantity: 0, margin: 0 };
+            }
+            productPerformance[item.productId].revenue += item.total;
+            productPerformance[item.productId].cost += (item.costPrice || 0) * item.quantity;
+            productPerformance[item.productId].quantity += item.quantity;
+          }
+        }
+      }
+      
+      for (const key of Object.keys(productPerformance)) {
+        const p = productPerformance[key];
+        p.margin = p.revenue > 0 ? ((p.revenue - p.cost) / p.revenue) * 100 : 0;
+      }
+      
+      const sorted = Object.entries(productPerformance)
+        .map(([id, data]) => ({ id, ...data }))
+        .sort((a, b) => b.revenue - a.revenue);
+      
+      res.json({
+        products: sorted,
+        bestPerformers: sorted.slice(0, 5),
+        worstPerformers: sorted.slice(-5).reverse(),
+      });
+    } catch (error) {
+      handleError(res, "getProductPerformance", error);
     }
   });
 
@@ -700,6 +1151,18 @@ export async function registerRoutes(
       console.log("[POST /api/products] Validated:", JSON.stringify(data));
       const product = await storage.createProduct(data);
       console.log("[POST /api/products] Created:", JSON.stringify(product));
+      try {
+        await storage.createAuditLog({
+          userId: req.session?.userId || null,
+          username: req.session?.username || "system",
+          action: "create",
+          entity: "product",
+          entityId: product.id,
+          details: JSON.stringify({ name: product.name }),
+          ipAddress: req.ip || null,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (e) {}
       res.status(201).json(product);
     } catch (error) {
       handleError(res, "create product", error);
@@ -726,6 +1189,18 @@ export async function registerRoutes(
       if (!deleted) {
         return res.status(404).json({ error: "Product not found", id: req.params.id });
       }
+      try {
+        await storage.createAuditLog({
+          userId: req.session?.userId || null,
+          username: req.session?.username || "system",
+          action: "delete",
+          entity: "product",
+          entityId: req.params.id,
+          details: null,
+          ipAddress: req.ip || null,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (e) {}
       res.status(204).send();
     } catch (error) {
       handleError(res, "delete product", error);
@@ -922,6 +1397,18 @@ export async function registerRoutes(
       const invoiceWithType = { ...invoiceData, invoiceType: enforedInvoiceType };
       const itemsData = z.array(insertInvoiceItemSchema).parse(items);
       const created = await storage.createInvoice(invoiceWithType, itemsData);
+      try {
+        await storage.createAuditLog({
+          userId: req.session?.userId || null,
+          username: req.session?.username || "system",
+          action: "create",
+          entity: "invoice",
+          entityId: created.id,
+          details: JSON.stringify({ invoiceNumber: created.invoiceNumber, type: enforedInvoiceType }),
+          ipAddress: req.ip || null,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (e) {}
       res.status(201).json(created);
     } catch (error) {
       handleError(res, "create invoice", error);
@@ -1168,6 +1655,18 @@ export async function registerRoutes(
       const saleData = insertSaleSchema.parse(sale);
       const itemsData = z.array(insertSaleItemSchema).parse(items);
       const created = await storage.createSale(saleData, itemsData);
+      try {
+        await storage.createAuditLog({
+          userId: req.session?.userId || null,
+          username: req.session?.username || "system",
+          action: "create",
+          entity: "sale",
+          entityId: created.id,
+          details: JSON.stringify({ total: created.totalAmount, items: itemsData.length }),
+          ipAddress: req.ip || null,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (e) {}
       res.status(201).json(created);
     } catch (error) {
       handleError(res, "create sale", error);
@@ -1217,6 +1716,18 @@ export async function registerRoutes(
       if (!deleted) {
         return res.status(404).json({ error: "Sale not found", id: req.params.id });
       }
+      try {
+        await storage.createAuditLog({
+          userId: req.session?.userId || null,
+          username: req.session?.username || "system",
+          action: "delete",
+          entity: "sale",
+          entityId: req.params.id,
+          details: null,
+          ipAddress: req.ip || null,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (e) {}
       res.status(204).send();
     } catch (error) {
       handleError(res, "delete sale", error);
@@ -1660,6 +2171,18 @@ export async function registerRoutes(
       console.log("[POST /api/expenses] Received:", JSON.stringify(req.body));
       const data = insertExpenseSchema.parse(req.body);
       const expense = await storage.createExpense(data);
+      try {
+        await storage.createAuditLog({
+          userId: req.session?.userId || null,
+          username: req.session?.username || "system",
+          action: "create",
+          entity: "expense",
+          entityId: expense.id,
+          details: JSON.stringify({ category: expense.category, amount: expense.amount }),
+          ipAddress: req.ip || null,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (e) {}
       res.status(201).json(expense);
     } catch (error) {
       handleError(res, "create expense", error);

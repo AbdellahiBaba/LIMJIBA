@@ -415,6 +415,138 @@ async function runMigrations(): Promise<void> {
       console.log('[DB] Created quick_invoices table');
     }
     
+    // ===================== NEW ENTERPRISE TABLES =====================
+    
+    // Users table - new columns for permissions system
+    const userColumns = await client.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'users' AND table_schema = 'public'
+    `);
+    const userCols = userColumns.rows.map((r: any) => r.column_name);
+    
+    if (!userCols.includes('display_name')) {
+      await client.query(`ALTER TABLE users ADD COLUMN display_name text`);
+      console.log('[DB] Added display_name column to users');
+    }
+    if (!userCols.includes('role')) {
+      await client.query(`ALTER TABLE users ADD COLUMN role text NOT NULL DEFAULT 'staff'`);
+      console.log('[DB] Added role column to users');
+    }
+    if (!userCols.includes('permissions')) {
+      await client.query(`ALTER TABLE users ADD COLUMN permissions text NOT NULL DEFAULT '[]'`);
+      console.log('[DB] Added permissions column to users');
+    }
+    if (!userCols.includes('is_active')) {
+      await client.query(`ALTER TABLE users ADD COLUMN is_active boolean NOT NULL DEFAULT true`);
+      console.log('[DB] Added is_active column to users');
+    }
+    
+    // Invoices - delivery_status column
+    if (!invoiceCols.includes('delivery_status')) {
+      await client.query(`ALTER TABLE invoices ADD COLUMN delivery_status text NOT NULL DEFAULT 'none'`);
+      console.log('[DB] Added delivery_status column to invoices');
+    }
+    
+    // Suppliers table
+    const suppliersExists = await client.query(`
+      SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'suppliers')
+    `);
+    if (!suppliersExists.rows[0].exists) {
+      await client.query(`
+        CREATE TABLE suppliers (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          name TEXT NOT NULL,
+          phone TEXT,
+          email TEXT,
+          address TEXT,
+          notes TEXT,
+          created_at TEXT NOT NULL
+        )
+      `);
+      console.log('[DB] Created suppliers table');
+    }
+    
+    // Purchase orders table
+    const poExists = await client.query(`
+      SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'purchase_orders')
+    `);
+    if (!poExists.rows[0].exists) {
+      await client.query(`
+        CREATE TABLE purchase_orders (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          order_number TEXT NOT NULL UNIQUE,
+          supplier_id VARCHAR NOT NULL,
+          date TEXT NOT NULL,
+          status TEXT NOT NULL DEFAULT 'draft',
+          total_amount REAL NOT NULL DEFAULT 0,
+          notes TEXT,
+          created_at TEXT NOT NULL,
+          received_at TEXT,
+          received_by TEXT
+        )
+      `);
+      console.log('[DB] Created purchase_orders table');
+    }
+    
+    // Purchase order items table
+    const poItemsExists = await client.query(`
+      SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'purchase_order_items')
+    `);
+    if (!poItemsExists.rows[0].exists) {
+      await client.query(`
+        CREATE TABLE purchase_order_items (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          purchase_order_id VARCHAR NOT NULL,
+          product_id VARCHAR,
+          product_name TEXT NOT NULL,
+          quantity INTEGER NOT NULL,
+          unit_cost REAL NOT NULL,
+          total REAL NOT NULL
+        )
+      `);
+      console.log('[DB] Created purchase_order_items table');
+    }
+    
+    // Parked sales table
+    const parkedExists = await client.query(`
+      SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'parked_sales')
+    `);
+    if (!parkedExists.rows[0].exists) {
+      await client.query(`
+        CREATE TABLE parked_sales (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          label TEXT NOT NULL,
+          customer_name TEXT,
+          items TEXT NOT NULL,
+          discount REAL DEFAULT 0,
+          created_at TEXT NOT NULL,
+          created_by TEXT
+        )
+      `);
+      console.log('[DB] Created parked_sales table');
+    }
+    
+    // Audit logs table
+    const auditExists = await client.query(`
+      SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'audit_logs')
+    `);
+    if (!auditExists.rows[0].exists) {
+      await client.query(`
+        CREATE TABLE audit_logs (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          user_id VARCHAR,
+          username TEXT NOT NULL,
+          action TEXT NOT NULL,
+          entity TEXT NOT NULL,
+          entity_id VARCHAR,
+          details TEXT,
+          ip_address TEXT,
+          created_at TEXT NOT NULL
+        )
+      `);
+      console.log('[DB] Created audit_logs table');
+    }
+    
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);

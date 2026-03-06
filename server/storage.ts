@@ -47,6 +47,17 @@ import {
   type SaleReturnWithItems,
   type QuickInvoice,
   type InsertQuickInvoice,
+  type Supplier,
+  type InsertSupplier,
+  type PurchaseOrder,
+  type InsertPurchaseOrder,
+  type PurchaseOrderItem,
+  type InsertPurchaseOrderItem,
+  type PurchaseOrderWithItems,
+  type ParkedSale,
+  type InsertParkedSale,
+  type AuditLog,
+  type InsertAuditLog,
   users,
   products,
   invoices,
@@ -67,6 +78,11 @@ import {
   stockMovements,
   settings,
   quickInvoices,
+  suppliers,
+  purchaseOrders,
+  purchaseOrderItems,
+  parkedSales,
+  auditLogs,
 } from "@shared/schema";
 import { db, withRetry } from "./db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
@@ -177,6 +193,33 @@ export interface IStorage {
 
   getSetting(key: string): Promise<string | undefined>;
   setSetting(key: string, value: string): Promise<Setting>;
+
+  getUsers(): Promise<User[]>;
+  updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser(id: string): Promise<boolean>;
+
+  getSuppliers(): Promise<Supplier[]>;
+  getSupplier(id: string): Promise<Supplier | undefined>;
+  createSupplier(supplier: InsertSupplier): Promise<Supplier>;
+  updateSupplier(id: string, supplier: Partial<InsertSupplier>): Promise<Supplier | undefined>;
+  deleteSupplier(id: string): Promise<boolean>;
+
+  getPurchaseOrders(): Promise<PurchaseOrderWithItems[]>;
+  getPurchaseOrder(id: string): Promise<PurchaseOrderWithItems | undefined>;
+  createPurchaseOrder(po: InsertPurchaseOrder, items: InsertPurchaseOrderItem[]): Promise<PurchaseOrderWithItems>;
+  updatePurchaseOrderStatus(id: string, status: string): Promise<PurchaseOrder | undefined>;
+  deletePurchaseOrder(id: string): Promise<boolean>;
+  getNextPONumber(): Promise<string>;
+  receivePurchaseOrder(id: string, receivedBy: string): Promise<PurchaseOrderWithItems | undefined>;
+
+  getParkedSales(): Promise<ParkedSale[]>;
+  createParkedSale(sale: InsertParkedSale): Promise<ParkedSale>;
+  deleteParkedSale(id: string): Promise<boolean>;
+
+  getAuditLogs(filters?: { userId?: string; action?: string; entity?: string; startDate?: string; endDate?: string }): Promise<AuditLog[]>;
+  createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
+
+  updateInvoiceDeliveryStatus(id: string, status: string): Promise<Invoice | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1831,6 +1874,237 @@ export class DatabaseStorage implements IStorage {
         const [created] = await db.insert(settings).values({ key, value }).returning();
         return created;
       }
+    });
+  }
+
+  // ===================== USER MANAGEMENT =====================
+
+  async getUsers(): Promise<User[]> {
+    return await withRetry(async () => {
+      return await db.select().from(users);
+    });
+  }
+
+  async updateUser(id: string, data: Partial<InsertUser>): Promise<User | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(users).set(data).where(eq(users.id, id)).returning();
+      return updated;
+    });
+  }
+
+  async deleteUser(id: string): Promise<boolean> {
+    return await withRetry(async () => {
+      await db.delete(users).where(eq(users.id, id));
+      return true;
+    });
+  }
+
+  // ===================== SUPPLIERS =====================
+
+  async getSuppliers(): Promise<Supplier[]> {
+    return await withRetry(async () => {
+      return await db.select().from(suppliers).orderBy(desc(suppliers.createdAt));
+    });
+  }
+
+  async getSupplier(id: string): Promise<Supplier | undefined> {
+    return await withRetry(async () => {
+      const [s] = await db.select().from(suppliers).where(eq(suppliers.id, id));
+      return s;
+    });
+  }
+
+  async createSupplier(supplier: InsertSupplier): Promise<Supplier> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(suppliers).values(supplier).returning();
+      return created;
+    });
+  }
+
+  async updateSupplier(id: string, supplier: Partial<InsertSupplier>): Promise<Supplier | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(suppliers).set(supplier).where(eq(suppliers.id, id)).returning();
+      return updated;
+    });
+  }
+
+  async deleteSupplier(id: string): Promise<boolean> {
+    return await withRetry(async () => {
+      await db.delete(suppliers).where(eq(suppliers.id, id));
+      return true;
+    });
+  }
+
+  // ===================== PURCHASE ORDERS =====================
+
+  async getPurchaseOrders(): Promise<PurchaseOrderWithItems[]> {
+    return await withRetry(async () => {
+      const pos = await db.select().from(purchaseOrders).orderBy(desc(purchaseOrders.createdAt));
+      const result: PurchaseOrderWithItems[] = [];
+      for (const po of pos) {
+        const items = await db.select().from(purchaseOrderItems).where(eq(purchaseOrderItems.purchaseOrderId, po.id));
+        const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, po.supplierId));
+        result.push({ ...po, items, supplier });
+      }
+      return result;
+    });
+  }
+
+  async getPurchaseOrder(id: string): Promise<PurchaseOrderWithItems | undefined> {
+    return await withRetry(async () => {
+      const [po] = await db.select().from(purchaseOrders).where(eq(purchaseOrders.id, id));
+      if (!po) return undefined;
+      const items = await db.select().from(purchaseOrderItems).where(eq(purchaseOrderItems.purchaseOrderId, id));
+      const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, po.supplierId));
+      return { ...po, items, supplier };
+    });
+  }
+
+  async createPurchaseOrder(po: InsertPurchaseOrder, items: InsertPurchaseOrderItem[]): Promise<PurchaseOrderWithItems> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(purchaseOrders).values(po).returning();
+      const createdItems: PurchaseOrderItem[] = [];
+      for (const item of items) {
+        const [ci] = await db.insert(purchaseOrderItems).values({ ...item, purchaseOrderId: created.id }).returning();
+        createdItems.push(ci);
+      }
+      const [supplier] = await db.select().from(suppliers).where(eq(suppliers.id, created.supplierId));
+      return { ...created, items: createdItems, supplier };
+    });
+  }
+
+  async updatePurchaseOrderStatus(id: string, status: string): Promise<PurchaseOrder | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(purchaseOrders).set({ status }).where(eq(purchaseOrders.id, id)).returning();
+      return updated;
+    });
+  }
+
+  async deletePurchaseOrder(id: string): Promise<boolean> {
+    return await withRetry(async () => {
+      await db.delete(purchaseOrderItems).where(eq(purchaseOrderItems.purchaseOrderId, id));
+      await db.delete(purchaseOrders).where(eq(purchaseOrders.id, id));
+      return true;
+    });
+  }
+
+  async getNextPONumber(): Promise<string> {
+    return await withRetry(async () => {
+      const currentYear = new Date().getFullYear();
+      const allPOs = await db.select({ orderNumber: purchaseOrders.orderNumber }).from(purchaseOrders);
+      const yearPOs = allPOs.filter(po => po.orderNumber.includes(`/${currentYear}`));
+      let maxNum = 0;
+      for (const po of yearPOs) {
+        const match = po.orderNumber.match(/PO-(\d+)/);
+        if (match) {
+          const num = parseInt(match[1]);
+          if (num > maxNum) maxNum = num;
+        }
+      }
+      return `PO-${String(maxNum + 1).padStart(4, '0')}/${currentYear}`;
+    });
+  }
+
+  async receivePurchaseOrder(id: string, receivedBy: string): Promise<PurchaseOrderWithItems | undefined> {
+    return await withRetry(async () => {
+      const po = await this.getPurchaseOrder(id);
+      if (!po || po.status === 'received') return po;
+
+      const now = new Date().toISOString();
+      await db.update(purchaseOrders).set({
+        status: 'received',
+        receivedAt: now,
+        receivedBy,
+      }).where(eq(purchaseOrders.id, id));
+
+      for (const item of po.items) {
+        if (item.productId) {
+          const [product] = await db.select().from(products).where(eq(products.id, item.productId));
+          if (product) {
+            const previousStock = product.stockQuantity;
+            const newStock = previousStock + item.quantity;
+            await db.update(products).set({
+              stockQuantity: newStock,
+              costPrice: item.unitCost,
+            }).where(eq(products.id, item.productId));
+
+            await db.insert(stockMovements).values({
+              productId: item.productId,
+              movementType: 'in',
+              reason: 'purchase',
+              quantity: item.quantity,
+              previousStock,
+              newStock,
+              reference: po.orderNumber,
+              createdAt: now,
+              createdBy: receivedBy,
+            });
+          }
+        }
+      }
+
+      cache.delete(CACHE_KEYS.PRODUCTS);
+      cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+      return await this.getPurchaseOrder(id);
+    });
+  }
+
+  // ===================== PARKED SALES =====================
+
+  async getParkedSales(): Promise<ParkedSale[]> {
+    return await withRetry(async () => {
+      return await db.select().from(parkedSales).orderBy(desc(parkedSales.createdAt));
+    });
+  }
+
+  async createParkedSale(sale: InsertParkedSale): Promise<ParkedSale> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(parkedSales).values(sale).returning();
+      return created;
+    });
+  }
+
+  async deleteParkedSale(id: string): Promise<boolean> {
+    return await withRetry(async () => {
+      await db.delete(parkedSales).where(eq(parkedSales.id, id));
+      return true;
+    });
+  }
+
+  // ===================== AUDIT LOG =====================
+
+  async getAuditLogs(filters?: { userId?: string; action?: string; entity?: string; startDate?: string; endDate?: string }): Promise<AuditLog[]> {
+    return await withRetry(async () => {
+      let query = db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt));
+      const conditions: any[] = [];
+      
+      if (filters?.userId) conditions.push(eq(auditLogs.userId, filters.userId));
+      if (filters?.action) conditions.push(eq(auditLogs.action, filters.action));
+      if (filters?.entity) conditions.push(eq(auditLogs.entity, filters.entity));
+      if (filters?.startDate) conditions.push(gte(auditLogs.createdAt, filters.startDate));
+      if (filters?.endDate) conditions.push(lte(auditLogs.createdAt, filters.endDate));
+      
+      if (conditions.length > 0) {
+        return await db.select().from(auditLogs).where(and(...conditions)).orderBy(desc(auditLogs.createdAt)).limit(500);
+      }
+      return await db.select().from(auditLogs).orderBy(desc(auditLogs.createdAt)).limit(500);
+    });
+  }
+
+  async createAuditLog(log: InsertAuditLog): Promise<AuditLog> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(auditLogs).values(log).returning();
+      return created;
+    });
+  }
+
+  // ===================== DELIVERY STATUS =====================
+
+  async updateInvoiceDeliveryStatus(id: string, status: string): Promise<Invoice | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(invoices).set({ deliveryStatus: status }).where(eq(invoices.id, id)).returning();
+      cache.delete(CACHE_KEYS.INVOICES);
+      return updated;
     });
   }
 }

@@ -38,6 +38,7 @@ import {
   ChevronDown,
   Download,
   Copy,
+  Truck,
 } from "lucide-react";
 import {
   Dialog,
@@ -259,6 +260,7 @@ export default function Invoices() {
                     <TableHead>Client</TableHead>
                     <TableHead>Responsible</TableHead>
                     <TableHead>Status</TableHead>
+                    <TableHead>Livraison</TableHead>
                     <TableHead className="text-right">Total TTC</TableHead>
                     <TableHead className="text-right">Actions</TableHead>
                   </TableRow>
@@ -285,6 +287,22 @@ export default function Invoices() {
                             <StatusIcon className="h-3 w-3" />
                             {status.label}
                           </Badge>
+                        </TableCell>
+                        <TableCell>
+                          {invoice.deliveryStatus && invoice.deliveryStatus !== "none" ? (
+                            <Badge variant="outline" className={`gap-1 text-xs ${
+                              invoice.deliveryStatus === "delivered" ? "border-green-500 text-green-700" :
+                              invoice.deliveryStatus === "shipped" ? "border-blue-500 text-blue-700" :
+                              invoice.deliveryStatus === "prepared" ? "border-amber-500 text-amber-700" : ""
+                            }`}>
+                              <Truck className="h-3 w-3" />
+                              {invoice.deliveryStatus === "prepared" ? "Préparé" :
+                               invoice.deliveryStatus === "shipped" ? "Expédié" :
+                               invoice.deliveryStatus === "delivered" ? "Livré" : "-"}
+                            </Badge>
+                          ) : (
+                            <span className="text-xs text-muted-foreground">-</span>
+                          )}
                         </TableCell>
                         <TableCell className="text-right font-mono font-medium">
                           {invoice.totalTTC.toLocaleString()} DZD

@@ -48,6 +48,7 @@ import {
   ArrowUp,
   ArrowDown,
   RefreshCw,
+  Printer,
   Star,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -746,6 +747,98 @@ export default function Stock() {
     setDialogOpen(true);
   };
 
+  const printBarcodeLabels = (productsToPrint: Product[]) => {
+    const win = window.open("", "_blank");
+    if (!win) return;
+    const labelsHtml = productsToPrint.map((p) => `
+      <div class="label">
+        <div class="name">${p.name}</div>
+        <div class="barcode-text">${p.barcode || p.id.slice(0, 12)}</div>
+        <svg class="barcode-svg" id="bc-${p.id}"></svg>
+        <div class="price">${p.unitPrice.toLocaleString()} DZD</div>
+      </div>
+    `).join("");
+    win.document.write(`<!DOCTYPE html><html><head><title>Barcode Labels</title>
+    <style>
+      @page { margin: 5mm; }
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+      body { font-family: 'Roboto', Arial, sans-serif; }
+      .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 2mm; }
+      .label {
+        border: 1px solid #ccc; padding: 3mm; text-align: center;
+        page-break-inside: avoid; height: 32mm; display: flex;
+        flex-direction: column; justify-content: center; align-items: center;
+      }
+      .name { font-weight: bold; font-size: 9pt; margin-bottom: 1mm; overflow: hidden;
+        text-overflow: ellipsis; white-space: nowrap; max-width: 100%; }
+      .barcode-text { font-family: monospace; font-size: 8pt; letter-spacing: 1px; margin-bottom: 1mm; }
+      .barcode-svg { max-width: 55mm; height: 12mm; }
+      .price { font-weight: bold; font-size: 10pt; margin-top: 1mm; }
+      @media print { .no-print { display: none; } }
+    </style></head><body>
+    <div class="no-print" style="padding:10px;text-align:center;margin-bottom:10px;">
+      <button onclick="window.print()" style="padding:8px 24px;font-size:14px;cursor:pointer;">
+        Imprimer les étiquettes
+      </button>
+      <span style="margin-left:10px;">${productsToPrint.length} étiquette(s)</span>
+    </div>
+    <div class="grid">${labelsHtml}</div>
+    <script>
+      function drawBarcode(svgEl, text) {
+        if (!svgEl || !text) return;
+        const code128B = [
+          '11011001100','11001101100','11001100110','10010011000','10010001100',
+          '10001001100','10011001000','10011000100','10001100100','11001001000',
+          '11001000100','11000100100','10110011100','10011011100','10011001110',
+          '10111001100','10011101100','10011100110','11001110010','11001011100',
+          '11001001110','11011100100','11001110100','11100101100','11100100110',
+          '11101100100','11100110100','11100110010','11011011000','11011000110',
+          '11000110110','10100011000','10001011000','10001000110','10110001000',
+          '10001101000','10001100010','11010001000','11000101000','11000100010',
+          '10110111000','10110001110','10001101110','10111011000','10111000110',
+          '10001110110','11101110110','11010001110','11000101110','11011101000',
+          '11011100010','11011101110','11101011000','11101000110','11100010110',
+          '11101101000','11101100010','11100011010','11101111010','11001000010',
+          '11110001010','10100110000','10100001100','10010110000','10010000110',
+          '10000101100','10000100110','10110010000','10110000100','10011010000',
+          '10011000010','10000110100','10000110010','11000010010','11001010000',
+          '11110111010','11000010100','10001111010','10100111100','10010111100',
+          '10010011110','10111100100','10011110100','10011110010','11110100100',
+          '11110010100','11110010010','11011011110','11110110110','11110011010',
+          '11000111010','11010111000','11010111110','10001111110'
+        ];
+        const startB = '11010010000';
+        const stop = '1100011101011';
+        let sum = 104;
+        let pattern = startB;
+        for (let i = 0; i < text.length; i++) {
+          const v = text.charCodeAt(i) - 32;
+          if (v >= 0 && v < code128B.length) {
+            pattern += code128B[v];
+            sum += v * (i + 1);
+          }
+        }
+        pattern += code128B[sum % 103];
+        pattern += stop;
+        const w = pattern.length;
+        svgEl.setAttribute('viewBox', '0 0 ' + w + ' 40');
+        let bars = '';
+        for (let i = 0; i < pattern.length; i++) {
+          if (pattern[i] === '1') {
+            bars += '<rect x="' + i + '" y="0" width="1" height="40" fill="black"/>';
+          }
+        }
+        svgEl.innerHTML = bars;
+      }
+      document.querySelectorAll('.barcode-svg').forEach(function(svg) {
+        var label = svg.closest('.label');
+        var text = label ? label.querySelector('.barcode-text').textContent.trim() : '';
+        drawBarcode(svg, text);
+      });
+    </script></body></html>`);
+    win.document.close();
+  };
+
   const handleDialogClose = () => {
     setDialogOpen(false);
     setEditingProduct(undefined);
@@ -797,6 +890,19 @@ export default function Stock() {
             Exporter CSV
           </Button>
           <ImportExportSection t={t} />
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (filteredProducts && filteredProducts.length > 0) {
+                printBarcodeLabels(filteredProducts);
+              }
+            }}
+            disabled={!filteredProducts || filteredProducts.length === 0}
+            data-testid="button-print-all-barcodes"
+          >
+            <Printer className="h-4 w-4 mr-2" />
+            Imprimer Codes-barres
+          </Button>
           <Button onClick={handleNew} data-testid="button-add-product">
             <Plus className="h-4 w-4 mr-2" />
             {t("stock.addProduct")}
@@ -1004,6 +1110,15 @@ export default function Stock() {
                               className="toggle-elevate"
                             >
                               <Star className={`h-4 w-4 ${product.isFavorite ? "text-yellow-500 fill-yellow-500" : ""}`} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => printBarcodeLabels([product])}
+                              data-testid={`button-print-barcode-${product.id}`}
+                              title="Imprimer code-barres"
+                            >
+                              <Printer className="h-4 w-4" />
                             </Button>
                             <Button
                               variant="ghost"

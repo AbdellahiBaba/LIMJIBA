@@ -1,6 +1,6 @@
 import { useLocation, Link } from "wouter";
 import { useLanguage, useBranding } from "@/contexts/language-context";
-import { useAuth } from "@/contexts/auth-context";
+import { useAuth, hasPermission } from "@/contexts/auth-context";
 import {
   Sidebar,
   SidebarContent,
@@ -29,6 +29,10 @@ import {
   History,
   UserCircle,
   Shield,
+  Truck,
+  BarChart3,
+  ClipboardList,
+  ScrollText,
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -43,97 +47,124 @@ export function AppSidebar() {
       url: "/",
       icon: LayoutDashboard,
       testId: "nav-dashboard",
-      adminOnly: false,
+      permission: "dashboard",
     },
     {
       title: t("nav.invoices"),
       url: "/invoices",
       icon: FileText,
       testId: "nav-invoices",
-      adminOnly: false,
+      permission: "invoices",
     },
     {
       title: t("nav.quickInvoice") || "Facture Rapide",
       url: "/quick-invoice",
       icon: FilePen,
       testId: "nav-quick-invoice",
-      adminOnly: false,
+      permission: "invoices",
     },
     {
       title: t("nav.stock"),
       url: "/stock",
       icon: Package,
       testId: "nav-stock",
-      adminOnly: false,
+      permission: "stock",
     },
     {
       title: t("nav.pos"),
       url: "/pos",
       icon: ShoppingCart,
       testId: "nav-pos",
-      adminOnly: false,
+      permission: "pos",
     },
     {
       title: t("nav.sales") || "Ventes",
       url: "/sales",
       icon: History,
       testId: "nav-sales",
-      adminOnly: false,
+      permission: "sales",
     },
     {
       title: t("nav.resellers"),
       url: "/resellers",
       icon: Gift,
       testId: "nav-resellers",
-      adminOnly: false,
+      permission: "resellers",
     },
     {
       title: t("nav.customers") || "Clients",
       url: "/customers",
       icon: UserCircle,
       testId: "nav-customers",
-      adminOnly: false,
+      permission: "customers",
+    },
+    {
+      title: "Fournisseurs",
+      url: "/suppliers",
+      icon: Truck,
+      testId: "nav-suppliers",
+      permission: "suppliers",
+    },
+    {
+      title: "Bons de Commande",
+      url: "/purchase-orders",
+      icon: ClipboardList,
+      testId: "nav-purchase-orders",
+      permission: "purchase_orders",
     },
     {
       title: t("nav.salaries") || "Salaries",
       url: "/salaries",
       icon: Users,
       testId: "nav-salaries",
-      adminOnly: true,
+      permission: "salaries",
     },
     {
       title: t("nav.expenses") || "Expenses",
       url: "/expenses",
       icon: Receipt,
       testId: "nav-expenses",
-      adminOnly: true,
+      permission: "expenses",
+    },
+    {
+      title: "Rapports",
+      url: "/reports",
+      icon: BarChart3,
+      testId: "nav-reports",
+      permission: "reports",
     },
     {
       title: t("nav.branding"),
       url: "/branding",
       icon: Palette,
       testId: "nav-branding",
-      adminOnly: true,
+      permission: "branding",
     },
     {
       title: t("nav.profit") || "Profit Calculator",
       url: "/profit",
       icon: Calculator,
       testId: "nav-profit",
-      adminOnly: true,
+      permission: "reports",
+    },
+    {
+      title: "Journal d'audit",
+      url: "/audit-log",
+      icon: ScrollText,
+      testId: "nav-audit-log",
+      permission: "audit_log",
     },
     {
       title: t("nav.settings") || "Parametres",
       url: "/settings",
       icon: Settings,
       testId: "nav-settings",
-      adminOnly: true,
+      permission: "settings",
     },
   ];
 
-  // Filter menu items based on user role
   const visibleMenuItems = menuItems.filter(
-    (item) => !item.adminOnly || user?.isAdmin
+    (item) => hasPermission(user, item.permission)
   );
 
   return (
