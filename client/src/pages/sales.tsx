@@ -71,24 +71,45 @@ interface EditItem {
   total: number;
 }
 
-const statusConfig: Record<string, { label: string; color: string; icon: any }> = {
-  completed: { label: "Payé", color: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200", icon: CheckCircle },
-  partial: { label: "Partiel", color: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200", icon: Clock },
-  credit: { label: "Crédit", color: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200", icon: Clock },
-  pending: { label: "En attente", color: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200", icon: Clock },
+const statusColors: Record<string, string> = {
+  completed: "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200",
+  partial: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
+  credit: "bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200",
+  pending: "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200",
 };
 
-const paymentConfig: Record<string, { label: string; icon: any }> = {
-  CASH: { label: "Espèces", icon: Banknote },
-  CARD: { label: "Carte", icon: CreditCard },
-  CREDIT: { label: "Crédit", icon: Clock },
-  TRANSFER: { label: "Virement", icon: ArrowUpDown },
+const statusIcons: Record<string, any> = {
+  completed: CheckCircle,
+  partial: Clock,
+  credit: Clock,
+  pending: Clock,
+};
+
+const paymentIcons: Record<string, any> = {
+  CASH: Banknote,
+  CARD: CreditCard,
+  CREDIT: Clock,
+  TRANSFER: ArrowUpDown,
 };
 
 export default function Sales() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const { branding } = useBranding();
+
+  const statusLabels: Record<string, string> = {
+    completed: t("sales.paid"),
+    partial: t("sales.partial"),
+    credit: t("sales.credit"),
+    pending: t("sales.pending"),
+  };
+
+  const paymentLabels: Record<string, string> = {
+    CASH: t("pos.cash"),
+    CARD: t("pos.card"),
+    CREDIT: t("sales.credit"),
+    TRANSFER: t("pos.transfer"),
+  };
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [viewSale, setViewSale] = useState<SaleWithItems | null>(null);
@@ -146,7 +167,7 @@ export default function Sales() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: "Statut mis à jour" });
+      toast({ title: t("sales.statusUpdated") });
       if (viewSale) {
         setViewSale({ ...viewSale, status: "completed" });
       }
@@ -162,7 +183,7 @@ export default function Sales() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: t("sales.paymentRecorded") || "Payment recorded successfully" });
+      toast({ title: t("sales.paymentRecorded") });
       setPaymentDialogOpen(false);
       setPaymentSale(null);
       setPaymentAmount("");
@@ -374,7 +395,7 @@ export default function Sales() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Rechercher par numéro..."
+                placeholder={t("common.search")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -411,21 +432,20 @@ export default function Sales() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Numéro</TableHead>
-                    <TableHead>Client</TableHead>
+                    <TableHead>{t("sales.number")}</TableHead>
+                    <TableHead>{t("sales.client")}</TableHead>
                     <TableHead>Date</TableHead>
-                    <TableHead className="hidden sm:table-cell">Paiement</TableHead>
-                    <TableHead>Statut</TableHead>
+                    <TableHead className="hidden sm:table-cell">{t("sales.payment")}</TableHead>
+                    <TableHead>{t("sales.status")}</TableHead>
                     <TableHead className="text-right">Total</TableHead>
                     <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredSales.map((sale) => {
-                    const status = statusConfig[sale.status || "completed"];
-                    const payment = paymentConfig[sale.paymentMode] || { label: sale.paymentMode, icon: Banknote };
-                    const StatusIcon = status?.icon || CheckCircle;
-                    const PaymentIcon = payment.icon;
+                    const saleStatus = sale.status || "completed";
+                    const StatusIcon = statusIcons[saleStatus] || CheckCircle;
+                    const PaymentIcon = paymentIcons[sale.paymentMode] || Banknote;
                     
                     return (
                       <TableRow key={sale.id} data-testid={`row-sale-${sale.id}`}>
@@ -446,13 +466,13 @@ export default function Sales() {
                         <TableCell className="hidden sm:table-cell">
                           <div className="flex items-center gap-2">
                             <PaymentIcon className="h-4 w-4 text-muted-foreground" />
-                            <span>{payment.label}</span>
+                            <span>{paymentLabels[sale.paymentMode] || sale.paymentMode}</span>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className={`${status?.color} border-0`}>
+                          <Badge variant="outline" className={`${statusColors[saleStatus]} border-0`}>
                             <StatusIcon className="h-3 w-3 mr-1" />
-                            {status?.label || "Payé"}
+                            {statusLabels[saleStatus] || saleStatus}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right font-medium">
@@ -534,16 +554,16 @@ export default function Sales() {
                   </p>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Paiement:</span>
+                  <span className="text-muted-foreground">{t("sales.payment")}:</span>
                   <p className="font-medium">
-                    {paymentConfig[viewSale.paymentMode]?.label || viewSale.paymentMode}
+                    {paymentLabels[viewSale.paymentMode] || viewSale.paymentMode}
                   </p>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Statut:</span>
+                  <span className="text-muted-foreground">{t("sales.status")}:</span>
                   <div className="mt-1">
-                    <Badge variant="outline" className={`${statusConfig[viewSale.status || "completed"]?.color} border-0`}>
-                      {statusConfig[viewSale.status || "completed"]?.label || "Payé"}
+                    <Badge variant="outline" className={`${statusColors[viewSale.status || "completed"]} border-0`}>
+                      {statusLabels[viewSale.status || "completed"] || viewSale.status}
                     </Badge>
                   </div>
                 </div>
@@ -613,7 +633,7 @@ export default function Sales() {
               disabled={deleteMutation.isPending}
               data-testid="button-confirm-delete"
             >
-              {deleteMutation.isPending ? "Suppression..." : "Supprimer"}
+              {deleteMutation.isPending ? t("common.loading") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -696,14 +716,14 @@ export default function Sales() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setPaymentDialogOpen(false)}>
-              {t("common.cancel") || "Annuler"}
+              {t("common.cancel")}
             </Button>
             <Button 
               onClick={confirmRecordPayment}
               disabled={recordPaymentMutation.isPending || !paymentAmount || parseFloat(paymentAmount) <= 0}
               data-testid="button-confirm-payment"
             >
-              {recordPaymentMutation.isPending ? (t("common.saving") || "Enregistrement...") : (t("sales.recordPayment") || "Enregistrer")}
+              {recordPaymentMutation.isPending ? t("common.saving") : t("sales.recordPayment")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -718,11 +738,11 @@ export default function Sales() {
           {editSale && (
             <div className="flex-1 overflow-hidden flex flex-col gap-4">
               <div className="space-y-2">
-                <Label>Ajouter un produit</Label>
+                <Label>{t("sales.addProduct")}</Label>
                 <div className="relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Rechercher un produit..."
+                    placeholder={t("common.search")}
                     value={editProductSearch}
                     onChange={(e) => setEditProductSearch(e.target.value)}
                     className="pl-9"

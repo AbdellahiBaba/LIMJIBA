@@ -61,17 +61,6 @@ import {
 } from "@/components/ui/form";
 import type { Customer } from "@shared/schema";
 
-const customerFormSchema = z.object({
-  name: z.string().min(1, "Le nom est requis"),
-  phone: z.string().optional(),
-  email: z.string().email("Email invalide").optional().or(z.literal("")),
-  address: z.string().optional(),
-  creditLimit: z.number().min(0, "Limite de crédit invalide"),
-  notes: z.string().optional(),
-});
-
-type CustomerFormData = z.infer<typeof customerFormSchema>;
-
 export default function Customers() {
   const { toast } = useToast();
   const { t } = useLanguage();
@@ -80,6 +69,17 @@ export default function Customers() {
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [customerToDelete, setCustomerToDelete] = useState<Customer | null>(null);
+
+  const customerFormSchema = z.object({
+    name: z.string().min(1, t("customers.nameRequired")),
+    phone: z.string().optional(),
+    email: z.string().email(t("customers.invalidEmail")).optional().or(z.literal("")),
+    address: z.string().optional(),
+    creditLimit: z.number().min(0, t("customers.invalidCreditLimit")),
+    notes: z.string().optional(),
+  });
+
+  type CustomerFormData = z.infer<typeof customerFormSchema>;
 
   const form = useForm<CustomerFormData>({
     resolver: zodResolver(customerFormSchema),
@@ -101,7 +101,7 @@ export default function Customers() {
     mutationFn: (data: CustomerFormData) => apiRequest("POST", "/api/customers", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
-      toast({ title: "Client créé avec succès" });
+      toast({ title: t("customers.customerCreated") });
       setDialogOpen(false);
       form.reset();
     },
@@ -115,7 +115,7 @@ export default function Customers() {
       apiRequest("PATCH", `/api/customers/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
-      toast({ title: "Client modifié avec succès" });
+      toast({ title: t("customers.customerUpdated") });
       setDialogOpen(false);
       setEditingCustomer(null);
       form.reset();
@@ -129,7 +129,7 @@ export default function Customers() {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/customers/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/customers"] });
-      toast({ title: "Client supprimé" });
+      toast({ title: t("customers.customerDeleted") });
       setDeleteDialogOpen(false);
       setCustomerToDelete(null);
     },
@@ -197,10 +197,10 @@ export default function Customers() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold" data-testid="text-customers-title">
-            Clients
+            {t("customers.title")}
           </h1>
           <p className="text-muted-foreground text-xs sm:text-sm hidden sm:block">
-            Gestion de la base de données clients
+            {t("customers.subtitle")}
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
@@ -211,12 +211,12 @@ export default function Customers() {
               exportToCsv(
                 customers,
                 [
-                  { header: "Name", accessor: (c) => c.name },
-                  { header: "Phone", accessor: (c) => c.phone },
-                  { header: "Email", accessor: (c) => c.email },
-                  { header: "Address", accessor: (c) => c.address },
-                  { header: "Credit Limit", accessor: (c) => c.creditLimit },
-                  { header: "Balance", accessor: (c) => c.currentBalance },
+                  { header: t("common.name"), accessor: (c) => c.name },
+                  { header: t("common.phone"), accessor: (c) => c.phone },
+                  { header: t("common.email"), accessor: (c) => c.email },
+                  { header: t("common.address"), accessor: (c) => c.address },
+                  { header: t("customers.creditLimit"), accessor: (c) => c.creditLimit },
+                  { header: t("customers.currentBalance"), accessor: (c) => c.currentBalance },
                 ],
                 "clients"
               );
@@ -224,11 +224,11 @@ export default function Customers() {
             data-testid="button-export-csv"
           >
             <Download className="h-4 w-4 mr-2" />
-            Exporter CSV
+            {t("common.exportCsv")}
           </Button>
           <Button onClick={handleAddCustomer} data-testid="button-add-customer">
             <Plus className="h-4 w-4 mr-2" />
-            Nouveau Client
+            {t("customers.addCustomer")}
           </Button>
         </div>
       </div>
@@ -238,7 +238,7 @@ export default function Customers() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher par nom, téléphone ou email..."
+              placeholder={t("customers.searchPlaceholder")}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               className="pl-9"
@@ -249,17 +249,17 @@ export default function Customers() {
         <CardContent>
           {!filteredCustomers || filteredCustomers.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              Aucun client trouvé
+              {t("customers.noCustomers")}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nom</TableHead>
-                    <TableHead>Contact</TableHead>
-                    <TableHead className="text-right">Limite Crédit</TableHead>
-                    <TableHead className="text-right">Solde Actuel</TableHead>
+                    <TableHead>{t("common.name")}</TableHead>
+                    <TableHead>{t("common.phone")}</TableHead>
+                    <TableHead className="text-right">{t("customers.creditLimit")}</TableHead>
+                    <TableHead className="text-right">{t("customers.currentBalance")}</TableHead>
                     <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -312,7 +312,7 @@ export default function Customers() {
                             </span>
                             {isOverLimit && (
                               <Badge variant="destructive" className="text-xs">
-                                Dépassé
+                                {t("customers.exceeded")}
                               </Badge>
                             )}
                           </div>
@@ -334,25 +334,25 @@ export default function Customers() {
                                     navigator.clipboard.writeText(
                                       window.location.origin + data.url
                                     );
-                                    toast({ title: "Lien copié" });
+                                    toast({ title: t("common.linkCopied") });
                                   } catch {
-                                    toast({ title: "Erreur", description: "Impossible de générer le lien", variant: "destructive" });
+                                    toast({ title: t("common.error"), description: t("customers.portalLinkError"), variant: "destructive" });
                                   }
                                 }}
                               >
                                 <Link2 className="h-4 w-4 mr-2" />
-                                Copier le lien portail
+                                {t("common.copyPortalLink")}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
                                 <Pencil className="h-4 w-4 mr-2" />
-                                Modifier
+                                {t("common.edit")}
                               </DropdownMenuItem>
                               <DropdownMenuItem
                                 onClick={() => handleDeleteClick(customer)}
                                 className="text-destructive"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Supprimer
+                                {t("common.delete")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -371,10 +371,10 @@ export default function Customers() {
         <DialogContent className="max-w-md">
           <DialogHeader>
             <DialogTitle>
-              {editingCustomer ? "Modifier Client" : "Nouveau Client"}
+              {editingCustomer ? t("customers.editCustomer") : t("customers.addCustomer")}
             </DialogTitle>
             <DialogDescription>
-              {editingCustomer ? "Modifier les informations du client" : "Ajouter un nouveau client à la base de données"}
+              {editingCustomer ? t("customers.editInfo") : t("customers.addInfo")}
             </DialogDescription>
           </DialogHeader>
           <Form {...form}>
@@ -384,7 +384,7 @@ export default function Customers() {
                 name="name"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Nom *</FormLabel>
+                    <FormLabel>{t("common.name")} *</FormLabel>
                     <FormControl>
                       <Input {...field} data-testid="input-customer-name" />
                     </FormControl>
@@ -398,7 +398,7 @@ export default function Customers() {
                   name="phone"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Téléphone</FormLabel>
+                      <FormLabel>{t("common.phone")}</FormLabel>
                       <FormControl>
                         <Input {...field} data-testid="input-customer-phone" />
                       </FormControl>
@@ -411,7 +411,7 @@ export default function Customers() {
                   name="email"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Email</FormLabel>
+                      <FormLabel>{t("common.email")}</FormLabel>
                       <FormControl>
                         <Input {...field} type="email" data-testid="input-customer-email" />
                       </FormControl>
@@ -425,7 +425,7 @@ export default function Customers() {
                 name="address"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Adresse</FormLabel>
+                    <FormLabel>{t("common.address")}</FormLabel>
                     <FormControl>
                       <Input {...field} data-testid="input-customer-address" />
                     </FormControl>
@@ -438,7 +438,7 @@ export default function Customers() {
                 name="creditLimit"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Limite de Crédit (DZD)</FormLabel>
+                    <FormLabel>{t("customers.creditLimit")} (DZD)</FormLabel>
                     <FormControl>
                       <Input
                         {...field}
@@ -456,7 +456,7 @@ export default function Customers() {
                 name="notes"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Notes</FormLabel>
+                    <FormLabel>{t("common.notes")}</FormLabel>
                     <FormControl>
                       <Textarea {...field} rows={2} data-testid="input-customer-notes" />
                     </FormControl>
@@ -466,14 +466,14 @@ export default function Customers() {
               />
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setDialogOpen(false)}>
-                  Annuler
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   type="submit"
                   disabled={createMutation.isPending || updateMutation.isPending}
                   data-testid="button-save-customer"
                 >
-                  {(createMutation.isPending || updateMutation.isPending) ? "Enregistrement..." : "Enregistrer"}
+                  {(createMutation.isPending || updateMutation.isPending) ? t("common.saving") : t("common.save")}
                 </Button>
               </DialogFooter>
             </form>
@@ -484,14 +484,14 @@ export default function Customers() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogTitle>{t("common.confirmDelete")}</DialogTitle>
             <DialogDescription>
-              Voulez-vous vraiment supprimer le client "{customerToDelete?.name}" ? Cette action est irréversible.
+              {t("customers.deleteConfirmMessage").replace("{name}", customerToDelete?.name || "")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              Annuler
+              {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -499,7 +499,7 @@ export default function Customers() {
               disabled={deleteMutation.isPending}
               data-testid="button-confirm-delete"
             >
-              {deleteMutation.isPending ? "Suppression..." : "Supprimer"}
+              {deleteMutation.isPending ? t("common.deleting") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

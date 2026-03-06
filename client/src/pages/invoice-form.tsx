@@ -168,7 +168,7 @@ export default function InvoiceForm() {
     onSuccess: async (createdInvoice: { id: string }) => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: "Invoice created successfully" });
+      toast({ title: t("invoices.invoiceCreated") });
       
       // Download PDF instantly
       const params_url = new URLSearchParams({
@@ -203,13 +203,13 @@ export default function InvoiceForm() {
         document.body.removeChild(a);
       } catch (err) {
         console.error('PDF download failed:', err);
-        toast({ title: "PDF download failed", variant: "destructive" });
+        toast({ title: t("common.error"), variant: "destructive" });
       }
       
       navigate("/invoices");
     },
     onError: (error: Error) => {
-      toast({ title: error.message || "Error", variant: "destructive" });
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
     },
   });
 
@@ -300,10 +300,10 @@ export default function InvoiceForm() {
         </Button>
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold" data-testid="text-invoice-form-title">
-            {isEditing ? "Edit Invoice" : "New Invoice"}
+            {isEditing ? t("invoices.editInvoice") : t("invoices.newInvoice")}
           </h1>
           <p className="text-muted-foreground text-xs sm:text-sm hidden sm:block">
-            {isEditing ? "Modify invoice details" : "Create a new invoice"}
+            {isEditing ? t("invoices.modifyDetails") : t("invoices.newInvoice")}
           </p>
         </div>
       </div>
@@ -311,12 +311,12 @@ export default function InvoiceForm() {
       <form onSubmit={handleSubmit} className="space-y-6">
         <Card>
           <CardHeader>
-            <CardTitle className="text-lg">Invoice Details</CardTitle>
+            <CardTitle className="text-lg">{t("invoices.invoiceDetails")}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2">
-                <Label htmlFor="invoiceNumber">Invoice Number</Label>
+                <Label htmlFor="invoiceNumber">{t("invoices.invoiceNumber")}</Label>
                 <Input
                   id="invoiceNumber"
                   value={formData.invoiceNumber}
@@ -329,7 +329,7 @@ export default function InvoiceForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="date">Date</Label>
+                <Label htmlFor="date">{t("common.date")}</Label>
                 <Input
                   id="date"
                   type="date"
@@ -342,7 +342,7 @@ export default function InvoiceForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="responsible">Responsible</Label>
+                <Label htmlFor="responsible">{t("invoices.responsible")}</Label>
                 <Input
                   id="responsible"
                   value={formData.responsible}
@@ -354,7 +354,7 @@ export default function InvoiceForm() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="role">Role</Label>
+                <Label htmlFor="role">{t("invoices.role")}</Label>
                 <Input
                   id="role"
                   value={formData.role}
@@ -367,19 +367,19 @@ export default function InvoiceForm() {
             </div>
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               <div className="space-y-2">
-                <Label htmlFor="clientName">Client Name</Label>
+                <Label htmlFor="clientName">{t("invoices.clientName")}</Label>
                 <Input
                   id="clientName"
                   value={formData.clientName}
                   onChange={(e) =>
                     setFormData({ ...formData, clientName: e.target.value })
                   }
-                  placeholder="Client name (optional)"
+                  placeholder={t("invoices.clientNameOptional")}
                   data-testid="input-client-name"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="paymentMode">Payment Mode</Label>
+                <Label htmlFor="paymentMode">{t("invoices.paymentMode")}</Label>
                 <Select
                   value={formData.paymentMode}
                   onValueChange={(value) =>
@@ -390,14 +390,14 @@ export default function InvoiceForm() {
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="A TERME">A Terme</SelectItem>
-                    <SelectItem value="COMPTANT">Comptant</SelectItem>
-                    <SelectItem value="CHEQUE">Cheque</SelectItem>
+                    <SelectItem value="A TERME">{t("invoices.aTerme")}</SelectItem>
+                    <SelectItem value="COMPTANT">{t("invoices.comptant")}</SelectItem>
+                    <SelectItem value="CHEQUE">{t("invoices.cheque")}</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div className="space-y-2">
-                <Label htmlFor="dueDate">Due Date</Label>
+                <Label htmlFor="dueDate">{t("invoices.dueDate")}</Label>
                 <Input
                   id="dueDate"
                   type="date"
@@ -420,13 +420,13 @@ export default function InvoiceForm() {
                   data-testid="switch-apply-tva"
                 />
                 <Label htmlFor="applyTva" className="font-medium">
-                  Apply TVA (19%)
+                  {t("invoices.applyTva")}
                 </Label>
               </div>
               {formData.applyTva && (
                 <div className="flex items-center gap-2">
                   <Label htmlFor="tvaRate" className="text-sm text-muted-foreground">
-                    Rate:
+                    {t("invoices.rate")}:
                   </Label>
                   <Input
                     id="tvaRate"
@@ -450,10 +450,10 @@ export default function InvoiceForm() {
 
         <Card>
           <CardHeader className="flex flex-row items-center justify-between gap-2">
-            <CardTitle className="text-lg">Line Items</CardTitle>
+            <CardTitle className="text-lg">{t("invoices.lineItems")}</CardTitle>
             <Button type="button" variant="outline" size="sm" onClick={addItem}>
               <Plus className="h-4 w-4 mr-1" />
-              Add Item
+              {t("invoices.addItem")}
             </Button>
           </CardHeader>
           <CardContent>
@@ -461,12 +461,12 @@ export default function InvoiceForm() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="min-w-[80px]">Qty</TableHead>
-                    <TableHead className="min-w-[200px]">Designation</TableHead>
-                    <TableHead className="min-w-[100px]">Unit Price (DZD)</TableHead>
-                    <TableHead className="min-w-[80px]">Weight/Unit (kg)</TableHead>
-                    <TableHead className="min-w-[80px] text-right">Total Weight (kg)</TableHead>
-                    <TableHead className="min-w-[100px] text-right">Total (DZD)</TableHead>
+                    <TableHead className="min-w-[80px]">{t("invoices.qty")}</TableHead>
+                    <TableHead className="min-w-[200px]">{t("invoices.designation")}</TableHead>
+                    <TableHead className="min-w-[100px]">{t("invoices.unitPriceDZD")}</TableHead>
+                    <TableHead className="min-w-[80px]">{t("invoices.weightPerUnitKg")}</TableHead>
+                    <TableHead className="min-w-[80px] text-right">{t("invoices.totalWeightKg")}</TableHead>
+                    <TableHead className="min-w-[100px] text-right">{t("invoices.totalDZD")}</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -496,10 +496,10 @@ export default function InvoiceForm() {
                             }}
                           >
                             <SelectTrigger className="w-full">
-                              <SelectValue placeholder="Select or type custom" />
+                              <SelectValue placeholder={t("invoices.selectOrTypeCustom")} />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="custom">Custom item</SelectItem>
+                              <SelectItem value="custom">{t("invoices.customItem")}</SelectItem>
                               {products?.map((product) => (
                                 <SelectItem key={product.id} value={product.id}>
                                   {product.name} - {product.unitPrice.toLocaleString()} DZD
@@ -512,7 +512,7 @@ export default function InvoiceForm() {
                             onChange={(e) =>
                               updateItem(item.id, "designation", e.target.value)
                             }
-                            placeholder="Item description"
+                            placeholder={t("invoices.itemDescription")}
                             data-testid={`input-designation-${item.id}`}
                           />
                         </div>
@@ -568,13 +568,13 @@ export default function InvoiceForm() {
 
             <div className="mt-6 flex flex-col items-end gap-2">
               <div className="flex gap-8 text-sm">
-                <span className="text-muted-foreground">Total Weight:</span>
+                <span className="text-muted-foreground">{t("invoices.totalWeightKg")}:</span>
                 <span className="font-mono font-medium" data-testid="text-total-weight">
                   {totalWeight.toFixed(2)} kg
                 </span>
               </div>
               <div className="flex gap-8 text-sm">
-                <span className="text-muted-foreground">Total H.T:</span>
+                <span className="text-muted-foreground">{t("invoices.totalHT")}:</span>
                 <span className="font-mono font-medium" data-testid="text-total-ht">
                   {totalHT.toLocaleString()} DZD
                 </span>
@@ -588,7 +588,7 @@ export default function InvoiceForm() {
                 </div>
               )}
               <div className="flex gap-8 text-lg font-semibold">
-                <span>Total T.T.C:</span>
+                <span>{t("invoices.totalTTC")}:</span>
                 <span className="font-mono" data-testid="text-total-ttc">
                   {totalTTC.toLocaleString()} DZD
                 </span>
@@ -606,7 +606,7 @@ export default function InvoiceForm() {
             variant="outline"
             onClick={() => navigate("/invoices")}
           >
-            Cancel
+            {t("common.cancel")}
           </Button>
           <Button
             type="button"
@@ -615,11 +615,11 @@ export default function InvoiceForm() {
             data-testid="button-preview-invoice"
           >
             <Eye className="h-4 w-4 mr-2" />
-            Preview
+            {t("common.preview")}
           </Button>
           <Button type="submit" disabled={createMutation.isPending} data-testid="button-save-invoice">
             <Save className="h-4 w-4 mr-2" />
-            {createMutation.isPending ? "Saving..." : "Save Invoice"}
+            {createMutation.isPending ? t("common.saving") : t("invoices.saveInvoice")}
           </Button>
         </div>
       </form>
@@ -627,8 +627,8 @@ export default function InvoiceForm() {
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Invoice Preview</DialogTitle>
-            <DialogDescription className="sr-only">Preview of the invoice before saving</DialogDescription>
+            <DialogTitle>{t("common.preview")}</DialogTitle>
+            <DialogDescription className="sr-only">{t("common.preview")}</DialogDescription>
           </DialogHeader>
           <div 
             ref={invoiceRef}
@@ -687,7 +687,7 @@ export default function InvoiceForm() {
                     className="text-2xl font-bold"
                     style={{ color: branding.primaryColor }}
                   >
-                    FACTURE
+                    {t("invoices.title").toUpperCase()}
                   </h3>
                   <p className="text-sm text-gray-600 mt-1">
                     N°: {formData.invoiceNumber}
@@ -701,23 +701,23 @@ export default function InvoiceForm() {
               <div className="grid grid-cols-2 gap-8 mb-6">
                 <div className="p-4 rounded-md" style={{ backgroundColor: `${branding.primaryColor}10` }}>
                   <h4 className="font-semibold mb-2" style={{ color: branding.primaryColor }}>
-                    Client
+                    {t("invoices.clientName")}
                   </h4>
                   <p className="text-sm">{formData.clientName || "---"}</p>
                 </div>
                 <div className="p-4 rounded-md" style={{ backgroundColor: `${branding.accentColor}10` }}>
                   <h4 className="font-semibold mb-2" style={{ color: branding.primaryColor }}>
-                    Détails
+                    {t("invoices.invoiceDetails")}
                   </h4>
                   <p className="text-xs">
-                    <span className="text-gray-600">Mode de paiement:</span> {formData.paymentMode}
+                    <span className="text-gray-600">{t("invoices.paymentMode")}:</span> {formData.paymentMode}
                   </p>
                   <p className="text-xs">
-                    <span className="text-gray-600">Responsable:</span> {formData.responsible}
+                    <span className="text-gray-600">{t("invoices.responsible")}:</span> {formData.responsible}
                   </p>
                   {formData.dueDate && (
                     <p className="text-xs">
-                      <span className="text-gray-600">Échéance:</span> {formatDateDMY(formData.dueDate)}
+                      <span className="text-gray-600">{t("invoices.dueDate")}:</span> {formatDateDMY(formData.dueDate)}
                     </p>
                   )}
                 </div>
@@ -727,12 +727,12 @@ export default function InvoiceForm() {
                 <thead>
                   <tr style={{ backgroundColor: branding.primaryColor }}>
                     <th className="text-white p-3 text-center border border-white/20 w-12">#</th>
-                    <th className="text-white p-3 text-left border border-white/20">Désignation</th>
-                    <th className="text-white p-3 text-center border border-white/20 w-16">Qté</th>
-                    <th className="text-white p-3 text-center border border-white/20 w-20">Poids/U</th>
-                    <th className="text-white p-3 text-center border border-white/20 w-24">Poids Total</th>
-                    <th className="text-white p-3 text-right border border-white/20 w-24">Prix U.</th>
-                    <th className="text-white p-3 text-right border border-white/20 w-28">Montant</th>
+                    <th className="text-white p-3 text-left border border-white/20">{t("invoices.designation")}</th>
+                    <th className="text-white p-3 text-center border border-white/20 w-16">{t("invoices.qty")}</th>
+                    <th className="text-white p-3 text-center border border-white/20 w-20">{t("invoices.weightPerUnitKg")}</th>
+                    <th className="text-white p-3 text-center border border-white/20 w-24">{t("invoices.totalWeightKg")}</th>
+                    <th className="text-white p-3 text-right border border-white/20 w-24">{t("invoices.unitPrice")}</th>
+                    <th className="text-white p-3 text-right border border-white/20 w-28">{t("invoices.amount")}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -750,7 +750,7 @@ export default function InvoiceForm() {
                 </tbody>
                 <tfoot>
                   <tr className="bg-gray-100">
-                    <td colSpan={4} className="p-3 border font-semibold">Total H.T</td>
+                    <td colSpan={4} className="p-3 border font-semibold">{t("invoices.totalHT")}</td>
                     <td className="p-3 text-center border font-semibold">{totalWeight.toFixed(2)} kg</td>
                     <td className="p-3 border"></td>
                     <td className="p-3 text-right border font-semibold">
@@ -766,7 +766,7 @@ export default function InvoiceForm() {
                     </tr>
                   )}
                   <tr className="bg-gray-200">
-                    <td colSpan={6} className="p-3 border text-right font-bold">Total T.T.C</td>
+                    <td colSpan={6} className="p-3 border text-right font-bold">{t("invoices.totalTTC")}</td>
                     <td 
                       className="p-3 text-right border font-bold"
                       style={{ color: branding.primaryColor }}
@@ -782,7 +782,7 @@ export default function InvoiceForm() {
                 style={{ backgroundColor: `${branding.primaryColor}05`, border: `1px solid ${branding.primaryColor}30` }}
               >
                 <p className="text-sm">
-                  <span className="font-semibold">Arrêté la présente facture à la somme de:</span>
+                  <span className="font-semibold">{t("invoices.amountInWordsPrefix")}</span>
                 </p>
                 <p className="text-lg font-medium mt-1" style={{ color: branding.primaryColor }}>
                   {numberToFrenchWords(Math.floor(totalTTC))} dinars algériens
@@ -792,11 +792,11 @@ export default function InvoiceForm() {
 
               <div className="grid grid-cols-2 gap-8">
                 <div>
-                  <p className="text-sm font-semibold mb-2">Signature du client</p>
+                  <p className="text-sm font-semibold mb-2">{t("invoices.clientSignature")}</p>
                   <div className="h-16 border-b border-gray-300"></div>
                 </div>
                 <div className="text-right">
-                  <p className="text-sm font-semibold mb-2">Cachet et signature</p>
+                  <p className="text-sm font-semibold mb-2">{t("invoices.stampAndSignature")}</p>
                   <div className="h-16 border-b border-gray-300"></div>
                 </div>
               </div>
@@ -804,11 +804,11 @@ export default function InvoiceForm() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPreview(false)}>
-              Close
+              {t("common.close")}
             </Button>
             <Button onClick={() => setShowPreview(false)} data-testid="button-confirm-preview">
               <Save className="h-4 w-4 mr-2" />
-              Confirm & Continue Editing
+              {t("common.confirm")}
             </Button>
           </DialogFooter>
         </DialogContent>

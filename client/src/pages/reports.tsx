@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLanguage } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -18,6 +19,7 @@ import { BarChart3, Download, Printer, TrendingUp, TrendingDown, DollarSign } fr
 import type { ProfitStats } from "@shared/schema";
 
 export default function Reports() {
+  const { t } = useLanguage();
   const today = new Date();
   const firstOfYear = `${today.getFullYear()}-01-01`;
   const todayStr = today.toISOString().split("T")[0];
@@ -47,22 +49,22 @@ export default function Reports() {
   function exportPnlCSV() {
     if (!pnl) return;
     const rows = [
-      ["Compte de Résultat (P&L)", ""],
-      ["Période", `${startDate} - ${endDate}`],
+      [t("reports.pnlTitle"), ""],
+      [`${t("reports.from")} - ${t("reports.to")}`, `${startDate} - ${endDate}`],
       ["", ""],
-      ["Chiffre d'affaires Ventes", fmt(pnl.totalSalesRevenue)],
-      ["Chiffre d'affaires Factures", fmt(pnl.totalInvoiceRevenue)],
-      ["Total Revenus", fmt(pnl.totalRevenue)],
+      [t("reports.salesRevenuePOS"), fmt(pnl.totalSalesRevenue)],
+      [t("reports.invoiceRevenue"), fmt(pnl.totalInvoiceRevenue)],
+      [t("reports.totalRevenue"), fmt(pnl.totalRevenue)],
       ["", ""],
-      ["Coût des Marchandises Vendues (COGS)", fmt(pnl.totalProductCosts)],
-      ["Marge Brute", fmt(pnl.grossProfit)],
+      [t("reports.cogsCost"), fmt(pnl.totalProductCosts)],
+      [t("reports.grossMargin"), fmt(pnl.grossProfit)],
       ["", ""],
-      ["Salaires", fmt(pnl.totalSalaries)],
-      ["Dépenses", fmt(pnl.totalExpenses)],
-      ["Total Charges Opérationnelles", fmt(pnl.totalSalaries + pnl.totalExpenses)],
+      [t("reports.salariesCost"), fmt(pnl.totalSalaries)],
+      [t("reports.operatingExpenses"), fmt(pnl.totalExpenses)],
+      [`${t("reports.salariesCost")} + ${t("reports.operatingExpenses")}`, fmt(pnl.totalSalaries + pnl.totalExpenses)],
       ["", ""],
-      ["Résultat Net", fmt(pnl.netProfit)],
-      ["Marge Nette (%)", `${pnl.profitMargin.toFixed(1)}%`],
+      [t("reports.netResult"), fmt(pnl.netProfit)],
+      [t("reports.netMargin"), `${pnl.profitMargin.toFixed(1)}%`],
     ];
     const csv = rows.map(r => r.map(c => `"${c}"`).join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
@@ -76,9 +78,9 @@ export default function Reports() {
 
   function exportProductCSV() {
     if (!productPerf?.products) return;
-    const headers = ["Produit", "Quantité Vendue", "Chiffre d'affaires", "Coût", "Marge (%)"];
+    const headers = [t("reports.productName"), t("reports.qtySold"), t("reports.revenue"), t("reports.cost"), t("reports.marginPercent")];
     const rows = productPerf.products.map((p: any) => [p.name, p.quantity, fmt(p.revenue), fmt(p.cost), `${p.margin.toFixed(1)}%`]);
-    const csv = [headers, ...rows].map(r => r.map(c => `"${c}"`).join(",")).join("\n");
+    const csv = [headers, ...rows].map((r: string[]) => r.map((c: string) => `"${c}"`).join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
@@ -94,16 +96,16 @@ export default function Reports() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="text-page-title">
             <BarChart3 className="h-6 w-6 text-primary" />
-            Rapports & Analyses
+            {t("reports.title")}
           </h1>
         </div>
       </div>
 
       <Tabs defaultValue="pnl">
         <TabsList data-testid="tabs-reports">
-          <TabsTrigger value="pnl" data-testid="tab-pnl">Compte de Résultat</TabsTrigger>
-          <TabsTrigger value="sales" data-testid="tab-sales">Analyse Ventes</TabsTrigger>
-          <TabsTrigger value="products" data-testid="tab-products">Performance Produits</TabsTrigger>
+          <TabsTrigger value="pnl" data-testid="tab-pnl">{t("reports.pnlTab")}</TabsTrigger>
+          <TabsTrigger value="sales" data-testid="tab-sales">{t("reports.salesTab")}</TabsTrigger>
+          <TabsTrigger value="products" data-testid="tab-products">{t("reports.productsTab")}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="pnl" className="space-y-4">
@@ -112,22 +114,22 @@ export default function Reports() {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                 <CardTitle className="flex items-center gap-2">
                   <DollarSign className="h-5 w-5" />
-                  Compte de Résultat (P&L)
+                  {t("reports.pnlTitle")}
                 </CardTitle>
                 <div className="flex items-center gap-2 flex-wrap">
                   <div className="flex items-center gap-2">
-                    <Label className="text-xs">Du</Label>
+                    <Label className="text-xs">{t("reports.from")}</Label>
                     <Input type="date" value={startDate} onChange={e => setStartDate(e.target.value)} className="w-36" data-testid="input-start-date" />
                   </div>
                   <div className="flex items-center gap-2">
-                    <Label className="text-xs">Au</Label>
+                    <Label className="text-xs">{t("reports.to")}</Label>
                     <Input type="date" value={endDate} onChange={e => setEndDate(e.target.value)} className="w-36" data-testid="input-end-date" />
                   </div>
                   <Button variant="outline" size="sm" onClick={exportPnlCSV} data-testid="button-export-pnl">
                     <Download className="h-4 w-4 mr-1" /> CSV
                   </Button>
                   <Button variant="outline" size="sm" onClick={() => window.print()} data-testid="button-print-pnl">
-                    <Printer className="h-4 w-4 mr-1" /> Imprimer
+                    <Printer className="h-4 w-4 mr-1" /> {t("reports.printBtn")}
                   </Button>
                 </div>
               </div>
@@ -137,43 +139,43 @@ export default function Reports() {
                 <div className="space-y-4 print:text-black">
                   <div className="grid gap-3">
                     <div className="flex justify-between items-center py-2 border-b">
-                      <span className="text-sm">CA Ventes (POS)</span>
+                      <span className="text-sm">{t("reports.salesRevenuePOS")}</span>
                       <span className="font-mono">{fmt(pnl.totalSalesRevenue)} DZD</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b">
-                      <span className="text-sm">CA Factures</span>
+                      <span className="text-sm">{t("reports.invoiceRevenue")}</span>
                       <span className="font-mono">{fmt(pnl.totalInvoiceRevenue)} DZD</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b-2 border-primary font-semibold">
-                      <span>Total Revenus</span>
+                      <span>{t("reports.totalRevenue")}</span>
                       <span className="font-mono text-primary">{fmt(pnl.totalRevenue)} DZD</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b text-destructive">
-                      <span className="text-sm">Coût des Marchandises (COGS)</span>
+                      <span className="text-sm">{t("reports.cogsCost")}</span>
                       <span className="font-mono">-{fmt(pnl.totalProductCosts)} DZD</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b-2 font-semibold">
-                      <span>Marge Brute</span>
+                      <span>{t("reports.grossMargin")}</span>
                       <span className={`font-mono ${pnl.grossProfit >= 0 ? "text-green-600" : "text-destructive"}`}>
                         {fmt(pnl.grossProfit)} DZD
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b text-muted-foreground">
-                      <span className="text-sm">Salaires</span>
+                      <span className="text-sm">{t("reports.salariesCost")}</span>
                       <span className="font-mono">-{fmt(pnl.totalSalaries)} DZD</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b text-muted-foreground">
-                      <span className="text-sm">Dépenses opérationnelles</span>
+                      <span className="text-sm">{t("reports.operatingExpenses")}</span>
                       <span className="font-mono">-{fmt(pnl.totalExpenses)} DZD</span>
                     </div>
                     <div className="flex justify-between items-center py-3 border-t-2 border-b-2 border-primary text-lg font-bold">
-                      <span>Résultat Net</span>
+                      <span>{t("reports.netResult")}</span>
                       <span className={`font-mono ${pnl.netProfit >= 0 ? "text-green-600" : "text-destructive"}`}>
                         {fmt(pnl.netProfit)} DZD
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2">
-                      <span className="text-sm text-muted-foreground">Marge Nette</span>
+                      <span className="text-sm text-muted-foreground">{t("reports.netMargin")}</span>
                       <span className={`font-mono font-semibold ${pnl.profitMargin >= 0 ? "text-green-600" : "text-destructive"}`}>
                         {pnl.profitMargin.toFixed(1)}%
                       </span>
@@ -189,7 +191,7 @@ export default function Reports() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Total Ventes</CardTitle>
+                <CardTitle className="text-sm text-muted-foreground">{t("reports.totalSales")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold" data-testid="text-total-sales">{salesAnalysis?.totalSales || 0}</p>
@@ -197,7 +199,7 @@ export default function Reports() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">CA Total</CardTitle>
+                <CardTitle className="text-sm text-muted-foreground">{t("reports.totalRevenueLabel")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold font-mono" data-testid="text-total-revenue">{fmt(salesAnalysis?.totalRevenue || 0)} DZD</p>
@@ -205,7 +207,7 @@ export default function Reports() {
             </Card>
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle className="text-sm text-muted-foreground">Panier Moyen</CardTitle>
+                <CardTitle className="text-sm text-muted-foreground">{t("reports.avgOrderValue")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-2xl font-bold font-mono" data-testid="text-avg-order">{fmt(salesAnalysis?.averageOrderValue || 0)} DZD</p>
@@ -215,16 +217,16 @@ export default function Reports() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Top 10 Clients</CardTitle>
+              <CardTitle>{t("reports.topCustomers")}</CardTitle>
             </CardHeader>
             <CardContent>
               {salesLoading ? <Skeleton className="h-40" /> : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Client</TableHead>
-                      <TableHead className="text-right">Nombre de ventes</TableHead>
-                      <TableHead className="text-right">Montant Total</TableHead>
+                      <TableHead>{t("reports.client")}</TableHead>
+                      <TableHead className="text-right">{t("reports.salesCount")}</TableHead>
+                      <TableHead className="text-right">{t("reports.totalAmount")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -244,14 +246,14 @@ export default function Reports() {
           {salesAnalysis?.salesByMonth && (
             <Card>
               <CardHeader>
-                <CardTitle>Ventes par Mois</CardTitle>
+                <CardTitle>{t("reports.salesByMonth")}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Mois</TableHead>
-                      <TableHead className="text-right">Montant</TableHead>
+                      <TableHead>{t("reports.month")}</TableHead>
+                      <TableHead className="text-right">{t("reports.amount")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -283,7 +285,7 @@ export default function Reports() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-green-600" />
-                  Top 5 Produits
+                  {t("reports.topProducts")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -291,9 +293,9 @@ export default function Reports() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Produit</TableHead>
-                        <TableHead className="text-right">CA</TableHead>
-                        <TableHead className="text-right">Marge</TableHead>
+                        <TableHead>{t("reports.productName")}</TableHead>
+                        <TableHead className="text-right">{t("reports.revenue")}</TableHead>
+                        <TableHead className="text-right">{t("reports.marginPercent")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -318,7 +320,7 @@ export default function Reports() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <TrendingDown className="h-5 w-5 text-destructive" />
-                  Bottom 5 Produits
+                  {t("reports.bottomProducts")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -326,9 +328,9 @@ export default function Reports() {
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Produit</TableHead>
-                        <TableHead className="text-right">CA</TableHead>
-                        <TableHead className="text-right">Marge</TableHead>
+                        <TableHead>{t("reports.productName")}</TableHead>
+                        <TableHead className="text-right">{t("reports.revenue")}</TableHead>
+                        <TableHead className="text-right">{t("reports.marginPercent")}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
@@ -352,18 +354,18 @@ export default function Reports() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Tous les Produits</CardTitle>
+              <CardTitle>{t("reports.allProducts")}</CardTitle>
             </CardHeader>
             <CardContent>
               {perfLoading ? <Skeleton className="h-40" /> : (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Produit</TableHead>
-                      <TableHead className="text-right">Qté Vendue</TableHead>
-                      <TableHead className="text-right">CA</TableHead>
-                      <TableHead className="text-right">Coût</TableHead>
-                      <TableHead className="text-right">Marge (%)</TableHead>
+                      <TableHead>{t("reports.productName")}</TableHead>
+                      <TableHead className="text-right">{t("reports.qtySold")}</TableHead>
+                      <TableHead className="text-right">{t("reports.revenue")}</TableHead>
+                      <TableHead className="text-right">{t("reports.cost")}</TableHead>
+                      <TableHead className="text-right">{t("reports.marginPercent")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>

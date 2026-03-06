@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useLanguage } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -29,6 +30,7 @@ import type { Supplier } from "@shared/schema";
 
 export default function Suppliers() {
   const { toast } = useToast();
+  const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingSupplier, setEditingSupplier] = useState<Supplier | null>(null);
@@ -42,7 +44,7 @@ export default function Suppliers() {
     mutationFn: (data: any) => apiRequest("POST", "/api/suppliers", data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
-      toast({ title: "Fournisseur créé" });
+      toast({ title: t("suppliers.supplierCreated") });
       closeDialog();
     },
     onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
@@ -52,7 +54,7 @@ export default function Suppliers() {
     mutationFn: ({ id, data }: { id: string; data: any }) => apiRequest("PATCH", `/api/suppliers/${id}`, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
-      toast({ title: "Fournisseur modifié" });
+      toast({ title: t("suppliers.supplierUpdated") });
       closeDialog();
     },
     onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
@@ -62,7 +64,7 @@ export default function Suppliers() {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/suppliers/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/suppliers"] });
-      toast({ title: "Fournisseur supprimé" });
+      toast({ title: t("suppliers.supplierDeleted") });
     },
     onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
   });
@@ -86,7 +88,7 @@ export default function Suppliers() {
   }
 
   function handleSubmit() {
-    if (!form.name.trim()) return toast({ title: "Le nom est requis", variant: "destructive" });
+    if (!form.name.trim()) return toast({ title: t("suppliers.nameRequired"), variant: "destructive" });
     if (editingSupplier) {
       updateMutation.mutate({ id: editingSupplier.id, data: form });
     } else {
@@ -95,7 +97,7 @@ export default function Suppliers() {
   }
 
   function exportCSV() {
-    const headers = ["Nom", "Téléphone", "Email", "Adresse", "Notes"];
+    const headers = [t("common.name"), t("common.phone"), t("common.email"), t("common.address"), t("common.notes")];
     const rows = filtered.map(s => [s.name, s.phone || "", s.email || "", s.address || "", s.notes || ""]);
     const csv = [headers, ...rows].map(r => r.map(c => `"${(c || "").replace(/"/g, '""')}"`).join(",")).join("\n");
     const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
@@ -128,9 +130,9 @@ export default function Suppliers() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="text-page-title">
             <Truck className="h-6 w-6 text-primary" />
-            Fournisseurs
+            {t("suppliers.title")}
           </h1>
-          <p className="text-sm text-muted-foreground">{filtered.length} fournisseur(s)</p>
+          <p className="text-sm text-muted-foreground">{filtered.length} {t("suppliers.count")}</p>
         </div>
         <div className="flex gap-2">
           <Button variant="outline" size="sm" onClick={exportCSV} data-testid="button-export-csv">
@@ -139,7 +141,7 @@ export default function Suppliers() {
           </Button>
           <Button onClick={() => setDialogOpen(true)} data-testid="button-add-supplier">
             <Plus className="h-4 w-4 mr-2" />
-            Ajouter
+            {t("suppliers.addSupplier")}
           </Button>
         </div>
       </div>
@@ -147,7 +149,7 @@ export default function Suppliers() {
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
         <Input
-          placeholder="Rechercher un fournisseur..."
+          placeholder={t("suppliers.searchPlaceholder")}
           value={search}
           onChange={e => setSearch(e.target.value)}
           className="pl-10"
@@ -160,18 +162,18 @@ export default function Suppliers() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Nom</TableHead>
-                <TableHead>Téléphone</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Adresse</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>{t("common.name")}</TableHead>
+                <TableHead>{t("common.phone")}</TableHead>
+                <TableHead>{t("common.email")}</TableHead>
+                <TableHead>{t("common.address")}</TableHead>
+                <TableHead className="text-right">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={5} className="text-center text-muted-foreground py-8">
-                    Aucun fournisseur trouvé
+                    {t("suppliers.noSuppliers")}
                   </TableCell>
                 </TableRow>
               ) : (
@@ -190,7 +192,7 @@ export default function Suppliers() {
                           variant="ghost"
                           size="icon"
                           onClick={() => {
-                            if (window.confirm(`Supprimer "${supplier.name}" ?`)) {
+                            if (window.confirm(t("suppliers.deleteConfirm").replace("{name}", supplier.name))) {
                               deleteMutation.mutate(supplier.id);
                             }
                           }}
@@ -211,39 +213,39 @@ export default function Suppliers() {
       <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) closeDialog(); else setDialogOpen(true); }}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{editingSupplier ? "Modifier le fournisseur" : "Nouveau fournisseur"}</DialogTitle>
+            <DialogTitle>{editingSupplier ? t("suppliers.editSupplier") : t("suppliers.newSupplier")}</DialogTitle>
             <DialogDescription>
-              {editingSupplier ? "Modifiez les informations du fournisseur" : "Ajoutez un nouveau fournisseur"}
+              {editingSupplier ? t("suppliers.editSupplierDesc") : t("suppliers.addSupplierDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label>Nom *</Label>
+              <Label>{t("common.name")} *</Label>
               <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} data-testid="input-name" />
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label>Téléphone</Label>
+                <Label>{t("common.phone")}</Label>
                 <Input value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} data-testid="input-phone" />
               </div>
               <div>
-                <Label>Email</Label>
+                <Label>{t("common.email")}</Label>
                 <Input value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} data-testid="input-email" />
               </div>
             </div>
             <div>
-              <Label>Adresse</Label>
+              <Label>{t("common.address")}</Label>
               <Input value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} data-testid="input-address" />
             </div>
             <div>
-              <Label>Notes</Label>
+              <Label>{t("common.notes")}</Label>
               <Textarea value={form.notes} onChange={e => setForm({ ...form, notes: e.target.value })} data-testid="input-notes" />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={closeDialog}>Annuler</Button>
+            <Button variant="outline" onClick={closeDialog}>{t("common.cancel")}</Button>
             <Button onClick={handleSubmit} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-submit">
-              {editingSupplier ? "Modifier" : "Créer"}
+              {editingSupplier ? t("common.modify") : t("common.create")}
             </Button>
           </DialogFooter>
         </DialogContent>

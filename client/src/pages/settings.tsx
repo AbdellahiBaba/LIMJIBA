@@ -49,13 +49,13 @@ export default function Settings() {
     onSuccess: (result) => {
       queryClient.invalidateQueries();
       toast({
-        title: "Restauration terminee",
-        description: `${result.imported} elements importes avec succes.`,
+        title: t("settings.restoreComplete"),
+        description: t("settings.restoreSuccess").replace("{count}", String(result.imported)),
       });
     },
     onError: (error: Error) => {
       toast({
-        title: "Erreur de restauration",
+        title: t("settings.restoreError"),
         description: error.message,
         variant: "destructive",
       });
@@ -69,7 +69,7 @@ export default function Settings() {
         credentials: "include",
       });
       if (!response.ok) {
-        throw new Error("Echec de l'export");
+        throw new Error(t("settings.exportError"));
       }
       const blob = await response.blob();
       const url = window.URL.createObjectURL(blob);
@@ -84,13 +84,13 @@ export default function Settings() {
       localStorage.setItem("lastBackupDate", now);
       setLastBackupDate(now);
       toast({
-        title: "Export reussi",
-        description: "La sauvegarde a ete telechargee.",
+        title: t("settings.exportSuccess"),
+        description: t("settings.exportSuccessDesc"),
       });
     } catch (error) {
       toast({
-        title: "Erreur d'export",
-        description: error instanceof Error ? error.message : "Echec de l'export",
+        title: t("settings.exportError"),
+        description: error instanceof Error ? error.message : t("settings.exportError"),
         variant: "destructive",
       });
     } finally {
@@ -122,8 +122,8 @@ export default function Settings() {
         setPreviewDialogOpen(true);
       } catch {
         toast({
-          title: "Fichier invalide",
-          description: "Le fichier n'est pas un fichier de sauvegarde valide.",
+          title: t("settings.invalidFile"),
+          description: t("settings.invalidFileDesc"),
           variant: "destructive",
         });
       }
@@ -151,7 +151,7 @@ export default function Settings() {
           <CardContent className="pt-6 text-center">
             <Shield className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
             <p className="text-muted-foreground">
-              Acces reserve aux administrateurs.
+              {t("settings.adminOnly")}
             </p>
           </CardContent>
         </Card>
@@ -174,10 +174,10 @@ export default function Settings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Database className="h-5 w-5" />
-            Sauvegarde des donnees
+            {t("settings.dataBackup")}
           </CardTitle>
           <CardDescription>
-            Exportez vos donnees pour creer une sauvegarde ou restaurez a partir d'une sauvegarde precedente.
+            {t("settings.backupDescription")}
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
@@ -192,7 +192,7 @@ export default function Settings() {
               ) : (
                 <Download className="h-4 w-4 mr-2" />
               )}
-              Exporter la sauvegarde
+              {t("settings.exportBackup")}
             </Button>
 
             <input
@@ -215,14 +215,14 @@ export default function Settings() {
               ) : (
                 <Upload className="h-4 w-4 mr-2" />
               )}
-              Restaurer une sauvegarde
+              {t("settings.restoreBackup")}
             </Button>
           </div>
 
           {lastBackupDate && (
             <div className="p-3 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-900 rounded-md text-sm">
               <p className="font-medium text-green-700 dark:text-green-400">
-                Dernière sauvegarde: {new Date(lastBackupDate).toLocaleDateString("fr-FR", { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
+                {t("settings.lastBackup")}: {new Date(lastBackupDate).toLocaleDateString(undefined, { day: "numeric", month: "long", year: "numeric", hour: "2-digit", minute: "2-digit" })}
               </p>
             </div>
           )}
@@ -231,22 +231,22 @@ export default function Settings() {
             <div className="p-3 bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-900 rounded-md text-sm">
               <p className="font-medium text-amber-700 dark:text-amber-400 flex items-center gap-2">
                 <AlertTriangle className="h-4 w-4" />
-                Aucune sauvegarde récente détectée. Effectuez une sauvegarde régulière.
+                {t("settings.noRecentBackup")}
               </p>
             </div>
           )}
 
           <div className="p-4 bg-muted/50 rounded-md text-sm text-muted-foreground">
-            <p className="font-medium mb-2">Contenu de la sauvegarde:</p>
+            <p className="font-medium mb-2">{t("settings.backupContents")}</p>
             <ul className="list-disc list-inside space-y-1">
-              <li>Produits et stock</li>
-              <li>Factures et articles</li>
-              <li>Ventes et tickets</li>
-              <li>Clients et revendeurs</li>
-              <li>Employes et salaires</li>
-              <li>Depenses</li>
-              <li>Factures de fabrication</li>
-              <li>Paiements partiels</li>
+              <li>{t("settings.backupProducts")}</li>
+              <li>{t("settings.backupInvoices")}</li>
+              <li>{t("settings.backupSales")}</li>
+              <li>{t("settings.backupCustomers")}</li>
+              <li>{t("settings.backupEmployees")}</li>
+              <li>{t("settings.backupExpenses")}</li>
+              <li>{t("settings.backupFabInvoices")}</li>
+              <li>{t("settings.backupPayments")}</li>
             </ul>
           </div>
         </CardContent>
@@ -256,25 +256,25 @@ export default function Settings() {
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Informations systeme
+            {t("settings.systemInfo")}
           </CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
             <div>
-              <p className="text-muted-foreground">Utilisateur connecte</p>
+              <p className="text-muted-foreground">{t("settings.connectedUser")}</p>
               <p className="font-medium">{user?.username}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Role</p>
-              <p className="font-medium">{user?.isAdmin ? "Administrateur" : "Personnel"}</p>
+              <p className="text-muted-foreground">{t("settings.role")}</p>
+              <p className="font-medium">{user?.isAdmin ? t("settings.administrator") : t("settings.staff")}</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Version</p>
+              <p className="text-muted-foreground">{t("common.version")}</p>
               <p className="font-medium">1.0.0</p>
             </div>
             <div>
-              <p className="text-muted-foreground">Base de donnees</p>
+              <p className="text-muted-foreground">{t("settings.database")}</p>
               <p className="font-medium">PostgreSQL (Neon)</p>
             </div>
           </div>
@@ -288,10 +288,10 @@ export default function Settings() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
-              Aperçu de la restauration
+              {t("settings.restorePreview")}
             </DialogTitle>
             <DialogDescription>
-              Voici le contenu du fichier de sauvegarde. Confirmez pour importer ces données.
+              {t("settings.restorePreviewDesc")}
             </DialogDescription>
           </DialogHeader>
           {restorePreview && (
@@ -299,21 +299,21 @@ export default function Settings() {
               {Object.entries(restorePreview).map(([key, count]) => (
                 <div key={key} className="flex items-center justify-between">
                   <span className="capitalize">{key.replace(/_/g, " ")}</span>
-                  <Badge variant="secondary">{count} éléments</Badge>
+                  <Badge variant="secondary">{count} {t("settings.elements")}</Badge>
                 </div>
               ))}
               {Object.keys(restorePreview).length === 0 && (
-                <p className="text-muted-foreground text-center py-2">Fichier vide ou format non reconnu</p>
+                <p className="text-muted-foreground text-center py-2">{t("settings.emptyFile")}</p>
               )}
             </div>
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => { setPreviewDialogOpen(false); setRestorePreview(null); setRestoreData(null); }}>
-              Annuler
+              {t("common.cancel")}
             </Button>
             <Button onClick={confirmRestore} disabled={restoreMutation.isPending} data-testid="button-confirm-restore">
               {restoreMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : null}
-              Confirmer la restauration
+              {t("settings.confirmRestore")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -341,6 +341,7 @@ const defaultFormData: UserFormData = {
 };
 
 function UserManagementSection({ currentUserId }: { currentUserId: string }) {
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<SchemaUser | null>(null);
@@ -364,11 +365,11 @@ function UserManagementSection({ currentUserId }: { currentUserId: string }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      toast({ title: "Utilisateur cree avec succes" });
+      toast({ title: t("settings.userCreated") });
       closeDialog();
     },
     onError: (error: Error) => {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -379,11 +380,11 @@ function UserManagementSection({ currentUserId }: { currentUserId: string }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      toast({ title: "Utilisateur mis a jour" });
+      toast({ title: t("settings.userUpdated") });
       closeDialog();
     },
     onError: (error: Error) => {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -393,11 +394,11 @@ function UserManagementSection({ currentUserId }: { currentUserId: string }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      toast({ title: "Utilisateur supprime" });
+      toast({ title: t("settings.userDeleted") });
       setDeleteUserId(null);
     },
     onError: (error: Error) => {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -408,10 +409,10 @@ function UserManagementSection({ currentUserId }: { currentUserId: string }) {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      toast({ title: "Statut mis a jour" });
+      toast({ title: t("settings.statusUpdated") });
     },
     onError: (error: Error) => {
-      toast({ title: "Erreur", description: error.message, variant: "destructive" });
+      toast({ title: t("common.error"), description: error.message, variant: "destructive" });
     },
   });
 
@@ -446,11 +447,11 @@ function UserManagementSection({ currentUserId }: { currentUserId: string }) {
 
   function handleSubmit() {
     if (!formData.username.trim()) {
-      toast({ title: "Le nom d'utilisateur est requis", variant: "destructive" });
+      toast({ title: t("settings.usernameRequired"), variant: "destructive" });
       return;
     }
     if (!editingUser && !formData.password.trim()) {
-      toast({ title: "Le mot de passe est requis", variant: "destructive" });
+      toast({ title: t("settings.passwordRequired"), variant: "destructive" });
       return;
     }
 
@@ -492,13 +493,13 @@ function UserManagementSection({ currentUserId }: { currentUserId: string }) {
             <div>
               <CardTitle className="flex items-center gap-2">
                 <Users className="h-5 w-5" />
-                Gestion des Utilisateurs
+                {t("settings.userManagement")}
               </CardTitle>
-              <CardDescription>Gerez les comptes utilisateurs et leurs permissions.</CardDescription>
+              <CardDescription>{t("settings.userManagementDesc")}</CardDescription>
             </div>
             <Button onClick={openCreateDialog} data-testid="button-create-user">
               <Plus className="h-4 w-4 mr-2" />
-              Creer un utilisateur
+              {t("settings.createUser")}
             </Button>
           </div>
         </CardHeader>
@@ -512,12 +513,12 @@ function UserManagementSection({ currentUserId }: { currentUserId: string }) {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Nom d'utilisateur</TableHead>
-                    <TableHead>Nom d'affichage</TableHead>
-                    <TableHead>Role</TableHead>
-                    <TableHead>Actif</TableHead>
-                    <TableHead>Permissions</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead>{t("settings.username")}</TableHead>
+                    <TableHead>{t("settings.displayName")}</TableHead>
+                    <TableHead>{t("settings.role")}</TableHead>
+                    <TableHead>{t("common.status")}</TableHead>
+                    <TableHead>{t("settings.permissions")}</TableHead>
+                    <TableHead>{t("common.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -534,19 +535,19 @@ function UserManagementSection({ currentUserId }: { currentUserId: string }) {
                         <TableCell data-testid={`text-role-${u.id}`}>{u.role}</TableCell>
                         <TableCell data-testid={`text-active-${u.id}`}>
                           <Badge variant={u.isActive ? "default" : "secondary"}>
-                            {u.isActive ? "Actif" : "Inactif"}
+                            {u.isActive ? t("settings.activeStatus") : t("settings.inactiveStatus")}
                           </Badge>
                         </TableCell>
                         <TableCell data-testid={`text-permissions-${u.id}`}>
                           <div className="flex flex-wrap gap-1 max-w-xs">
                             {u.isAdmin ? (
-                              <Badge variant="outline" className="text-xs">Toutes</Badge>
+                              <Badge variant="outline" className="text-xs">{t("settings.allPerms")}</Badge>
                             ) : perms.length > 0 ? (
                               perms.slice(0, 3).map((p) => (
                                 <Badge key={p} variant="outline" className="text-xs">{p}</Badge>
                               ))
                             ) : (
-                              <span className="text-muted-foreground text-xs">Aucune</span>
+                              <span className="text-muted-foreground text-xs">{t("common.noPermissions")}</span>
                             )}
                             {!u.isAdmin && perms.length > 3 && (
                               <Badge variant="outline" className="text-xs">+{perms.length - 3}</Badge>
@@ -591,7 +592,7 @@ function UserManagementSection({ currentUserId }: { currentUserId: string }) {
                   {usersList.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
-                        Aucun utilisateur trouve.
+                        {t("settings.noUsersFound")}
                       </TableCell>
                     </TableRow>
                   )}
@@ -606,15 +607,15 @@ function UserManagementSection({ currentUserId }: { currentUserId: string }) {
         <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle data-testid="text-user-dialog-title">
-              {editingUser ? "Modifier l'utilisateur" : "Creer un utilisateur"}
+              {editingUser ? t("settings.editUser") : t("settings.createUser")}
             </DialogTitle>
             <DialogDescription>
-              {editingUser ? "Modifiez les informations de l'utilisateur." : "Remplissez les informations pour creer un nouveau compte."}
+              {editingUser ? t("settings.editUserDesc") : t("settings.createUserDesc")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="user-username">Nom d'utilisateur *</Label>
+              <Label htmlFor="user-username">{t("settings.username")} *</Label>
               <Input
                 id="user-username"
                 value={formData.username}
@@ -624,7 +625,7 @@ function UserManagementSection({ currentUserId }: { currentUserId: string }) {
             </div>
             <div className="space-y-2">
               <Label htmlFor="user-password">
-                Mot de passe {editingUser ? "(laisser vide pour ne pas changer)" : "*"}
+                {t("settings.password")} {editingUser ? t("settings.passwordHintEdit") : "*"}
               </Label>
               <Input
                 id="user-password"
@@ -635,7 +636,7 @@ function UserManagementSection({ currentUserId }: { currentUserId: string }) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="user-displayname">Nom d'affichage</Label>
+              <Label htmlFor="user-displayname">{t("settings.displayName")}</Label>
               <Input
                 id="user-displayname"
                 value={formData.displayName}
@@ -644,7 +645,7 @@ function UserManagementSection({ currentUserId }: { currentUserId: string }) {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="user-role">Role</Label>
+              <Label htmlFor="user-role">{t("settings.role")}</Label>
               <Select
                 value={formData.role}
                 onValueChange={(value) => setFormData((prev) => ({ ...prev, role: value }))}
@@ -669,12 +670,12 @@ function UserManagementSection({ currentUserId }: { currentUserId: string }) {
                 }
                 data-testid="checkbox-user-isadmin"
               />
-              <Label htmlFor="user-isadmin">Administrateur</Label>
+              <Label htmlFor="user-isadmin">{t("settings.administrator")}</Label>
             </div>
             <div className="space-y-2">
-              <Label>Permissions</Label>
+              <Label>{t("settings.permissions")}</Label>
               {(formData.isAdmin || formData.role === "admin") && (
-                <p className="text-xs text-muted-foreground">Toutes les permissions sont accordees automatiquement.</p>
+                <p className="text-xs text-muted-foreground">{t("settings.allPermissionsGranted")}</p>
               )}
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                 {ALL_PERMISSIONS.map((perm) => (
@@ -696,11 +697,11 @@ function UserManagementSection({ currentUserId }: { currentUserId: string }) {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={closeDialog} data-testid="button-cancel-user">
-              Annuler
+              {t("common.cancel")}
             </Button>
             <Button onClick={handleSubmit} disabled={isMutating} data-testid="button-submit-user">
               {isMutating && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-              {editingUser ? "Mettre a jour" : "Creer"}
+              {editingUser ? t("settings.update") : t("common.create")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -711,19 +712,19 @@ function UserManagementSection({ currentUserId }: { currentUserId: string }) {
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-destructive" />
-              Confirmer la suppression
+              {t("common.confirmDelete")}
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Etes-vous sur de vouloir supprimer cet utilisateur ? Cette action est irreversible.
+              {t("settings.confirmDeleteUser")}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel data-testid="button-cancel-delete-user">Annuler</AlertDialogCancel>
+            <AlertDialogCancel data-testid="button-cancel-delete-user">{t("common.cancel")}</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => deleteUserId && deleteMutation.mutate(deleteUserId)}
               data-testid="button-confirm-delete-user"
             >
-              Supprimer
+              {t("common.delete")}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

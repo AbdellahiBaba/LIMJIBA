@@ -58,11 +58,11 @@ import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv-export";
 import type { Invoice } from "@shared/schema";
 
-const statusConfig: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  pending: { label: "Pending", icon: Clock, variant: "secondary" },
-  unpaid: { label: "Unpaid", icon: Clock, variant: "outline" },
-  paid: { label: "Paid", icon: CheckCircle, variant: "default" },
-  cancelled: { label: "Cancelled", icon: XCircle, variant: "destructive" },
+const statusKeys: Record<string, { labelKey: string; icon: React.ComponentType<{ className?: string }>; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  pending: { labelKey: "invoices.pending", icon: Clock, variant: "secondary" },
+  unpaid: { labelKey: "invoices.unpaid", icon: Clock, variant: "outline" },
+  paid: { labelKey: "invoices.paid", icon: CheckCircle, variant: "default" },
+  cancelled: { labelKey: "invoices.cancelled", icon: XCircle, variant: "destructive" },
 };
 
 export default function Invoices() {
@@ -83,7 +83,7 @@ export default function Invoices() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: `Facture ${invoiceToDelete?.invoiceNumber || ""} supprimée avec succès` });
+      toast({ title: t("invoices.invoiceDeletedSuccess").replace("{number}", invoiceToDelete?.invoiceNumber || "") });
       setDeleteDialogOpen(false);
       setInvoiceToDelete(null);
     },
@@ -109,7 +109,7 @@ export default function Invoices() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: `Statut de la facture mis à jour avec succès` });
+      toast({ title: t("invoices.statusUpdateSuccess") });
     },
     onError: (error: Error) => {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
@@ -121,7 +121,7 @@ export default function Invoices() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: "Facture dupliquée avec succès" });
+      toast({ title: t("invoices.duplicated") });
     },
     onError: (error: Error) => {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
@@ -163,12 +163,12 @@ export default function Invoices() {
     exportToCsv(
       invoices,
       [
-        { header: "Invoice#", accessor: (i) => i.invoiceNumber },
-        { header: "Date", accessor: (i) => i.date },
-        { header: "Client", accessor: (i) => i.clientName },
+        { header: t("invoices.invoiceNumber"), accessor: (i) => i.invoiceNumber },
+        { header: t("common.date"), accessor: (i) => i.date },
+        { header: t("invoices.clientName"), accessor: (i) => i.clientName },
         { header: "Type", accessor: (i) => i.type || "standard" },
-        { header: "TotalTTC", accessor: (i) => i.totalTTC },
-        { header: "Status", accessor: (i) => i.status },
+        { header: t("invoices.totalTTC"), accessor: (i) => i.totalTTC },
+        { header: t("common.status"), accessor: (i) => i.status },
       ],
       "factures"
     );
@@ -179,16 +179,16 @@ export default function Invoices() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold" data-testid="text-invoices-title">
-            Invoices
+            {t("invoices.title")}
           </h1>
           <p className="text-muted-foreground text-xs sm:text-sm hidden sm:block">
-            Manage and generate invoices
+            {t("invoices.manageInvoices")}
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
           <Button variant="outline" onClick={handleExportCSV} data-testid="button-export-csv">
             <Download className="h-4 w-4 mr-2" />
-            Export CSV
+            {t("common.exportCsv")}
           </Button>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -222,7 +222,7 @@ export default function Invoices() {
             <div className="relative flex-1">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
-                placeholder="Search invoices..."
+                placeholder={t("invoices.searchInvoices")}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="pl-9"
@@ -231,14 +231,14 @@ export default function Invoices() {
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-full sm:w-40" data-testid="select-filter-status">
-                <SelectValue placeholder="All Status" />
+                <SelectValue placeholder={t("invoices.allStatus")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">All Status</SelectItem>
-                <SelectItem value="pending">Pending</SelectItem>
-                <SelectItem value="unpaid">Unpaid</SelectItem>
-                <SelectItem value="paid">Paid</SelectItem>
-                <SelectItem value="cancelled">Cancelled</SelectItem>
+                <SelectItem value="all">{t("invoices.allStatus")}</SelectItem>
+                <SelectItem value="pending">{t("invoices.pending")}</SelectItem>
+                <SelectItem value="unpaid">{t("invoices.unpaid")}</SelectItem>
+                <SelectItem value="paid">{t("invoices.paid")}</SelectItem>
+                <SelectItem value="cancelled">{t("invoices.cancelled")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -255,19 +255,19 @@ export default function Invoices() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Invoice #</TableHead>
-                    <TableHead>Date</TableHead>
-                    <TableHead>Client</TableHead>
-                    <TableHead>Responsible</TableHead>
-                    <TableHead>Status</TableHead>
-                    <TableHead>Livraison</TableHead>
-                    <TableHead className="text-right">Total TTC</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
+                    <TableHead>{t("invoices.invoiceNumber")}</TableHead>
+                    <TableHead>{t("common.date")}</TableHead>
+                    <TableHead>{t("invoices.clientName")}</TableHead>
+                    <TableHead>{t("invoices.responsible")}</TableHead>
+                    <TableHead>{t("common.status")}</TableHead>
+                    <TableHead>{t("invoices.delivery")}</TableHead>
+                    <TableHead className="text-right">{t("invoices.totalTTC")}</TableHead>
+                    <TableHead className="text-right">{t("common.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredInvoices.map((invoice) => {
-                    const status = statusConfig[invoice.status] || statusConfig.pending;
+                    const status = statusKeys[invoice.status] || statusKeys.pending;
                     const StatusIcon = status.icon;
                     return (
                       <TableRow key={invoice.id} data-testid={`row-invoice-${invoice.id}`}>
@@ -285,7 +285,7 @@ export default function Invoices() {
                         <TableCell>
                           <Badge variant={status.variant} className="gap-1">
                             <StatusIcon className="h-3 w-3" />
-                            {status.label}
+                            {t(status.labelKey)}
                           </Badge>
                         </TableCell>
                         <TableCell>
@@ -296,9 +296,9 @@ export default function Invoices() {
                               invoice.deliveryStatus === "prepared" ? "border-amber-500 text-amber-700" : ""
                             }`}>
                               <Truck className="h-3 w-3" />
-                              {invoice.deliveryStatus === "prepared" ? "Préparé" :
-                               invoice.deliveryStatus === "shipped" ? "Expédié" :
-                               invoice.deliveryStatus === "delivered" ? "Livré" : "-"}
+                              {invoice.deliveryStatus === "prepared" ? t("invoices.deliveryPrepared") :
+                               invoice.deliveryStatus === "shipped" ? t("invoices.deliveryShipped") :
+                               invoice.deliveryStatus === "delivered" ? t("invoices.deliveryDelivered") : "-"}
                             </Badge>
                           ) : (
                             <span className="text-xs text-muted-foreground">-</span>
@@ -332,7 +332,7 @@ export default function Invoices() {
                               onClick={() => duplicateMutation.mutate(invoice.id)}
                               disabled={duplicateMutation.isPending}
                               data-testid={`button-duplicate-${invoice.id}`}
-                              title="Dupliquer la facture"
+                              title={t("invoices.duplicateInvoice")}
                             >
                               <Copy className="h-4 w-4" />
                             </Button>
@@ -355,17 +355,17 @@ export default function Invoices() {
           ) : (
             <div className="text-center py-12">
               <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="font-medium text-lg mb-1">No invoices found</h3>
+              <h3 className="font-medium text-lg mb-1">{t("invoices.noInvoices")}</h3>
               <p className="text-muted-foreground text-sm mb-4">
                 {search || statusFilter !== "all"
-                  ? "Try adjusting your search or filters"
-                  : "Get started by creating your first invoice"}
+                  ? t("invoices.adjustSearch")
+                  : t("invoices.getStarted")}
               </p>
               {!search && statusFilter === "all" && (
                 <Link href="/invoices/new">
                   <Button>
                     <Plus className="h-4 w-4 mr-2" />
-                    New Invoice
+                    {t("invoices.newInvoice")}
                   </Button>
                 </Link>
               )}
@@ -376,14 +376,14 @@ export default function Invoices() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogTitle>{t("invoices.deleteConfirmTitle")}</DialogTitle>
             <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer la facture <strong>{invoiceToDelete?.invoiceNumber}</strong> ? Cette action est irréversible.
+              {t("invoices.deleteConfirmMessage").replace("{number}", invoiceToDelete?.invoiceNumber || "")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              Annuler
+              {t("common.cancel")}
             </Button>
             <Button
               variant="destructive"
@@ -391,7 +391,7 @@ export default function Invoices() {
               disabled={deleteMutation.isPending}
               data-testid="button-confirm-delete"
             >
-              {deleteMutation.isPending ? "Suppression..." : "Supprimer"}
+              {deleteMutation.isPending ? t("common.deleting") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

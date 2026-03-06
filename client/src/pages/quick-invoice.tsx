@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useBranding } from "@/contexts/language-context";
+import { useBranding, useLanguage } from "@/contexts/language-context";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
@@ -92,6 +92,7 @@ function formatDateDMY(dateStr: string): string {
 
 export default function QuickInvoice() {
   const { branding } = useBranding();
+  const { t } = useLanguage();
   const { toast } = useToast();
   const [showPreview, setShowPreview] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -143,10 +144,10 @@ export default function QuickInvoice() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/quick-invoices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/quick-invoices/next-number"] });
-      toast({ title: "Facture sauvegardée", description: "Une copie a été enregistrée dans l'historique." });
+      toast({ title: t("quickInvoice.savedSuccess"), description: t("quickInvoice.savedDesc") });
     },
     onError: () => {
-      toast({ title: "Erreur", description: "Impossible de sauvegarder la facture.", variant: "destructive" });
+      toast({ title: t("quickInvoice.saveError"), description: t("quickInvoice.saveErrorDesc"), variant: "destructive" });
     },
   });
 
@@ -157,7 +158,7 @@ export default function QuickInvoice() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/quick-invoices"] });
       queryClient.invalidateQueries({ queryKey: ["/api/quick-invoices/next-number"] });
-      toast({ title: "Supprimée", description: "La facture a été supprimée de l'historique." });
+      toast({ title: t("quickInvoice.deletedSuccess"), description: t("quickInvoice.deletedDesc") });
     },
   });
 
@@ -211,7 +212,7 @@ export default function QuickInvoice() {
     }
     setViewingInvoice(null);
     setShowHistory(false);
-    toast({ title: "Facture chargée", description: `Facture ${inv.invoiceNumber} chargée dans le formulaire.` });
+    toast({ title: t("quickInvoice.savedSuccess"), description: `${inv.invoiceNumber}` });
   };
 
   const resetForm = async () => {
@@ -234,7 +235,7 @@ export default function QuickInvoice() {
       discountValue: 0,
     });
     setItems([{ id: crypto.randomUUID(), designation: "", quantity: 0, unitPrice: 0, weightPerUnit: 0, totalWeight: 0, total: 0 }]);
-    toast({ title: "Formulaire réinitialisé", description: "Prêt pour une nouvelle facture." });
+    toast({ title: t("common.reset") });
   };
 
   const addItem = () => {
@@ -414,28 +415,28 @@ export default function QuickInvoice() {
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold flex items-center gap-2" data-testid="text-quick-invoice-title">
             <FileText className="h-6 w-6 text-primary" />
-            Facture Rapide
+            {t("quickInvoice.title")}
           </h1>
           <p className="text-muted-foreground text-xs sm:text-sm">
-            Facture de service indépendante — sauvegardée automatiquement
+            {t("quickInvoice.subtitle")}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="outline" size="sm" onClick={resetForm} data-testid="button-new-quick">
             <RotateCcw className="h-4 w-4 mr-1" />
-            Nouvelle
+            {t("common.new")}
           </Button>
           <Button variant="outline" size="sm" onClick={() => setShowHistory(true)} data-testid="button-history-quick">
             <History className="h-4 w-4 mr-1" />
-            Historique ({savedInvoices.length})
+            {t("quickInvoice.history")} ({savedInvoices.length})
           </Button>
           <Button variant="outline" size="sm" onClick={() => setShowPreview(true)} data-testid="button-preview-quick">
             <Eye className="h-4 w-4 mr-1" />
-            Aperçu
+            {t("quickInvoice.preview")}
           </Button>
           <Button size="sm" onClick={handlePrint} disabled={filledItems.length === 0 || saveMutation.isPending} data-testid="button-print-quick">
             {saveMutation.isPending ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <Printer className="h-4 w-4 mr-1" />}
-            Imprimer
+            {t("quickInvoice.print")}
           </Button>
         </div>
       </div>
@@ -445,7 +446,7 @@ export default function QuickInvoice() {
           <div className="flex items-center gap-2 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800">
             <Package className="h-4 w-4 text-blue-600" />
             <div>
-              <p className="text-xs text-muted-foreground">Articles</p>
+              <p className="text-xs text-muted-foreground">{t("quickInvoice.lineItems")}</p>
               <p className="font-semibold text-sm" data-testid="text-qi-item-count">{filledItems.length}</p>
             </div>
           </div>
@@ -453,7 +454,7 @@ export default function QuickInvoice() {
             <div className="flex items-center gap-2 p-3 rounded-lg bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-800">
               <Weight className="h-4 w-4 text-green-600" />
               <div>
-                <p className="text-xs text-muted-foreground">Poids total</p>
+                <p className="text-xs text-muted-foreground">{t("invoices.totalWeight")}</p>
                 <p className="font-semibold text-sm">{totalWeight.toFixed(2)} kg</p>
               </div>
             </div>
@@ -462,7 +463,7 @@ export default function QuickInvoice() {
             <div className="flex items-center gap-2 p-3 rounded-lg bg-orange-50 dark:bg-orange-950/30 border border-orange-200 dark:border-orange-800">
               <Percent className="h-4 w-4 text-orange-600" />
               <div>
-                <p className="text-xs text-muted-foreground">Remise</p>
+                <p className="text-xs text-muted-foreground">{t("invoices.discount")}</p>
                 <p className="font-semibold text-sm">-{discountAmount.toLocaleString()} DZD</p>
               </div>
             </div>
@@ -470,7 +471,7 @@ export default function QuickInvoice() {
           <div className="flex items-center gap-2 p-3 rounded-lg bg-primary/5 border border-primary/20">
             <DollarSign className="h-4 w-4 text-primary" />
             <div>
-              <p className="text-xs text-muted-foreground">Total TTC</p>
+              <p className="text-xs text-muted-foreground">{t("invoices.totalTTC")}</p>
               <p className="font-semibold text-sm text-primary" data-testid="text-qi-summary-total">{finalTotal.toLocaleString()} DZD</p>
             </div>
           </div>
@@ -479,22 +480,22 @@ export default function QuickInvoice() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Détails de la facture</CardTitle>
+          <CardTitle className="text-lg">{t("quickInvoice.invoiceDetails")}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div className="space-y-2">
-              <Label htmlFor="qi-number">N° Facture</Label>
+              <Label htmlFor="qi-number">{t("invoices.invoiceNumber")}</Label>
               <Input
                 id="qi-number"
                 value={formData.invoiceNumber}
                 onChange={(e) => setFormData({ ...formData, invoiceNumber: e.target.value })}
-                placeholder="Auto-généré"
+                placeholder={t("invoices.invoiceNumber")}
                 data-testid="input-qi-number"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="qi-date">Date</Label>
+              <Label htmlFor="qi-date">{t("common.date")}</Label>
               <Input
                 id="qi-date"
                 type="date"
@@ -504,61 +505,61 @@ export default function QuickInvoice() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="qi-responsible">Responsable</Label>
+              <Label htmlFor="qi-responsible">{t("invoices.responsible")}</Label>
               <Input
                 id="qi-responsible"
                 value={formData.responsible}
                 onChange={(e) => setFormData({ ...formData, responsible: e.target.value })}
-                placeholder="Nom du responsable"
+                placeholder={t("invoices.responsible")}
                 data-testid="input-qi-responsible"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="qi-role">Service / Rôle</Label>
+              <Label htmlFor="qi-role">{t("invoices.role")}</Label>
               <Input
                 id="qi-role"
                 value={formData.role}
                 onChange={(e) => setFormData({ ...formData, role: e.target.value })}
-                placeholder="Ex: Ventes"
+                placeholder={t("invoices.role")}
                 data-testid="input-qi-role"
               />
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="qi-client">Nom du client</Label>
+              <Label htmlFor="qi-client">{t("invoices.clientName")}</Label>
               <Input
                 id="qi-client"
                 value={formData.clientName}
                 onChange={(e) => setFormData({ ...formData, clientName: e.target.value })}
-                placeholder="Nom du client"
+                placeholder={t("invoices.clientNameOptional")}
                 data-testid="input-qi-client"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="qi-client-address">Adresse du client</Label>
+              <Label htmlFor="qi-client-address">{t("quickInvoice.clientAddress")}</Label>
               <Input
                 id="qi-client-address"
                 value={formData.clientAddress}
                 onChange={(e) => setFormData({ ...formData, clientAddress: e.target.value })}
-                placeholder="Adresse"
+                placeholder={t("common.address")}
                 data-testid="input-qi-client-address"
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="qi-client-phone">Téléphone du client</Label>
+              <Label htmlFor="qi-client-phone">{t("quickInvoice.clientPhone")}</Label>
               <Input
                 id="qi-client-phone"
                 value={formData.clientPhone}
                 onChange={(e) => setFormData({ ...formData, clientPhone: e.target.value })}
-                placeholder="Tél"
+                placeholder={t("common.phone")}
                 data-testid="input-qi-client-phone"
               />
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             <div className="space-y-2">
-              <Label htmlFor="qi-payment">Mode de paiement</Label>
+              <Label htmlFor="qi-payment">{t("invoices.paymentMode")}</Label>
               <Select
                 value={formData.paymentMode}
                 onValueChange={(value) => setFormData({ ...formData, paymentMode: value })}
@@ -567,16 +568,16 @@ export default function QuickInvoice() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="A TERME">A Terme</SelectItem>
-                  <SelectItem value="COMPTANT">Comptant</SelectItem>
-                  <SelectItem value="CHEQUE">Chèque</SelectItem>
-                  <SelectItem value="VIREMENT">Virement</SelectItem>
-                  <SelectItem value="ESPECES">Espèces</SelectItem>
+                  <SelectItem value="A TERME">{t("invoices.aTerme")}</SelectItem>
+                  <SelectItem value="COMPTANT">{t("invoices.comptant")}</SelectItem>
+                  <SelectItem value="CHEQUE">{t("invoices.cheque")}</SelectItem>
+                  <SelectItem value="VIREMENT">{t("pos.transfer")}</SelectItem>
+                  <SelectItem value="ESPECES">{t("pos.cash")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label htmlFor="qi-duedate">Date d'échéance</Label>
+              <Label htmlFor="qi-duedate">{t("invoices.dueDate")}</Label>
               <Input
                 id="qi-duedate"
                 type="date"
@@ -594,11 +595,11 @@ export default function QuickInvoice() {
                 onCheckedChange={(checked) => setFormData({ ...formData, applyTva: checked })}
                 data-testid="switch-qi-tva"
               />
-              <Label htmlFor="qi-tva" className="font-medium">TVA</Label>
+              <Label htmlFor="qi-tva" className="font-medium">{t("invoices.tax")}</Label>
             </div>
             {formData.applyTva && (
               <div className="flex items-center gap-2">
-                <Label className="text-sm text-muted-foreground">Taux:</Label>
+                <Label className="text-sm text-muted-foreground">{t("invoices.rate")}:</Label>
                 <Input
                   type="number"
                   min="0"
@@ -613,7 +614,7 @@ export default function QuickInvoice() {
               </div>
             )}
             <div className="border-l pl-4 flex items-center gap-2">
-              <Label className="text-sm font-medium">Remise:</Label>
+              <Label className="text-sm font-medium">{t("invoices.discount")}:</Label>
               <Select
                 value={formData.discountType}
                 onValueChange={(v) => setFormData({ ...formData, discountType: v as "percent" | "fixed" })}
@@ -644,10 +645,10 @@ export default function QuickInvoice() {
 
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-2">
-          <CardTitle className="text-lg">Articles / Services</CardTitle>
+          <CardTitle className="text-lg">{t("quickInvoice.lineItems")}</CardTitle>
           <Button type="button" variant="outline" size="sm" onClick={addItem} data-testid="button-qi-add-item">
             <Plus className="h-4 w-4 mr-1" />
-            Ajouter
+            {t("common.add")}
           </Button>
         </CardHeader>
         <CardContent>
@@ -656,11 +657,11 @@ export default function QuickInvoice() {
               <TableHeader>
                 <TableRow>
                   <TableHead className="w-10 text-center">#</TableHead>
-                  <TableHead className="min-w-[70px]">Qté</TableHead>
-                  <TableHead className="min-w-[200px]">Désignation</TableHead>
-                  <TableHead className="min-w-[100px]">Prix U. (DZD)</TableHead>
-                  <TableHead className="min-w-[80px]">Poids/U (kg)</TableHead>
-                  <TableHead className="min-w-[100px] text-right">Montant (DZD)</TableHead>
+                  <TableHead className="min-w-[70px]">{t("invoices.qty")}</TableHead>
+                  <TableHead className="min-w-[200px]">{t("invoices.designation")}</TableHead>
+                  <TableHead className="min-w-[100px]">{t("invoices.unitPrice")} (DZD)</TableHead>
+                  <TableHead className="min-w-[80px]">{t("invoices.weightPerUnit")}</TableHead>
+                  <TableHead className="min-w-[100px] text-right">{t("invoices.amount")} (DZD)</TableHead>
                   <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -683,7 +684,7 @@ export default function QuickInvoice() {
                       <Input
                         value={item.designation}
                         onChange={(e) => updateItem(item.id, "designation", e.target.value)}
-                        placeholder="Description du service ou article"
+                        placeholder={t("quickInvoice.itemPlaceholder")}
                         data-testid={`input-qi-designation-${item.id}`}
                       />
                     </TableCell>
@@ -740,23 +741,23 @@ export default function QuickInvoice() {
               </div>
             )}
             <div className="flex gap-8 text-sm">
-              <span className="text-muted-foreground">Total H.T:</span>
+              <span className="text-muted-foreground">{t("invoices.totalHT")}:</span>
               <span className="font-mono font-medium" data-testid="text-qi-total-ht">{totalHT.toLocaleString()} DZD</span>
             </div>
             {discountAmount > 0 && (
               <div className="flex gap-8 text-sm text-orange-600">
-                <span>Remise {formData.discountType === "percent" ? `(${formData.discountValue}%)` : ""}:</span>
+                <span>{t("invoices.discount")} {formData.discountType === "percent" ? `(${formData.discountValue}%)` : ""}:</span>
                 <span className="font-mono font-medium">-{discountAmount.toLocaleString()} DZD</span>
               </div>
             )}
             {formData.applyTva && (
               <div className="flex gap-8 text-sm">
-                <span className="text-muted-foreground">TVA ({(formData.tvaRate * 100).toFixed(0)}%):</span>
+                <span className="text-muted-foreground">{t("invoices.tax")} ({(formData.tvaRate * 100).toFixed(0)}%):</span>
                 <span className="font-mono font-medium">{tvaAmount.toLocaleString()} DZD</span>
               </div>
             )}
             <div className="flex gap-8 text-lg font-semibold border-t pt-2 mt-1">
-              <span>Total T.T.C:</span>
+              <span>{t("invoices.totalTTC")}:</span>
               <span className="font-mono text-primary" data-testid="text-qi-total-ttc">{finalTotal.toLocaleString()} DZD</span>
             </div>
             <p className="text-sm text-muted-foreground italic mt-1">
@@ -768,13 +769,13 @@ export default function QuickInvoice() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Notes</CardTitle>
+          <CardTitle className="text-lg">{t("common.notes")}</CardTitle>
         </CardHeader>
         <CardContent>
           <Textarea
             value={formData.notes}
             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            placeholder="Conditions, remarques, informations supplémentaires..."
+            placeholder={t("quickInvoice.notesPlaceholder")}
             rows={3}
             data-testid="textarea-qi-notes"
           />
@@ -784,11 +785,11 @@ export default function QuickInvoice() {
       <div className="flex justify-end gap-3">
         <Button variant="outline" onClick={() => setShowPreview(true)} data-testid="button-preview-quick-bottom">
           <Eye className="h-4 w-4 mr-2" />
-          Aperçu
+          {t("quickInvoice.preview")}
         </Button>
         <Button onClick={handlePrint} disabled={filledItems.length === 0 || saveMutation.isPending} data-testid="button-print-quick-bottom">
           {saveMutation.isPending ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Printer className="h-4 w-4 mr-2" />}
-          Imprimer la facture
+          {t("quickInvoice.printInvoice")}
         </Button>
       </div>
 
@@ -953,16 +954,16 @@ export default function QuickInvoice() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <History className="h-5 w-5" />
-              Historique des factures rapides
+              {t("quickInvoice.history")}
             </DialogTitle>
             <DialogDescription>
-              {savedInvoices.length} facture(s) sauvegardée(s)
+              {savedInvoices.length} {t("quickInvoice.savedCount")}
             </DialogDescription>
           </DialogHeader>
           <div className="relative mb-4">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Rechercher par numéro, client..."
+              placeholder={t("common.search")}
               value={historySearch}
               onChange={(e) => setHistorySearch(e.target.value)}
               className="pl-9"
@@ -972,18 +973,18 @@ export default function QuickInvoice() {
           {savedInvoices.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
               <FileText className="h-12 w-12 mx-auto mb-3 opacity-30" />
-              <p>Aucune facture sauvegardée</p>
-              <p className="text-xs mt-1">Les factures seront automatiquement enregistrées lors de l'impression</p>
+              <p>{t("quickInvoice.noSavedInvoices")}</p>
+              <p className="text-xs mt-1">{t("quickInvoice.autoSaveHint")}</p>
             </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>N° Facture</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead>Client</TableHead>
-                  <TableHead className="text-right">Total TTC</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead>{t("invoices.invoiceNumber")}</TableHead>
+                  <TableHead>{t("common.date")}</TableHead>
+                  <TableHead>{t("invoices.clientName")}</TableHead>
+                  <TableHead className="text-right">{t("invoices.totalTTC")}</TableHead>
+                  <TableHead className="text-right">{t("common.actions")}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -1011,7 +1012,7 @@ export default function QuickInvoice() {
                             variant="ghost"
                             size="sm"
                             onClick={() => setViewingInvoice(inv)}
-                            title="Voir les détails"
+                            title={t("common.view")}
                             data-testid={`button-view-qi-${inv.id}`}
                           >
                             <Eye className="h-4 w-4" />
@@ -1020,7 +1021,7 @@ export default function QuickInvoice() {
                             variant="ghost"
                             size="sm"
                             onClick={() => loadInvoice(inv)}
-                            title="Charger dans le formulaire"
+                            title={t("quickInvoice.loadToForm")}
                             data-testid={`button-load-qi-${inv.id}`}
                           >
                             <Download className="h-4 w-4" />
@@ -1031,7 +1032,7 @@ export default function QuickInvoice() {
                             className="text-destructive hover:text-destructive"
                             disabled={deleteMutation.isPending}
                             onClick={() => {
-                              if (confirm("Supprimer cette facture de l'historique ?")) {
+                              if (confirm(t("quickInvoice.confirmDelete"))) {
                                 deleteMutation.mutate(inv.id);
                               }
                             }}

@@ -142,7 +142,7 @@ export default function POS() {
       setAddResellerDialogOpen(false);
       setNewResellerName("");
       setNewResellerPhone("");
-      toast({ title: t("pos.resellerAdded") || "Reseller added successfully" });
+      toast({ title: t("pos.resellerAdded") });
     },
     onError: (error: Error) => {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
@@ -162,7 +162,7 @@ export default function POS() {
       setParkDialogOpen(false);
       setParkLabel("");
       clearCart();
-      toast({ title: "Vente mise en attente" });
+      toast({ title: t("pos.saleParked") });
     },
     onError: (error: Error) => {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
@@ -183,11 +183,11 @@ export default function POS() {
 
   const handleParkSale = () => {
     if (cart.length === 0) {
-      toast({ title: "Cart is empty", variant: "destructive" });
+      toast({ title: t("pos.cartEmpty"), variant: "destructive" });
       return;
     }
     parkSaleMutation.mutate({
-      label: parkLabel.trim() || `Vente ${new Date().toLocaleTimeString()}`,
+      label: parkLabel.trim() || `${t("pos.parkSaleDefault")} ${new Date().toLocaleTimeString()}`,
       customerName: customerName.trim() || null,
       items: JSON.stringify(cart),
       discount: totalDiscount,
@@ -202,15 +202,15 @@ export default function POS() {
       setDiscountAmount(parkedSale.discount || 0);
       setDiscountPercent(0);
       deleteParkedMutation.mutate(parkedSale.id);
-      toast({ title: "Vente reprise" });
+      toast({ title: t("pos.saleResumed") });
     } catch {
-      toast({ title: "Erreur lors de la reprise", variant: "destructive" });
+      toast({ title: t("pos.resumeError"), variant: "destructive" });
     }
   };
 
   const lookupSaleForReturn = async () => {
     if (!returnTicketNumber.trim()) {
-      setReturnLookupError(t("pos.enterTicketNumber") || "Please enter a ticket number");
+      setReturnLookupError(t("pos.enterTicketNumber"));
       return;
     }
     setReturnLookupLoading(true);
@@ -223,7 +223,7 @@ export default function POS() {
       });
       if (!response.ok) {
         const err = await response.json();
-        setReturnLookupError(err.error || t("pos.saleNotFound") || "Sale not found");
+        setReturnLookupError(err.error || t("pos.saleNotFound"));
         return;
       }
       const data = await response.json();
@@ -247,7 +247,7 @@ export default function POS() {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: t("pos.returnProcessed") || "Return processed successfully" });
+      toast({ title: t("pos.returnProcessed") });
       setReturnDialogOpen(false);
       setReturnTicketNumber("");
       setReturnLookupData(null);
@@ -265,7 +265,7 @@ export default function POS() {
       .filter(([_, qty]) => qty > 0)
       .map(([productId, quantity]) => ({ productId, quantity }));
     if (itemsToReturn.length === 0) {
-      toast({ title: t("pos.selectItemsToReturn") || "Select at least one item to return", variant: "destructive" });
+      toast({ title: t("pos.selectItemsToReturn"), variant: "destructive" });
       return;
     }
     processReturnMutation.mutate({
@@ -284,7 +284,7 @@ export default function POS() {
 
   const handleAddReseller = () => {
     if (!newResellerName.trim()) {
-      toast({ title: t("resellers.nameRequired") || "Name is required", variant: "destructive" });
+      toast({ title: t("resellers.nameRequired"), variant: "destructive" });
       return;
     }
     createResellerMutation.mutate({
@@ -307,14 +307,14 @@ export default function POS() {
 
   const addToCart = (product: Product) => {
     if (product.stockQuantity <= 0) {
-      toast({ title: "Product out of stock", variant: "destructive" });
+      toast({ title: t("pos.outOfStock"), variant: "destructive" });
       return;
     }
 
     const existingItem = cart.find((item) => item.productId === product.id);
     if (existingItem) {
       if (existingItem.quantity >= product.stockQuantity) {
-        toast({ title: "Cannot exceed available stock", variant: "destructive" });
+        toast({ title: t("pos.cannotExceedStock"), variant: "destructive" });
         return;
       }
       setCart(
@@ -351,7 +351,7 @@ export default function POS() {
             const newQty = item.quantity + delta;
             if (newQty <= 0) return null;
             if (product && newQty > product.stockQuantity) {
-              toast({ title: "Cannot exceed available stock", variant: "destructive" });
+              toast({ title: t("pos.cannotExceedStock"), variant: "destructive" });
               return item;
             }
             return {
@@ -385,7 +385,7 @@ export default function POS() {
 
   const handleCheckout = () => {
     if (cart.length === 0) {
-      toast({ title: "Cart is empty", variant: "destructive" });
+      toast({ title: t("pos.cartEmpty"), variant: "destructive" });
       return;
     }
     setAmountPaidInput(total.toString());
@@ -457,7 +457,7 @@ export default function POS() {
         setSuccessDialogOpen(false);
       } else {
         clearCart();
-        toast({ title: "Panier vidé" });
+        toast({ title: t("pos.cartCleared") });
       }
       return;
     }
@@ -553,7 +553,7 @@ export default function POS() {
                   <div data-testid="section-favorites">
                     <div className="flex items-center gap-2 mb-2">
                       <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
-                      <span className="text-sm font-semibold">Favoris</span>
+                      <span className="text-sm font-semibold">{t("pos.favorites")}</span>
                     </div>
                     <div className="grid grid-cols-1 min-[400px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 mb-3">
                       {favoriteProducts.map((product) => {
@@ -574,7 +574,7 @@ export default function POS() {
                             </Badge>
                             {isOutOfStock && (
                               <div className="absolute inset-0 bg-background/70 rounded-md flex items-center justify-center z-10">
-                                <span className="text-xs font-semibold text-destructive">{"\u00C9puis\u00E9"}</span>
+                                <span className="text-xs font-semibold text-destructive">{t("pos.outOfStock")}</span>
                               </div>
                             )}
                             <Star className="h-3 w-3 text-yellow-500 fill-yellow-500 absolute top-1 left-1" />
@@ -619,7 +619,7 @@ export default function POS() {
                       </Badge>
                       {isOutOfStock && (
                         <div className="absolute inset-0 bg-background/70 rounded-md flex items-center justify-center z-10">
-                          <span className="text-xs font-semibold text-destructive">{"\u00C9puis\u00E9"}</span>
+                          <span className="text-xs font-semibold text-destructive">{t("pos.outOfStock")}</span>
                         </div>
                       )}
                       <div className="flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded bg-muted mx-auto mb-1 sm:mb-2">
@@ -666,13 +666,13 @@ export default function POS() {
               </TooltipTrigger>
               <TooltipContent side="bottom" className="max-w-xs">
                 <div className="text-xs space-y-1">
-                  <p className="font-semibold mb-2">Raccourcis clavier:</p>
-                  <p><kbd className="bg-muted px-1 rounded">1-9</kbd> Ajouter produit</p>
-                  <p><kbd className="bg-muted px-1 rounded">F2</kbd> Paiement</p>
-                  <p><kbd className="bg-muted px-1 rounded">F3</kbd> Mettre en attente</p>
-                  <p><kbd className="bg-muted px-1 rounded">F4</kbd> Confirmer vente</p>
-                  <p><kbd className="bg-muted px-1 rounded">Suppr</kbd> Retirer dernier</p>
-                  <p><kbd className="bg-muted px-1 rounded">Échap</kbd> Vider panier</p>
+                  <p className="font-semibold mb-2">{t("pos.keyboardShortcuts")}</p>
+                  <p><kbd className="bg-muted px-1 rounded">1-9</kbd> {t("pos.kbAddProduct")}</p>
+                  <p><kbd className="bg-muted px-1 rounded">F2</kbd> {t("pos.kbPayment")}</p>
+                  <p><kbd className="bg-muted px-1 rounded">F3</kbd> {t("pos.kbHoldSale")}</p>
+                  <p><kbd className="bg-muted px-1 rounded">F4</kbd> {t("pos.kbConfirmSale")}</p>
+                  <p><kbd className="bg-muted px-1 rounded">Suppr</kbd> {t("pos.kbRemoveLast")}</p>
+                  <p><kbd className="bg-muted px-1 rounded">Esc</kbd> {t("pos.kbClearCart")}</p>
                 </div>
               </TooltipContent>
             </Tooltip>
@@ -688,7 +688,7 @@ export default function POS() {
             <div className="relative">
               <User className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                placeholder="Nom du client"
+                placeholder={t("pos.customerName")}
                 value={customerName}
                 onChange={(e) => setCustomerName(e.target.value)}
                 className="pl-8 h-8 text-sm"
@@ -811,7 +811,7 @@ export default function POS() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-xs text-muted-foreground">{t("pos.discountAmount") || "Remise (DZD)"}</Label>
+                  <Label className="text-xs text-muted-foreground">{t("pos.discountAmount")}</Label>
                   <Input
                     type="number"
                     min="0"
@@ -850,7 +850,7 @@ export default function POS() {
                         </Button>
                       </TooltipTrigger>
                       <TooltipContent>
-                        {t("pos.addNewReseller") || "Add New Reseller"}
+                        {t("pos.addNewReseller")}
                       </TooltipContent>
                     </Tooltip>
                   </div>
@@ -879,7 +879,7 @@ export default function POS() {
                   data-testid="button-return"
                 >
                   <RotateCcw className="h-4 w-4 mr-2" />
-                  {t("pos.return") || "Retour"}
+                  {t("pos.return")}
                 </Button>
                 <Button
                   variant="outline"
@@ -888,7 +888,7 @@ export default function POS() {
                   data-testid="button-park-sale"
                 >
                   <PauseCircle className="h-4 w-4 mr-2" />
-                  F3
+                  {t("pos.holdSaleBtn")}
                 </Button>
                 <Button
                   onClick={handleCheckout}
@@ -908,7 +908,7 @@ export default function POS() {
                   <Button variant="ghost" className="w-full justify-between" data-testid="button-toggle-parked-sales">
                     <span className="flex items-center gap-2 text-sm">
                       <PauseCircle className="h-4 w-4" />
-                      Ventes en attente
+                      {t("pos.parkedSales")}
                       <Badge variant="secondary" className="ml-1">{parkedSales.length}</Badge>
                     </span>
                     <ChevronDown className={`h-4 w-4 transition-transform ${parkedSalesOpen ? "rotate-180" : ""}`} />
@@ -924,7 +924,7 @@ export default function POS() {
                           <div className="min-w-0">
                             <p className="font-medium truncate" data-testid={`text-parked-label-${ps.id}`}>{ps.label}</p>
                             <p className="text-xs text-muted-foreground">
-                              {itemCount} article{itemCount !== 1 ? "s" : ""}
+                              {itemCount} {t("pos.article")}
                               {ps.customerName && ` - ${ps.customerName}`}
                             </p>
                           </div>
@@ -962,7 +962,7 @@ export default function POS() {
                   <Button variant="ghost" className="w-full justify-between" data-testid="button-toggle-recent-sales">
                     <span className="flex items-center gap-2 text-sm">
                       <Clock className="h-4 w-4" />
-                      Ventes r{"\u00E9"}centes
+                      {t("pos.recentSales")}
                     </span>
                     <ChevronDown className={`h-4 w-4 transition-transform ${recentSalesOpen ? "rotate-180" : ""}`} />
                   </Button>
@@ -1054,7 +1054,7 @@ export default function POS() {
             </div>
 
             <div className="space-y-2">
-              <Label>{t("pos.amountPaid") || "Amount Paid"}</Label>
+              <Label>{t("pos.amountPaid")}</Label>
               <Input
                 type="number"
                 min="0"
@@ -1066,7 +1066,7 @@ export default function POS() {
               />
               {remainingBalance > 0 && (
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{t("pos.remainingBalance") || "Remaining"}</span>
+                  <span className="text-muted-foreground">{t("pos.remainingBalance")}</span>
                   <span className="font-mono font-medium text-orange-600 dark:text-orange-400">
                     {remainingBalance.toLocaleString()} DZD
                   </span>
@@ -1074,12 +1074,12 @@ export default function POS() {
               )}
               {amountPaid > 0 && amountPaid < total && (
                 <Badge variant="outline" className="w-full justify-center text-orange-600 border-orange-600">
-                  {t("pos.partialPayment") || "Partial Payment"}
+                  {t("pos.partialPayment")}
                 </Badge>
               )}
               {amountPaid <= 0 && (
                 <Badge variant="outline" className="w-full justify-center text-red-600 border-red-600">
-                  {t("pos.noPayment") || "No Payment (Credit)"}
+                  {t("pos.noPayment")}
                 </Badge>
               )}
             </div>
@@ -1127,27 +1127,27 @@ export default function POS() {
       <Dialog open={addResellerDialogOpen} onOpenChange={setAddResellerDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("pos.addNewReseller") || "Add New Reseller"}</DialogTitle>
+            <DialogTitle>{t("pos.addNewReseller")}</DialogTitle>
             <DialogDescription className="sr-only">
-              {t("pos.addNewReseller") || "Add New Reseller"}
+              {t("pos.addNewReseller")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>{t("resellers.resellerName") || "Reseller Name"}</Label>
+              <Label>{t("resellers.resellerName")}</Label>
               <Input
                 value={newResellerName}
                 onChange={(e) => setNewResellerName(e.target.value)}
-                placeholder={t("resellers.resellerName") || "Reseller Name"}
+                placeholder={t("resellers.resellerName")}
                 data-testid="input-new-reseller-name"
               />
             </div>
             <div className="space-y-2">
-              <Label>{t("resellers.phone") || "Phone"}</Label>
+              <Label>{t("resellers.phone")}</Label>
               <Input
                 value={newResellerPhone}
                 onChange={(e) => setNewResellerPhone(e.target.value)}
-                placeholder={t("resellers.phone") || "Phone"}
+                placeholder={t("resellers.phone")}
                 data-testid="input-new-reseller-phone"
               />
             </div>
@@ -1172,13 +1172,13 @@ export default function POS() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <PauseCircle className="h-5 w-5" />
-              Mettre en attente
+              {t("pos.parkSale")}
             </DialogTitle>
-            <DialogDescription className="sr-only">Mettre la vente en attente</DialogDescription>
+            <DialogDescription className="sr-only">{t("pos.parkSale")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Label</Label>
+              <Label>{t("pos.parkSaleLabel")}</Label>
               <Input
                 value={parkLabel}
                 onChange={(e) => setParkLabel(e.target.value)}
@@ -1189,7 +1189,7 @@ export default function POS() {
               />
             </div>
             <div className="text-sm text-muted-foreground">
-              {cart.reduce((sum, item) => sum + item.quantity, 0)} article(s) - {total.toLocaleString()} DZD
+              {cart.reduce((sum, item) => sum + item.quantity, 0)} {t("pos.article")} - {total.toLocaleString()} DZD
             </div>
           </div>
           <DialogFooter>
@@ -1201,7 +1201,7 @@ export default function POS() {
               disabled={parkSaleMutation.isPending}
               data-testid="button-confirm-park"
             >
-              {parkSaleMutation.isPending ? t("common.loading") : "Mettre en attente"}
+              {parkSaleMutation.isPending ? t("common.loading") : t("pos.parkSale")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1220,17 +1220,17 @@ export default function POS() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <RotateCcw className="h-5 w-5" />
-              {t("pos.productReturn") || "Retour Produit"}
+              {t("pos.productReturn")}
             </DialogTitle>
             <DialogDescription className="sr-only">
-              {t("pos.returnDescription") || "Process a product return"}
+              {t("pos.returnDescription")}
             </DialogDescription>
           </DialogHeader>
 
           {!returnLookupData ? (
             <div className="space-y-4">
               <div className="space-y-2">
-                <Label>{t("pos.ticketNumber") || "N° Ticket de Caisse"}</Label>
+                <Label>{t("pos.ticketNumber")}</Label>
                 <div className="flex gap-2">
                   <Input
                     value={returnTicketNumber}
@@ -1244,7 +1244,7 @@ export default function POS() {
                     disabled={returnLookupLoading}
                     data-testid="button-lookup-sale"
                   >
-                    {returnLookupLoading ? t("common.loading") : (t("pos.search") || "Rechercher")}
+                    {returnLookupLoading ? t("common.loading") : (t("pos.search"))}
                   </Button>
                 </div>
               </div>
@@ -1263,12 +1263,12 @@ export default function POS() {
                 data-testid="button-back-to-lookup"
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
-                {t("pos.backToSearch") || "Retour"}
+                {t("pos.backToSearch")}
               </Button>
 
               <div className="p-3 rounded-md bg-muted space-y-1">
                 <div className="flex justify-between gap-2 text-sm">
-                  <span className="text-muted-foreground">{t("pos.ticketNumber") || "Ticket"}:</span>
+                  <span className="text-muted-foreground">{t("pos.ticketNumber")}:</span>
                   <span className="font-semibold" data-testid="text-return-sale-number">{returnLookupData.saleNumber}</span>
                 </div>
                 <div className="flex justify-between gap-2 text-sm">
@@ -1280,7 +1280,7 @@ export default function POS() {
                   <span className="font-mono font-semibold">{returnLookupData.total?.toLocaleString()} DZD</span>
                 </div>
                 <div className="flex justify-between gap-2 text-sm">
-                  <span className="text-muted-foreground">{t("pos.status") || "Statut"}:</span>
+                  <span className="text-muted-foreground">{t("pos.status")}:</span>
                   <Badge variant={returnLookupData.status === 'completed' ? 'default' : 'secondary'}>
                     {returnLookupData.status === 'completed' ? (t("pos.paid") || 'Payé') :
                      returnLookupData.status === 'partial' ? (t("pos.partialPayment") || 'Partiel') :
@@ -1296,7 +1296,7 @@ export default function POS() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm font-semibold">{t("pos.selectItemsToReturn") || "Sélectionner les articles à retourner"}</Label>
+                <Label className="text-sm font-semibold">{t("pos.selectItemsToReturn")}</Label>
                 <div className="space-y-2">
                   {returnLookupData.items.map((item: any) => {
                     const alreadyReturned = returnLookupData.returnedQuantities?.[item.productId] || 0;
@@ -1308,10 +1308,10 @@ export default function POS() {
                           <div>
                             <span className="font-medium text-sm">{item.productName}</span>
                             <div className="text-xs text-muted-foreground">
-                              {t("pos.soldQty") || "Vendu"}: {item.quantity}
+                              {t("pos.soldQty")}: {item.quantity}
                               {alreadyReturned > 0 && (
                                 <span className="text-orange-500 ml-2">
-                                  ({t("pos.alreadyReturned") || "Déjà retourné"}: {alreadyReturned})
+                                  ({t("pos.alreadyReturned")}: {alreadyReturned})
                                 </span>
                               )}
                             </div>
@@ -1320,7 +1320,7 @@ export default function POS() {
                         </div>
                         {maxReturnable > 0 ? (
                           <div className="flex items-center gap-2">
-                            <Label className="text-xs whitespace-nowrap">{t("pos.returnQty") || "Qté retour"}:</Label>
+                            <Label className="text-xs whitespace-nowrap">{t("pos.returnQty")}:</Label>
                             <div className="flex items-center gap-1">
                               <Button
                                 size="icon"
@@ -1370,7 +1370,7 @@ export default function POS() {
                           </div>
                         ) : (
                           <Badge variant="secondary" className="text-xs">
-                            {t("pos.fullyReturned") || "Entièrement retourné"}
+                            {t("pos.fullyReturned")}
                           </Badge>
                         )}
                       </div>
@@ -1380,11 +1380,11 @@ export default function POS() {
               </div>
 
               <div className="space-y-2">
-                <Label className="text-sm">{t("pos.returnReason") || "Motif du retour"}</Label>
+                <Label className="text-sm">{t("pos.returnReason")}</Label>
                 <Input
                   value={returnReason}
                   onChange={(e) => setReturnReason(e.target.value)}
-                  placeholder={t("pos.returnReasonPlaceholder") || "Ex: Produit défectueux, erreur..."}
+                  placeholder={t("pos.returnReasonPlaceholder")}
                   data-testid="input-return-reason"
                 />
               </div>
@@ -1392,7 +1392,7 @@ export default function POS() {
               {returnRefundTotal > 0 && (
                 <div className="p-3 rounded-md bg-primary/5 border border-primary/20">
                   <div className="flex justify-between items-center">
-                    <span className="font-semibold">{t("pos.refundTotal") || "Total remboursement"}:</span>
+                    <span className="font-semibold">{t("pos.refundTotal")}:</span>
                     <span className="font-mono text-xl font-bold text-primary" data-testid="text-refund-total">
                       {Math.round(returnRefundTotal * 100 / 100).toLocaleString()} DZD
                     </span>
@@ -1414,7 +1414,7 @@ export default function POS() {
               >
                 {processReturnMutation.isPending
                   ? (t("common.loading"))
-                  : (t("pos.confirmReturn") || "Confirmer le retour")}
+                  : (t("pos.confirmReturn"))}
               </Button>
             )}
           </DialogFooter>

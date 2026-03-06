@@ -530,7 +530,7 @@ export default function ExpensesPage() {
               disabled={deleteMutation.isPending}
               data-testid="button-confirm-delete"
             >
-              {deleteMutation.isPending ? t("common.loading") : t("common.delete") || "Supprimer"}
+              {deleteMutation.isPending ? t("common.loading") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

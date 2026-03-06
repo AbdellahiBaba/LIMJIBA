@@ -93,11 +93,11 @@ function numberToFrenchWords(n: number): string {
   return n.toString();
 }
 
-const statusConfig: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; variant: "default" | "secondary" | "destructive" | "outline" }> = {
-  pending: { label: "Pending", icon: Clock, variant: "secondary" },
-  unpaid: { label: "Unpaid", icon: Clock, variant: "outline" },
-  paid: { label: "Paid", icon: CheckCircle, variant: "default" },
-  cancelled: { label: "Cancelled", icon: XCircle, variant: "destructive" },
+const statusKeys: Record<string, { labelKey: string; icon: React.ComponentType<{ className?: string }>; variant: "default" | "secondary" | "destructive" | "outline" }> = {
+  pending: { labelKey: "invoices.pending", icon: Clock, variant: "secondary" },
+  unpaid: { labelKey: "invoices.unpaid", icon: Clock, variant: "outline" },
+  paid: { labelKey: "invoices.paid", icon: CheckCircle, variant: "default" },
+  cancelled: { labelKey: "invoices.cancelled", icon: XCircle, variant: "destructive" },
 };
 
 export default function InvoiceView() {
@@ -147,7 +147,7 @@ export default function InvoiceView() {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices", params.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/invoices", params.id, "payments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
-      toast({ title: "Paiement enregistré" });
+      toast({ title: t("invoices.paymentRecorded") });
       setPaymentDialogOpen(false);
       setPaymentAmount("");
       setPaymentReference("");
@@ -166,7 +166,7 @@ export default function InvoiceView() {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices", params.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/invoices", params.id, "payments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
-      toast({ title: "Paiement supprimé" });
+      toast({ title: t("invoices.paymentDeleted") });
     },
     onError: (error: Error) => {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
@@ -179,7 +179,7 @@ export default function InvoiceView() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/invoices", params.id] });
       queryClient.invalidateQueries({ queryKey: ["/api/invoices"] });
-      toast({ title: "Statut de livraison mis à jour" });
+      toast({ title: t("invoices.deliveryStatusUpdated") });
     },
     onError: (error: Error) => {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
@@ -189,7 +189,7 @@ export default function InvoiceView() {
   const handleAddPayment = () => {
     const amount = parseFloat(paymentAmount);
     if (isNaN(amount) || amount <= 0) {
-      toast({ title: "Montant invalide", variant: "destructive" });
+      toast({ title: t("invoices.invalidAmount"), variant: "destructive" });
       return;
     }
     addPaymentMutation.mutate({
@@ -238,15 +238,15 @@ export default function InvoiceView() {
     return (
       <div className="p-3 sm:p-6 text-center">
         <FileText className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-        <h2 className="text-lg font-medium">Invoice not found</h2>
+        <h2 className="text-lg font-medium">{t("invoices.invoiceNotFound")}</h2>
         <Button variant="outline" onClick={() => navigate("/invoices")} className="mt-4">
-          Back to Invoices
+          {t("invoices.backToInvoices")}
         </Button>
       </div>
     );
   }
 
-  const status = statusConfig[invoice.status] || statusConfig.pending;
+  const status = statusKeys[invoice.status] || statusKeys.pending;
   const StatusIcon = status.icon;
 
   return (
@@ -258,10 +258,10 @@ export default function InvoiceView() {
           </Button>
           <div>
             <h1 className="text-xl sm:text-2xl font-semibold" data-testid="text-invoice-title">
-              Invoice {invoice.invoiceNumber}
+              {t("invoices.invoiceNumber")} {invoice.invoiceNumber}
             </h1>
             <p className="text-muted-foreground text-xs sm:text-sm">
-              Created on {formatDateDMY(invoice.date)}
+              {t("common.createdOn")} {formatDateDMY(invoice.date)}
             </p>
           </div>
         </div>
@@ -274,15 +274,15 @@ export default function InvoiceView() {
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="pending">Pending</SelectItem>
-              <SelectItem value="unpaid">Unpaid</SelectItem>
-              <SelectItem value="paid">Paid</SelectItem>
-              <SelectItem value="cancelled">Cancelled</SelectItem>
+              <SelectItem value="pending">{t("invoices.pending")}</SelectItem>
+              <SelectItem value="unpaid">{t("invoices.unpaid")}</SelectItem>
+              <SelectItem value="paid">{t("invoices.paid")}</SelectItem>
+              <SelectItem value="cancelled">{t("invoices.cancelled")}</SelectItem>
             </SelectContent>
           </Select>
           <Button onClick={handlePrint} data-testid="button-print-invoice">
             <Printer className="h-4 w-4 mr-2" />
-            Print PDF
+            {t("invoices.printPdf")}
           </Button>
         </div>
       </div>
@@ -292,44 +292,44 @@ export default function InvoiceView() {
           <CardHeader className="border-b">
             <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold text-primary">POLY FLECTA PLASTICA</h2>
+                <h2 className="text-xl font-bold text-primary">{branding.companyInfo.name}</h2>
                 <p className="text-sm text-muted-foreground">
-                  FABRICATION D'EMBALLAGE EN PLASTIQUE
+                  {branding.companyInfo.tagline}
                 </p>
               </div>
               <Badge variant={status.variant} className="self-start gap-1">
                 <StatusIcon className="h-3 w-3" />
-                {status.label}
+                {t(status.labelKey)}
               </Badge>
             </div>
           </CardHeader>
           <CardContent className="pt-6">
             <div className="grid gap-4 sm:grid-cols-2 mb-6">
               <div className="space-y-1 text-sm">
-                <p className="text-muted-foreground">Invoice Number</p>
+                <p className="text-muted-foreground">{t("invoices.invoiceNumber")}</p>
                 <p className="font-mono font-medium">{invoice.invoiceNumber}</p>
               </div>
               <div className="space-y-1 text-sm">
-                <p className="text-muted-foreground">Date</p>
+                <p className="text-muted-foreground">{t("common.date")}</p>
                 <p className="font-medium">{formatDateDMY(invoice.date)}</p>
               </div>
               <div className="space-y-1 text-sm">
-                <p className="text-muted-foreground">Responsible</p>
+                <p className="text-muted-foreground">{t("invoices.responsible")}</p>
                 <p className="font-medium">{invoice.responsible} - {invoice.role}</p>
               </div>
               <div className="space-y-1 text-sm">
-                <p className="text-muted-foreground">Payment Mode</p>
+                <p className="text-muted-foreground">{t("invoices.paymentMode")}</p>
                 <p className="font-medium">{invoice.paymentMode}</p>
               </div>
               {invoice.clientName && (
                 <div className="space-y-1 text-sm">
-                  <p className="text-muted-foreground">Client</p>
+                  <p className="text-muted-foreground">{t("invoices.clientName")}</p>
                   <p className="font-medium">{invoice.clientName}</p>
                 </div>
               )}
               {invoice.dueDate && (
                 <div className="space-y-1 text-sm">
-                  <p className="text-muted-foreground">Due Date</p>
+                  <p className="text-muted-foreground">{t("invoices.dueDate")}</p>
                   <p className="font-medium">{invoice.dueDate}</p>
                 </div>
               )}
@@ -341,12 +341,12 @@ export default function InvoiceView() {
               <Table>
                 <TableHeader>
                   <TableRow className="bg-muted/50">
-                    <TableHead className="w-16">Qty</TableHead>
-                    <TableHead>Designation</TableHead>
-                    <TableHead className="text-right">Unit Price</TableHead>
-                    <TableHead className="text-right">Weight/Unit</TableHead>
-                    <TableHead className="text-right">Total Weight</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="w-16">{t("invoices.qty")}</TableHead>
+                    <TableHead>{t("invoices.designation")}</TableHead>
+                    <TableHead className="text-right">{t("invoices.unitPrice")}</TableHead>
+                    <TableHead className="text-right">{t("invoices.weightPerUnit")}</TableHead>
+                    <TableHead className="text-right">{t("invoices.totalWeight")}</TableHead>
+                    <TableHead className="text-right">{t("common.total")}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -374,13 +374,13 @@ export default function InvoiceView() {
 
             <div className="mt-6 flex flex-col items-end gap-2">
               <div className="flex gap-8 text-sm">
-                <span className="text-muted-foreground">Total Weight:</span>
+                <span className="text-muted-foreground">{t("invoices.totalWeight")}:</span>
                 <span className="font-mono font-medium">
                   {(invoice.totalWeight || 0).toFixed(2)} kg
                 </span>
               </div>
               <div className="flex gap-8 text-sm">
-                <span className="text-muted-foreground">Total H.T:</span>
+                <span className="text-muted-foreground">{t("invoices.totalHT")}:</span>
                 <span className="font-mono font-medium">
                   {invoice.totalHT.toLocaleString()} DZD
                 </span>
@@ -394,7 +394,7 @@ export default function InvoiceView() {
                 </div>
               )}
               <div className="flex gap-8 text-lg font-semibold">
-                <span>Total T.T.C:</span>
+                <span>{t("invoices.totalTTC")}:</span>
                 <span className="font-mono">
                   {invoice.totalTTC.toLocaleString()} DZD
                 </span>
@@ -405,7 +405,7 @@ export default function InvoiceView() {
 
             <div className="text-sm">
               <p className="text-muted-foreground mb-1">
-                Arrêter la présente facture à la somme de:
+                {t("invoices.amountInWordsPrefix")}
               </p>
               <p className="font-medium italic">
                 {numberToFrenchWords(Math.floor(invoice.totalTTC))}
@@ -417,25 +417,28 @@ export default function InvoiceView() {
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Company Details</CardTitle>
+              <CardTitle className="text-sm">{t("invoices.companyDetails")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              <p className="font-medium">POLY FLECTA PLASTICA</p>
+              <p className="font-medium">{branding.companyInfo.name}</p>
               <p className="text-muted-foreground">
-                Village Zaitout, Local N°01
-              </p>
-              <p className="text-muted-foreground">
-                Commune Hammam Dalaa - W M'sila
+                {branding.companyInfo.address}
               </p>
               <Separator className="my-3" />
               <div className="space-y-1">
-                <p><span className="text-muted-foreground">Carte Artisan:</span> 28/ 00 - 2896688A24</p>
-                <p><span className="text-muted-foreground">N° Article:</span> 101082709</p>
-                <p><span className="text-muted-foreground">N° Fiscal:</span> 28516010001318002800</p>
+                {branding.companyInfo.artisanNumber && (
+                  <p><span className="text-muted-foreground">{t("invoices.artisanCard")}:</span> {branding.companyInfo.artisanNumber}</p>
+                )}
+                {branding.companyInfo.articleNumber && (
+                  <p><span className="text-muted-foreground">{t("invoices.articleNumber")}:</span> {branding.companyInfo.articleNumber}</p>
+                )}
+                {branding.companyInfo.fiscalNumber && (
+                  <p><span className="text-muted-foreground">{t("invoices.fiscalNumber")}:</span> {branding.companyInfo.fiscalNumber}</p>
+                )}
               </div>
               <Separator className="my-3" />
-              <p>contact@polyflectaplastica.com</p>
-              <p>+213 6 70 04 91 24</p>
+              <p>{branding.companyInfo.email}</p>
+              <p>{branding.companyInfo.phone}</p>
             </CardContent>
           </Card>
 
@@ -443,26 +446,26 @@ export default function InvoiceView() {
             <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
               <CardTitle className="text-sm flex items-center gap-2">
                 <Banknote className="h-4 w-4" />
-                Paiements
+                {t("invoices.payments")}
               </CardTitle>
               {invoice.status !== "paid" && (
                 <Button size="sm" onClick={() => setPaymentDialogOpen(true)} data-testid="button-add-payment">
                   <Plus className="h-3 w-3 mr-1" />
-                  Ajouter
+                  {t("invoices.addPayment")}
                 </Button>
               )}
             </CardHeader>
             <CardContent className="space-y-3 text-sm">
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Total facture:</span>
+                <span className="text-muted-foreground">{t("invoices.invoiceTotal")}:</span>
                 <span className="font-mono" data-testid="text-invoice-total">{invoice.totalTTC.toLocaleString()} DZD</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-muted-foreground">Payé:</span>
+                <span className="text-muted-foreground">{t("invoices.paidAmount")}:</span>
                 <span className="font-mono text-green-600" data-testid="text-paid-amount">{(paymentsData?.paidAmount || 0).toLocaleString()} DZD</span>
               </div>
               <div className="flex justify-between font-medium">
-                <span>Restant:</span>
+                <span>{t("invoices.remainingAmount")}:</span>
                 <span className={`font-mono ${remainingAmount > 0 ? "text-destructive" : "text-green-600"}`} data-testid="text-remaining-amount">
                   {remainingAmount.toLocaleString()} DZD
                 </span>
@@ -506,7 +509,7 @@ export default function InvoiceView() {
             <CardHeader>
               <CardTitle className="text-sm flex items-center gap-2">
                 <Truck className="h-4 w-4" />
-                Statut de livraison
+                {t("invoices.deliveryStatus")}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
@@ -518,10 +521,10 @@ export default function InvoiceView() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="none">Non défini</SelectItem>
-                  <SelectItem value="prepared">Préparé</SelectItem>
-                  <SelectItem value="shipped">Expédié</SelectItem>
-                  <SelectItem value="delivered">Livré</SelectItem>
+                  <SelectItem value="none">{t("invoices.deliveryNotDefined")}</SelectItem>
+                  <SelectItem value="prepared">{t("invoices.deliveryPrepared")}</SelectItem>
+                  <SelectItem value="shipped">{t("invoices.deliveryShipped")}</SelectItem>
+                  <SelectItem value="delivered">{t("invoices.deliveryDelivered")}</SelectItem>
                 </SelectContent>
               </Select>
               <Badge
@@ -542,12 +545,12 @@ export default function InvoiceView() {
                 {invoice.deliveryStatus === "delivered" && <PackageCheck className="h-3 w-3 mr-1" />}
                 {(!invoice.deliveryStatus || invoice.deliveryStatus === "none") && <CircleDashed className="h-3 w-3 mr-1" />}
                 {invoice.deliveryStatus === "prepared"
-                  ? "Préparé"
+                  ? t("invoices.deliveryPrepared")
                   : invoice.deliveryStatus === "shipped"
-                  ? "Expédié"
+                  ? t("invoices.deliveryShipped")
                   : invoice.deliveryStatus === "delivered"
-                  ? "Livré"
-                  : "Non défini"}
+                  ? t("invoices.deliveryDelivered")
+                  : t("invoices.deliveryNotDefined")}
               </Badge>
               <Button
                 variant="outline"
@@ -562,14 +565,14 @@ export default function InvoiceView() {
                 data-testid="button-print-delivery-note"
               >
                 <Printer className="h-4 w-4 mr-2" />
-                Imprimer BL
+                {t("invoices.printDeliveryNote")}
               </Button>
             </CardContent>
           </Card>
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-sm">Actions</CardTitle>
+              <CardTitle className="text-sm">{t("common.actions")}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
               <Button
@@ -578,7 +581,7 @@ export default function InvoiceView() {
                 data-testid="button-download-pdf"
               >
                 <Printer className="h-4 w-4 mr-2" />
-                Télécharger la facture
+                {t("invoices.downloadInvoice")}
               </Button>
               <Button
                 variant="outline"
@@ -593,7 +596,7 @@ export default function InvoiceView() {
                 data-testid="button-download-delivery-note"
               >
                 <FileText className="h-4 w-4 mr-2" />
-                Bon de livraison
+                {t("invoices.deliveryNote")}
               </Button>
               <Button
                 variant="outline"
@@ -601,9 +604,9 @@ export default function InvoiceView() {
                 onClick={() => {
                   if (invoice) {
                     setEmailTo(invoice.clientName ? "" : "");
-                    setEmailSubject(`Facture ${invoice.invoiceNumber} - POLY FLECTA PLASTICA`);
+                    setEmailSubject(`${t("invoices.invoiceNumber")} ${invoice.invoiceNumber} - ${branding.companyInfo.name}`);
                     setEmailBody(
-                      `Bonjour,\n\nVeuillez trouver ci-joint la facture ${invoice.invoiceNumber} du ${formatDateDMY(invoice.date)} d'un montant de ${invoice.totalTTC.toLocaleString()} DZD.\n\nCordialement,\nPOLY FLECTA PLASTICA\nTél: +213 6 70 04 91 24`
+                      `${t("invoices.invoiceNumber")} ${invoice.invoiceNumber} - ${formatDateDMY(invoice.date)} - ${invoice.totalTTC.toLocaleString()} DZD\n\n${branding.companyInfo.name}\n${branding.companyInfo.phone}`
                     );
                     setEmailDialogOpen(true);
                   }
@@ -611,7 +614,7 @@ export default function InvoiceView() {
                 data-testid="button-email-invoice"
               >
                 <Mail className="h-4 w-4 mr-2" />
-                Envoyer par email
+                {t("invoices.sendByEmail")}
               </Button>
               <Button
                 variant="outline"
@@ -619,7 +622,7 @@ export default function InvoiceView() {
                 onClick={() => navigate("/invoices")}
                 data-testid="button-return-list"
               >
-                Retour à la liste
+                {t("invoices.returnToList")}
               </Button>
             </CardContent>
           </Card>
@@ -629,14 +632,14 @@ export default function InvoiceView() {
       <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Enregistrer un paiement</DialogTitle>
+            <DialogTitle>{t("invoices.recordPayment")}</DialogTitle>
             <DialogDescription>
-              Restant à payer: {remainingAmount.toLocaleString()} DZD
+              {t("invoices.remainingToPay")}: {remainingAmount.toLocaleString()} DZD
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Montant (DZD)</Label>
+              <Label>{t("invoices.amountDZD")}</Label>
               <Input
                 type="number"
                 value={paymentAmount}
@@ -646,7 +649,7 @@ export default function InvoiceView() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Date de paiement</Label>
+              <Label>{t("invoices.paymentDate")}</Label>
               <Input
                 type="date"
                 value={paymentDate}
@@ -655,48 +658,48 @@ export default function InvoiceView() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Mode de paiement</Label>
+              <Label>{t("invoices.paymentMethod")}</Label>
               <Select value={paymentMethod} onValueChange={setPaymentMethod}>
                 <SelectTrigger data-testid="select-payment-method">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="cash">Espèces</SelectItem>
-                  <SelectItem value="cheque">Chèque</SelectItem>
-                  <SelectItem value="virement">Virement</SelectItem>
-                  <SelectItem value="carte">Carte bancaire</SelectItem>
+                  <SelectItem value="cash">{t("invoices.paymentMethodCash")}</SelectItem>
+                  <SelectItem value="cheque">{t("invoices.paymentMethodCheque")}</SelectItem>
+                  <SelectItem value="virement">{t("invoices.paymentMethodTransfer")}</SelectItem>
+                  <SelectItem value="carte">{t("invoices.paymentMethodCard")}</SelectItem>
                 </SelectContent>
               </Select>
             </div>
             <div className="space-y-2">
-              <Label>Référence (optionnel)</Label>
+              <Label>{t("invoices.referenceOptional")}</Label>
               <Input
                 value={paymentReference}
                 onChange={(e) => setPaymentReference(e.target.value)}
-                placeholder="N° chèque, référence virement..."
+                placeholder={t("invoices.referencePlaceholder")}
                 data-testid="input-payment-reference"
               />
             </div>
             <div className="space-y-2">
-              <Label>Notes (optionnel)</Label>
+              <Label>{t("invoices.notesOptional")}</Label>
               <Textarea
                 value={paymentNotes}
                 onChange={(e) => setPaymentNotes(e.target.value)}
-                placeholder="Notes supplémentaires..."
+                placeholder={t("invoices.notesPlaceholder")}
                 data-testid="input-payment-notes"
               />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPaymentDialogOpen(false)} data-testid="button-cancel-payment">
-              Annuler
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handleAddPayment}
               disabled={addPaymentMutation.isPending}
               data-testid="button-confirm-payment"
             >
-              {addPaymentMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+              {addPaymentMutation.isPending ? t("invoices.recording") : t("invoices.recordPayment")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -707,25 +710,25 @@ export default function InvoiceView() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Mail className="h-5 w-5" />
-              Envoyer la facture par email
+              {t("invoices.sendByEmail")}
             </DialogTitle>
             <DialogDescription>
-              Préparez le brouillon d'email. Le contenu sera copié dans votre presse-papiers.
+              {t("invoices.emailDraftDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>Destinataire (email)</Label>
+              <Label>{t("invoices.emailRecipient")}</Label>
               <Input
                 type="email"
                 value={emailTo}
                 onChange={(e) => setEmailTo(e.target.value)}
-                placeholder="client@exemple.com"
+                placeholder={t("invoices.emailPlaceholder")}
                 data-testid="input-email-to"
               />
             </div>
             <div className="space-y-2">
-              <Label>Objet</Label>
+              <Label>{t("invoices.emailSubject")}</Label>
               <Input
                 value={emailSubject}
                 onChange={(e) => setEmailSubject(e.target.value)}
@@ -733,7 +736,7 @@ export default function InvoiceView() {
               />
             </div>
             <div className="space-y-2">
-              <Label>Message</Label>
+              <Label>{t("invoices.emailBody")}</Label>
               <Textarea
                 value={emailBody}
                 onChange={(e) => setEmailBody(e.target.value)}
@@ -744,22 +747,22 @@ export default function InvoiceView() {
           </div>
           <DialogFooter className="flex flex-col sm:flex-row gap-2">
             <Button variant="outline" onClick={() => setEmailDialogOpen(false)} data-testid="button-cancel-email">
-              Annuler
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={() => {
-                const draft = `À: ${emailTo}\nObjet: ${emailSubject}\n\n${emailBody}`;
+                const draft = `${t("invoices.emailTo")}: ${emailTo}\n${t("invoices.emailSubject")}: ${emailSubject}\n\n${emailBody}`;
                 navigator.clipboard.writeText(draft).then(() => {
-                  toast({ title: "Brouillon copié dans le presse-papiers" });
+                  toast({ title: t("invoices.emailDraftCopied") });
                   setEmailDialogOpen(false);
                 }).catch(() => {
-                  toast({ title: "Impossible de copier", variant: "destructive" });
+                  toast({ title: t("invoices.copyFailed"), variant: "destructive" });
                 });
               }}
               data-testid="button-copy-email-draft"
             >
               <Copy className="h-4 w-4 mr-2" />
-              Copier le brouillon
+              {t("invoices.copyDraft")}
             </Button>
             {emailTo && (
               <Button
@@ -771,7 +774,7 @@ export default function InvoiceView() {
                 data-testid="button-open-email-client"
               >
                 <Mail className="h-4 w-4 mr-2" />
-                Ouvrir dans l'email
+                {t("invoices.openInEmail")}
               </Button>
             )}
           </DialogFooter>

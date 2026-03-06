@@ -55,21 +55,23 @@ import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv-export";
 import type { Product, InsertProduct, StockMovementWithProduct, InventoryValuation } from "@shared/schema";
 
-const categories = [
-  "Sacs en plastique",
-  "Emballage alimentaire",
-  "Emballage industriel",
-  "Accessoires",
-  "Autres",
+const categoryKeys = [
+  { value: "Sacs en plastique", key: "stock.categories.plasticBags" },
+  { value: "Emballage alimentaire", key: "stock.categories.foodPackaging" },
+  { value: "Emballage industriel", key: "stock.categories.industrialPackaging" },
+  { value: "Accessoires", key: "stock.categories.accessories" },
+  { value: "Autres", key: "stock.categories.other" },
 ];
 
-const stockReasons = [
-  { value: "purchase", labelFr: "Achat", labelAr: "شراء" },
-  { value: "return", labelFr: "Retour", labelAr: "إرجاع" },
-  { value: "damaged", labelFr: "Endommagé", labelAr: "تالف" },
-  { value: "correction", labelFr: "Correction", labelAr: "تصحيح" },
-  { value: "transfer", labelFr: "Transfert", labelAr: "نقل" },
-  { value: "other", labelFr: "Autre", labelAr: "آخر" },
+const categories = categoryKeys.map(c => c.value);
+
+const stockReasonKeys = [
+  { value: "purchase", key: "stock.reasons.purchase" },
+  { value: "return", key: "stock.reasons.return" },
+  { value: "damaged", key: "stock.reasons.damaged" },
+  { value: "correction", key: "stock.reasons.correction" },
+  { value: "transfer", key: "stock.reasons.transfer" },
+  { value: "other", key: "stock.reasons.other" },
 ];
 
 function ProductFormDialog({
@@ -194,8 +196,8 @@ function ProductFormDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                {categoryKeys.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>{t(cat.key)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -319,14 +321,12 @@ function StockAdjustmentDialog({
   product,
   onSuccess,
   t,
-  language,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   product: Product | null;
   onSuccess: () => void;
   t: (key: string) => string;
-  language: string;
 }) {
   const { toast } = useToast();
   const [adjustmentType, setAdjustmentType] = useState<"in" | "out">("in");
@@ -373,9 +373,9 @@ function StockAdjustmentDialog({
   };
 
   const getReasonLabel = (reasonValue: string) => {
-    const reasonObj = stockReasons.find(r => r.value === reasonValue);
+    const reasonObj = stockReasonKeys.find(r => r.value === reasonValue);
     if (!reasonObj) return reasonValue;
-    return language === "ar" ? reasonObj.labelAr : reasonObj.labelFr;
+    return t(reasonObj.key);
   };
 
   return (
@@ -439,9 +439,9 @@ function StockAdjustmentDialog({
                   <SelectValue>{getReasonLabel(reason)}</SelectValue>
                 </SelectTrigger>
                 <SelectContent>
-                  {stockReasons.map((r) => (
+                  {stockReasonKeys.map((r) => (
                     <SelectItem key={r.value} value={r.value}>
-                      {language === "ar" ? r.labelAr : r.labelFr}
+                      {t(r.key)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -503,14 +503,14 @@ function StockHistoryDialog({
   });
 
   const getReasonLabel = (reason: string) => {
-    const reasonObj = stockReasons.find(r => r.value === reason);
+    const reasonObj = stockReasonKeys.find(r => r.value === reason);
     if (!reasonObj) return reason;
-    return language === "ar" ? reasonObj.labelAr : reasonObj.labelFr;
+    return t(reasonObj.key);
   };
 
   const formatDate = (dateStr: string) => {
     const date = new Date(dateStr);
-    return date.toLocaleDateString(language === "ar" ? "ar-DZ" : "fr-DZ", {
+    return date.toLocaleDateString(language === "ar" ? "ar-DZ" : language === "en" ? "en-US" : "fr-DZ", {
       year: "numeric",
       month: "short",
       day: "numeric",
@@ -705,7 +705,7 @@ export default function Stock() {
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/valuation"] });
-      toast({ title: `Produit "${productToDelete?.name || ""}" supprimé avec succès` });
+      toast({ title: t("stock.productDeleted") });
       setDeleteDialogOpen(false);
       setProductToDelete(null);
     },
@@ -778,9 +778,9 @@ export default function Stock() {
     </style></head><body>
     <div class="no-print" style="padding:10px;text-align:center;margin-bottom:10px;">
       <button onclick="window.print()" style="padding:8px 24px;font-size:14px;cursor:pointer;">
-        Imprimer les étiquettes
+        ${t("stock.printLabels")}
       </button>
-      <span style="margin-left:10px;">${productsToPrint.length} étiquette(s)</span>
+      <span style="margin-left:10px;">${productsToPrint.length} ${t("stock.labelCount")}</span>
     </div>
     <div class="grid">${labelsHtml}</div>
     <script>
@@ -873,13 +873,13 @@ export default function Stock() {
               exportToCsv(
                 products,
                 [
-                  { header: "Name", accessor: (p) => p.name },
-                  { header: "Category", accessor: (p) => p.category },
-                  { header: "Unit Price", accessor: (p) => p.unitPrice },
-                  { header: "Cost Price", accessor: (p) => p.costPrice },
-                  { header: "Stock", accessor: (p) => p.stockQuantity },
-                  { header: "Unit", accessor: (p) => p.unit },
-                  { header: "Barcode", accessor: (p) => p.barcode },
+                  { header: t("stock.csvName"), accessor: (p) => p.name },
+                  { header: t("stock.csvCategory"), accessor: (p) => p.category },
+                  { header: t("stock.csvUnitPrice"), accessor: (p) => p.unitPrice },
+                  { header: t("stock.csvCostPrice"), accessor: (p) => p.costPrice },
+                  { header: t("stock.csvStock"), accessor: (p) => p.stockQuantity },
+                  { header: t("stock.csvUnit"), accessor: (p) => p.unit },
+                  { header: t("stock.csvBarcode"), accessor: (p) => p.barcode },
                 ],
                 "stock"
               );
@@ -887,7 +887,7 @@ export default function Stock() {
             data-testid="button-export-csv"
           >
             <Download className="h-4 w-4 mr-2" />
-            Exporter CSV
+            {t("common.exportCsv")}
           </Button>
           <ImportExportSection t={t} />
           <Button
@@ -901,7 +901,7 @@ export default function Stock() {
             data-testid="button-print-all-barcodes"
           >
             <Printer className="h-4 w-4 mr-2" />
-            Imprimer Codes-barres
+            {t("stock.printBarcodes")}
           </Button>
           <Button onClick={handleNew} data-testid="button-add-product">
             <Plus className="h-4 w-4 mr-2" />
@@ -915,7 +915,7 @@ export default function Stock() {
           <Card className="border-primary/30 bg-primary/5">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                {language === "ar" ? "القيمة الإجمالية للمخزون" : language === "en" ? "Total Inventory Value" : "Valeur Totale du Stock"}
+                {t("stock.totalInventoryValue")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -923,7 +923,7 @@ export default function Stock() {
                 {inventoryValuation.totalInventoryValue.toLocaleString()} DZD
               </div>
               <p className="text-xs text-muted-foreground mt-1">
-                {language === "ar" ? "وفقاً لمعايير GAAP/IFRS" : language === "en" ? "Per GAAP/IFRS standards" : "Selon normes GAAP/IFRS"}
+                {t("stock.perGaapIfrs")}
               </p>
             </CardContent>
           </Card>
@@ -931,7 +931,7 @@ export default function Stock() {
           <Card>
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                {language === "ar" ? "المنتجات بالمخزون" : language === "en" ? "Products in Stock" : "Produits en Stock"}
+                {t("stock.productsInStock")}
               </CardTitle>
             </CardHeader>
             <CardContent>
@@ -946,7 +946,7 @@ export default function Stock() {
               <CardHeader className="pb-2">
                 <CardTitle className="text-sm font-medium flex items-center gap-2 text-red-600 dark:text-red-400">
                   <AlertTriangle className="h-4 w-4" />
-                  {language === "ar" ? "تحذيرات التكلفة" : language === "en" ? "Cost Warnings" : "Alertes Coût"}
+                  {t("stock.costWarnings")}
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -954,7 +954,7 @@ export default function Stock() {
                   {inventoryValuation.productsWithWarnings}
                 </div>
                 <p className="text-xs text-muted-foreground mt-1">
-                  {language === "ar" ? "منتجات بتكلفة = 0" : language === "en" ? "Products with cost = 0" : "Produits sans prix coût"}
+                  {t("stock.productsCostZero")}
                 </p>
               </CardContent>
             </Card>
@@ -1005,8 +1005,8 @@ export default function Stock() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("stock.allCategories")}</SelectItem>
-                {categories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                {categoryKeys.map((cat) => (
+                  <SelectItem key={cat.value} value={cat.value}>{t(cat.key)}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -1033,11 +1033,11 @@ export default function Stock() {
                     <TableHead>{t("stock.category")}</TableHead>
                     <TableHead className="text-right">{t("stock.unitPrice")}</TableHead>
                     <TableHead className="text-right">
-                      {language === "ar" ? "سعر التكلفة" : language === "en" ? "Cost Price" : "Prix Coût"}
+                      {t("stock.costPrice")}
                     </TableHead>
                     <TableHead className="text-right">{t("stock.stock")}</TableHead>
                     <TableHead className="text-right">
-                      {language === "ar" ? "قيمة المخزون" : language === "en" ? "Inventory Value" : "Valeur Stock"}
+                      {t("stock.inventoryValue")}
                     </TableHead>
                     <TableHead className="text-right">{t("stock.actions")}</TableHead>
                   </TableRow>
@@ -1069,7 +1069,7 @@ export default function Stock() {
                               {hasCostWarning && (
                                 <div className="text-xs text-red-600 dark:text-red-400 flex items-center gap-1 mt-1">
                                   <AlertTriangle className="h-3 w-3" />
-                                  {language === "ar" ? "تحديث سعر التكلفة" : language === "en" ? "Update cost price" : "Mettre à jour prix coût"}
+                                  {t("stock.updateCostPrice")}
                                 </div>
                               )}
                             </div>
@@ -1077,7 +1077,7 @@ export default function Stock() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary" className="font-normal">
-                            {product.category}
+                            {categoryKeys.find(c => c.value === product.category) ? t(categoryKeys.find(c => c.value === product.category)!.key) : product.category}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right font-mono">
@@ -1116,7 +1116,7 @@ export default function Stock() {
                               size="icon"
                               onClick={() => printBarcodeLabels([product])}
                               data-testid={`button-print-barcode-${product.id}`}
-                              title="Imprimer code-barres"
+                              title={t("stock.printBarcode")}
                             >
                               <Printer className="h-4 w-4" />
                             </Button>
@@ -1192,7 +1192,6 @@ export default function Stock() {
         product={adjustingProduct}
         onSuccess={() => setAdjustDialogOpen(false)}
         t={t}
-        language={language}
       />
 
       <StockHistoryDialog
@@ -1206,9 +1205,9 @@ export default function Stock() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogTitle>{t("stock.confirmDeleteTitle")}</DialogTitle>
             <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer le produit <strong>{productToDelete?.name}</strong> ? Cette action est irréversible.
+              {t("stock.confirmDeleteMessage").replace("{name}", productToDelete?.name || "")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -1221,7 +1220,7 @@ export default function Stock() {
               disabled={deleteMutation.isPending}
               data-testid="button-confirm-delete"
             >
-              {deleteMutation.isPending ? t("common.loading") : t("common.delete") || "Supprimer"}
+              {deleteMutation.isPending ? t("common.loading") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

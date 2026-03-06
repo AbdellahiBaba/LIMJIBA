@@ -57,7 +57,7 @@ export function AppSidebar() {
       permission: "invoices",
     },
     {
-      title: t("nav.quickInvoice") || "Facture Rapide",
+      title: t("nav.quickInvoice"),
       url: "/quick-invoice",
       icon: FilePen,
       testId: "nav-quick-invoice",
@@ -78,7 +78,7 @@ export function AppSidebar() {
       permission: "pos",
     },
     {
-      title: t("nav.sales") || "Ventes",
+      title: t("nav.sales"),
       url: "/sales",
       icon: History,
       testId: "nav-sales",
@@ -92,42 +92,42 @@ export function AppSidebar() {
       permission: "resellers",
     },
     {
-      title: t("nav.customers") || "Clients",
+      title: t("nav.customers"),
       url: "/customers",
       icon: UserCircle,
       testId: "nav-customers",
       permission: "customers",
     },
     {
-      title: "Fournisseurs",
+      title: t("nav.suppliers"),
       url: "/suppliers",
       icon: Truck,
       testId: "nav-suppliers",
       permission: "suppliers",
     },
     {
-      title: "Bons de Commande",
+      title: t("nav.purchaseOrders"),
       url: "/purchase-orders",
       icon: ClipboardList,
       testId: "nav-purchase-orders",
       permission: "purchase_orders",
     },
     {
-      title: t("nav.salaries") || "Salaries",
+      title: t("nav.salaries"),
       url: "/salaries",
       icon: Users,
       testId: "nav-salaries",
       permission: "salaries",
     },
     {
-      title: t("nav.expenses") || "Expenses",
+      title: t("nav.expenses"),
       url: "/expenses",
       icon: Receipt,
       testId: "nav-expenses",
       permission: "expenses",
     },
     {
-      title: "Rapports",
+      title: t("nav.reports"),
       url: "/reports",
       icon: BarChart3,
       testId: "nav-reports",
@@ -141,21 +141,21 @@ export function AppSidebar() {
       permission: "branding",
     },
     {
-      title: t("nav.profit") || "Profit Calculator",
+      title: t("nav.profit"),
       url: "/profit",
       icon: Calculator,
       testId: "nav-profit",
       permission: "reports",
     },
     {
-      title: "Journal d'audit",
+      title: t("nav.auditLog"),
       url: "/audit-log",
       icon: ScrollText,
       testId: "nav-audit-log",
       permission: "audit_log",
     },
     {
-      title: t("nav.settings") || "Parametres",
+      title: t("nav.settings"),
       url: "/settings",
       icon: Settings,
       testId: "nav-settings",
@@ -229,7 +229,7 @@ export function AppSidebar() {
             <Shield className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">{user?.username}</span>
             <Badge variant={user?.isAdmin ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
-              {user?.isAdmin ? "Admin" : "Staff"}
+              {user?.isAdmin ? t("settings.admin") : t("settings.staff")}
             </Badge>
           </div>
           <div className="flex items-center gap-2 text-xs text-muted-foreground">

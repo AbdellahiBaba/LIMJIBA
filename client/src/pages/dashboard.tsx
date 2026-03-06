@@ -67,12 +67,13 @@ interface FilteredStats {
 
 type PeriodKey = "today" | "week" | "month" | "year";
 
-const periodOptions: { key: PeriodKey; label: string }[] = [
-  { key: "today", label: "Aujourd'hui" },
-  { key: "week", label: "Cette semaine" },
-  { key: "month", label: "Ce mois" },
-  { key: "year", label: "Cette année" },
-];
+const periodKeys: PeriodKey[] = ["today", "week", "month", "year"];
+const periodTranslationKeys: Record<PeriodKey, string> = {
+  today: "dashboard.today",
+  week: "dashboard.thisWeek",
+  month: "dashboard.thisMonth",
+  year: "dashboard.thisYear",
+};
 
 interface DashboardSettings {
   showStatCards: boolean;
@@ -308,18 +309,18 @@ export default function Dashboard() {
           </PopoverTrigger>
           <PopoverContent className="w-72" align="end">
             <div className="space-y-4">
-              <h4 className="font-medium text-sm">Personnaliser l'affichage</h4>
+              <h4 className="font-medium text-sm">{t("dashboard.customizeDisplay")}</h4>
               <div className="space-y-2">
                 {(settings.widgetOrder || defaultWidgetOrder).map((key, idx) => {
                   const widgetLabels: Record<string, { label: string; settingKey: keyof DashboardSettings }> = {
-                    statCards: { label: "Statistiques", settingKey: "showStatCards" },
-                    revenueExpenses: { label: "Revenus/Dépenses", settingKey: "showStatCards" },
-                    recentActivity: { label: "Activité récente", settingKey: "showRecentActivity" },
-                    lowStock: { label: "Stock bas", settingKey: "showLowStock" },
-                    quickActions: { label: "Actions rapides", settingKey: "showQuickActions" },
-                    companyInfo: { label: "Info entreprise", settingKey: "showCompanyInfo" },
-                    salesChart: { label: "Graphique ventes", settingKey: "showSalesChart" },
-                    topProducts: { label: "Top produits", settingKey: "showTopProducts" },
+                    statCards: { label: t("dashboard.statistics"), settingKey: "showStatCards" },
+                    revenueExpenses: { label: t("dashboard.revenueExpenses"), settingKey: "showStatCards" },
+                    recentActivity: { label: t("dashboard.recentActivity"), settingKey: "showRecentActivity" },
+                    lowStock: { label: t("dashboard.lowStock"), settingKey: "showLowStock" },
+                    quickActions: { label: t("dashboard.quickActions"), settingKey: "showQuickActions" },
+                    companyInfo: { label: t("dashboard.companyInfoWidget"), settingKey: "showCompanyInfo" },
+                    salesChart: { label: t("dashboard.salesChart"), settingKey: "showSalesChart" },
+                    topProducts: { label: t("dashboard.topProductsWidget"), settingKey: "showTopProducts" },
                   };
                   const w = widgetLabels[key];
                   if (!w) return null;
@@ -355,7 +356,7 @@ export default function Dashboard() {
                 onClick={resetToDefaults}
                 data-testid="button-reset-dashboard"
               >
-                Réinitialiser
+                {t("common.reset")}
               </Button>
             </div>
           </PopoverContent>
@@ -363,16 +364,16 @@ export default function Dashboard() {
       </div>
 
       <div className="flex flex-wrap gap-2" data-testid="period-selector">
-        {periodOptions.map((opt) => (
+        {periodKeys.map((key) => (
           <Button
-            key={opt.key}
-            variant={selectedPeriod === opt.key ? "default" : "outline"}
+            key={key}
+            variant={selectedPeriod === key ? "default" : "outline"}
             size="sm"
-            className={`toggle-elevate ${selectedPeriod === opt.key ? "toggle-elevated" : ""}`}
-            onClick={() => setSelectedPeriod(opt.key)}
-            data-testid={`button-period-${opt.key}`}
+            className={`toggle-elevate ${selectedPeriod === key ? "toggle-elevated" : ""}`}
+            onClick={() => setSelectedPeriod(key)}
+            data-testid={`button-period-${key}`}
           >
-            {opt.label}
+            {t(periodTranslationKeys[key])}
           </Button>
         ))}
       </div>
@@ -472,27 +473,27 @@ export default function Dashboard() {
             ) : (
               <>
                 <StatCard
-                  title="Valeur Moyenne Commande"
+                  title={t("dashboard.avgOrderValue")}
                   value={`${(filteredStats?.avgOrderValue ?? 0).toLocaleString()} DZD`}
                   icon={Receipt}
                   testId="stat-avg-order-value"
                 />
                 <StatCard
-                  title="Crédit en Cours"
+                  title={t("dashboard.outstandingCredit")}
                   value={`${(filteredStats?.outstandingCredit ?? 0).toLocaleString()} DZD`}
                   icon={CreditCard}
                   variant={(filteredStats?.outstandingCredit ?? 0) > 0 ? "warning" : "default"}
                   testId="stat-outstanding-credit"
                 />
                 <StatCard
-                  title="Meilleur Client"
+                  title={t("dashboard.topCustomer")}
                   value={filteredStats?.topCustomer?.name ?? "—"}
                   icon={Crown}
                   description={`${(filteredStats?.topCustomer?.amount ?? 0).toLocaleString()} DZD`}
                   testId="stat-top-customer"
                 />
                 <StatCard
-                  title="Revenu Net"
+                  title={t("dashboard.netIncome")}
                   value={`${(filteredStats?.netIncome ?? 0).toLocaleString()} DZD`}
                   icon={TrendingUp}
                   variant={(filteredStats?.netIncome ?? 0) >= 0 ? "success" : "warning"}
@@ -504,7 +505,7 @@ export default function Dashboard() {
 
           <Card data-testid="revenue-vs-expenses-card">
             <CardHeader className="flex flex-row items-center justify-between gap-2 p-3 sm:p-4 pb-2">
-              <CardTitle className="text-base sm:text-lg">Revenus vs Dépenses</CardTitle>
+              <CardTitle className="text-base sm:text-lg">{t("dashboard.revenueVsExpenses")}</CardTitle>
               <BarChart3 className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent className="p-3 sm:p-4 pt-0 space-y-4">
@@ -517,7 +518,7 @@ export default function Dashboard() {
               ) : (
                 <>
                   <div className="flex items-center justify-between gap-2 text-sm">
-                    <span className="text-muted-foreground">Revenus</span>
+                    <span className="text-muted-foreground">{t("dashboard.revenue")}</span>
                     <span className="font-semibold text-green-600 dark:text-green-400" data-testid="text-total-revenue">
                       {(filteredStats?.totalRevenue ?? 0).toLocaleString()} DZD
                     </span>
@@ -535,13 +536,13 @@ export default function Dashboard() {
                     />
                   </div>
                   <div className="flex items-center justify-between gap-2 text-sm">
-                    <span className="text-muted-foreground">Dépenses</span>
+                    <span className="text-muted-foreground">{t("dashboard.expensesLabel")}</span>
                     <span className="font-semibold text-red-600 dark:text-red-400" data-testid="text-total-expenses">
                       {(filteredStats?.totalExpenses ?? 0).toLocaleString()} DZD
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2 pt-2 border-t text-sm">
-                    <span className="font-medium">Résultat Net</span>
+                    <span className="font-medium">{t("dashboard.netResult")}</span>
                     <span
                       className={`font-bold ${(filteredStats?.netIncome ?? 0) >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
                       data-testid="text-net-result"
@@ -746,18 +747,18 @@ export default function Dashboard() {
                 </div>
                 <div className="flex justify-between gap-2">
                   <span className="text-muted-foreground">{t("common.description")}</span>
-                  <span className="font-medium text-right text-[10px] sm:text-sm">Fabrication d'Emballage en Plastique</span>
+                  <span className="font-medium text-right text-[10px] sm:text-sm">{t("company.tagline")}</span>
                 </div>
                 <div className="flex justify-between gap-2">
                   <span className="text-muted-foreground">{t("common.address")}</span>
                   <span className="font-medium text-right text-[10px] sm:text-sm">Village Zaitout, Hammam Dalaa - W M'sila</span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-muted-foreground">Carte Artisan</span>
+                  <span className="text-muted-foreground">{t("invoices.artisanCard")}</span>
                   <span className="font-medium">28/ 00 - 2896688A24</span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-muted-foreground">N. Article</span>
+                  <span className="text-muted-foreground">{t("invoices.articleNumber")}</span>
                   <span className="font-medium">101082709</span>
                 </div>
                 <div className="flex justify-between gap-2">
@@ -775,7 +776,7 @@ export default function Dashboard() {
           {settings.showSalesChart && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-2 p-3 sm:p-4 pb-2">
-                <CardTitle className="text-base sm:text-lg">Ventes Mensuelles</CardTitle>
+                <CardTitle className="text-base sm:text-lg">{t("dashboard.monthlySales")}</CardTitle>
                 <BarChart3 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent className="p-3 sm:p-4 pt-0">
@@ -795,7 +796,7 @@ export default function Dashboard() {
                         }}
                         labelStyle={{ color: "hsl(var(--foreground))" }}
                       />
-                      <Bar dataKey="sales" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name="Ventes" />
+                      <Bar dataKey="sales" fill="hsl(var(--primary))" radius={[4, 4, 0, 0]} name={t("sales.title")} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
@@ -810,7 +811,7 @@ export default function Dashboard() {
           {settings.showTopProducts && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between gap-2 p-3 sm:p-4 pb-2">
-                <CardTitle className="text-base sm:text-lg">Produits les Plus Vendus</CardTitle>
+                <CardTitle className="text-base sm:text-lg">{t("dashboard.topSellingProducts")}</CardTitle>
                 <TrendingUp className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
               <CardContent className="p-3 sm:p-4 pt-0">
@@ -838,7 +839,7 @@ export default function Dashboard() {
                           <span className="text-xs sm:text-sm font-medium truncate">{product.name}</span>
                         </div>
                         <div className="text-right flex-shrink-0">
-                          <div className="text-xs sm:text-sm font-semibold">{product.quantity} vendus</div>
+                          <div className="text-xs sm:text-sm font-semibold">{product.quantity} {t("dashboard.sold")}</div>
                           <div className="text-[10px] sm:text-xs text-muted-foreground">{product.revenue.toLocaleString()} DZD</div>
                         </div>
                       </div>

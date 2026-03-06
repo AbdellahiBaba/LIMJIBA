@@ -368,7 +368,7 @@ export default function Resellers() {
   const handlePrint = () => {
     const resellersToPrint = filteredResellers || [];
     if (resellersToPrint.length === 0) {
-      toast({ title: "Aucun revendeur à imprimer", variant: "destructive" });
+      toast({ title: t("resellers.noneToprint"), variant: "destructive" });
       return;
     }
 
@@ -494,7 +494,7 @@ export default function Resellers() {
                 variant="destructive"
                 size="sm"
                 onClick={() => {
-                  if (window.confirm("Réinitialiser les seuils de TOUS les revendeurs ?\n\nCela remettra à zéro :\n• Tous les totaux d'achats\n• Le pool de récompense\n• Les statuts de gagnant\n\nCette action est irréversible.")) {
+                  if (window.confirm(t("resellers.confirmResetThresholds"))) {
                     resetThresholdsMutation.mutate();
                   }
                 }}
@@ -502,7 +502,7 @@ export default function Resellers() {
                 data-testid="button-reset-thresholds"
               >
                 <RotateCcw className="h-4 w-4 mr-2" />
-                {resetThresholdsMutation.isPending ? t("common.loading") : "Réinitialiser les seuils"}
+                {resetThresholdsMutation.isPending ? t("common.loading") : t("resellers.resetThresholds")}
               </Button>
               <Button
                 variant="outline"
@@ -703,7 +703,7 @@ export default function Resellers() {
               disabled={deleteMutation.isPending}
               data-testid="button-confirm-delete"
             >
-              {deleteMutation.isPending ? t("common.loading") : t("common.delete") || "Supprimer"}
+              {deleteMutation.isPending ? t("common.loading") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>

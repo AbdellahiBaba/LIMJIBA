@@ -785,7 +785,7 @@ export default function SalariesPage() {
               disabled={deleteEmployeeMutation.isPending}
               data-testid="button-confirm-delete-employee"
             >
-              {deleteEmployeeMutation.isPending ? t("common.loading") : t("common.delete") || "Supprimer"}
+              {deleteEmployeeMutation.isPending ? t("common.loading") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -809,7 +809,7 @@ export default function SalariesPage() {
               disabled={deletePaymentMutation.isPending}
               data-testid="button-confirm-delete-payment"
             >
-              {deletePaymentMutation.isPending ? t("common.loading") : t("common.delete") || "Supprimer"}
+              {deletePaymentMutation.isPending ? t("common.loading") : t("common.delete")}
             </Button>
           </DialogFooter>
         </DialogContent>
