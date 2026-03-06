@@ -1529,6 +1529,15 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/resellers/reset-thresholds", requireAdmin, async (req, res) => {
+    try {
+      await storage.resetAllThresholds();
+      res.status(204).send();
+    } catch (error) {
+      handleError(res, "reset all thresholds", error);
+    }
+  });
+
   // ===================== ADMIN-ONLY ROUTES =====================
   // Employees, Salary Payments, Expenses, Profit Stats - require admin role
   app.use("/api/employees", requireAdmin);

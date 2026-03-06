@@ -39,6 +39,7 @@ import {
   Settings,
   Check,
   Printer,
+  RotateCcw,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Reseller, InsertReseller } from "@shared/schema";
@@ -325,6 +326,17 @@ export default function Resellers() {
     },
   });
 
+  const resetThresholdsMutation = useMutation({
+    mutationFn: () => apiRequest("POST", "/api/resellers/reset-thresholds"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/resellers"] });
+      toast({ title: "Seuils réinitialisés", description: "Tous les achats et statuts de récompense ont été remis à zéro." });
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
+    },
+  });
+
   const filteredResellers = resellers?.filter((reseller) =>
     reseller.name.toLowerCase().includes(search.toLowerCase()) ||
     (reseller.phone?.includes(search) ?? false)
@@ -477,9 +489,24 @@ export default function Resellers() {
               <Sparkles className="h-5 w-5 text-primary" />
               {t("resellers.rewardDraw")}
             </CardTitle>
-            <div className="flex gap-2">
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant="destructive"
+                size="sm"
+                onClick={() => {
+                  if (window.confirm("Réinitialiser les seuils de TOUS les revendeurs ?\n\nCela remettra à zéro :\n• Tous les totaux d'achats\n• Le pool de récompense\n• Les statuts de gagnant\n\nCette action est irréversible.")) {
+                    resetThresholdsMutation.mutate();
+                  }
+                }}
+                disabled={resetThresholdsMutation.isPending || !resellers?.length}
+                data-testid="button-reset-thresholds"
+              >
+                <RotateCcw className="h-4 w-4 mr-2" />
+                {resetThresholdsMutation.isPending ? t("common.loading") : "Réinitialiser les seuils"}
+              </Button>
               <Button
                 variant="outline"
+                size="sm"
                 onClick={() => resetPoolMutation.mutate()}
                 disabled={resetPoolMutation.isPending || inPoolCount === 0}
                 data-testid="button-reset-pool"
@@ -488,6 +515,7 @@ export default function Resellers() {
                 {t("resellers.resetPool")}
               </Button>
               <Button
+                size="sm"
                 onClick={() => drawWinnerMutation.mutate()}
                 disabled={drawWinnerMutation.isPending || inPoolCount === 0}
                 data-testid="button-draw-winner"

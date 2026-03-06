@@ -107,6 +107,7 @@ export interface IStorage {
   addResellerPurchase(id: string, amount: number): Promise<Reseller | undefined>;
   drawWinner(): Promise<Reseller | undefined>;
   resetRewardPool(): Promise<void>;
+  resetAllThresholds(): Promise<void>;
 
   getEmployees(): Promise<Employee[]>;
   getEmployee(id: string): Promise<Employee | undefined>;
@@ -663,6 +664,20 @@ export class DatabaseStorage implements IStorage {
   async resetRewardPool(): Promise<void> {
     await withRetry(async () => {
       await db.update(resellers).set({ inRewardPool: false }).where(eq(resellers.inRewardPool, true));
+    });
+    
+    cache.delete(CACHE_KEYS.RESELLERS);
+    cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+  }
+
+  async resetAllThresholds(): Promise<void> {
+    await withRetry(async () => {
+      await db.update(resellers).set({
+        totalPurchases: 0,
+        inRewardPool: false,
+        isWinner: false,
+        wonAt: null,
+      });
     });
     
     cache.delete(CACHE_KEYS.RESELLERS);
