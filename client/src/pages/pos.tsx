@@ -547,7 +547,7 @@ export default function POS() {
           ) : filteredProducts && filteredProducts.length > 0 ? (
             <div className="space-y-3">
               {(() => {
-                const favoriteProducts = filteredProducts.filter(p => p.isFavorite);
+                const favoriteProducts = filteredProducts.filter(p => p.isFavorite && p.stockQuantity > 0);
                 if (favoriteProducts.length === 0) return null;
                 return (
                   <div data-testid="section-favorites">
@@ -558,25 +558,18 @@ export default function POS() {
                     <div className="grid grid-cols-1 min-[400px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 mb-3">
                       {favoriteProducts.map((product) => {
                         const inCart = cart.find((item) => item.productId === product.id);
-                        const isOutOfStock = product.stockQuantity <= 0;
                         return (
                           <button
                             key={product.id}
                             onClick={() => addToCart(product)}
-                            disabled={isOutOfStock}
                             className={`relative p-2 sm:p-4 rounded-md border-2 border-yellow-400/50 text-left hover-elevate active-elevate-2 min-h-[80px] ${
                               inCart ? "border-primary bg-primary/5" : "bg-card"
-                            } ${isOutOfStock ? "opacity-50 cursor-not-allowed" : ""}`}
+                            }`}
                             data-testid={`button-favorite-product-${product.id}`}
                           >
                             <Badge variant="secondary" className="absolute top-1 right-1 text-[8px] sm:text-xs px-1 sm:px-2" data-testid={`badge-stock-${product.id}`}>
                               {product.stockQuantity}
                             </Badge>
-                            {isOutOfStock && (
-                              <div className="absolute inset-0 bg-background/70 rounded-md flex items-center justify-center z-10">
-                                <span className="text-xs font-semibold text-destructive">{t("pos.outOfStock")}</span>
-                              </div>
-                            )}
                             <Star className="h-3 w-3 text-yellow-500 fill-yellow-500 absolute top-1 left-1" />
                             <div className="flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded bg-muted mx-auto mb-1 sm:mb-2">
                               <Package className="h-4 w-4 sm:h-6 sm:w-6 text-muted-foreground" />
@@ -601,27 +594,20 @@ export default function POS() {
                 );
               })()}
               <div className="grid grid-cols-1 min-[400px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
-                {filteredProducts.map((product) => {
+                {filteredProducts.filter(p => p.stockQuantity > 0).map((product) => {
                   const inCart = cart.find((item) => item.productId === product.id);
-                  const isOutOfStock = product.stockQuantity <= 0;
                   return (
                     <button
                       key={product.id}
                       onClick={() => addToCart(product)}
-                      disabled={isOutOfStock}
                       className={`relative p-2 sm:p-4 rounded-md border text-left hover-elevate active-elevate-2 min-h-[80px] ${
                         inCart ? "border-primary bg-primary/5" : "bg-card"
-                      } ${isOutOfStock ? "cursor-not-allowed" : ""}`}
+                      }`}
                       data-testid={`button-product-${product.id}`}
                     >
                       <Badge variant="secondary" className="absolute top-1 right-1 text-[8px] sm:text-xs px-1 sm:px-2" data-testid={`badge-stock-${product.id}`}>
                         {product.stockQuantity}
                       </Badge>
-                      {isOutOfStock && (
-                        <div className="absolute inset-0 bg-background/70 rounded-md flex items-center justify-center z-10">
-                          <span className="text-xs font-semibold text-destructive">{t("pos.outOfStock")}</span>
-                        </div>
-                      )}
                       <div className="flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded bg-muted mx-auto mb-1 sm:mb-2">
                         <Package className="h-4 w-4 sm:h-6 sm:w-6 text-muted-foreground" />
                       </div>

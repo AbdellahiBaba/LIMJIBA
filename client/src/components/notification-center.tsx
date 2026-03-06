@@ -10,6 +10,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { useLanguage } from "@/contexts/language-context";
 
 interface Notification {
   id: string;
@@ -60,7 +61,9 @@ function getIcon(type: string) {
 
 export function NotificationCenter() {
   const [, setLocation] = useLocation();
+  const { t } = useLanguage();
   const [dismissedIds, setDismissedIds] = useState<string[]>(getDismissedIds);
+  const [open, setOpen] = useState(false);
 
   const { data } = useQuery<NotificationsResponse>({
     queryKey: ["/api/notifications"],
@@ -75,19 +78,21 @@ export function NotificationCenter() {
 
   const handleDismiss = useCallback((e: React.MouseEvent, id: string) => {
     e.stopPropagation();
+    e.preventDefault();
     dismissId(id);
-    setDismissedIds(getDismissedIds());
+    setDismissedIds([...getDismissedIds()]);
   }, []);
 
   const handleClick = useCallback(
     (link: string) => {
+      setOpen(false);
       setLocation(link);
     },
     [setLocation]
   );
 
   return (
-    <Popover>
+    <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
           variant="ghost"
@@ -108,7 +113,7 @@ export function NotificationCenter() {
       </PopoverTrigger>
       <PopoverContent className="w-80 p-0" align="end">
         <div className="p-3 border-b flex items-center justify-between gap-2">
-          <h4 className="font-medium">Notifications</h4>
+          <h4 className="font-medium">{t("common.notifications")}</h4>
           {count > 0 && (
             <Badge variant="secondary" className="text-xs">
               {count}
@@ -118,7 +123,7 @@ export function NotificationCenter() {
         <ScrollArea className="max-h-80">
           {count === 0 ? (
             <div className="p-4 text-center text-muted-foreground text-sm">
-              Aucune notification
+              {t("common.noNotifications")}
             </div>
           ) : (
             <div className="p-2 space-y-1">
@@ -135,12 +140,12 @@ export function NotificationCenter() {
                       <p className="truncate font-medium">{notification.title}</p>
                       {notification.severity === "critical" && (
                         <Badge variant="destructive" className="text-[10px] px-1 py-0">
-                          critical
+                          {t("common.critical")}
                         </Badge>
                       )}
                       {notification.severity === "warning" && (
                         <Badge className="text-[10px] px-1 py-0 bg-orange-500 text-white border-orange-600">
-                          warning
+                          {t("common.warning")}
                         </Badge>
                       )}
                     </div>
@@ -154,7 +159,7 @@ export function NotificationCenter() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-5 w-5 shrink-0"
+                    className="h-5 w-5 shrink-0 hover:bg-destructive/10"
                     onClick={(e) => handleDismiss(e, notification.id)}
                     data-testid={`button-dismiss-notification-${notification.id}`}
                   >

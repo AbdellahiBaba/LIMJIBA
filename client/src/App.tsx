@@ -13,15 +13,7 @@ import { LanguageSwitcher } from "@/components/language-switcher";
 import { CommandBar } from "@/components/command-bar";
 import { NotificationCenter } from "@/components/notification-center";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { LogOut, Loader2, Bell, AlertTriangle, Package, Search } from "lucide-react";
-import type { Product } from "@shared/schema";
+import { LogOut, Loader2, Search } from "lucide-react";
 import { lazy, Suspense } from "react";
 import Dashboard from "@/pages/dashboard";
 import Stock from "@/pages/stock";
@@ -76,69 +68,6 @@ function Router() {
   );
 }
 
-function LowStockNotifications() {
-  const { data: lowStockProducts = [] } = useQuery<{ id: string; name: string; stockQuantity: number; lowStockThreshold: number }[]>({
-    queryKey: ["/api/dashboard/low-stock"],
-    refetchInterval: 120000, // Check every 2 minutes
-  });
-
-  const alertCount = lowStockProducts.length;
-
-  return (
-    <Popover>
-      <PopoverTrigger asChild>
-        <Button variant="ghost" size="icon" className="relative" data-testid="button-notifications">
-          <Bell className="h-4 w-4" />
-          {alertCount > 0 && (
-            <Badge className="absolute -top-1 -right-1 h-4 w-4 p-0 flex items-center justify-center text-[10px]">
-              {alertCount}
-            </Badge>
-          )}
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-80 p-0" align="end">
-        <div className="p-3 border-b">
-          <h4 className="font-medium flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-destructive" />
-            Alertes stock bas
-          </h4>
-        </div>
-        <ScrollArea className="max-h-64">
-          {alertCount === 0 ? (
-            <div className="p-4 text-center text-muted-foreground text-sm">
-              Aucune alerte de stock
-            </div>
-          ) : (
-            <div className="p-2 space-y-1">
-              {lowStockProducts.map((product) => (
-                <Link key={product.id} href="/stock">
-                  <div className="flex items-center gap-2 p-2 rounded hover-elevate text-sm cursor-pointer">
-                    <Package className="h-4 w-4 text-muted-foreground" />
-                    <div className="flex-1 min-w-0">
-                      <p className="truncate font-medium">{product.name}</p>
-                      <p className="text-xs text-muted-foreground">
-                        Stock: <span className="text-destructive font-medium">{product.stockQuantity}</span> / Seuil: {product.lowStockThreshold}
-                      </p>
-                    </div>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          )}
-        </ScrollArea>
-        {alertCount > 0 && (
-          <div className="p-2 border-t">
-            <Link href="/stock">
-              <Button variant="outline" size="sm" className="w-full" data-testid="button-view-stock">
-                Voir le stock
-              </Button>
-            </Link>
-          </div>
-        )}
-      </PopoverContent>
-    </Popover>
-  );
-}
 
 function AuthenticatedApp() {
   const { t, branding } = useLanguage();
@@ -201,7 +130,6 @@ function AuthenticatedApp() {
                 <Search className="h-4 w-4" />
               </Button>
               <NotificationCenter />
-              <LowStockNotifications />
               <LanguageSwitcher />
               <ThemeToggle />
               <Button
