@@ -43,8 +43,11 @@ import {
   Mail,
   MapPin,
   CreditCard,
+  Link2,
+  Download,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { exportToCsv } from "@/lib/csv-export";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -200,10 +203,34 @@ export default function Customers() {
             Gestion de la base de données clients
           </p>
         </div>
-        <Button onClick={handleAddCustomer} data-testid="button-add-customer">
-          <Plus className="h-4 w-4 mr-2" />
-          Nouveau Client
-        </Button>
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (!customers) return;
+              exportToCsv(
+                customers,
+                [
+                  { header: "Name", accessor: (c) => c.name },
+                  { header: "Phone", accessor: (c) => c.phone },
+                  { header: "Email", accessor: (c) => c.email },
+                  { header: "Address", accessor: (c) => c.address },
+                  { header: "Credit Limit", accessor: (c) => c.creditLimit },
+                  { header: "Balance", accessor: (c) => c.currentBalance },
+                ],
+                "clients"
+              );
+            }}
+            data-testid="button-export-csv"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Exporter CSV
+          </Button>
+          <Button onClick={handleAddCustomer} data-testid="button-add-customer">
+            <Plus className="h-4 w-4 mr-2" />
+            Nouveau Client
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -298,6 +325,24 @@ export default function Customers() {
                               </Button>
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                data-testid={`button-copy-portal-${customer.id}`}
+                                onClick={async () => {
+                                  try {
+                                    const res = await fetch(`/api/customers/${customer.id}/portal-token`, { credentials: "include" });
+                                    const data = await res.json();
+                                    navigator.clipboard.writeText(
+                                      window.location.origin + data.url
+                                    );
+                                    toast({ title: "Lien copié" });
+                                  } catch {
+                                    toast({ title: "Erreur", description: "Impossible de générer le lien", variant: "destructive" });
+                                  }
+                                }}
+                              >
+                                <Link2 className="h-4 w-4 mr-2" />
+                                Copier le lien portail
+                              </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEditCustomer(customer)}>
                                 <Pencil className="h-4 w-4 mr-2" />
                                 Modifier

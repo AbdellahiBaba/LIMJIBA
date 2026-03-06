@@ -7,6 +7,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
+import { Progress } from "@/components/ui/progress";
 import {
   Popover,
   PopoverContent,
@@ -28,6 +29,8 @@ import {
   ArrowRight,
   Receipt,
   Wallet,
+  CreditCard,
+  Crown,
 } from "lucide-react";
 import {
   BarChart,
@@ -43,6 +46,29 @@ import type { DashboardStats, RecentActivity } from "@shared/schema";
 type SalesTrend = { month: string; sales: number; revenue: number };
 type TopProduct = { name: string; quantity: number; revenue: number };
 type LowStockProduct = { id: string; name: string; stockQuantity: number; lowStockThreshold: number };
+
+interface FilteredStats {
+  period: string;
+  startDate: string;
+  endDate: string;
+  totalRevenue: number;
+  totalExpenses: number;
+  netIncome: number;
+  salesCount: number;
+  invoicesCount: number;
+  avgOrderValue: number;
+  outstandingCredit: number;
+  topCustomer: { name: string; amount: number };
+}
+
+type PeriodKey = "today" | "week" | "month" | "year";
+
+const periodOptions: { key: PeriodKey; label: string }[] = [
+  { key: "today", label: "Aujourd'hui" },
+  { key: "week", label: "Cette semaine" },
+  { key: "month", label: "Ce mois" },
+  { key: "year", label: "Cette année" },
+];
 
 interface DashboardSettings {
   showStatCards: boolean;
@@ -96,6 +122,7 @@ function StatCard({
   description,
   variant = "default",
   onClick,
+  testId,
 }: {
   title: string;
   value: string | number;
@@ -103,6 +130,7 @@ function StatCard({
   description?: string;
   variant?: "default" | "warning" | "success";
   onClick?: () => void;
+  testId?: string;
 }) {
   const iconColors = {
     default: "text-primary",
@@ -119,7 +147,7 @@ function StatCard({
         <Icon className={`h-3 w-3 sm:h-4 sm:w-4 flex-shrink-0 ${iconColors[variant]}`} />
       </CardHeader>
       <CardContent className="p-3 sm:p-4 pt-0">
-        <div className="text-lg sm:text-2xl font-bold truncate" data-testid={`stat-${title.toLowerCase().replace(/\s+/g, '-')}`}>
+        <div className="text-lg sm:text-2xl font-bold truncate" data-testid={testId || `stat-${title.toLowerCase().replace(/\s+/g, '-')}`}>
           {value}
         </div>
         {description && (
@@ -175,29 +203,50 @@ function getActivityBadgeVariant(type: string): "default" | "secondary" | "destr
 export default function Dashboard() {
   const { t } = useLanguage();
   const { settings, updateSetting, resetToDefaults } = useDashboardSettings();
+  const [selectedPeriod, setSelectedPeriod] = useState<PeriodKey>("month");
+
   const { data: stats, isLoading } = useQuery<DashboardStats>({
     queryKey: ["/api/dashboard/stats"],
+    staleTime: 30000,
   });
   
   const { data: salesTrends, isLoading: trendsLoading } = useQuery<SalesTrend[]>({
     queryKey: ["/api/dashboard/sales-trends"],
+    staleTime: 30000,
   });
   
   const { data: topProducts, isLoading: topLoading } = useQuery<TopProduct[]>({
     queryKey: ["/api/dashboard/top-products"],
+    staleTime: 30000,
   });
 
   const { data: recentActivity, isLoading: activityLoading } = useQuery<RecentActivity[]>({
     queryKey: ["/api/dashboard/recent-activity"],
+    staleTime: 30000,
   });
 
   const { data: lowStockProducts, isLoading: lowStockLoading } = useQuery<LowStockProduct[]>({
     queryKey: ["/api/dashboard/low-stock"],
+    staleTime: 30000,
+  });
+
+  const { data: filteredStats, isLoading: filteredLoading } = useQuery<FilteredStats>({
+    queryKey: ["/api/dashboard/stats-filtered", selectedPeriod],
+    queryFn: async () => {
+      const res = await fetch(`/api/dashboard/stats-filtered?period=${selectedPeriod}`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch filtered stats");
+      return res.json();
+    },
+    staleTime: 30000,
   });
 
   const navigateToStockLowFilter = () => {
     window.location.href = "/stock?filter=low";
   };
+
+  const revenuePercent = filteredStats && (filteredStats.totalRevenue + filteredStats.totalExpenses) > 0
+    ? Math.round((filteredStats.totalRevenue / (filteredStats.totalRevenue + filteredStats.totalExpenses)) * 100)
+    : 50;
 
   return (
     <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
@@ -298,6 +347,21 @@ export default function Dashboard() {
         </Popover>
       </div>
 
+      <div className="flex flex-wrap gap-2" data-testid="period-selector">
+        {periodOptions.map((opt) => (
+          <Button
+            key={opt.key}
+            variant={selectedPeriod === opt.key ? "default" : "outline"}
+            size="sm"
+            className={`toggle-elevate ${selectedPeriod === opt.key ? "toggle-elevated" : ""}`}
+            onClick={() => setSelectedPeriod(opt.key)}
+            data-testid={`button-period-${opt.key}`}
+          >
+            {opt.label}
+          </Button>
+        ))}
+      </div>
+
       {settings.showStatCards && (
         <>
           <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-5">
@@ -381,6 +445,99 @@ export default function Dashboard() {
               </>
             )}
           </div>
+
+          <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-4" data-testid="filtered-kpi-row">
+            {filteredLoading ? (
+              <>
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+                <StatCardSkeleton />
+              </>
+            ) : (
+              <>
+                <StatCard
+                  title="Valeur Moyenne Commande"
+                  value={`${(filteredStats?.avgOrderValue ?? 0).toLocaleString()} DZD`}
+                  icon={Receipt}
+                  testId="stat-avg-order-value"
+                />
+                <StatCard
+                  title="Crédit en Cours"
+                  value={`${(filteredStats?.outstandingCredit ?? 0).toLocaleString()} DZD`}
+                  icon={CreditCard}
+                  variant={(filteredStats?.outstandingCredit ?? 0) > 0 ? "warning" : "default"}
+                  testId="stat-outstanding-credit"
+                />
+                <StatCard
+                  title="Meilleur Client"
+                  value={filteredStats?.topCustomer?.name ?? "—"}
+                  icon={Crown}
+                  description={`${(filteredStats?.topCustomer?.amount ?? 0).toLocaleString()} DZD`}
+                  testId="stat-top-customer"
+                />
+                <StatCard
+                  title="Revenu Net"
+                  value={`${(filteredStats?.netIncome ?? 0).toLocaleString()} DZD`}
+                  icon={TrendingUp}
+                  variant={(filteredStats?.netIncome ?? 0) >= 0 ? "success" : "warning"}
+                  testId="stat-net-income"
+                />
+              </>
+            )}
+          </div>
+
+          <Card data-testid="revenue-vs-expenses-card">
+            <CardHeader className="flex flex-row items-center justify-between gap-2 p-3 sm:p-4 pb-2">
+              <CardTitle className="text-base sm:text-lg">Revenus vs Dépenses</CardTitle>
+              <BarChart3 className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent className="p-3 sm:p-4 pt-0 space-y-4">
+              {filteredLoading ? (
+                <div className="space-y-3">
+                  <Skeleton className="h-4 w-full" />
+                  <Skeleton className="h-6 w-full" />
+                  <Skeleton className="h-4 w-full" />
+                </div>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between gap-2 text-sm">
+                    <span className="text-muted-foreground">Revenus</span>
+                    <span className="font-semibold text-green-600 dark:text-green-400" data-testid="text-total-revenue">
+                      {(filteredStats?.totalRevenue ?? 0).toLocaleString()} DZD
+                    </span>
+                  </div>
+                  <div className="relative h-6 rounded-md overflow-hidden bg-muted">
+                    <div
+                      className="absolute inset-y-0 left-0 bg-green-500 rounded-l-md transition-all duration-500"
+                      style={{ width: `${revenuePercent}%` }}
+                      data-testid="bar-revenue"
+                    />
+                    <div
+                      className="absolute inset-y-0 right-0 bg-red-500 rounded-r-md transition-all duration-500"
+                      style={{ width: `${100 - revenuePercent}%` }}
+                      data-testid="bar-expenses"
+                    />
+                  </div>
+                  <div className="flex items-center justify-between gap-2 text-sm">
+                    <span className="text-muted-foreground">Dépenses</span>
+                    <span className="font-semibold text-red-600 dark:text-red-400" data-testid="text-total-expenses">
+                      {(filteredStats?.totalExpenses ?? 0).toLocaleString()} DZD
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2 pt-2 border-t text-sm">
+                    <span className="font-medium">Résultat Net</span>
+                    <span
+                      className={`font-bold ${(filteredStats?.netIncome ?? 0) >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                      data-testid="text-net-result"
+                    >
+                      {(filteredStats?.netIncome ?? 0) >= 0 ? "+" : ""}{(filteredStats?.netIncome ?? 0).toLocaleString()} DZD
+                    </span>
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
         </>
       )}
 

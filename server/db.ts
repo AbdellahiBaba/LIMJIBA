@@ -247,6 +247,11 @@ async function runMigrations(): Promise<void> {
       console.log('[DB] Added barcode column to products');
     }
     
+    if (!prodCols.includes('is_favorite')) {
+      await client.query(`ALTER TABLE products ADD COLUMN is_favorite BOOLEAN NOT NULL DEFAULT false`);
+      console.log('[DB] Added is_favorite column to products');
+    }
+    
     // Check sale_items table for cost_price column (GAAP/IFRS historical COGS tracking)
     const saleItemsColumns = await client.query(`
       SELECT column_name FROM information_schema.columns 

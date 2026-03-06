@@ -1,5 +1,5 @@
-import { useEffect } from "react";
-import { Switch, Route, Link } from "wouter";
+import { useEffect, useState, useCallback } from "react";
+import { Switch, Route, Link, useLocation } from "wouter";
 import { queryClient } from "./lib/queryClient";
 import { QueryClientProvider, useQuery } from "@tanstack/react-query";
 import { Toaster } from "@/components/ui/toaster";
@@ -10,6 +10,8 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageProvider, useLanguage } from "@/contexts/language-context";
 import { AuthProvider, useAuth } from "@/contexts/auth-context";
 import { LanguageSwitcher } from "@/components/language-switcher";
+import { CommandBar } from "@/components/command-bar";
+import { NotificationCenter } from "@/components/notification-center";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -18,7 +20,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { LogOut, Loader2, Bell, AlertTriangle, Package } from "lucide-react";
+import { LogOut, Loader2, Bell, AlertTriangle, Package, Search } from "lucide-react";
 import type { Product } from "@shared/schema";
 import Dashboard from "@/pages/dashboard";
 import Stock from "@/pages/stock";
@@ -36,6 +38,7 @@ import Sales from "@/pages/sales";
 import Customers from "@/pages/customers";
 import Settings from "@/pages/settings";
 import QuickInvoice from "@/pages/quick-invoice";
+import CustomerPortal from "@/pages/customer-portal";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
@@ -58,6 +61,7 @@ function Router() {
       <Route path="/profit" component={ProfitCalculator} />
       <Route path="/settings" component={Settings} />
       <Route path="/quick-invoice" component={QuickInvoice} />
+      <Route path="/portal/:customerId" component={CustomerPortal} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -130,6 +134,7 @@ function LowStockNotifications() {
 function AuthenticatedApp() {
   const { t, branding } = useLanguage();
   const { logout, user } = useAuth();
+  const [commandBarOpen, setCommandBarOpen] = useState(false);
   
   const style = {
     "--sidebar-width": "16rem",
@@ -144,6 +149,17 @@ function AuthenticatedApp() {
       }
     }
   }, [branding.logo]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        setCommandBarOpen(true);
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   return (
     <SidebarProvider style={style as React.CSSProperties}>
@@ -166,6 +182,16 @@ function AuthenticatedApp() {
               <span className="text-xs font-medium hidden lg:block">
                 {user?.username}
               </span>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setCommandBarOpen(true)}
+                title="Recherche (Ctrl+K)"
+                data-testid="button-search"
+              >
+                <Search className="h-4 w-4" />
+              </Button>
+              <NotificationCenter />
               <LowStockNotifications />
               <LanguageSwitcher />
               <ThemeToggle />
@@ -185,12 +211,18 @@ function AuthenticatedApp() {
           </main>
         </div>
       </div>
+      <CommandBar open={commandBarOpen} onOpenChange={setCommandBarOpen} />
     </SidebarProvider>
   );
 }
 
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
+  const [location] = useLocation();
+
+  if (location.startsWith("/portal/")) {
+    return <CustomerPortal />;
+  }
 
   if (isLoading) {
     return (

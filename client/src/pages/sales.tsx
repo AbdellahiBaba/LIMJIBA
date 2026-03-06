@@ -60,6 +60,7 @@ import {
   Save,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { exportToCsv } from "@/lib/csv-export";
 import type { Sale, SaleWithItems, SaleItem, Product, Reseller } from "@shared/schema";
 
 interface EditItem {
@@ -304,7 +305,20 @@ export default function Sales() {
   };
 
   const handleExportCSV = () => {
-    window.open("/api/sales/export/csv", "_blank");
+    if (!sales) return;
+    exportToCsv(
+      sales,
+      [
+        { header: "Sale#", accessor: (s) => s.saleNumber },
+        { header: "Date", accessor: (s) => s.date },
+        { header: "Customer", accessor: (s) => getClientName(s) },
+        { header: "Total", accessor: (s) => s.total },
+        { header: "Paid", accessor: (s) => s.amountPaid ?? 0 },
+        { header: "Status", accessor: (s) => s.status },
+        { header: "Payment Mode", accessor: (s) => s.paymentMode },
+      ],
+      "ventes"
+    );
   };
 
   const handleRecordPayment = (sale: Sale) => {
@@ -348,7 +362,7 @@ export default function Sales() {
             Historique et gestion des ventes
           </p>
         </div>
-        <Button variant="outline" onClick={handleExportCSV} data-testid="button-export-sales">
+        <Button variant="outline" onClick={handleExportCSV} data-testid="button-export-csv">
           <Download className="h-4 w-4 mr-2" />
           Exporter CSV
         </Button>

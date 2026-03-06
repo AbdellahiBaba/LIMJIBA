@@ -26,6 +26,11 @@ import {
 } from "@/components/ui/dialog";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import {
   Search,
   ShoppingCart,
   Plus,
@@ -40,6 +45,9 @@ import {
   Keyboard,
   RotateCcw,
   ArrowLeft,
+  Star,
+  ChevronDown,
+  User,
 } from "lucide-react";
 import {
   Tooltip,
@@ -48,7 +56,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus } from "lucide-react";
-import type { Product, CartItem, Reseller, InsertSale, InsertSaleItem, InsertReseller } from "@shared/schema";
+import type { Product, CartItem, Reseller, Sale, InsertSale, InsertSaleItem, InsertReseller } from "@shared/schema";
 
 export default function POS() {
   const { toast } = useToast();
@@ -74,6 +82,8 @@ export default function POS() {
   const [returnLookupLoading, setReturnLookupLoading] = useState(false);
   const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({});
   const [returnReason, setReturnReason] = useState("");
+  const [customerName, setCustomerName] = useState("");
+  const [recentSalesOpen, setRecentSalesOpen] = useState(false);
 
   const { data: products, isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -82,6 +92,11 @@ export default function POS() {
   const { data: resellers } = useQuery<Reseller[]>({
     queryKey: ["/api/resellers"],
   });
+
+  const { data: allSales } = useQuery<Sale[]>({
+    queryKey: ["/api/sales"],
+  });
+  const recentSales = allSales?.slice(0, 5);
 
   const createSaleMutation = useMutation({
     mutationFn: async (data: { sale: InsertSale; items: InsertSaleItem[] }) => {
@@ -100,6 +115,7 @@ export default function POS() {
       setDiscountPercent(0);
       setDiscountAmount(0);
       setSelectedReseller("none");
+      setCustomerName("");
     },
     onError: (error: Error) => {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
@@ -291,6 +307,7 @@ export default function POS() {
     setDiscountPercent(0);
     setDiscountAmount(0);
     setSelectedReseller("none");
+    setCustomerName("");
   };
 
   const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
@@ -341,6 +358,7 @@ export default function POS() {
         amountPaid: Math.round(amountPaid * 100) / 100,
         resellerId: selectedReseller !== "none" ? selectedReseller : null,
         status,
+        customerName: customerName.trim() || null,
       },
       items: saleItems,
     });
@@ -450,43 +468,101 @@ export default function POS() {
               ))}
             </div>
           ) : filteredProducts && filteredProducts.length > 0 ? (
-            <div className="grid grid-cols-1 min-[400px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
-              {filteredProducts.map((product) => {
-                const inCart = cart.find((item) => item.productId === product.id);
-                const isOutOfStock = product.stockQuantity <= 0;
+            <div className="space-y-3">
+              {(() => {
+                const favoriteProducts = filteredProducts.filter(p => p.isFavorite);
+                if (favoriteProducts.length === 0) return null;
                 return (
-                  <button
-                    key={product.id}
-                    onClick={() => addToCart(product)}
-                    disabled={isOutOfStock}
-                    className={`p-2 sm:p-4 rounded-md border text-left hover-elevate active-elevate-2 ${
-                      inCart ? "border-primary bg-primary/5" : "bg-card"
-                    } ${isOutOfStock ? "opacity-50 cursor-not-allowed" : ""}`}
-                    data-testid={`button-product-${product.id}`}
-                  >
-                    <div className="flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded bg-muted mx-auto mb-1 sm:mb-2">
-                      <Package className="h-4 w-4 sm:h-6 sm:w-6 text-muted-foreground" />
+                  <div data-testid="section-favorites">
+                    <div className="flex items-center gap-2 mb-2">
+                      <Star className="h-4 w-4 text-yellow-500 fill-yellow-500" />
+                      <span className="text-sm font-semibold">Favoris</span>
                     </div>
-                    <h3 className="font-medium text-[10px] sm:text-sm text-center line-clamp-2 mb-0.5 sm:mb-1">
-                      {product.name}
-                    </h3>
-                    <p className="text-center font-mono text-[10px] sm:text-sm text-primary font-semibold">
-                      {product.unitPrice.toLocaleString()} DZD
-                    </p>
-                    <div className="flex flex-col sm:flex-row justify-center items-center gap-1 sm:gap-2 mt-1 sm:mt-2">
-                      <Badge
-                        variant={isOutOfStock ? "destructive" : "secondary"}
-                        className="text-[8px] sm:text-xs px-1 sm:px-2"
-                      >
-                        {isOutOfStock ? t("pos.outOfStock") : `${product.stockQuantity}`}
-                      </Badge>
-                      {inCart && (
-                        <Badge className="text-[8px] sm:text-xs px-1 sm:px-2">{inCart.quantity}</Badge>
-                      )}
+                    <div className="grid grid-cols-1 min-[400px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 mb-3">
+                      {favoriteProducts.map((product) => {
+                        const inCart = cart.find((item) => item.productId === product.id);
+                        const isOutOfStock = product.stockQuantity <= 0;
+                        return (
+                          <button
+                            key={product.id}
+                            onClick={() => addToCart(product)}
+                            disabled={isOutOfStock}
+                            className={`relative p-2 sm:p-4 rounded-md border-2 border-yellow-400/50 text-left hover-elevate active-elevate-2 min-h-[80px] ${
+                              inCart ? "border-primary bg-primary/5" : "bg-card"
+                            } ${isOutOfStock ? "opacity-50 cursor-not-allowed" : ""}`}
+                            data-testid={`button-favorite-product-${product.id}`}
+                          >
+                            <Badge variant="secondary" className="absolute top-1 right-1 text-[8px] sm:text-xs px-1 sm:px-2" data-testid={`badge-stock-${product.id}`}>
+                              {product.stockQuantity}
+                            </Badge>
+                            {isOutOfStock && (
+                              <div className="absolute inset-0 bg-background/70 rounded-md flex items-center justify-center z-10">
+                                <span className="text-xs font-semibold text-destructive">{"\u00C9puis\u00E9"}</span>
+                              </div>
+                            )}
+                            <Star className="h-3 w-3 text-yellow-500 fill-yellow-500 absolute top-1 left-1" />
+                            <div className="flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded bg-muted mx-auto mb-1 sm:mb-2">
+                              <Package className="h-4 w-4 sm:h-6 sm:w-6 text-muted-foreground" />
+                            </div>
+                            <h3 className="font-medium text-[10px] sm:text-sm text-center line-clamp-2 mb-0.5 sm:mb-1">
+                              {product.name}
+                            </h3>
+                            <p className="text-center font-mono text-[10px] sm:text-sm text-primary font-semibold">
+                              {product.unitPrice.toLocaleString()} DZD
+                            </p>
+                            {inCart && (
+                              <div className="flex justify-center mt-1">
+                                <Badge className="text-[8px] sm:text-xs px-1 sm:px-2">{inCart.quantity}</Badge>
+                              </div>
+                            )}
+                          </button>
+                        );
+                      })}
                     </div>
-                  </button>
+                    <Separator className="mb-3" />
+                  </div>
                 );
-              })}
+              })()}
+              <div className="grid grid-cols-1 min-[400px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
+                {filteredProducts.map((product) => {
+                  const inCart = cart.find((item) => item.productId === product.id);
+                  const isOutOfStock = product.stockQuantity <= 0;
+                  return (
+                    <button
+                      key={product.id}
+                      onClick={() => addToCart(product)}
+                      disabled={isOutOfStock}
+                      className={`relative p-2 sm:p-4 rounded-md border text-left hover-elevate active-elevate-2 min-h-[80px] ${
+                        inCart ? "border-primary bg-primary/5" : "bg-card"
+                      } ${isOutOfStock ? "cursor-not-allowed" : ""}`}
+                      data-testid={`button-product-${product.id}`}
+                    >
+                      <Badge variant="secondary" className="absolute top-1 right-1 text-[8px] sm:text-xs px-1 sm:px-2" data-testid={`badge-stock-${product.id}`}>
+                        {product.stockQuantity}
+                      </Badge>
+                      {isOutOfStock && (
+                        <div className="absolute inset-0 bg-background/70 rounded-md flex items-center justify-center z-10">
+                          <span className="text-xs font-semibold text-destructive">{"\u00C9puis\u00E9"}</span>
+                        </div>
+                      )}
+                      <div className="flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded bg-muted mx-auto mb-1 sm:mb-2">
+                        <Package className="h-4 w-4 sm:h-6 sm:w-6 text-muted-foreground" />
+                      </div>
+                      <h3 className="font-medium text-[10px] sm:text-sm text-center line-clamp-2 mb-0.5 sm:mb-1">
+                        {product.name}
+                      </h3>
+                      <p className="text-center font-mono text-[10px] sm:text-sm text-primary font-semibold">
+                        {product.unitPrice.toLocaleString()} DZD
+                      </p>
+                      {inCart && (
+                        <div className="flex justify-center mt-1">
+                          <Badge className="text-[8px] sm:text-xs px-1 sm:px-2">{inCart.quantity}</Badge>
+                        </div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           ) : (
             <div className="text-center py-8 sm:py-12">
@@ -530,6 +606,18 @@ export default function POS() {
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col min-h-0 p-3 pt-0">
+          <div className="mb-2">
+            <div className="relative">
+              <User className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+              <Input
+                placeholder="Nom du client"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                className="pl-8 h-8 text-sm"
+                data-testid="input-customer-name"
+              />
+            </div>
+          </div>
           {cart.length === 0 ? (
             <div className="flex-1 flex items-center justify-center text-center text-muted-foreground py-4">
               <div>
@@ -723,6 +811,45 @@ export default function POS() {
                   {t("pos.checkout")}
                 </Button>
               </div>
+            </div>
+          )}
+
+          {recentSales && recentSales.length > 0 && (
+            <div className="mt-3 border-t pt-2">
+              <Collapsible open={recentSalesOpen} onOpenChange={setRecentSalesOpen}>
+                <CollapsibleTrigger asChild>
+                  <Button variant="ghost" className="w-full justify-between" data-testid="button-toggle-recent-sales">
+                    <span className="flex items-center gap-2 text-sm">
+                      <Clock className="h-4 w-4" />
+                      Ventes r{"\u00E9"}centes
+                    </span>
+                    <ChevronDown className={`h-4 w-4 transition-transform ${recentSalesOpen ? "rotate-180" : ""}`} />
+                  </Button>
+                </CollapsibleTrigger>
+                <CollapsibleContent>
+                  <div className="space-y-2 pt-2">
+                    {recentSales.map((sale) => (
+                      <div key={sale.id} className="flex items-center justify-between gap-2 p-2 rounded-md border text-sm" data-testid={`recent-sale-${sale.id}`}>
+                        <div className="min-w-0">
+                          <p className="font-medium truncate">{sale.saleNumber}</p>
+                          <p className="text-xs text-muted-foreground">{sale.date}</p>
+                        </div>
+                        <div className="flex items-center gap-2 flex-shrink-0">
+                          <span className="font-mono font-semibold text-xs">{sale.total.toLocaleString()} DZD</span>
+                          <Button
+                            size="icon"
+                            variant="ghost"
+                            onClick={() => window.open(`/public/sales/${sale.id}/ticket-pdf`, '_blank')}
+                            data-testid={`button-reprint-${sale.id}`}
+                          >
+                            <Printer className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </CollapsibleContent>
+              </Collapsible>
             </div>
           )}
         </CardContent>

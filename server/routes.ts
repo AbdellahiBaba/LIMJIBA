@@ -1,5 +1,6 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
+import crypto from "crypto";
 import bcrypt from "bcrypt";
 import puppeteer from "puppeteer";
 import { storage } from "./storage";
@@ -1691,6 +1692,21 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/customers/:id/portal-token", requireAuth, async (req, res) => {
+    try {
+      const customer = await storage.getCustomer(req.params.id);
+      if (!customer) return res.status(404).json({ error: "Customer not found" });
+      const token = crypto
+        .createHash("sha256")
+        .update(req.params.id + (process.env.SESSION_SECRET || "pfp-portal-salt"))
+        .digest("hex")
+        .substring(0, 16);
+      res.json({ token, url: `/portal/${req.params.id}?token=${token}` });
+    } catch (error) {
+      handleError(res, "getPortalToken", error);
+    }
+  });
+
   app.get("/api/customers/:id", async (req, res) => {
     try {
       const customer = await storage.getCustomer(req.params.id);
@@ -1887,6 +1903,329 @@ export async function registerRoutes(
       res.json({ success: true, ...result });
     } catch (error) {
       handleError(res, "restore backup", error);
+    }
+  });
+
+  // ===================== CUSTOMER PORTAL (PUBLIC with token) =====================
+  app.get("/api/portal/:customerId", async (req, res) => {
+    try {
+      const token = req.query.token as string;
+      const expectedToken = crypto
+        .createHash("sha256")
+        .update(req.params.customerId + (process.env.SESSION_SECRET || "pfp-portal-salt"))
+        .digest("hex")
+        .substring(0, 16);
+      if (!token || token !== expectedToken) {
+        return res.status(403).json({ error: "Invalid or missing portal token" });
+      }
+
+      const customer = await storage.getCustomer(req.params.customerId);
+      if (!customer) return res.status(404).json({ error: "Customer not found" });
+
+      const allSales = await storage.getSales();
+      const allInvoices = await storage.getInvoices();
+
+      const customerSales = allSales.filter(
+        (s) =>
+          s.customerName &&
+          s.customerName.toLowerCase() === customer.name.toLowerCase()
+      );
+      const customerInvoices = allInvoices.filter(
+        (inv) =>
+          inv.clientName &&
+          inv.clientName.toLowerCase() === customer.name.toLowerCase()
+      );
+
+      const transactions: any[] = [];
+      for (const s of customerSales) {
+        transactions.push({
+          id: s.id,
+          type: "sale",
+          date: s.date,
+          reference: s.saleNumber,
+          total: s.total || 0,
+          amountPaid: s.amountPaid || 0,
+          status: s.status,
+          paymentMode: s.paymentMode,
+        });
+      }
+      for (const inv of customerInvoices) {
+        transactions.push({
+          id: inv.id,
+          type: "invoice",
+          date: inv.date,
+          reference: inv.invoiceNumber,
+          total: inv.totalTTC || 0,
+          amountPaid: inv.amountPaid || 0,
+          status: inv.status,
+          paymentMode: inv.paymentMode,
+        });
+      }
+      transactions.sort((a, b) => b.date.localeCompare(a.date));
+
+      let branding: any = { primaryColor: "#1976D2" };
+      try {
+        const brandingJson = await storage.getSetting("branding");
+        if (brandingJson) branding = JSON.parse(brandingJson);
+      } catch {}
+
+      res.json({
+        customer: {
+          id: customer.id,
+          name: customer.name,
+          phone: customer.phone,
+          email: customer.email,
+          address: customer.address,
+          creditLimit: customer.creditLimit,
+          currentBalance: customer.currentBalance,
+        },
+        transactions,
+        branding,
+      });
+    } catch (error) {
+      handleError(res, "getCustomerPortal", error);
+    }
+  });
+
+  // ===================== GLOBAL SEARCH =====================
+  app.get("/api/search", requireAuth, async (req, res) => {
+    try {
+      const q = ((req.query.q as string) || "").toLowerCase().trim();
+      if (!q || q.length < 2) return res.json({ results: [] });
+
+      const [products, customers, invoices, sales, resellers] = await Promise.all([
+        storage.getProducts(),
+        storage.getCustomers(),
+        storage.getInvoices(),
+        storage.getSales(),
+        storage.getResellers(),
+      ]);
+
+      const results: any[] = [];
+
+      for (const p of products) {
+        if (
+          p.name.toLowerCase().includes(q) ||
+          (p.barcode && p.barcode.toLowerCase().includes(q)) ||
+          p.category.toLowerCase().includes(q)
+        ) {
+          results.push({ type: "product", id: p.id, title: p.name, subtitle: `${p.category} · ${p.stockQuantity} en stock`, url: "/stock" });
+        }
+        if (results.length >= 20) break;
+      }
+
+      for (const c of customers) {
+        if (
+          c.name.toLowerCase().includes(q) ||
+          (c.phone && c.phone.toLowerCase().includes(q)) ||
+          (c.email && c.email.toLowerCase().includes(q))
+        ) {
+          results.push({ type: "customer", id: c.id, title: c.name, subtitle: c.phone || c.email || "", url: "/customers" });
+        }
+        if (results.length >= 30) break;
+      }
+
+      for (const r of resellers) {
+        if (
+          r.name.toLowerCase().includes(q) ||
+          (r.phone && r.phone.toLowerCase().includes(q))
+        ) {
+          results.push({ type: "reseller", id: r.id, title: r.name, subtitle: `Revendeur · ${(r.totalPurchases || 0).toLocaleString()} DZD`, url: "/resellers" });
+        }
+        if (results.length >= 35) break;
+      }
+
+      for (const inv of invoices) {
+        if (
+          inv.invoiceNumber.toLowerCase().includes(q) ||
+          (inv.clientName && inv.clientName.toLowerCase().includes(q))
+        ) {
+          results.push({ type: "invoice", id: inv.id, title: inv.invoiceNumber, subtitle: inv.clientName || "—", url: `/invoices/${inv.id}` });
+        }
+        if (results.length >= 45) break;
+      }
+
+      for (const s of sales) {
+        if (
+          s.saleNumber.toLowerCase().includes(q) ||
+          (s.customerName && s.customerName.toLowerCase().includes(q))
+        ) {
+          results.push({ type: "sale", id: s.id, title: s.saleNumber, subtitle: s.customerName || "POS", url: "/sales" });
+        }
+        if (results.length >= 50) break;
+      }
+
+      res.json({ results: results.slice(0, 50) });
+    } catch (error) {
+      handleError(res, "globalSearch", error);
+    }
+  });
+
+  // ===================== NOTIFICATIONS =====================
+  app.get("/api/notifications", requireAuth, async (req, res) => {
+    try {
+      const [products, invoices, sales, customers] = await Promise.all([
+        storage.getProducts(),
+        storage.getInvoices(),
+        storage.getSales(),
+        storage.getCustomers(),
+      ]);
+
+      const notifications: any[] = [];
+      const now = new Date().toISOString().split("T")[0];
+
+      for (const p of products) {
+        if (p.stockQuantity <= p.lowStockThreshold) {
+          notifications.push({
+            id: `low-stock-${p.id}`,
+            type: "low_stock",
+            severity: p.stockQuantity === 0 ? "critical" : "warning",
+            title: p.stockQuantity === 0 ? "Rupture de stock" : "Stock bas",
+            message: `${p.name}: ${p.stockQuantity} restant(s) (seuil: ${p.lowStockThreshold})`,
+            date: now,
+            link: "/stock",
+          });
+        }
+      }
+
+      for (const inv of invoices) {
+        if (inv.status === "pending" || inv.status === "partial") {
+          const isPastDue = inv.dueDate && inv.dueDate < now;
+          if (isPastDue) {
+            notifications.push({
+              id: `overdue-${inv.id}`,
+              type: "overdue_invoice",
+              severity: "critical",
+              title: "Facture en retard",
+              message: `${inv.invoiceNumber} — ${inv.clientName || "Client"} · ${(inv.totalTTC || 0).toLocaleString()} DZD`,
+              date: inv.dueDate,
+              link: `/invoices/${inv.id}`,
+            });
+          }
+        }
+      }
+
+      for (const c of customers) {
+        if (c.currentBalance > c.creditLimit && c.creditLimit > 0) {
+          notifications.push({
+            id: `credit-exceeded-${c.id}`,
+            type: "credit_exceeded",
+            severity: "warning",
+            title: "Limite de crédit dépassée",
+            message: `${c.name}: ${c.currentBalance.toLocaleString()} / ${c.creditLimit.toLocaleString()} DZD`,
+            date: now,
+            link: "/customers",
+          });
+        }
+      }
+
+      notifications.sort((a, b) => {
+        const sev = { critical: 0, warning: 1, info: 2 };
+        return (sev[a.severity as keyof typeof sev] ?? 2) - (sev[b.severity as keyof typeof sev] ?? 2);
+      });
+
+      res.json({ notifications, count: notifications.length });
+    } catch (error) {
+      handleError(res, "getNotifications", error);
+    }
+  });
+
+  // ===================== PRODUCT FAVORITES TOGGLE =====================
+  app.patch("/api/products/:id/favorite", requireAuth, async (req, res) => {
+    try {
+      const product = await storage.getProduct(req.params.id);
+      if (!product) return res.status(404).json({ error: "Product not found" });
+      const updated = await storage.updateProduct(req.params.id, { isFavorite: !product.isFavorite });
+      res.json(updated);
+    } catch (error) {
+      handleError(res, "toggleFavorite", error);
+    }
+  });
+
+  // ===================== DASHBOARD WITH PERIOD FILTERING =====================
+  app.get("/api/dashboard/stats-filtered", requireAuth, async (req, res) => {
+    try {
+      const period = (req.query.period as string) || "month";
+      const customStart = req.query.start as string;
+      const customEnd = req.query.end as string;
+
+      const now = new Date();
+      let startDate: string;
+      let endDate: string = now.toISOString().split("T")[0];
+
+      switch (period) {
+        case "today":
+          startDate = endDate;
+          break;
+        case "week": {
+          const d = new Date(now);
+          d.setDate(d.getDate() - d.getDay());
+          startDate = d.toISOString().split("T")[0];
+          break;
+        }
+        case "year": {
+          startDate = `${now.getFullYear()}-01-01`;
+          break;
+        }
+        case "custom": {
+          startDate = customStart || endDate;
+          endDate = customEnd || endDate;
+          break;
+        }
+        default: {
+          startDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`;
+          break;
+        }
+      }
+
+      const [allSales, allInvoices, allExpenses, allCustomers] = await Promise.all([
+        storage.getSales(),
+        storage.getInvoices(),
+        storage.getExpenses(),
+        storage.getCustomers(),
+      ]);
+
+      const filteredSales = allSales.filter((s) => s.date >= startDate && s.date <= endDate);
+      const filteredInvoices = allInvoices.filter((inv) => inv.date >= startDate && inv.date <= endDate);
+      const filteredExpenses = allExpenses.filter((e) => e.date >= startDate && e.date <= endDate);
+
+      const totalRevenue = filteredSales.reduce((sum, s) => sum + (s.total || 0), 0)
+        + filteredInvoices.filter((i) => i.invoiceType === "SALE").reduce((sum, i) => sum + (i.totalTTC || 0), 0);
+      const totalExpensesAmt = filteredExpenses.reduce((sum, e) => sum + (e.amount || 0), 0);
+      const salesCount = filteredSales.length;
+      const avgOrderValue = salesCount > 0 ? Math.round(totalRevenue / salesCount) : 0;
+
+      const outstandingCredit = allCustomers.reduce((sum, c) => sum + (c.currentBalance || 0), 0);
+
+      let topCustomerName = "—";
+      let topCustomerAmount = 0;
+      const customerTotals: Record<string, number> = {};
+      for (const s of filteredSales) {
+        const name = s.customerName || "Walk-in";
+        customerTotals[name] = (customerTotals[name] || 0) + (s.total || 0);
+      }
+      for (const [name, total] of Object.entries(customerTotals)) {
+        if (total > topCustomerAmount) {
+          topCustomerAmount = total;
+          topCustomerName = name;
+        }
+      }
+
+      res.json({
+        period,
+        startDate,
+        endDate,
+        totalRevenue,
+        totalExpenses: totalExpensesAmt,
+        netIncome: totalRevenue - totalExpensesAmt,
+        salesCount,
+        invoicesCount: filteredInvoices.length,
+        avgOrderValue,
+        outstandingCredit,
+        topCustomer: { name: topCustomerName, amount: topCustomerAmount },
+      });
+    } catch (error) {
+      handleError(res, "getDashboardStatsFiltered", error);
     }
   });
 

@@ -30,6 +30,7 @@ export const products = pgTable("products", {
   lowStockThreshold: integer("low_stock_threshold").notNull().default(10),
   unit: text("unit").notNull().default("pcs"),
   barcode: text("barcode"),
+  isFavorite: boolean("is_favorite").notNull().default(false),
 });
 
 export const insertProductSchema = createInsertSchema(products).omit({ id: true });

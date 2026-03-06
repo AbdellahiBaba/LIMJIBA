@@ -44,8 +44,10 @@ import {
   Trash2,
   Calendar,
   DollarSign,
+  Download,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { exportToCsv } from "@/lib/csv-export";
 import type { Employee, InsertEmployee, SalaryPayment, InsertSalaryPayment, SalaryPaymentWithEmployee } from "@shared/schema";
 
 const formatCurrency = (amount: number) => {
@@ -514,6 +516,27 @@ export default function SalariesPage() {
         <h1 className="text-xl sm:text-2xl font-bold text-foreground" data-testid="text-page-title">
           {t("salaries.title")}
         </h1>
+        <Button
+          variant="outline"
+          onClick={() => {
+            exportToCsv(
+              payments,
+              [
+                { header: "Employee", accessor: (p) => p.employee?.name || getEmployeeName(p.employeeId) },
+                { header: "Amount", accessor: (p) => p.amount },
+                { header: "Date", accessor: (p) => p.paymentDate },
+                { header: "Month", accessor: (p) => p.month },
+                { header: "Year", accessor: (p) => p.year },
+                { header: "Notes", accessor: (p) => p.notes },
+              ],
+              "salaires"
+            );
+          }}
+          data-testid="button-export-csv"
+        >
+          <Download className="h-4 w-4 mr-2" />
+          Exporter CSV
+        </Button>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

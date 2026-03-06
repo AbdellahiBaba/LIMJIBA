@@ -48,8 +48,10 @@ import {
   ArrowUp,
   ArrowDown,
   RefreshCw,
+  Star,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { exportToCsv } from "@/lib/csv-export";
 import type { Product, InsertProduct, StockMovementWithProduct, InventoryValuation } from "@shared/schema";
 
 const categories = [
@@ -686,6 +688,16 @@ export default function Stock() {
     queryKey: ["/api/inventory/valuation"],
   });
 
+  const toggleFavoriteMutation = useMutation({
+    mutationFn: (id: string) => apiRequest("PATCH", `/api/products/${id}/favorite`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/products/${id}`),
     onSuccess: () => {
@@ -761,6 +773,29 @@ export default function Stock() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button
+            variant="outline"
+            onClick={() => {
+              if (!products) return;
+              exportToCsv(
+                products,
+                [
+                  { header: "Name", accessor: (p) => p.name },
+                  { header: "Category", accessor: (p) => p.category },
+                  { header: "Unit Price", accessor: (p) => p.unitPrice },
+                  { header: "Cost Price", accessor: (p) => p.costPrice },
+                  { header: "Stock", accessor: (p) => p.stockQuantity },
+                  { header: "Unit", accessor: (p) => p.unit },
+                  { header: "Barcode", accessor: (p) => p.barcode },
+                ],
+                "stock"
+              );
+            }}
+            data-testid="button-export-csv"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Exporter CSV
+          </Button>
           <ImportExportSection t={t} />
           <Button onClick={handleNew} data-testid="button-add-product">
             <Plus className="h-4 w-4 mr-2" />
@@ -961,6 +996,15 @@ export default function Stock() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => toggleFavoriteMutation.mutate(product.id)}
+                              data-testid={`button-favorite-${product.id}`}
+                              className="toggle-elevate"
+                            >
+                              <Star className={`h-4 w-4 ${product.isFavorite ? "text-yellow-500 fill-yellow-500" : ""}`} />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"

@@ -54,6 +54,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
+import { exportToCsv } from "@/lib/csv-export";
 import type { Invoice } from "@shared/schema";
 
 const statusConfig: Record<string, { label: string; icon: React.ComponentType<{ className?: string }>; variant: "default" | "secondary" | "destructive" | "outline" }> = {
@@ -157,7 +158,19 @@ export default function Invoices() {
   };
 
   const handleExportCSV = () => {
-    window.open("/api/invoices/export/csv", "_blank");
+    if (!invoices) return;
+    exportToCsv(
+      invoices,
+      [
+        { header: "Invoice#", accessor: (i) => i.invoiceNumber },
+        { header: "Date", accessor: (i) => i.date },
+        { header: "Client", accessor: (i) => i.clientName },
+        { header: "Type", accessor: (i) => i.type || "standard" },
+        { header: "TotalTTC", accessor: (i) => i.totalTTC },
+        { header: "Status", accessor: (i) => i.status },
+      ],
+      "factures"
+    );
   };
 
   return (
@@ -172,7 +185,7 @@ export default function Invoices() {
           </p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" onClick={handleExportCSV} data-testid="button-export-invoices">
+          <Button variant="outline" onClick={handleExportCSV} data-testid="button-export-csv">
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>

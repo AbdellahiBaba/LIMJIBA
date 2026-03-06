@@ -41,8 +41,10 @@ import {
   Edit,
   Trash2,
   Calendar,
+  Download,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { exportToCsv } from "@/lib/csv-export";
 import type { Expense, InsertExpense } from "@shared/schema";
 
 const formatCurrency = (amount: number) => {
@@ -303,10 +305,32 @@ export default function ExpensesPage() {
         <h1 className="text-xl sm:text-2xl font-bold text-foreground" data-testid="text-page-title">
           {t("expenses.title")}
         </h1>
-        <Button onClick={() => setShowExpenseDialog(true)} data-testid="button-add-expense">
-          <Plus className="h-4 w-4 mr-2" />
-          {t("expenses.addExpense")}
-        </Button>
+        <div className="flex gap-2 flex-wrap">
+          <Button
+            variant="outline"
+            onClick={() => {
+              exportToCsv(
+                expenses,
+                [
+                  { header: "Name", accessor: (e) => e.name },
+                  { header: "Category", accessor: (e) => e.category },
+                  { header: "Amount", accessor: (e) => e.amount },
+                  { header: "Date", accessor: (e) => e.date },
+                  { header: "Notes", accessor: (e) => e.notes },
+                ],
+                "depenses"
+              );
+            }}
+            data-testid="button-export-csv"
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Exporter CSV
+          </Button>
+          <Button onClick={() => setShowExpenseDialog(true)} data-testid="button-add-expense">
+            <Plus className="h-4 w-4 mr-2" />
+            {t("expenses.addExpense")}
+          </Button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
