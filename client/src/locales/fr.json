@@ -560,7 +560,21 @@
     "noResellersEligible": "Aucun revendeur éligible pour le tirage. Les revendeurs sont ajoutés lorsqu'ils atteignent leur seuil d'achat.",
     "eligibleClickDraw": "éligible(s). Cliquez sur \"Tirer un Gagnant\" pour sélectionner aléatoirement.",
     "printList": "Imprimer la liste des revendeurs",
-    "selectedFields": "champ(s) sélectionné(s)"
+    "selectedFields": "champ(s) sélectionné(s)",
+    "adminCopy": "Copie Admin",
+    "customerCopy": "Copie Client",
+    "selectFieldsDesc": "Sélectionnez les champs à afficher dans la copie",
+    "customizeFieldsDesc": "Personnalisez les informations visibles pour chaque copie",
+    "printCopies": "Imprimer (2 copies)",
+    "resellersWillBePrinted": "revendeur(s) seront imprimés (2 copies par page)",
+    "thresholdsReset": "Seuils réinitialisés",
+    "thresholdsResetDesc": "Tous les achats et statuts de récompense ont été remis à zéro.",
+    "deleteConfirmMessage": "Êtes-vous sûr de vouloir supprimer le revendeur \"{name}\" ? Cette action est irréversible.",
+    "toThreshold": "vers le seuil",
+    "printedOn": "Imprimé le",
+    "resellerListLabel": "Liste des revendeurs",
+    "resellerCount": "revendeur(s)",
+    "eligible": "Éligible"
   },
   "customers": {
     "title": "Clients",
@@ -581,7 +595,12 @@
     "editInfo": "Modifier les informations du client",
     "addInfo": "Ajouter un nouveau client à la base",
     "deleteConfirmMessage": "Êtes-vous sûr de vouloir supprimer le client \"{name}\" ? Cette action est irréversible.",
-    "portalLinkError": "Impossible de générer le lien"
+    "portalLinkError": "Impossible de générer le lien",
+    "currentBalanceLabel": "Solde Actuel",
+    "creditLimitLabel": "Limite de Crédit",
+    "creditLimitExceeded": "Limite de crédit dépassée",
+    "transactionHistory": "Historique des Transactions",
+    "customerPortal": "Portail Client"
   },
   "suppliers": {
     "title": "Fournisseurs",

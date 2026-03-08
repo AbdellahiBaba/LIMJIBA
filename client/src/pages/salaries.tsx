@@ -435,7 +435,7 @@ export default function SalariesPage() {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/employees/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/employees"] });
-      toast({ title: `Employé "${employeeToDelete?.name || ""}" supprimé avec succès` });
+      toast({ title: t("salaries.employeeDeletedSuccess") });
       setDeleteEmployeeDialogOpen(false);
       setEmployeeToDelete(null);
     },
@@ -448,7 +448,7 @@ export default function SalariesPage() {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/salary-payments/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/salary-payments"] });
-      toast({ title: `Paiement supprimé avec succès` });
+      toast({ title: t("salaries.paymentDeletedSuccess") });
       setDeletePaymentDialogOpen(false);
       setPaymentToDelete(null);
     },
@@ -522,12 +522,12 @@ export default function SalariesPage() {
             exportToCsv(
               payments,
               [
-                { header: "Employee", accessor: (p) => p.employee?.name || getEmployeeName(p.employeeId) },
-                { header: "Amount", accessor: (p) => p.amount },
-                { header: "Date", accessor: (p) => p.paymentDate },
-                { header: "Month", accessor: (p) => p.month },
-                { header: "Year", accessor: (p) => p.year },
-                { header: "Notes", accessor: (p) => p.notes },
+                { header: t("salaries.employeeName"), accessor: (p) => p.employee?.name || getEmployeeName(p.employeeId) },
+                { header: t("salaries.paymentAmount"), accessor: (p) => p.amount },
+                { header: t("common.date"), accessor: (p) => p.paymentDate },
+                { header: t("salaries.paymentMonth"), accessor: (p) => p.month },
+                { header: t("salaries.paymentYear"), accessor: (p) => p.year },
+                { header: t("common.notes"), accessor: (p) => p.notes },
               ],
               "salaires"
             );
@@ -535,7 +535,7 @@ export default function SalariesPage() {
           data-testid="button-export-csv"
         >
           <Download className="h-4 w-4 mr-2" />
-          Exporter CSV
+          {t("common.exportCsv")}
         </Button>
       </div>
 
@@ -770,9 +770,9 @@ export default function SalariesPage() {
       <Dialog open={deleteEmployeeDialogOpen} onOpenChange={setDeleteEmployeeDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogTitle>{t("common.confirmDelete")}</DialogTitle>
             <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer l'employé <strong>{employeeToDelete?.name}</strong> ? Cette action est irréversible.
+              {t("salaries.confirmDeleteEmployee")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -794,9 +794,9 @@ export default function SalariesPage() {
       <Dialog open={deletePaymentDialogOpen} onOpenChange={setDeletePaymentDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogTitle>{t("common.confirmDelete")}</DialogTitle>
             <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer ce paiement ? Cette action est irréversible.
+              {t("salaries.confirmDeletePayment")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

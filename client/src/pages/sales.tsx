@@ -155,7 +155,7 @@ export default function Sales() {
       queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       const saleNum = sales?.find(s => s.id === saleToDelete)?.saleNumber || "";
-      toast({ title: `Vente ${saleNum} supprimée avec succès` });
+      toast({ title: t("sales.saleDeleted") });
       setDeleteDialogOpen(false);
       setSaleToDelete(null);
     },
@@ -203,7 +203,7 @@ export default function Sales() {
       queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: `Vente ${editSale?.saleNumber || ""} modifiée avec succès` });
+      toast({ title: t("sales.saleEdited") });
       setEditDialogOpen(false);
       setEditSale(null);
       setEditItems([]);
@@ -333,13 +333,13 @@ export default function Sales() {
     exportToCsv(
       sales,
       [
-        { header: "Sale#", accessor: (s) => s.saleNumber },
-        { header: "Date", accessor: (s) => s.date },
-        { header: "Customer", accessor: (s) => getClientName(s) },
-        { header: "Total", accessor: (s) => s.total },
-        { header: "Paid", accessor: (s) => s.amountPaid ?? 0 },
-        { header: "Status", accessor: (s) => s.status },
-        { header: "Payment Mode", accessor: (s) => s.paymentMode },
+        { header: t("sales.number"), accessor: (s) => s.saleNumber },
+        { header: t("common.date"), accessor: (s) => s.date },
+        { header: t("sales.client"), accessor: (s) => getClientName(s) },
+        { header: t("common.total"), accessor: (s) => s.total },
+        { header: t("sales.paid"), accessor: (s) => s.amountPaid ?? 0 },
+        { header: t("sales.status"), accessor: (s) => s.status },
+        { header: t("sales.payment"), accessor: (s) => s.paymentMode },
       ],
       "ventes"
     );
@@ -380,15 +380,15 @@ export default function Sales() {
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-semibold" data-testid="text-sales-title">
-            Ventes
+            {t("sales.title")}
           </h1>
           <p className="text-muted-foreground text-xs sm:text-sm hidden sm:block">
-            Historique et gestion des ventes
+            {t("sales.subtitle")}
           </p>
         </div>
         <Button variant="outline" onClick={handleExportCSV} data-testid="button-export-csv">
           <Download className="h-4 w-4 mr-2" />
-          Exporter CSV
+          {t("common.exportCsv")}
         </Button>
       </div>
 
@@ -407,14 +407,14 @@ export default function Sales() {
             </div>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-[180px]" data-testid="select-status-filter">
-                <SelectValue placeholder="Filtrer par statut" />
+                <SelectValue placeholder={t("sales.allStatuses")} />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tous les statuts</SelectItem>
-                <SelectItem value="completed">Payé</SelectItem>
-                <SelectItem value="partial">Partiel</SelectItem>
-                <SelectItem value="credit">Crédit</SelectItem>
-                <SelectItem value="pending">En attente</SelectItem>
+                <SelectItem value="all">{t("sales.allStatuses")}</SelectItem>
+                <SelectItem value="completed">{t("sales.paid")}</SelectItem>
+                <SelectItem value="partial">{t("sales.partial")}</SelectItem>
+                <SelectItem value="credit">{t("sales.credit")}</SelectItem>
+                <SelectItem value="pending">{t("sales.pending")}</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -423,11 +423,11 @@ export default function Sales() {
           {!filteredSales || filteredSales.length === 0 ? (
             <div className="text-center py-12">
               <DollarSign className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-              <h3 className="font-medium text-lg mb-1">Aucune vente trouvée</h3>
+              <h3 className="font-medium text-lg mb-1">{t("sales.noSales")}</h3>
               <p className="text-muted-foreground text-sm">
                 {search || statusFilter !== "all"
-                  ? "Essayez d'ajuster votre recherche ou vos filtres"
-                  : "Les ventes apparaîtront ici"}
+                  ? t("sales.adjustSearch")
+                  : t("sales.salesWillAppear")}
               </p>
             </div>
           ) : (
@@ -437,10 +437,10 @@ export default function Sales() {
                   <TableRow>
                     <TableHead>{t("sales.number")}</TableHead>
                     <TableHead>{t("sales.client")}</TableHead>
-                    <TableHead>Date</TableHead>
+                    <TableHead>{t("common.date")}</TableHead>
                     <TableHead className="hidden sm:table-cell">{t("sales.payment")}</TableHead>
                     <TableHead>{t("sales.status")}</TableHead>
-                    <TableHead className="text-right">Total</TableHead>
+                    <TableHead className="text-right">{t("common.total")}</TableHead>
                     <TableHead className="w-[50px]"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -492,7 +492,7 @@ export default function Sales() {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right font-medium">
-                          {sale.total.toLocaleString("fr-FR")} DA
+                          {sale.total.toLocaleString("fr-FR")} {t("common.currency")}
                         </TableCell>
                         <TableCell>
                           <DropdownMenu>
@@ -504,20 +504,20 @@ export default function Sales() {
                             <DropdownMenuContent align="end">
                               <DropdownMenuItem onClick={() => handleViewSale(sale.id)}>
                                 <Eye className="h-4 w-4 mr-2" />
-                                Voir détails
+                                {t("sales.viewDetails")}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handleEditSale(sale.id)}>
                                 <Edit className="h-4 w-4 mr-2" />
-                                Modifier
+                                {t("common.edit")}
                               </DropdownMenuItem>
                               <DropdownMenuItem onClick={() => handlePrintReceipt(sale.id)}>
                                 <Printer className="h-4 w-4 mr-2" />
-                                Imprimer ticket
+                                {t("sales.printTicket")}
                               </DropdownMenuItem>
                               {(sale.status === "credit" || sale.status === "partial") && (
                                 <DropdownMenuItem onClick={() => handleRecordPayment(sale)}>
                                   <DollarSign className="h-4 w-4 mr-2" />
-                                  {t("sales.recordPayment") || "Enregistrer paiement"}
+                                  {t("sales.recordPayment")}
                                 </DropdownMenuItem>
                               )}
                               {sale.status === "credit" && (
@@ -525,7 +525,7 @@ export default function Sales() {
                                   onClick={() => updateStatusMutation.mutate({ id: sale.id, status: "completed" })}
                                 >
                                   <CheckCircle className="h-4 w-4 mr-2" />
-                                  Marquer payé
+                                  {t("sales.markPaid")}
                                 </DropdownMenuItem>
                               )}
                               <DropdownMenuItem 
@@ -533,7 +533,7 @@ export default function Sales() {
                                 className="text-destructive"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                Supprimer
+                                {t("common.delete")}
                               </DropdownMenuItem>
                             </DropdownMenuContent>
                           </DropdownMenu>
@@ -551,7 +551,7 @@ export default function Sales() {
       <Dialog open={!!viewSale} onOpenChange={() => setViewSale(null)}>
         <DialogContent className="max-w-md">
           <DialogHeader>
-            <DialogTitle>Détails de la vente</DialogTitle>
+            <DialogTitle>{t("sales.saleDetails")}</DialogTitle>
             <DialogDescription>
               {viewSale?.saleNumber}
             </DialogDescription>
@@ -560,11 +560,11 @@ export default function Sales() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <span className="text-muted-foreground">Date:</span>
+                  <span className="text-muted-foreground">{t("common.date")}:</span>
                   <p className="font-medium">{formatDateDMY(viewSale.date)}</p>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Client:</span>
+                  <span className="text-muted-foreground">{t("sales.client")}:</span>
                   <p className="font-medium" data-testid="text-detail-client">
                     {getClientName(viewSale) || "—"}
                   </p>
@@ -584,13 +584,13 @@ export default function Sales() {
                   </div>
                 </div>
                 <div>
-                  <span className="text-muted-foreground">Total:</span>
+                  <span className="text-muted-foreground">{t("common.total")}:</span>
                   <p className="font-bold text-lg">{viewSale.total.toLocaleString("fr-FR")} DA</p>
                 </div>
               </div>
 
               <div className="border-t pt-4">
-                <h4 className="font-medium mb-2">Articles</h4>
+                <h4 className="font-medium mb-2">{t("sales.articles")}</h4>
                 <div className="space-y-2">
                   {viewSale.items?.map((item, index) => (
                     <div key={index} className="flex justify-between text-sm">
@@ -605,8 +605,8 @@ export default function Sales() {
 
               {viewSale.discount && viewSale.discount > 0 && (
                 <div className="flex justify-between text-sm text-muted-foreground border-t pt-2">
-                  <span>Remise</span>
-                  <span>-{viewSale.discount.toLocaleString("fr-FR")} DA</span>
+                  <span>{t("sales.discount")}</span>
+                  <span>-{viewSale.discount.toLocaleString("fr-FR")} {t("common.currency")}</span>
                 </div>
               )}
             </div>
@@ -620,12 +620,12 @@ export default function Sales() {
                 disabled={updateStatusMutation.isPending}
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
-                Marquer payé
+                {t("sales.markPaid")}
               </Button>
             )}
             <Button variant="outline" onClick={() => handlePrintReceipt(viewSale?.id || "")}>
               <Printer className="h-4 w-4 mr-2" />
-              Imprimer
+              {t("common.print")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -634,14 +634,14 @@ export default function Sales() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogTitle>{t("common.confirmDelete")}</DialogTitle>
             <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer cette vente? Cette action est irréversible.
+              {t("common.deleteConfirmMessage")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDeleteDialogOpen(false)}>
-              Annuler
+              {t("common.cancel")}
             </Button>
             <Button 
               variant="destructive" 
@@ -658,30 +658,30 @@ export default function Sales() {
       <Dialog open={paymentDialogOpen} onOpenChange={setPaymentDialogOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
-            <DialogTitle>{t("sales.recordPayment") || "Enregistrer un paiement"}</DialogTitle>
+            <DialogTitle>{t("sales.recordPayment")}</DialogTitle>
             <DialogDescription>
-              {paymentSale?.saleNumber} - {t("sales.remainingBalance") || "Reste à payer"}: {((paymentSale?.total || 0) - (paymentSale?.amountPaid || 0)).toLocaleString()} DZD
+              {paymentSale?.saleNumber} - {t("sales.remainingBalance")}: {((paymentSale?.total || 0) - (paymentSale?.amountPaid || 0)).toLocaleString()} {t("common.currency")}
             </DialogDescription>
           </DialogHeader>
           {paymentSale && (
             <div className="space-y-4">
               <div className="bg-muted/50 rounded-lg p-3 space-y-2">
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{t("sales.total") || "Total"}:</span>
-                  <span className="font-mono font-medium">{paymentSale.total.toLocaleString()} DZD</span>
+                  <span className="text-muted-foreground">{t("sales.total")}:</span>
+                  <span className="font-mono font-medium">{paymentSale.total.toLocaleString()} {t("common.currency")}</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">{t("sales.alreadyPaid") || "Déjà payé"}:</span>
-                  <span className="font-mono font-medium text-green-600">{(paymentSale.amountPaid || 0).toLocaleString()} DZD</span>
+                  <span className="text-muted-foreground">{t("sales.alreadyPaid")}:</span>
+                  <span className="font-mono font-medium text-green-600">{(paymentSale.amountPaid || 0).toLocaleString()} {t("common.currency")}</span>
                 </div>
                 <div className="flex justify-between text-sm font-bold">
-                  <span>{t("sales.remaining") || "Reste"}:</span>
-                  <span className="font-mono text-orange-600">{(paymentSale.total - (paymentSale.amountPaid || 0)).toLocaleString()} DZD</span>
+                  <span>{t("sales.remaining")}:</span>
+                  <span className="font-mono text-orange-600">{(paymentSale.total - (paymentSale.amountPaid || 0)).toLocaleString()} {t("common.currency")}</span>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label>{t("sales.paymentAmount") || "Montant du paiement"}</Label>
+                <Label>{t("sales.paymentAmount")}</Label>
                 <Input
                   type="number"
                   min="0"
@@ -694,7 +694,7 @@ export default function Sales() {
               </div>
 
               <div className="space-y-2">
-                <Label>{t("sales.paymentMethod") || "Mode de paiement"}</Label>
+                <Label>{t("sales.paymentMethod")}</Label>
                 <div className="grid grid-cols-3 gap-2">
                   <Button
                     type="button"
@@ -704,7 +704,7 @@ export default function Sales() {
                     size="sm"
                   >
                     <Banknote className="h-4 w-4 mb-1" />
-                    <span className="text-xs">{t("pos.cash") || "Espèces"}</span>
+                    <span className="text-xs">{t("pos.cash")}</span>
                   </Button>
                   <Button
                     type="button"
@@ -714,7 +714,7 @@ export default function Sales() {
                     size="sm"
                   >
                     <CreditCard className="h-4 w-4 mb-1" />
-                    <span className="text-xs">{t("pos.card") || "Carte"}</span>
+                    <span className="text-xs">{t("pos.card")}</span>
                   </Button>
                   <Button
                     type="button"
@@ -724,7 +724,7 @@ export default function Sales() {
                     size="sm"
                   >
                     <ArrowUpDown className="h-4 w-4 mb-1" />
-                    <span className="text-xs">{t("pos.transfer") || "Virement"}</span>
+                    <span className="text-xs">{t("pos.transfer")}</span>
                   </Button>
                 </div>
               </div>
@@ -748,7 +748,7 @@ export default function Sales() {
       <Dialog open={editDialogOpen} onOpenChange={(open) => { if (!open) { setEditDialogOpen(false); setEditSale(null); } }}>
         <DialogContent className="sm:max-w-lg max-h-[90vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>Modifier la vente</DialogTitle>
+            <DialogTitle>{t("sales.editSale")}</DialogTitle>
             <DialogDescription>{editSale?.saleNumber}</DialogDescription>
           </DialogHeader>
           {editSale && (
@@ -785,7 +785,7 @@ export default function Sales() {
               <ScrollArea className="flex-1 max-h-[280px]">
                 <div className="space-y-2 pr-3">
                   {editItems.length === 0 ? (
-                    <p className="text-center text-muted-foreground text-sm py-4">Aucun article</p>
+                    <p className="text-center text-muted-foreground text-sm py-4">{t("sales.noItems")}</p>
                   ) : (
                     editItems.map((item, index) => (
                       <div key={index} className="border rounded-lg p-3 space-y-2" data-testid={`edit-item-${index}`}>
@@ -829,7 +829,7 @@ export default function Sales() {
                             </Button>
                           </div>
                           <div className="flex items-center gap-1 flex-1">
-                            <Label className="text-xs text-muted-foreground whitespace-nowrap">Prix:</Label>
+                            <Label className="text-xs text-muted-foreground whitespace-nowrap">{t("sales.price")}</Label>
                             <Input
                               type="number"
                               min="0"
@@ -841,7 +841,7 @@ export default function Sales() {
                             />
                           </div>
                           <span className="font-mono text-sm font-medium whitespace-nowrap">
-                            {item.total.toLocaleString("fr-FR")} DA
+                            {item.total.toLocaleString("fr-FR")} {t("common.currency")}
                           </span>
                         </div>
                       </div>
@@ -852,7 +852,7 @@ export default function Sales() {
 
               <div className="border-t pt-3 space-y-2">
                 <div className="flex items-center gap-3">
-                  <Label className="text-sm whitespace-nowrap">Remise (DA):</Label>
+                  <Label className="text-sm whitespace-nowrap">{t("sales.discount")}:</Label>
                   <Input
                     type="number"
                     min="0"
@@ -863,17 +863,17 @@ export default function Sales() {
                   />
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span className="text-muted-foreground">Sous-total:</span>
+                  <span className="text-muted-foreground">{t("sales.subtotal")}:</span>
                   <span className="font-mono">{editSubtotal.toLocaleString("fr-FR")} DA</span>
                 </div>
                 {(parseFloat(editDiscount) || 0) > 0 && (
                   <div className="flex justify-between text-sm text-muted-foreground">
-                    <span>Remise:</span>
+                    <span>{t("sales.discount")}:</span>
                     <span className="font-mono">-{(parseFloat(editDiscount) || 0).toLocaleString("fr-FR")} DA</span>
                   </div>
                 )}
                 <div className="flex justify-between font-bold">
-                  <span>Total:</span>
+                  <span>{t("common.total")}:</span>
                   <span className="font-mono text-lg">{editTotal.toLocaleString("fr-FR")} DA</span>
                 </div>
               </div>
@@ -881,7 +881,7 @@ export default function Sales() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => { setEditDialogOpen(false); setEditSale(null); }}>
-              Annuler
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={confirmEditSale}
@@ -889,7 +889,7 @@ export default function Sales() {
               data-testid="button-save-edit-sale"
             >
               <Save className="h-4 w-4 mr-2" />
-              {editSaleMutation.isPending ? "Enregistrement..." : "Enregistrer"}
+              {editSaleMutation.isPending ? t("sales.saving") : t("common.save")}
             </Button>
           </DialogFooter>
         </DialogContent>

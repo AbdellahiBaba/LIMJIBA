@@ -52,17 +52,17 @@ type PrintField = "name" | "phone" | "email" | "totalPurchases" | "rewardThresho
 
 interface PrintFieldConfig {
   key: PrintField;
-  label: string;
+  labelKey: string;
 }
 
 const PRINT_FIELDS: PrintFieldConfig[] = [
-  { key: "name", label: "Nom" },
-  { key: "phone", label: "Téléphone" },
-  { key: "email", label: "Email" },
-  { key: "totalPurchases", label: "Total achats" },
-  { key: "rewardThreshold", label: "Seuil récompense" },
-  { key: "progress", label: "Progression" },
-  { key: "status", label: "Statut" },
+  { key: "name", labelKey: "common.name" },
+  { key: "phone", labelKey: "common.phone" },
+  { key: "email", labelKey: "common.email" },
+  { key: "totalPurchases", labelKey: "resellers.totalPurchases" },
+  { key: "rewardThreshold", labelKey: "resellers.rewardThreshold" },
+  { key: "progress", labelKey: "resellers.progress" },
+  { key: "status", labelKey: "common.status" },
 ];
 
 const DEFAULT_ADMIN_FIELDS: PrintField[] = ["name", "phone", "email", "totalPurchases", "rewardThreshold", "progress", "status"];
@@ -192,7 +192,7 @@ function ResellerFormDialog({
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="rewardThreshold">{t("resellers.rewardThreshold")} (DZD)</Label>
+            <Label htmlFor="rewardThreshold">{t("resellers.rewardThreshold")} ({t("common.currency")})</Label>
             <Input
               id="rewardThreshold"
               type="number"
@@ -243,7 +243,7 @@ function WinnerDialog({
             <>
               <p className="text-3xl font-bold text-primary mb-2">{winner.name}</p>
               <p className="text-muted-foreground">
-                {t("resellers.totalPurchases")}: {winner.totalPurchases.toLocaleString()} DZD
+                {t("resellers.totalPurchases")}: {winner.totalPurchases.toLocaleString()} {t("common.currency")}
               </p>
             </>
           )}
@@ -295,7 +295,7 @@ export default function Resellers() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/resellers"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: `Revendeur "${resellerToDelete?.name || ""}" supprimé avec succès` });
+      toast({ title: t("resellers.resellerDeleted") });
       setDeleteDialogOpen(false);
       setResellerToDelete(null);
     },
@@ -345,7 +345,7 @@ export default function Resellers() {
     mutationFn: () => apiRequest("POST", "/api/resellers/reset-thresholds"),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/resellers"] });
-      toast({ title: "Seuils réinitialisés", description: "Tous les achats et statuts de récompense ont été remis à zéro." });
+      toast({ title: t("resellers.thresholdsReset"), description: t("resellers.thresholdsResetDesc") });
     },
     onError: (error: Error) => {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
@@ -390,7 +390,7 @@ export default function Resellers() {
     const companyName = branding?.companyName || "POLY FLECTA PLASTICA";
 
     const buildTable = (fields: PrintField[], copyTitle: string) => {
-      const headers = fields.map(f => PRINT_FIELDS.find(pf => pf.key === f)?.label || f).map(h => `<th style="border:1px solid #333;padding:6px 10px;text-align:left;background:#f0f0f0;font-size:11px;">${h}</th>`).join("");
+      const headers = fields.map(f => { const pf = PRINT_FIELDS.find(pf => pf.key === f); return pf ? t(pf.labelKey) : f; }).map(h => `<th style="border:1px solid #333;padding:6px 10px;text-align:left;background:#f0f0f0;font-size:11px;">${h}</th>`).join("");
 
       const rows = resellersToPrint.map(r => {
         const progress = Math.min((r.totalPurchases / r.rewardThreshold) * 100, 100);
@@ -398,10 +398,10 @@ export default function Resellers() {
           name: r.name,
           phone: r.phone || "-",
           email: r.email || "-",
-          totalPurchases: `${r.totalPurchases.toLocaleString()} DZD`,
-          rewardThreshold: `${r.rewardThreshold.toLocaleString()} DZD`,
+          totalPurchases: `${r.totalPurchases.toLocaleString()} ${t("common.currency")}`,
+          rewardThreshold: `${r.rewardThreshold.toLocaleString()} ${t("common.currency")}`,
           progress: `${Math.round(progress)}%`,
-          status: r.isWinner ? "🏆 Gagnant" : r.inRewardPool ? "🎁 Éligible" : "Actif",
+          status: r.isWinner ? t("resellers.winner") : r.inRewardPool ? t("resellers.eligible") : t("resellers.active"),
         };
         const cells = fields.map(f => `<td style="border:1px solid #ccc;padding:5px 10px;font-size:11px;">${cellMap[f]}</td>`).join("");
         return `<tr>${cells}</tr>`;
@@ -411,20 +411,20 @@ export default function Resellers() {
         <div style="page-break-after:always;padding:20px;">
           <div style="text-align:center;margin-bottom:15px;">
             <h2 style="margin:0;font-size:16px;">${companyName}</h2>
-            <p style="margin:4px 0;font-size:12px;color:#666;">Liste des revendeurs — ${copyTitle}</p>
-            <p style="margin:2px 0;font-size:10px;color:#999;">Imprimé le: ${new Date().toLocaleDateString("fr-FR")}</p>
+            <p style="margin:4px 0;font-size:12px;color:#666;">${t("resellers.resellerListLabel")} — ${copyTitle}</p>
+            <p style="margin:2px 0;font-size:10px;color:#999;">${t("resellers.printedOn")}: ${new Date().toLocaleDateString()}</p>
           </div>
           <table style="width:100%;border-collapse:collapse;font-family:Arial,sans-serif;">
             <thead><tr>${headers}</tr></thead>
             <tbody>${rows}</tbody>
           </table>
-          <p style="text-align:right;font-size:10px;color:#999;margin-top:10px;">Total: ${resellersToPrint.length} revendeur(s)</p>
+          <p style="text-align:right;font-size:10px;color:#999;margin-top:10px;">${t("common.total")}: ${resellersToPrint.length} ${t("resellers.resellerCount")}</p>
         </div>`;
     };
 
-    let html = `<html><head><title>Revendeurs</title><style>@media print { body { margin: 0; } }</style></head><body>`;
-    html += buildTable(adminFields, "Copie Admin");
-    html += buildTable(customerFields, "Copie Client");
+    let html = `<html><head><title>${t("resellers.title")}</title><style>@media print { body { margin: 0; } }</style></head><body>`;
+    html += buildTable(adminFields, t("resellers.adminCopy"));
+    html += buildTable(customerFields, t("resellers.customerCopy"));
     html += `</body></html>`;
 
     const printWindow = window.open("", "_blank");
@@ -451,7 +451,7 @@ export default function Resellers() {
         <div className="flex gap-2">
           <Button variant="outline" onClick={() => setPrintDialogOpen(true)} data-testid="button-print-resellers">
             <Printer className="h-4 w-4 mr-2" />
-            Imprimer
+            {t("common.print")}
           </Button>
           <Button onClick={handleNew} data-testid="button-add-reseller">
             <Plus className="h-4 w-4 mr-2" />
@@ -612,13 +612,13 @@ export default function Resellers() {
                           </div>
                         </TableCell>
                         <TableCell className="font-mono hidden md:table-cell">
-                          {reseller.totalPurchases.toLocaleString()} DZD
+                          {reseller.totalPurchases.toLocaleString()} {t("common.currency")}
                         </TableCell>
                         <TableCell className="hidden lg:table-cell">
                           <div className="space-y-1">
                             <Progress value={progress} className="h-2 w-24" />
                             <p className="text-xs text-muted-foreground">
-                              {Math.round(progress)}% to threshold
+                              {Math.round(progress)}% {t("resellers.toThreshold")}
                             </p>
                           </div>
                         </TableCell>
@@ -645,10 +645,10 @@ export default function Resellers() {
                             const amount = s?.totalUnpaid ?? 0;
                             return amount > 0 ? (
                               <span className="font-mono text-red-600 dark:text-red-400 font-medium" data-testid={`text-outstanding-${reseller.id}`}>
-                                {amount.toLocaleString()} DZD
+                                {amount.toLocaleString()} {t("common.currency")}
                               </span>
                             ) : (
-                              <span className="font-mono text-muted-foreground" data-testid={`text-outstanding-${reseller.id}`}>0 DZD</span>
+                              <span className="font-mono text-muted-foreground" data-testid={`text-outstanding-${reseller.id}`}>0 {t("common.currency")}</span>
                             );
                           })()}
                         </TableCell>
@@ -744,9 +744,9 @@ export default function Resellers() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogTitle>{t("common.confirmDelete")}</DialogTitle>
             <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer le revendeur <strong>{resellerToDelete?.name}</strong> ? Cette action est irréversible.
+              {t("resellers.deleteConfirmMessage").replace("{name}", resellerToDelete?.name || "")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -777,19 +777,19 @@ export default function Resellers() {
       <Dialog open={printDialogOpen} onOpenChange={setPrintDialogOpen}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Imprimer la liste des revendeurs</DialogTitle>
+            <DialogTitle>{t("resellers.printList")}</DialogTitle>
             <DialogDescription>
-              Personnalisez les informations visibles pour chaque copie
+              {t("resellers.customizeFieldsDesc")}
             </DialogDescription>
           </DialogHeader>
           <Tabs value={printTab} onValueChange={setPrintTab}>
             <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="admin" data-testid="tab-admin-copy">Copie Admin</TabsTrigger>
-              <TabsTrigger value="customer" data-testid="tab-customer-copy">Copie Client</TabsTrigger>
+              <TabsTrigger value="admin" data-testid="tab-admin-copy">{t("resellers.adminCopy")}</TabsTrigger>
+              <TabsTrigger value="customer" data-testid="tab-customer-copy">{t("resellers.customerCopy")}</TabsTrigger>
             </TabsList>
             <TabsContent value="admin" className="mt-4">
               <p className="text-sm text-muted-foreground mb-3">
-                Sélectionnez les champs à afficher dans la copie admin
+                {t("resellers.selectFieldsDesc")}
               </p>
               <div className="space-y-3">
                 {PRINT_FIELDS.map(field => (
@@ -801,7 +801,7 @@ export default function Resellers() {
                       data-testid={`checkbox-admin-${field.key}`}
                     />
                     <Label htmlFor={`admin-${field.key}`} className="text-sm cursor-pointer">
-                      {field.label}
+                      {t(field.labelKey)}
                     </Label>
                   </div>
                 ))}
@@ -809,7 +809,7 @@ export default function Resellers() {
             </TabsContent>
             <TabsContent value="customer" className="mt-4">
               <p className="text-sm text-muted-foreground mb-3">
-                Sélectionnez les champs à afficher dans la copie client
+                {t("resellers.selectFieldsDesc")}
               </p>
               <div className="space-y-3">
                 {PRINT_FIELDS.map(field => (
@@ -821,7 +821,7 @@ export default function Resellers() {
                       data-testid={`checkbox-customer-${field.key}`}
                     />
                     <Label htmlFor={`customer-${field.key}`} className="text-sm cursor-pointer">
-                      {field.label}
+                      {t(field.labelKey)}
                     </Label>
                   </div>
                 ))}
@@ -830,15 +830,15 @@ export default function Resellers() {
           </Tabs>
           <div className="bg-muted/50 rounded-lg p-3 mt-2">
             <p className="text-xs text-muted-foreground">
-              <strong>Admin:</strong> {adminFields.length} champ(s) sélectionné(s) — <strong>Client:</strong> {customerFields.length} champ(s) sélectionné(s)
+              <strong>{t("resellers.adminCopy")}:</strong> {adminFields.length} {t("resellers.selectedFields")} — <strong>{t("resellers.customerCopy")}:</strong> {customerFields.length} {t("resellers.selectedFields")}
             </p>
             <p className="text-xs text-muted-foreground mt-1">
-              {filteredResellers?.length || 0} revendeur(s) seront imprimés (2 copies par page)
+              {filteredResellers?.length || 0} {t("resellers.resellersWillBePrinted")}
             </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setPrintDialogOpen(false)}>
-              Annuler
+              {t("common.cancel")}
             </Button>
             <Button
               onClick={handlePrint}
@@ -846,7 +846,7 @@ export default function Resellers() {
               data-testid="button-confirm-print"
             >
               <Printer className="h-4 w-4 mr-2" />
-              Imprimer (2 copies)
+              {t("resellers.printCopies")}
             </Button>
           </DialogFooter>
         </DialogContent>

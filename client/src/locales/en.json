@@ -560,7 +560,21 @@
     "noResellersEligible": "No resellers eligible for the draw. Resellers are added when they reach their purchase threshold.",
     "eligibleClickDraw": "eligible. Click \"Draw Winner\" to select randomly.",
     "printList": "Print reseller list",
-    "selectedFields": "selected field(s)"
+    "selectedFields": "selected field(s)",
+    "adminCopy": "Admin Copy",
+    "customerCopy": "Customer Copy",
+    "selectFieldsDesc": "Select the fields to display in the copy",
+    "customizeFieldsDesc": "Customize the visible information for each copy",
+    "printCopies": "Print (2 copies)",
+    "resellersWillBePrinted": "reseller(s) will be printed (2 copies per page)",
+    "thresholdsReset": "Thresholds reset",
+    "thresholdsResetDesc": "All purchases and reward statuses have been reset.",
+    "deleteConfirmMessage": "Are you sure you want to delete reseller \"{name}\"? This action cannot be undone.",
+    "toThreshold": "to threshold",
+    "printedOn": "Printed on",
+    "resellerListLabel": "Reseller list",
+    "resellerCount": "reseller(s)",
+    "eligible": "Eligible"
   },
   "customers": {
     "title": "Customers",
@@ -581,7 +595,12 @@
     "editInfo": "Edit customer information",
     "addInfo": "Add a new customer to the database",
     "deleteConfirmMessage": "Are you sure you want to delete customer \"{name}\"? This action cannot be undone.",
-    "portalLinkError": "Unable to generate link"
+    "portalLinkError": "Unable to generate link",
+    "currentBalanceLabel": "Current Balance",
+    "creditLimitLabel": "Credit Limit",
+    "creditLimitExceeded": "Credit limit exceeded",
+    "transactionHistory": "Transaction History",
+    "customerPortal": "Customer Portal"
   },
   "suppliers": {
     "title": "Suppliers",

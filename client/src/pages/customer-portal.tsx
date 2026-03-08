@@ -12,6 +12,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { AlertTriangle, CreditCard, Wallet } from "lucide-react";
+import { useLanguage } from "@/contexts/language-context";
 
 interface PortalTransaction {
   id: string;
@@ -59,23 +60,24 @@ function formatDateDMY(dateStr: string): string {
   }
 }
 
-function getStatusBadge(status: string) {
+function getStatusBadge(status: string, t: (key: string) => string) {
   switch (status) {
     case "paid":
     case "completed":
-      return <Badge className="bg-green-600 text-white no-default-hover-elevate no-default-active-elevate">Payé</Badge>;
+      return <Badge className="bg-green-600 text-white no-default-hover-elevate no-default-active-elevate">{t("sales.paid")}</Badge>;
     case "partial":
-      return <Badge className="bg-orange-500 text-white no-default-hover-elevate no-default-active-elevate">Partiel</Badge>;
+      return <Badge className="bg-orange-500 text-white no-default-hover-elevate no-default-active-elevate">{t("sales.partial")}</Badge>;
     case "pending":
-      return <Badge className="bg-yellow-500 text-white no-default-hover-elevate no-default-active-elevate">En attente</Badge>;
+      return <Badge className="bg-yellow-500 text-white no-default-hover-elevate no-default-active-elevate">{t("sales.pending")}</Badge>;
     case "credit":
-      return <Badge className="bg-red-600 text-white no-default-hover-elevate no-default-active-elevate">Crédit</Badge>;
+      return <Badge className="bg-red-600 text-white no-default-hover-elevate no-default-active-elevate">{t("sales.credit")}</Badge>;
     default:
       return <Badge variant="secondary">{status}</Badge>;
   }
 }
 
 export default function CustomerPortal() {
+  const { t } = useLanguage();
   const [, params] = useRoute("/portal/:customerId");
   const customerId = params?.customerId;
   const token = new URLSearchParams(window.location.search).get("token") || "";
@@ -147,7 +149,7 @@ export default function CustomerPortal() {
               className="text-xl sm:text-2xl font-bold text-white"
               data-testid="text-portal-company"
             >
-              {branding.companyName || "Portail Client"}
+              {branding.companyName || t("customers.customerPortal")}
             </h1>
             <p className="text-white/80 text-sm" data-testid="text-portal-customer-name">
               {customer.name}
@@ -161,7 +163,7 @@ export default function CustomerPortal() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Solde Actuel
+                {t("customers.currentBalanceLabel")}
               </CardTitle>
               <Wallet className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
@@ -172,11 +174,11 @@ export default function CustomerPortal() {
                   className={`text-2xl font-bold ${isOverLimit ? "text-destructive" : ""}`}
                   data-testid="text-portal-balance"
                 >
-                  {customer.currentBalance.toLocaleString()} DZD
+                  {customer.currentBalance.toLocaleString()} {t("common.currency")}
                 </p>
               </div>
               {isOverLimit && (
-                <p className="text-xs text-destructive mt-1">Limite de crédit dépassée</p>
+                <p className="text-xs text-destructive mt-1">{t("customers.creditLimitExceeded")}</p>
               )}
             </CardContent>
           </Card>
@@ -184,13 +186,13 @@ export default function CustomerPortal() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
               <CardTitle className="text-sm font-medium text-muted-foreground">
-                Limite de Crédit
+                {t("customers.creditLimitLabel")}
               </CardTitle>
               <CreditCard className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold" data-testid="text-portal-credit-limit">
-                {customer.creditLimit.toLocaleString()} DZD
+                {customer.creditLimit.toLocaleString()} {t("common.currency")}
               </p>
             </CardContent>
           </Card>
@@ -199,25 +201,25 @@ export default function CustomerPortal() {
         <Card>
           <CardHeader>
             <CardTitle data-testid="text-portal-transactions-title">
-              Historique des Transactions
+              {t("customers.transactionHistory")}
             </CardTitle>
           </CardHeader>
           <CardContent>
             {transactions.length === 0 ? (
               <div className="text-center py-8 text-muted-foreground" data-testid="text-portal-no-transactions">
-                Aucune transaction trouvée
+                {t("common.noTransactions")}
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Date</TableHead>
-                      <TableHead>Référence</TableHead>
-                      <TableHead>Type</TableHead>
-                      <TableHead className="text-right">Total</TableHead>
-                      <TableHead className="text-right">Payé</TableHead>
-                      <TableHead>Statut</TableHead>
+                      <TableHead>{t("common.date")}</TableHead>
+                      <TableHead>{t("common.reference")}</TableHead>
+                      <TableHead>{t("common.type")}</TableHead>
+                      <TableHead className="text-right">{t("common.total")}</TableHead>
+                      <TableHead className="text-right">{t("sales.alreadyPaid")}</TableHead>
+                      <TableHead>{t("common.status")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -231,17 +233,17 @@ export default function CustomerPortal() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="outline" className="no-default-hover-elevate no-default-active-elevate">
-                            {tx.type === "sale" ? "Vente" : "Facture"}
+                            {tx.type === "sale" ? t("common.sale") : t("common.invoice")}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right whitespace-nowrap">
-                          {tx.total.toLocaleString()} DZD
+                          {tx.total.toLocaleString()} {t("common.currency")}
                         </TableCell>
                         <TableCell className="text-right whitespace-nowrap">
-                          {tx.amountPaid.toLocaleString()} DZD
+                          {tx.amountPaid.toLocaleString()} {t("common.currency")}
                         </TableCell>
                         <TableCell>
-                          {getStatusBadge(tx.status)}
+                          {getStatusBadge(tx.status, t)}
                         </TableCell>
                       </TableRow>
                     ))}

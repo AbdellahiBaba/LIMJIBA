@@ -17,7 +17,7 @@ Preferred communication style: Simple, everyday language.
 - **UI Components:** shadcn/ui on Radix UI
 - **Styling:** Tailwind CSS with industrial branding (blue #1976D2 theme) and Roboto font.
 - **Build Tool:** Vite
-- **Localization:** French, Arabic, and Bilingual modes with RTL support.
+- **Localization:** French, Arabic, and English (trilingual) with RTL support. All UI strings use `t()` translation function from `useLanguage()` context. Currency uses `t("common.currency")` key. Login page uses inline `isRTL` ternary pattern (FR/AR only). Print templates use `getLabel()` bilingual helper.
 
 ### Backend
 - **Runtime:** Node.js with Express

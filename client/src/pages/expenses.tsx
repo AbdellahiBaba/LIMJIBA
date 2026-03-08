@@ -183,7 +183,7 @@ function ExpenseFormDialog({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="amount">{t("expenses.amount")} (DZD)</Label>
+            <Label htmlFor="amount">{t("expenses.amount")} ({t("common.currency")})</Label>
             <Input
               id="amount"
               type="number"
@@ -248,7 +248,7 @@ export default function ExpensesPage() {
     mutationFn: (id: string) => apiRequest("DELETE", `/api/expenses/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/expenses"] });
-      toast({ title: `Dépense "${expenseToDelete?.name || ""}" supprimée avec succès` });
+      toast({ title: t("expenses.expenseDeleted") });
       setDeleteDialogOpen(false);
       setExpenseToDelete(null);
     },
@@ -312,11 +312,11 @@ export default function ExpensesPage() {
               exportToCsv(
                 expenses,
                 [
-                  { header: "Name", accessor: (e) => e.name },
-                  { header: "Category", accessor: (e) => e.category },
-                  { header: "Amount", accessor: (e) => e.amount },
-                  { header: "Date", accessor: (e) => e.date },
-                  { header: "Notes", accessor: (e) => e.notes },
+                  { header: t("common.name"), accessor: (e) => e.name },
+                  { header: t("expenses.category"), accessor: (e) => e.category },
+                  { header: t("expenses.amount"), accessor: (e) => e.amount },
+                  { header: t("common.date"), accessor: (e) => e.date },
+                  { header: t("common.notes"), accessor: (e) => e.notes },
                 ],
                 "depenses"
               );
@@ -324,7 +324,7 @@ export default function ExpensesPage() {
             data-testid="button-export-csv"
           >
             <Download className="h-4 w-4 mr-2" />
-            Exporter CSV
+            {t("common.exportCsv")}
           </Button>
           <Button onClick={() => setShowExpenseDialog(true)} data-testid="button-add-expense">
             <Plus className="h-4 w-4 mr-2" />
@@ -515,9 +515,9 @@ export default function ExpensesPage() {
       <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Confirmer la suppression</DialogTitle>
+            <DialogTitle>{t("common.confirmDelete")}</DialogTitle>
             <DialogDescription>
-              Êtes-vous sûr de vouloir supprimer la dépense <strong>{expenseToDelete?.name}</strong> ? Cette action est irréversible.
+              {t("common.deleteConfirmMessage")}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

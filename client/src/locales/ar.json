@@ -558,7 +558,23 @@
     "close": "إغلاق",
     "email": "البريد الإلكتروني",
     "noResellersEligible": "لا يوجد موزعون مؤهلون للسحب. تتم إضافة الموزعين عند وصولهم لحد الشراء.",
-    "eligibleClickDraw": "مؤهل(ون). انقر على \"سحب فائز\" للاختيار العشوائي."
+    "eligibleClickDraw": "مؤهل(ون). انقر على \"سحب فائز\" للاختيار العشوائي.",
+    "printList": "طباعة قائمة الموزعين",
+    "selectedFields": "حقل(حقول) محدد(ة)",
+    "adminCopy": "نسخة المسؤول",
+    "customerCopy": "نسخة العميل",
+    "selectFieldsDesc": "حدد الحقول المراد عرضها في النسخة",
+    "customizeFieldsDesc": "تخصيص المعلومات المرئية لكل نسخة",
+    "printCopies": "طباعة (نسختان)",
+    "resellersWillBePrinted": "موزع(ون) سيتم طباعتهم (نسختان لكل صفحة)",
+    "thresholdsReset": "تم إعادة تعيين الحدود",
+    "thresholdsResetDesc": "تم إعادة تعيين جميع المشتريات وحالات المكافآت.",
+    "deleteConfirmMessage": "هل أنت متأكد من حذف الموزع \"{name}\"؟ لا يمكن التراجع عن هذا الإجراء.",
+    "toThreshold": "نحو الحد",
+    "printedOn": "طُبع في",
+    "resellerListLabel": "قائمة الموزعين",
+    "resellerCount": "موزع(ون)",
+    "eligible": "مؤهل"
   },
   "customers": {
     "title": "العملاء",
@@ -579,7 +595,12 @@
     "editInfo": "تعديل معلومات العميل",
     "addInfo": "إضافة عميل جديد إلى القاعدة",
     "deleteConfirmMessage": "هل أنت متأكد من حذف العميل \"{name}\"؟ لا يمكن التراجع عن هذا الإجراء.",
-    "portalLinkError": "تعذر إنشاء الرابط"
+    "portalLinkError": "تعذر إنشاء الرابط",
+    "currentBalanceLabel": "الرصيد الحالي",
+    "creditLimitLabel": "حد الائتمان",
+    "creditLimitExceeded": "تم تجاوز حد الائتمان",
+    "transactionHistory": "سجل المعاملات",
+    "customerPortal": "بوابة العميل"
   },
   "suppliers": {
     "title": "الموردون",

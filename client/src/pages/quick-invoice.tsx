@@ -464,7 +464,7 @@ export default function QuickInvoice() {
               <Percent className="h-4 w-4 text-orange-600" />
               <div>
                 <p className="text-xs text-muted-foreground">{t("invoices.discount")}</p>
-                <p className="font-semibold text-sm">-{discountAmount.toLocaleString()} DZD</p>
+                <p className="font-semibold text-sm">-{discountAmount.toLocaleString()} {t("common.currency")}</p>
               </div>
             </div>
           )}
@@ -472,7 +472,7 @@ export default function QuickInvoice() {
             <DollarSign className="h-4 w-4 text-primary" />
             <div>
               <p className="text-xs text-muted-foreground">{t("invoices.totalTTC")}</p>
-              <p className="font-semibold text-sm text-primary" data-testid="text-qi-summary-total">{finalTotal.toLocaleString()} DZD</p>
+              <p className="font-semibold text-sm text-primary" data-testid="text-qi-summary-total">{finalTotal.toLocaleString()} {t("common.currency")}</p>
             </div>
           </div>
         </div>
@@ -713,7 +713,7 @@ export default function QuickInvoice() {
                       />
                     </TableCell>
                     <TableCell className="text-right font-mono font-medium">
-                      {item.total > 0 ? `${item.total.toLocaleString()} DZD` : "—"}
+                      {item.total > 0 ? `${item.total.toLocaleString()} ${t("common.currency")}` : "—"}
                     </TableCell>
                     <TableCell>
                       <Button
@@ -736,29 +736,29 @@ export default function QuickInvoice() {
           <div className="mt-6 flex flex-col items-end gap-1">
             {hasWeight && (
               <div className="flex gap-8 text-sm">
-                <span className="text-muted-foreground">Poids total:</span>
+                <span className="text-muted-foreground">{t("quickInvoice.totalWeight")}:</span>
                 <span className="font-mono font-medium">{totalWeight.toFixed(2)} kg</span>
               </div>
             )}
             <div className="flex gap-8 text-sm">
               <span className="text-muted-foreground">{t("invoices.totalHT")}:</span>
-              <span className="font-mono font-medium" data-testid="text-qi-total-ht">{totalHT.toLocaleString()} DZD</span>
+              <span className="font-mono font-medium" data-testid="text-qi-total-ht">{totalHT.toLocaleString()} {t("common.currency")}</span>
             </div>
             {discountAmount > 0 && (
               <div className="flex gap-8 text-sm text-orange-600">
                 <span>{t("invoices.discount")} {formData.discountType === "percent" ? `(${formData.discountValue}%)` : ""}:</span>
-                <span className="font-mono font-medium">-{discountAmount.toLocaleString()} DZD</span>
+                <span className="font-mono font-medium">-{discountAmount.toLocaleString()} {t("common.currency")}</span>
               </div>
             )}
             {formData.applyTva && (
               <div className="flex gap-8 text-sm">
                 <span className="text-muted-foreground">{t("invoices.tax")} ({(formData.tvaRate * 100).toFixed(0)}%):</span>
-                <span className="font-mono font-medium">{tvaAmount.toLocaleString()} DZD</span>
+                <span className="font-mono font-medium">{tvaAmount.toLocaleString()} {t("common.currency")}</span>
               </div>
             )}
             <div className="flex gap-8 text-lg font-semibold border-t pt-2 mt-1">
               <span>{t("invoices.totalTTC")}:</span>
-              <span className="font-mono text-primary" data-testid="text-qi-total-ttc">{finalTotal.toLocaleString()} DZD</span>
+              <span className="font-mono text-primary" data-testid="text-qi-total-ttc">{finalTotal.toLocaleString()} {t("common.currency")}</span>
             </div>
             <p className="text-sm text-muted-foreground italic mt-1">
               {numberToFrenchWords(Math.floor(finalTotal))} dinars algériens
@@ -796,8 +796,8 @@ export default function QuickInvoice() {
       <Dialog open={showPreview} onOpenChange={setShowPreview}>
         <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Aperçu de la facture</DialogTitle>
-            <DialogDescription className="sr-only">Aperçu avant impression</DialogDescription>
+            <DialogTitle>{t("quickInvoice.invoicePreview")}</DialogTitle>
+            <DialogDescription className="sr-only">{t("quickInvoice.invoicePreview")}</DialogDescription>
           </DialogHeader>
           <div className="bg-white text-gray-900 p-8 rounded-md border">
             <div className="relative z-10">
@@ -939,11 +939,11 @@ export default function QuickInvoice() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowPreview(false)}>
-              Fermer
+              {t("common.close")}
             </Button>
             <Button onClick={() => { setShowPreview(false); handlePrint(); }} disabled={filledItems.length === 0} data-testid="button-print-from-preview">
               <Printer className="h-4 w-4 mr-2" />
-              Imprimer
+              {t("common.print")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1005,7 +1005,7 @@ export default function QuickInvoice() {
                       </TableCell>
                       <TableCell>{formatDateDMY(inv.date)}</TableCell>
                       <TableCell>{inv.clientName || "—"}</TableCell>
-                      <TableCell className="text-right font-medium">{(inv.totalTTC || 0).toLocaleString()} DZD</TableCell>
+                      <TableCell className="text-right font-medium">{(inv.totalTTC || 0).toLocaleString()} {t("common.currency")}</TableCell>
                       <TableCell className="text-right">
                         <div className="flex justify-end gap-1">
                           <Button
@@ -1049,7 +1049,7 @@ export default function QuickInvoice() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowHistory(false)}>
-              Fermer
+              {t("common.close")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1058,8 +1058,8 @@ export default function QuickInvoice() {
       <Dialog open={!!viewingInvoice} onOpenChange={() => setViewingInvoice(null)}>
         <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>Facture {viewingInvoice?.invoiceNumber}</DialogTitle>
-            <DialogDescription>Détails de la facture sauvegardée</DialogDescription>
+            <DialogTitle>{t("common.invoice")} {viewingInvoice?.invoiceNumber}</DialogTitle>
+            <DialogDescription>{t("quickInvoice.savedInvoiceDetails")}</DialogDescription>
           </DialogHeader>
           {viewingInvoice && (() => {
             let parsedItems: QuickLineItem[] = [];
@@ -1067,21 +1067,21 @@ export default function QuickInvoice() {
             return (
               <div className="space-y-4">
                 <div className="grid grid-cols-2 gap-4 text-sm">
-                  <div><span className="text-muted-foreground">Date:</span> {formatDateDMY(viewingInvoice.date)}</div>
-                  <div><span className="text-muted-foreground">Mode:</span> {viewingInvoice.paymentMode}</div>
-                  {viewingInvoice.clientName && <div><span className="text-muted-foreground">Client:</span> {viewingInvoice.clientName}</div>}
-                  {viewingInvoice.responsible && <div><span className="text-muted-foreground">Responsable:</span> {viewingInvoice.responsible}</div>}
-                  {viewingInvoice.clientPhone && <div><span className="text-muted-foreground">Tél:</span> {viewingInvoice.clientPhone}</div>}
-                  {viewingInvoice.dueDate && <div><span className="text-muted-foreground">Échéance:</span> {formatDateDMY(viewingInvoice.dueDate)}</div>}
+                  <div><span className="text-muted-foreground">{t("common.date")}:</span> {formatDateDMY(viewingInvoice.date)}</div>
+                  <div><span className="text-muted-foreground">{t("invoices.paymentMode")}:</span> {viewingInvoice.paymentMode}</div>
+                  {viewingInvoice.clientName && <div><span className="text-muted-foreground">{t("invoices.clientName")}:</span> {viewingInvoice.clientName}</div>}
+                  {viewingInvoice.responsible && <div><span className="text-muted-foreground">{t("invoices.responsible")}:</span> {viewingInvoice.responsible}</div>}
+                  {viewingInvoice.clientPhone && <div><span className="text-muted-foreground">{t("common.phone")}:</span> {viewingInvoice.clientPhone}</div>}
+                  {viewingInvoice.dueDate && <div><span className="text-muted-foreground">{t("invoices.dueDate")}:</span> {formatDateDMY(viewingInvoice.dueDate)}</div>}
                 </div>
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>#</TableHead>
-                      <TableHead>Désignation</TableHead>
-                      <TableHead className="text-center">Qté</TableHead>
-                      <TableHead className="text-right">Prix U.</TableHead>
-                      <TableHead className="text-right">Montant</TableHead>
+                      <TableHead>{t("common.designation")}</TableHead>
+                      <TableHead className="text-center">{t("invoices.qty")}</TableHead>
+                      <TableHead className="text-right">{t("invoices.unitPrice")}</TableHead>
+                      <TableHead className="text-right">{t("invoices.amount")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -1090,19 +1090,19 @@ export default function QuickInvoice() {
                         <TableCell>{i + 1}</TableCell>
                         <TableCell>{item.designation}</TableCell>
                         <TableCell className="text-center">{item.quantity}</TableCell>
-                        <TableCell className="text-right">{(item.unitPrice || 0).toLocaleString()} DZD</TableCell>
-                        <TableCell className="text-right font-medium">{(item.total || 0).toLocaleString()} DZD</TableCell>
+                        <TableCell className="text-right">{(item.unitPrice || 0).toLocaleString()} {t("common.currency")}</TableCell>
+                        <TableCell className="text-right font-medium">{(item.total || 0).toLocaleString()} {t("common.currency")}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
                 <div className="flex justify-between items-center p-3 bg-muted rounded-lg">
-                  <span className="font-semibold">Total TTC</span>
-                  <span className="text-lg font-bold text-primary">{(viewingInvoice.totalTTC || 0).toLocaleString()} DZD</span>
+                  <span className="font-semibold">{t("invoices.totalTTC")}</span>
+                  <span className="text-lg font-bold text-primary">{(viewingInvoice.totalTTC || 0).toLocaleString()} {t("common.currency")}</span>
                 </div>
                 {viewingInvoice.notes && (
                   <div className="p-3 bg-yellow-50 dark:bg-yellow-950/30 border border-yellow-200 dark:border-yellow-800 rounded-md">
-                    <p className="text-sm"><strong>Notes:</strong> {viewingInvoice.notes}</p>
+                    <p className="text-sm"><strong>{t("common.notes")}:</strong> {viewingInvoice.notes}</p>
                   </div>
                 )}
               </div>
@@ -1110,11 +1110,11 @@ export default function QuickInvoice() {
           })()}
           <DialogFooter className="gap-2">
             <Button variant="outline" onClick={() => setViewingInvoice(null)}>
-              Fermer
+              {t("common.close")}
             </Button>
             <Button onClick={() => { if (viewingInvoice) { loadInvoice(viewingInvoice); } }}>
               <Download className="h-4 w-4 mr-2" />
-              Charger dans le formulaire
+              {t("quickInvoice.loadIntoForm")}
             </Button>
           </DialogFooter>
         </DialogContent>

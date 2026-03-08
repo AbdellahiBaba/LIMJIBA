@@ -1025,7 +1025,7 @@ export default function FabricationInvoice() {
                   <span className="font-medium">{totalWeight.toFixed(2)} Kg</span>
                 </div>
                 <div className="flex justify-between text-sm">
-                  <span>TOTAL H.T:</span>
+                  <span>{t("invoices.totalHT")}:</span>
                   <span className="font-medium">{formatCurrency(totalHT)}</span>
                 </div>
                 {formData.applyTva && (
@@ -1038,7 +1038,7 @@ export default function FabricationInvoice() {
                   className="flex justify-between text-lg font-bold pt-2 border-t"
                   style={{ color: branding.primaryColor }}
                 >
-                  <span>TOTAL T.T.C:</span>
+                  <span>{t("invoices.totalTTC")}:</span>
                   <span>{formatCurrency(totalTTC)}</span>
                 </div>
               </div>
