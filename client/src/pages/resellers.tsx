@@ -29,6 +29,13 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   Plus,
   Search,
   Gift,
@@ -279,6 +286,10 @@ export default function Resellers() {
   const [printTab, setPrintTab] = useState<string>("admin");
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
   const [selectedResellerId, setSelectedResellerId] = useState<string | null>(null);
+  const [payingSaleId, setPayingSaleId] = useState<string | null>(null);
+  const [paymentAmount, setPaymentAmount] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("CASH");
+  const [markingAllPaid, setMarkingAllPaid] = useState(false);
 
   const { data: resellers, isLoading } = useQuery<Reseller[]>({
     queryKey: ["/api/resellers"],
@@ -305,6 +316,65 @@ export default function Resellers() {
   const handleViewAccount = (reseller: Reseller) => {
     setSelectedResellerId(reseller.id);
     setAccountDialogOpen(true);
+  };
+
+  const recordPaymentMutation = useMutation({
+    mutationFn: ({ saleId, amount, paymentMethod: pm }: { saleId: string; amount: number; paymentMethod: string }) =>
+      apiRequest("POST", `/api/sales/${saleId}/payments`, { amount, paymentMethod: pm }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/resellers", selectedResellerId, "sales"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/resellers/summaries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({ title: t("resellers.paymentRecorded") });
+      setPayingSaleId(null);
+      setPaymentAmount("");
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
+    },
+  });
+
+  const handleStartPayment = (sale: any) => {
+    const remaining = Math.max(0, (sale.total || 0) - (sale.amountPaid || 0));
+    setPayingSaleId(sale.id);
+    setPaymentAmount(remaining.toFixed(2));
+    setPaymentMethod("CASH");
+  };
+
+  const handleConfirmPayment = () => {
+    if (payingSaleId && paymentAmount) {
+      const amount = parseFloat(paymentAmount);
+      if (amount > 0) {
+        recordPaymentMutation.mutate({ saleId: payingSaleId, amount, paymentMethod });
+      }
+    }
+  };
+
+  const handleMarkAllPaid = async () => {
+    if (!resellerAccountData) return;
+    const unpaidSales = resellerAccountData.sales.filter(
+      (s: any) => (s.status === "partial" || s.status === "credit") && (s.remaining ?? Math.max(0, (s.total || 0) - (s.amountPaid || 0))) > 0.01
+    );
+    if (unpaidSales.length === 0) return;
+    if (!window.confirm(t("resellers.confirmMarkAllPaid"))) return;
+
+    setMarkingAllPaid(true);
+    try {
+      for (const sale of unpaidSales) {
+        const remaining = sale.remaining ?? Math.max(0, (sale.total || 0) - (sale.amountPaid || 0));
+        await apiRequest("POST", `/api/sales/${sale.id}/payments`, { amount: remaining, paymentMethod: "CASH" });
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/resellers", selectedResellerId, "sales"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/resellers/summaries"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({ title: t("resellers.allPaymentsRecorded") });
+    } catch (error: any) {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
+    } finally {
+      setMarkingAllPaid(false);
+    }
   };
 
   const deleteMutation = useMutation({
@@ -830,6 +900,21 @@ export default function Resellers() {
                 </div>
               </div>
 
+              {resellerAccountData.summary.unpaidCount > 0 && (
+                <div className="flex justify-end">
+                  <Button
+                    size="sm"
+                    variant="default"
+                    onClick={handleMarkAllPaid}
+                    disabled={markingAllPaid}
+                    data-testid="button-mark-all-paid"
+                  >
+                    <CheckCircle2 className="h-4 w-4 mr-2" />
+                    {markingAllPaid ? t("resellers.processing") : t("resellers.markAllPaid")}
+                  </Button>
+                </div>
+              )}
+
               <div className="flex-1 overflow-hidden">
                 <h4 className="text-sm font-medium mb-2">{t("resellers.salesHistory")}</h4>
                 {resellerAccountData.sales.length === 0 ? (
@@ -848,11 +933,14 @@ export default function Resellers() {
                           <TableHead>{t("resellers.paidAmount")}</TableHead>
                           <TableHead>{t("resellers.remainingAmount")}</TableHead>
                           <TableHead>{t("common.status")}</TableHead>
+                          <TableHead className="text-right">{t("resellers.actions")}</TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {resellerAccountData.sales.map((sale: any) => {
                           const remaining = sale.remaining ?? Math.max(0, (sale.total || 0) - (sale.amountPaid || 0));
+                          const isUnpaid = remaining > 0.01;
+                          const isPayingThis = payingSaleId === sale.id;
                           const statusColor = sale.status === "completed"
                             ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
                             : sale.status === "credit"
@@ -881,6 +969,62 @@ export default function Resellers() {
                                 <Badge className={statusColor}>
                                   {sale.status === "completed" ? t("sales.paid") : sale.status === "credit" ? t("sales.credit") : t("sales.pending")}
                                 </Badge>
+                              </TableCell>
+                              <TableCell className="text-right">
+                                {isUnpaid && !isPayingThis && (
+                                  <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => handleStartPayment(sale)}
+                                    data-testid={`button-record-payment-${sale.id}`}
+                                  >
+                                    <DollarSign className="h-3 w-3 mr-1" />
+                                    {t("resellers.recordPayment")}
+                                  </Button>
+                                )}
+                                {isPayingThis && (
+                                  <div className="flex items-center gap-1.5" data-testid={`payment-form-${sale.id}`}>
+                                    <Input
+                                      type="number"
+                                      value={paymentAmount}
+                                      onChange={(e) => setPaymentAmount(e.target.value)}
+                                      className="w-24 h-8 text-sm"
+                                      min="0"
+                                      max={remaining}
+                                      step="0.01"
+                                      data-testid={`input-payment-amount-${sale.id}`}
+                                    />
+                                    <Select value={paymentMethod} onValueChange={setPaymentMethod}>
+                                      <SelectTrigger className="w-24 h-8 text-xs" data-testid={`select-payment-method-${sale.id}`}>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="CASH">{t("sales.paymentMethodCash")}</SelectItem>
+                                        <SelectItem value="CHEQUE">{t("sales.paymentMethodCheque")}</SelectItem>
+                                        <SelectItem value="TRANSFER">{t("sales.paymentMethodTransfer")}</SelectItem>
+                                        <SelectItem value="CARD">{t("sales.paymentMethodCard")}</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                    <Button
+                                      size="sm"
+                                      className="h-8"
+                                      onClick={handleConfirmPayment}
+                                      disabled={recordPaymentMutation.isPending}
+                                      data-testid={`button-confirm-payment-${sale.id}`}
+                                    >
+                                      <Check className="h-3 w-3" />
+                                    </Button>
+                                    <Button
+                                      size="sm"
+                                      variant="ghost"
+                                      className="h-8"
+                                      onClick={() => setPayingSaleId(null)}
+                                      data-testid={`button-cancel-payment-${sale.id}`}
+                                    >
+                                      <Trash2 className="h-3 w-3" />
+                                    </Button>
+                                  </div>
+                                )}
                               </TableCell>
                             </TableRow>
                           );

@@ -1,4 +1,5 @@
 import { useState, useMemo } from "react";
+import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLanguage, useBranding } from "@/contexts/language-context";
@@ -96,6 +97,7 @@ export default function Sales() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const { branding } = useBranding();
+  const [, navigate] = useLocation();
 
   const statusLabels: Record<string, string> = {
     completed: t("sales.paid"),
@@ -456,7 +458,17 @@ export default function Sales() {
                           {getClientName(sale) ? (
                             <div className="flex items-center gap-1.5">
                               <User className="h-3.5 w-3.5 text-muted-foreground flex-shrink-0" />
-                              <span className="truncate max-w-[120px]">{getClientName(sale)}</span>
+                              {sale.resellerId ? (
+                                <button
+                                  className="truncate max-w-[120px] text-blue-600 dark:text-blue-400 hover:underline cursor-pointer text-left"
+                                  onClick={() => navigate("/resellers")}
+                                  data-testid={`link-reseller-${sale.id}`}
+                                >
+                                  {getClientName(sale)}
+                                </button>
+                              ) : (
+                                <span className="truncate max-w-[120px]">{getClientName(sale)}</span>
+                              )}
                             </div>
                           ) : (
                             <span className="text-muted-foreground text-xs">—</span>
