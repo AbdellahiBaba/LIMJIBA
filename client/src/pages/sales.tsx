@@ -1,5 +1,4 @@
 import { useState, useMemo } from "react";
-import { useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLanguage, useBranding } from "@/contexts/language-context";
@@ -61,6 +60,7 @@ import {
   Save,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ResellerAccountDialog } from "@/components/reseller-account-dialog";
 import { exportToCsv } from "@/lib/csv-export";
 import type { Sale, SaleWithItems, SaleItem, Product, Reseller } from "@shared/schema";
 
@@ -97,7 +97,6 @@ export default function Sales() {
   const { toast } = useToast();
   const { t } = useLanguage();
   const { branding } = useBranding();
-  const [, navigate] = useLocation();
 
   const statusLabels: Record<string, string> = {
     completed: t("sales.paid"),
@@ -126,6 +125,8 @@ export default function Sales() {
   const [editItems, setEditItems] = useState<EditItem[]>([]);
   const [editDiscount, setEditDiscount] = useState<string>("0");
   const [editProductSearch, setEditProductSearch] = useState("");
+  const [resellerDialogOpen, setResellerDialogOpen] = useState(false);
+  const [selectedResellerId, setSelectedResellerId] = useState<string | null>(null);
 
   const { data: sales, isLoading } = useQuery<Sale[]>({
     queryKey: ["/api/sales"],
@@ -461,7 +462,10 @@ export default function Sales() {
                               {sale.resellerId ? (
                                 <button
                                   className="truncate max-w-[120px] text-blue-600 dark:text-blue-400 hover:underline cursor-pointer text-left"
-                                  onClick={() => navigate("/resellers")}
+                                  onClick={() => {
+                                    setSelectedResellerId(sale.resellerId);
+                                    setResellerDialogOpen(true);
+                                  }}
                                   data-testid={`link-reseller-${sale.id}`}
                                 >
                                   {getClientName(sale)}
@@ -890,6 +894,15 @@ export default function Sales() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ResellerAccountDialog
+        open={resellerDialogOpen}
+        onOpenChange={(open) => {
+          setResellerDialogOpen(open);
+          if (!open) setSelectedResellerId(null);
+        }}
+        resellerId={selectedResellerId}
+      />
     </div>
   );
 }

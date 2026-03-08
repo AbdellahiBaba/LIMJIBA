@@ -27,14 +27,6 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
 import {
   Plus,
   Search,
@@ -51,11 +43,9 @@ import {
   Eye,
   AlertCircle,
   CheckCircle2,
-  CreditCard,
-  DollarSign,
-  ShoppingCart,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { ResellerAccountDialog } from "@/components/reseller-account-dialog";
 import type { Reseller, InsertReseller } from "@shared/schema";
 
 type PrintField = "name" | "phone" | "email" | "totalPurchases" | "rewardThreshold" | "progress" | "status";
@@ -286,10 +276,6 @@ export default function Resellers() {
   const [printTab, setPrintTab] = useState<string>("admin");
   const [accountDialogOpen, setAccountDialogOpen] = useState(false);
   const [selectedResellerId, setSelectedResellerId] = useState<string | null>(null);
-  const [payingSaleId, setPayingSaleId] = useState<string | null>(null);
-  const [paymentAmount, setPaymentAmount] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("CASH");
-  const [markingAllPaid, setMarkingAllPaid] = useState(false);
 
   const { data: resellers, isLoading } = useQuery<Reseller[]>({
     queryKey: ["/api/resellers"],
@@ -299,82 +285,9 @@ export default function Resellers() {
     queryKey: ["/api/resellers/summaries"],
   });
 
-  const { data: resellerAccountData, isLoading: isAccountLoading } = useQuery<{
-    reseller: Reseller;
-    sales: Array<any>;
-    summary: { totalSalesCount: number; unpaidCount: number; totalAmount: number; totalPaid: number; totalUnpaid: number };
-  }>({
-    queryKey: ["/api/resellers", selectedResellerId, "sales"],
-    queryFn: async () => {
-      const res = await fetch(`/api/resellers/${selectedResellerId}/sales`);
-      if (!res.ok) throw new Error("Failed to fetch");
-      return res.json();
-    },
-    enabled: !!selectedResellerId && accountDialogOpen,
-  });
-
   const handleViewAccount = (reseller: Reseller) => {
     setSelectedResellerId(reseller.id);
     setAccountDialogOpen(true);
-  };
-
-  const recordPaymentMutation = useMutation({
-    mutationFn: ({ saleId, amount, paymentMethod: pm }: { saleId: string; amount: number; paymentMethod: string }) =>
-      apiRequest("POST", `/api/sales/${saleId}/payments`, { amount, paymentMethod: pm }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/resellers", selectedResellerId, "sales"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/resellers/summaries"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: t("resellers.paymentRecorded") });
-      setPayingSaleId(null);
-      setPaymentAmount("");
-    },
-    onError: (error: Error) => {
-      toast({ title: error.message || t("common.error"), variant: "destructive" });
-    },
-  });
-
-  const handleStartPayment = (sale: any) => {
-    const remaining = Math.max(0, (sale.total || 0) - (sale.amountPaid || 0));
-    setPayingSaleId(sale.id);
-    setPaymentAmount(remaining.toFixed(2));
-    setPaymentMethod("CASH");
-  };
-
-  const handleConfirmPayment = () => {
-    if (payingSaleId && paymentAmount) {
-      const amount = parseFloat(paymentAmount);
-      if (amount > 0) {
-        recordPaymentMutation.mutate({ saleId: payingSaleId, amount, paymentMethod });
-      }
-    }
-  };
-
-  const handleMarkAllPaid = async () => {
-    if (!resellerAccountData) return;
-    const unpaidSales = resellerAccountData.sales.filter(
-      (s: any) => (s.status === "partial" || s.status === "credit") && (s.remaining ?? Math.max(0, (s.total || 0) - (s.amountPaid || 0))) > 0.01
-    );
-    if (unpaidSales.length === 0) return;
-    if (!window.confirm(t("resellers.confirmMarkAllPaid"))) return;
-
-    setMarkingAllPaid(true);
-    try {
-      for (const sale of unpaidSales) {
-        const remaining = sale.remaining ?? Math.max(0, (sale.total || 0) - (sale.amountPaid || 0));
-        await apiRequest("POST", `/api/sales/${sale.id}/payments`, { amount: remaining, paymentMethod: "CASH" });
-      }
-      queryClient.invalidateQueries({ queryKey: ["/api/resellers", selectedResellerId, "sales"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/resellers/summaries"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      toast({ title: t("resellers.allPaymentsRecorded") });
-    } catch (error: any) {
-      toast({ title: error.message || t("common.error"), variant: "destructive" });
-    } finally {
-      setMarkingAllPaid(false);
-    }
   };
 
   const deleteMutation = useMutation({
@@ -663,12 +576,12 @@ export default function Resellers() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>{t("resellers.name")}</TableHead>
-                    <TableHead>{t("resellers.contact")}</TableHead>
-                    <TableHead>{t("resellers.totalPurchases")}</TableHead>
-                    <TableHead>{t("resellers.progress")}</TableHead>
+                    <TableHead className="hidden sm:table-cell">{t("resellers.contact")}</TableHead>
+                    <TableHead className="hidden md:table-cell">{t("resellers.totalPurchases")}</TableHead>
+                    <TableHead className="hidden lg:table-cell">{t("resellers.progress")}</TableHead>
                     <TableHead>{t("resellers.unpaidTickets")}</TableHead>
                     <TableHead>{t("resellers.outstandingBalance")}</TableHead>
-                    <TableHead>{t("resellers.status")}</TableHead>
+                    <TableHead className="hidden sm:table-cell">{t("resellers.status")}</TableHead>
                     <TableHead className="text-right">{t("resellers.actions")}</TableHead>
                   </TableRow>
                 </TableHeader>
@@ -690,7 +603,7 @@ export default function Resellers() {
                             <span className="font-medium">{reseller.name}</span>
                           </div>
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           <div className="text-sm">
                             <p>{reseller.phone || "-"}</p>
                             <p className="text-muted-foreground text-xs">
@@ -698,10 +611,10 @@ export default function Resellers() {
                             </p>
                           </div>
                         </TableCell>
-                        <TableCell className="font-mono">
+                        <TableCell className="font-mono hidden md:table-cell">
                           {reseller.totalPurchases.toLocaleString()} DZD
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden lg:table-cell">
                           <div className="space-y-1">
                             <Progress value={progress} className="h-2 w-24" />
                             <p className="text-xs text-muted-foreground">
@@ -739,7 +652,7 @@ export default function Resellers() {
                             );
                           })()}
                         </TableCell>
-                        <TableCell>
+                        <TableCell className="hidden sm:table-cell">
                           <div className="flex flex-wrap gap-1">
                             {reseller.isWinner && (
                               <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300">
@@ -852,192 +765,14 @@ export default function Resellers() {
         </DialogContent>
       </Dialog>
 
-      <Dialog open={accountDialogOpen} onOpenChange={(open) => {
-        setAccountDialogOpen(open);
-        if (!open) setSelectedResellerId(null);
-      }}>
-        <DialogContent className="sm:max-w-3xl max-h-[85vh] flex flex-col">
-          <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CreditCard className="h-5 w-5 text-primary" />
-              {t("resellers.accountDetails")}
-            </DialogTitle>
-            {resellerAccountData?.reseller && (
-              <DialogDescription>
-                {resellerAccountData.reseller.name} — {resellerAccountData.reseller.phone || ""}
-              </DialogDescription>
-            )}
-          </DialogHeader>
-
-          {isAccountLoading ? (
-            <div className="space-y-3 py-4">
-              {[...Array(4)].map((_, i) => (
-                <Skeleton key={i} className="h-16 w-full" />
-              ))}
-            </div>
-          ) : resellerAccountData ? (
-            <div className="flex flex-col gap-4 overflow-hidden">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 text-center">
-                  <ShoppingCart className="h-4 w-4 mx-auto mb-1 text-blue-600 dark:text-blue-400" />
-                  <p className="text-xs text-muted-foreground">{t("resellers.totalSalesCount")}</p>
-                  <p className="text-lg font-bold" data-testid="text-account-total-sales">{resellerAccountData.summary.totalSalesCount}</p>
-                </div>
-                <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3 text-center">
-                  <AlertCircle className="h-4 w-4 mx-auto mb-1 text-red-600 dark:text-red-400" />
-                  <p className="text-xs text-muted-foreground">{t("resellers.unpaidTickets")}</p>
-                  <p className="text-lg font-bold text-red-600 dark:text-red-400" data-testid="text-account-unpaid-count">{resellerAccountData.summary.unpaidCount}</p>
-                </div>
-                <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 text-center">
-                  <CheckCircle2 className="h-4 w-4 mx-auto mb-1 text-green-600 dark:text-green-400" />
-                  <p className="text-xs text-muted-foreground">{t("resellers.totalPaid")}</p>
-                  <p className="text-lg font-bold text-green-600 dark:text-green-400 font-mono" data-testid="text-account-total-paid">{resellerAccountData.summary.totalPaid.toLocaleString()}</p>
-                </div>
-                <div className="bg-orange-50 dark:bg-orange-950/30 rounded-lg p-3 text-center">
-                  <DollarSign className="h-4 w-4 mx-auto mb-1 text-orange-600 dark:text-orange-400" />
-                  <p className="text-xs text-muted-foreground">{t("resellers.totalUnpaid")}</p>
-                  <p className="text-lg font-bold text-orange-600 dark:text-orange-400 font-mono" data-testid="text-account-total-unpaid">{resellerAccountData.summary.totalUnpaid.toLocaleString()}</p>
-                </div>
-              </div>
-
-              {resellerAccountData.summary.unpaidCount > 0 && (
-                <div className="flex justify-end">
-                  <Button
-                    size="sm"
-                    variant="default"
-                    onClick={handleMarkAllPaid}
-                    disabled={markingAllPaid}
-                    data-testid="button-mark-all-paid"
-                  >
-                    <CheckCircle2 className="h-4 w-4 mr-2" />
-                    {markingAllPaid ? t("resellers.processing") : t("resellers.markAllPaid")}
-                  </Button>
-                </div>
-              )}
-
-              <div className="flex-1 overflow-hidden">
-                <h4 className="text-sm font-medium mb-2">{t("resellers.salesHistory")}</h4>
-                {resellerAccountData.sales.length === 0 ? (
-                  <div className="text-center py-8 text-muted-foreground">
-                    <ShoppingCart className="h-8 w-8 mx-auto mb-2 opacity-50" />
-                    <p>{t("common.noData")}</p>
-                  </div>
-                ) : (
-                  <ScrollArea className="h-[300px] rounded-md border">
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>{t("resellers.ticketNumber")}</TableHead>
-                          <TableHead>{t("common.date")}</TableHead>
-                          <TableHead>{t("common.total")}</TableHead>
-                          <TableHead>{t("resellers.paidAmount")}</TableHead>
-                          <TableHead>{t("resellers.remainingAmount")}</TableHead>
-                          <TableHead>{t("common.status")}</TableHead>
-                          <TableHead className="text-right">{t("resellers.actions")}</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {resellerAccountData.sales.map((sale: any) => {
-                          const remaining = sale.remaining ?? Math.max(0, (sale.total || 0) - (sale.amountPaid || 0));
-                          const isUnpaid = remaining > 0.01;
-                          const isPayingThis = payingSaleId === sale.id;
-                          const statusColor = sale.status === "completed"
-                            ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
-                            : sale.status === "credit"
-                            ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
-                            : "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300";
-                          return (
-                            <TableRow key={sale.id} data-testid={`row-account-sale-${sale.id}`}>
-                              <TableCell className="font-mono text-sm">{sale.ticketNumber || sale.id}</TableCell>
-                              <TableCell className="text-sm">
-                                {sale.date ? new Date(sale.date).toLocaleDateString() : "-"}
-                              </TableCell>
-                              <TableCell className="font-mono">{(sale.total || 0).toLocaleString()} DZD</TableCell>
-                              <TableCell className="font-mono text-green-600 dark:text-green-400">
-                                {(sale.amountPaid || 0).toLocaleString()} DZD
-                              </TableCell>
-                              <TableCell>
-                                {remaining > 0 ? (
-                                  <span className="font-mono font-bold text-red-600 dark:text-red-400">
-                                    {remaining.toLocaleString()} DZD
-                                  </span>
-                                ) : (
-                                  <span className="font-mono text-muted-foreground">0 DZD</span>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <Badge className={statusColor}>
-                                  {sale.status === "completed" ? t("sales.paid") : sale.status === "credit" ? t("sales.credit") : t("sales.pending")}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-right">
-                                {isUnpaid && !isPayingThis && (
-                                  <Button
-                                    variant="outline"
-                                    size="sm"
-                                    onClick={() => handleStartPayment(sale)}
-                                    data-testid={`button-record-payment-${sale.id}`}
-                                  >
-                                    <DollarSign className="h-3 w-3 mr-1" />
-                                    {t("resellers.recordPayment")}
-                                  </Button>
-                                )}
-                                {isPayingThis && (
-                                  <div className="flex items-center gap-1.5" data-testid={`payment-form-${sale.id}`}>
-                                    <Input
-                                      type="number"
-                                      value={paymentAmount}
-                                      onChange={(e) => setPaymentAmount(e.target.value)}
-                                      className="w-24 h-8 text-sm"
-                                      min="0"
-                                      max={remaining}
-                                      step="0.01"
-                                      data-testid={`input-payment-amount-${sale.id}`}
-                                    />
-                                    <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                                      <SelectTrigger className="w-24 h-8 text-xs" data-testid={`select-payment-method-${sale.id}`}>
-                                        <SelectValue />
-                                      </SelectTrigger>
-                                      <SelectContent>
-                                        <SelectItem value="CASH">{t("sales.paymentMethodCash")}</SelectItem>
-                                        <SelectItem value="CHEQUE">{t("sales.paymentMethodCheque")}</SelectItem>
-                                        <SelectItem value="TRANSFER">{t("sales.paymentMethodTransfer")}</SelectItem>
-                                        <SelectItem value="CARD">{t("sales.paymentMethodCard")}</SelectItem>
-                                      </SelectContent>
-                                    </Select>
-                                    <Button
-                                      size="sm"
-                                      className="h-8"
-                                      onClick={handleConfirmPayment}
-                                      disabled={recordPaymentMutation.isPending}
-                                      data-testid={`button-confirm-payment-${sale.id}`}
-                                    >
-                                      <Check className="h-3 w-3" />
-                                    </Button>
-                                    <Button
-                                      size="sm"
-                                      variant="ghost"
-                                      className="h-8"
-                                      onClick={() => setPayingSaleId(null)}
-                                      data-testid={`button-cancel-payment-${sale.id}`}
-                                    >
-                                      <Trash2 className="h-3 w-3" />
-                                    </Button>
-                                  </div>
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          );
-                        })}
-                      </TableBody>
-                    </Table>
-                  </ScrollArea>
-                )}
-              </div>
-            </div>
-          ) : null}
-        </DialogContent>
-      </Dialog>
+      <ResellerAccountDialog
+        open={accountDialogOpen}
+        onOpenChange={(open) => {
+          setAccountDialogOpen(open);
+          if (!open) setSelectedResellerId(null);
+        }}
+        resellerId={selectedResellerId}
+      />
 
       <Dialog open={printDialogOpen} onOpenChange={setPrintDialogOpen}>
         <DialogContent className="sm:max-w-lg">
