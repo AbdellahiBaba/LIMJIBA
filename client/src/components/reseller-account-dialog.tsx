@@ -210,7 +210,7 @@ export function ResellerAccountDialog({ open, onOpenChange, resellerId }: Resell
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="text-xs">{t("resellers.ticketNumber")}</TableHead>
+                          <TableHead className="text-xs w-[90px] sm:w-[100px]">{t("resellers.ticketNumber")}</TableHead>
                           <TableHead className="text-xs hidden sm:table-cell">{t("common.date")}</TableHead>
                           <TableHead className="text-xs">{t("common.total")}</TableHead>
                           <TableHead className="text-xs hidden md:table-cell">{t("resellers.paidAmount")}</TableHead>
@@ -231,7 +231,12 @@ export function ResellerAccountDialog({ open, onOpenChange, resellerId }: Resell
                             : "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300";
                           return (
                             <TableRow key={sale.id} data-testid={`row-account-sale-${sale.id}`}>
-                              <TableCell className="font-mono text-xs sm:text-sm py-2">{sale.ticketNumber || sale.id}</TableCell>
+                              <TableCell className="font-mono text-xs sm:text-sm py-2 w-[90px] sm:w-[100px] max-w-[100px] truncate whitespace-nowrap overflow-hidden" title={sale.ticketNumber || sale.id}>
+                                {(() => {
+                                  const ticket = sale.ticketNumber || sale.id || "-";
+                                  return ticket.length > 10 ? ticket.substring(0, 8) + "…" : ticket;
+                                })()}
+                              </TableCell>
                               <TableCell className="text-xs sm:text-sm py-2 hidden sm:table-cell">
                                 {sale.date ? new Date(sale.date).toLocaleDateString() : "-"}
                               </TableCell>
