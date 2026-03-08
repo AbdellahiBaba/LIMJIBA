@@ -59,7 +59,16 @@
     "linkCopied": "Lien copié",
     "copyPortalLink": "Copier le lien portail",
     "supplier": "fournisseur(s)",
-    "purchaseOrder": "bon(s) de commande"
+    "purchaseOrder": "bon(s) de commande",
+    "currency": "DZD",
+    "previous": "Précédent",
+    "next": "Suivant",
+    "type": "Type",
+    "reference": "Référence",
+    "designation": "Désignation",
+    "noTransactions": "Aucune transaction trouvée",
+    "sale": "Vente",
+    "invoice": "Facture"
   },
   "nav": {
     "dashboard": "Tableau de bord",
@@ -549,7 +558,9 @@
     "close": "Fermer",
     "email": "Email",
     "noResellersEligible": "Aucun revendeur éligible pour le tirage. Les revendeurs sont ajoutés lorsqu'ils atteignent leur seuil d'achat.",
-    "eligibleClickDraw": "éligible(s). Cliquez sur \"Tirer un Gagnant\" pour sélectionner aléatoirement."
+    "eligibleClickDraw": "éligible(s). Cliquez sur \"Tirer un Gagnant\" pour sélectionner aléatoirement.",
+    "printList": "Imprimer la liste des revendeurs",
+    "selectedFields": "champ(s) sélectionné(s)"
   },
   "customers": {
     "title": "Clients",

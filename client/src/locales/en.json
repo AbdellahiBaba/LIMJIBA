@@ -59,7 +59,16 @@
     "linkCopied": "Link copied",
     "copyPortalLink": "Copy portal link",
     "supplier": "supplier(s)",
-    "purchaseOrder": "purchase order(s)"
+    "purchaseOrder": "purchase order(s)",
+    "currency": "DZD",
+    "previous": "Previous",
+    "next": "Next",
+    "type": "Type",
+    "reference": "Reference",
+    "designation": "Designation",
+    "noTransactions": "No transactions found",
+    "sale": "Sale",
+    "invoice": "Invoice"
   },
   "nav": {
     "dashboard": "Dashboard",
@@ -549,7 +558,9 @@
     "close": "Close",
     "email": "Email",
     "noResellersEligible": "No resellers eligible for the draw. Resellers are added when they reach their purchase threshold.",
-    "eligibleClickDraw": "eligible. Click \"Draw Winner\" to select randomly."
+    "eligibleClickDraw": "eligible. Click \"Draw Winner\" to select randomly.",
+    "printList": "Print reseller list",
+    "selectedFields": "selected field(s)"
   },
   "customers": {
     "title": "Customers",

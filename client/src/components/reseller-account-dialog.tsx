@@ -138,7 +138,7 @@ export function ResellerAccountDialog({ open, onOpenChange, resellerId }: Resell
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] sm:max-h-[85vh] flex flex-col p-4 sm:p-6">
+      <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] sm:max-h-[85vh] flex flex-col p-4 sm:p-6 overflow-hidden">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2 text-base sm:text-lg">
             <CreditCard className="h-4 w-4 sm:h-5 sm:w-5 text-primary" />
@@ -158,7 +158,7 @@ export function ResellerAccountDialog({ open, onOpenChange, resellerId }: Resell
             ))}
           </div>
         ) : resellerAccountData ? (
-          <div className="flex flex-col gap-3 sm:gap-4 overflow-hidden min-h-0">
+          <div className="flex flex-col gap-3 sm:gap-4 overflow-y-auto min-h-0 flex-1">
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3">
               <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-2 sm:p-3 text-center">
                 <ShoppingCart className="h-3.5 w-3.5 sm:h-4 sm:w-4 mx-auto mb-1 text-blue-600 dark:text-blue-400" />
@@ -197,7 +197,7 @@ export function ResellerAccountDialog({ open, onOpenChange, resellerId }: Resell
               </div>
             )}
 
-            <div className="flex-1 overflow-hidden min-h-0">
+            <div className="min-h-0">
               <h4 className="text-xs sm:text-sm font-medium mb-2">{t("resellers.salesHistory")}</h4>
               {resellerAccountData.sales.length === 0 ? (
                 <div className="text-center py-6 sm:py-8 text-muted-foreground">
@@ -205,7 +205,7 @@ export function ResellerAccountDialog({ open, onOpenChange, resellerId }: Resell
                   <p className="text-sm">{t("common.noData")}</p>
                 </div>
               ) : (
-                <ScrollArea className="h-[250px] sm:h-[300px] rounded-md border">
+                <ScrollArea className="max-h-[40vh] sm:max-h-[45vh] rounded-md border">
                   <div className="min-w-0">
                     <Table>
                       <TableHeader>
@@ -235,17 +235,17 @@ export function ResellerAccountDialog({ open, onOpenChange, resellerId }: Resell
                               <TableCell className="text-xs sm:text-sm py-2 hidden sm:table-cell">
                                 {sale.date ? new Date(sale.date).toLocaleDateString() : "-"}
                               </TableCell>
-                              <TableCell className="font-mono text-xs sm:text-sm py-2">{(sale.total || 0).toLocaleString()} DZD</TableCell>
+                              <TableCell className="font-mono text-xs sm:text-sm py-2">{(sale.total || 0).toLocaleString()} {t("common.currency")}</TableCell>
                               <TableCell className="font-mono text-xs sm:text-sm text-green-600 dark:text-green-400 py-2 hidden md:table-cell">
-                                {(sale.amountPaid || 0).toLocaleString()} DZD
+                                {(sale.amountPaid || 0).toLocaleString()} {t("common.currency")}
                               </TableCell>
                               <TableCell className="py-2">
                                 {remaining > 0 ? (
                                   <span className="font-mono text-xs sm:text-sm font-bold text-red-600 dark:text-red-400">
-                                    {remaining.toLocaleString()} DZD
+                                    {remaining.toLocaleString()} {t("common.currency")}
                                   </span>
                                 ) : (
-                                  <span className="font-mono text-xs sm:text-sm text-muted-foreground">0 DZD</span>
+                                  <span className="font-mono text-xs sm:text-sm text-muted-foreground">0 {t("common.currency")}</span>
                                 )}
                               </TableCell>
                               <TableCell className="py-2 hidden sm:table-cell">

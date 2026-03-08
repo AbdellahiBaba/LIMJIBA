@@ -59,7 +59,16 @@
     "linkCopied": "تم نسخ الرابط",
     "copyPortalLink": "نسخ رابط البوابة",
     "supplier": "مورد(ون)",
-    "purchaseOrder": "طلب(ات) شراء"
+    "purchaseOrder": "طلب(ات) شراء",
+    "currency": "د.ج",
+    "previous": "السابق",
+    "next": "التالي",
+    "type": "النوع",
+    "reference": "المرجع",
+    "designation": "التسمية",
+    "noTransactions": "لم يتم العثور على معاملات",
+    "sale": "بيع",
+    "invoice": "فاتورة"
   },
   "nav": {
     "dashboard": "لوحة التحكم",
