@@ -27,6 +27,7 @@ import {
 } from "@/components/ui/table";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ScrollArea } from "@/components/ui/scroll-area";
 import {
   Plus,
   Search,
@@ -40,6 +41,12 @@ import {
   Check,
   Printer,
   RotateCcw,
+  Eye,
+  AlertCircle,
+  CheckCircle2,
+  CreditCard,
+  DollarSign,
+  ShoppingCart,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import type { Reseller, InsertReseller } from "@shared/schema";
@@ -270,10 +277,35 @@ export default function Resellers() {
   const [adminFields, setAdminFields] = useState<PrintField[]>([...DEFAULT_ADMIN_FIELDS]);
   const [customerFields, setCustomerFields] = useState<PrintField[]>([...DEFAULT_CUSTOMER_FIELDS]);
   const [printTab, setPrintTab] = useState<string>("admin");
+  const [accountDialogOpen, setAccountDialogOpen] = useState(false);
+  const [selectedResellerId, setSelectedResellerId] = useState<string | null>(null);
 
   const { data: resellers, isLoading } = useQuery<Reseller[]>({
     queryKey: ["/api/resellers"],
   });
+
+  const { data: summaries } = useQuery<Record<string, { unpaidCount: number; totalUnpaid: number }>>({
+    queryKey: ["/api/resellers/summaries"],
+  });
+
+  const { data: resellerAccountData, isLoading: isAccountLoading } = useQuery<{
+    reseller: Reseller;
+    sales: Array<any>;
+    summary: { totalSalesCount: number; unpaidCount: number; totalAmount: number; totalPaid: number; totalUnpaid: number };
+  }>({
+    queryKey: ["/api/resellers", selectedResellerId, "sales"],
+    queryFn: async () => {
+      const res = await fetch(`/api/resellers/${selectedResellerId}/sales`);
+      if (!res.ok) throw new Error("Failed to fetch");
+      return res.json();
+    },
+    enabled: !!selectedResellerId && accountDialogOpen,
+  });
+
+  const handleViewAccount = (reseller: Reseller) => {
+    setSelectedResellerId(reseller.id);
+    setAccountDialogOpen(true);
+  };
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("DELETE", `/api/resellers/${id}`),
@@ -564,6 +596,8 @@ export default function Resellers() {
                     <TableHead>{t("resellers.contact")}</TableHead>
                     <TableHead>{t("resellers.totalPurchases")}</TableHead>
                     <TableHead>{t("resellers.progress")}</TableHead>
+                    <TableHead>{t("resellers.unpaidTickets")}</TableHead>
+                    <TableHead>{t("resellers.outstandingBalance")}</TableHead>
                     <TableHead>{t("resellers.status")}</TableHead>
                     <TableHead className="text-right">{t("resellers.actions")}</TableHead>
                   </TableRow>
@@ -606,6 +640,36 @@ export default function Resellers() {
                           </div>
                         </TableCell>
                         <TableCell>
+                          {(() => {
+                            const s = summaries?.[reseller.id];
+                            const count = s?.unpaidCount ?? 0;
+                            return count > 0 ? (
+                              <Badge variant="destructive" className="font-mono" data-testid={`badge-unpaid-${reseller.id}`}>
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                                {count}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="text-green-600 border-green-300 dark:text-green-400 dark:border-green-700" data-testid={`badge-unpaid-${reseller.id}`}>
+                                <CheckCircle2 className="h-3 w-3 mr-1" />
+                                {t("resellers.allPaid")}
+                              </Badge>
+                            );
+                          })()}
+                        </TableCell>
+                        <TableCell>
+                          {(() => {
+                            const s = summaries?.[reseller.id];
+                            const amount = s?.totalUnpaid ?? 0;
+                            return amount > 0 ? (
+                              <span className="font-mono text-red-600 dark:text-red-400 font-medium" data-testid={`text-outstanding-${reseller.id}`}>
+                                {amount.toLocaleString()} DZD
+                              </span>
+                            ) : (
+                              <span className="font-mono text-muted-foreground" data-testid={`text-outstanding-${reseller.id}`}>0 DZD</span>
+                            );
+                          })()}
+                        </TableCell>
+                        <TableCell>
                           <div className="flex flex-wrap gap-1">
                             {reseller.isWinner && (
                               <Badge className="bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300">
@@ -626,6 +690,15 @@ export default function Resellers() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleViewAccount(reseller)}
+                              title={t("resellers.viewAccount")}
+                              data-testid={`button-view-account-${reseller.id}`}
+                            >
+                              <Eye className="h-4 w-4 text-primary" />
+                            </Button>
                             <Button
                               variant="ghost"
                               size="icon"
@@ -706,6 +779,119 @@ export default function Resellers() {
               {deleteMutation.isPending ? t("common.loading") : t("common.delete")}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={accountDialogOpen} onOpenChange={(open) => {
+        setAccountDialogOpen(open);
+        if (!open) setSelectedResellerId(null);
+      }}>
+        <DialogContent className="sm:max-w-3xl max-h-[85vh] flex flex-col">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5 text-primary" />
+              {t("resellers.accountDetails")}
+            </DialogTitle>
+            {resellerAccountData?.reseller && (
+              <DialogDescription>
+                {resellerAccountData.reseller.name} — {resellerAccountData.reseller.phone || ""}
+              </DialogDescription>
+            )}
+          </DialogHeader>
+
+          {isAccountLoading ? (
+            <div className="space-y-3 py-4">
+              {[...Array(4)].map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          ) : resellerAccountData ? (
+            <div className="flex flex-col gap-4 overflow-hidden">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="bg-blue-50 dark:bg-blue-950/30 rounded-lg p-3 text-center">
+                  <ShoppingCart className="h-4 w-4 mx-auto mb-1 text-blue-600 dark:text-blue-400" />
+                  <p className="text-xs text-muted-foreground">{t("resellers.totalSalesCount")}</p>
+                  <p className="text-lg font-bold" data-testid="text-account-total-sales">{resellerAccountData.summary.totalSalesCount}</p>
+                </div>
+                <div className="bg-red-50 dark:bg-red-950/30 rounded-lg p-3 text-center">
+                  <AlertCircle className="h-4 w-4 mx-auto mb-1 text-red-600 dark:text-red-400" />
+                  <p className="text-xs text-muted-foreground">{t("resellers.unpaidTickets")}</p>
+                  <p className="text-lg font-bold text-red-600 dark:text-red-400" data-testid="text-account-unpaid-count">{resellerAccountData.summary.unpaidCount}</p>
+                </div>
+                <div className="bg-green-50 dark:bg-green-950/30 rounded-lg p-3 text-center">
+                  <CheckCircle2 className="h-4 w-4 mx-auto mb-1 text-green-600 dark:text-green-400" />
+                  <p className="text-xs text-muted-foreground">{t("resellers.totalPaid")}</p>
+                  <p className="text-lg font-bold text-green-600 dark:text-green-400 font-mono" data-testid="text-account-total-paid">{resellerAccountData.summary.totalPaid.toLocaleString()}</p>
+                </div>
+                <div className="bg-orange-50 dark:bg-orange-950/30 rounded-lg p-3 text-center">
+                  <DollarSign className="h-4 w-4 mx-auto mb-1 text-orange-600 dark:text-orange-400" />
+                  <p className="text-xs text-muted-foreground">{t("resellers.totalUnpaid")}</p>
+                  <p className="text-lg font-bold text-orange-600 dark:text-orange-400 font-mono" data-testid="text-account-total-unpaid">{resellerAccountData.summary.totalUnpaid.toLocaleString()}</p>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-hidden">
+                <h4 className="text-sm font-medium mb-2">{t("resellers.salesHistory")}</h4>
+                {resellerAccountData.sales.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <ShoppingCart className="h-8 w-8 mx-auto mb-2 opacity-50" />
+                    <p>{t("common.noData")}</p>
+                  </div>
+                ) : (
+                  <ScrollArea className="h-[300px] rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>{t("resellers.ticketNumber")}</TableHead>
+                          <TableHead>{t("common.date")}</TableHead>
+                          <TableHead>{t("common.total")}</TableHead>
+                          <TableHead>{t("resellers.paidAmount")}</TableHead>
+                          <TableHead>{t("resellers.remainingAmount")}</TableHead>
+                          <TableHead>{t("common.status")}</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {resellerAccountData.sales.map((sale: any) => {
+                          const remaining = sale.remaining ?? Math.max(0, (sale.total || 0) - (sale.amountPaid || 0));
+                          const statusColor = sale.status === "completed"
+                            ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                            : sale.status === "credit"
+                            ? "bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300"
+                            : "bg-orange-100 text-orange-700 dark:bg-orange-900/40 dark:text-orange-300";
+                          return (
+                            <TableRow key={sale.id} data-testid={`row-account-sale-${sale.id}`}>
+                              <TableCell className="font-mono text-sm">{sale.ticketNumber || sale.id}</TableCell>
+                              <TableCell className="text-sm">
+                                {sale.date ? new Date(sale.date).toLocaleDateString() : "-"}
+                              </TableCell>
+                              <TableCell className="font-mono">{(sale.total || 0).toLocaleString()} DZD</TableCell>
+                              <TableCell className="font-mono text-green-600 dark:text-green-400">
+                                {(sale.amountPaid || 0).toLocaleString()} DZD
+                              </TableCell>
+                              <TableCell>
+                                {remaining > 0 ? (
+                                  <span className="font-mono font-bold text-red-600 dark:text-red-400">
+                                    {remaining.toLocaleString()} DZD
+                                  </span>
+                                ) : (
+                                  <span className="font-mono text-muted-foreground">0 DZD</span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Badge className={statusColor}>
+                                  {sale.status === "completed" ? t("sales.paid") : sale.status === "credit" ? t("sales.credit") : t("sales.pending")}
+                                </Badge>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </ScrollArea>
+                )}
+              </div>
+            </div>
+          ) : null}
         </DialogContent>
       </Dialog>
 

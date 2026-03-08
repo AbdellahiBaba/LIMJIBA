@@ -1968,6 +1968,58 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/resellers/summaries", async (req, res) => {
+    try {
+      const allSales = await storage.getSales();
+      const resellers = await storage.getResellers();
+      const summaries: Record<string, { unpaidCount: number; totalUnpaid: number }> = {};
+      for (const r of resellers) {
+        summaries[r.id] = { unpaidCount: 0, totalUnpaid: 0 };
+      }
+      for (const sale of allSales) {
+        if (sale.resellerId && summaries[sale.resellerId]) {
+          const remaining = Math.max(0, (sale.total || 0) - (sale.amountPaid || 0));
+          if (sale.status === "partial" || sale.status === "credit" || remaining > 0.01) {
+            summaries[sale.resellerId].unpaidCount++;
+            summaries[sale.resellerId].totalUnpaid += remaining;
+          }
+        }
+      }
+      res.json(summaries);
+    } catch (error) {
+      handleError(res, "get reseller summaries", error);
+    }
+  });
+
+  app.get("/api/resellers/:id/sales", async (req, res) => {
+    try {
+      const reseller = await storage.getReseller(req.params.id);
+      if (!reseller) {
+        return res.status(404).json({ error: "Reseller not found" });
+      }
+      const allSales = await storage.getSales();
+      const resellerSales = allSales
+        .filter((s) => s.resellerId === req.params.id)
+        .map((s) => ({
+          ...s,
+          remaining: Math.max(0, (s.total || 0) - (s.amountPaid || 0)),
+        }));
+      const unpaidSales = resellerSales.filter(
+        (s) => s.status === "partial" || s.status === "credit" || s.remaining > 0.01
+      );
+      const summary = {
+        totalSalesCount: resellerSales.length,
+        unpaidCount: unpaidSales.length,
+        totalAmount: resellerSales.reduce((sum, s) => sum + (s.total || 0), 0),
+        totalPaid: resellerSales.reduce((sum, s) => sum + (s.amountPaid || 0), 0),
+        totalUnpaid: unpaidSales.reduce((sum, s) => sum + s.remaining, 0),
+      };
+      res.json({ reseller, sales: resellerSales, summary });
+    } catch (error) {
+      handleError(res, "get reseller sales", error);
+    }
+  });
+
   app.get("/api/resellers/:id", async (req, res) => {
     try {
       const reseller = await storage.getReseller(req.params.id);

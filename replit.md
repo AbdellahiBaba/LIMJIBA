@@ -33,7 +33,7 @@ Preferred communication style: Simple, everyday language.
 - **Quick Invoice (Facture Rapide):** Standalone service invoice generator with auto-numbering (FR-XXXX/YYYY), discount support (% or fixed), saved copies in history, preview and print-ready. Independent from main system (no stock/sales/accounting impact).
 - **POS (Point of Sale):** Product grid with favorites section, cart with quick customer name input, checkout, payment modes, receipt printing, recent sales panel, out-of-stock overlays, stock quantity badges, park/hold sale (F3 shortcut) with resume functionality.
 - **Sales Management:** View, filter, update, delete, CSV export.
-- **Reseller Rewards:** Track purchases, reward pool, random winner draw.
+- **Reseller Rewards:** Track purchases, reward pool, random winner draw. Inline unpaid tickets count and outstanding balance columns in reseller list. Account Detail dialog (eye icon) shows summary cards (total sales, unpaid count, total paid, total unpaid) and full sales history table with paid/remaining/status per ticket.
 - **Salaries Management:** Employee records and monthly salary payments, CSV export.
 - **Expenses Tracking:** Categorized business expenses, CSV export.
 - **Profit Calculator:** Net profit analysis from sales, salaries, and expenses.
