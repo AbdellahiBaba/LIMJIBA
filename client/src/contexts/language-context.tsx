@@ -88,7 +88,16 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
     const saved = localStorage.getItem("app-branding");
     if (saved) {
       try {
-        return { ...defaultBranding, ...JSON.parse(saved) };
+        const parsed = JSON.parse(saved);
+        const merged = {
+          ...defaultBranding,
+          ...parsed,
+          companyInfo: { ...defaultCompanyInfo, ...(parsed.companyInfo || {}) },
+        };
+        if (merged.companyInfo.phone === "+213 6 70 04 91 24") {
+          merged.companyInfo.phone = defaultCompanyInfo.phone;
+        }
+        return merged;
       } catch {
         return defaultBranding;
       }
@@ -112,8 +121,16 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
           const data = await res.json();
           if (data.value) {
             const dbBranding = JSON.parse(data.value);
-            setBranding({ ...defaultBranding, ...dbBranding });
-            localStorage.setItem("app-branding", data.value);
+            const merged = {
+              ...defaultBranding,
+              ...dbBranding,
+              companyInfo: { ...defaultCompanyInfo, ...(dbBranding.companyInfo || {}) },
+            };
+            if (merged.companyInfo.phone === "+213 6 70 04 91 24") {
+              merged.companyInfo.phone = defaultCompanyInfo.phone;
+            }
+            setBranding(merged);
+            localStorage.setItem("app-branding", JSON.stringify(merged));
           }
         }
       } catch (e) {
