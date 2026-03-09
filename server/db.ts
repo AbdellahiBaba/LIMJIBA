@@ -619,6 +619,14 @@ async function runMigrations(): Promise<void> {
       await client.query(`ALTER TABLE transportation_items ADD COLUMN total_value REAL DEFAULT 0`);
       console.log('[DB] Added total_value column to transportation_items');
     }
+
+    try {
+      await client.query(`ALTER TABLE transportation_invoices ALTER COLUMN driver_name DROP NOT NULL`);
+      await client.query(`ALTER TABLE transportation_invoices ALTER COLUMN responsible DROP NOT NULL`);
+      console.log('[DB] Made driver_name and responsible optional on transportation_invoices');
+    } catch (e: any) {
+      // Ignore if already nullable
+    }
     
     console.log('[DB] Schema migrations complete');
   } catch (error) {

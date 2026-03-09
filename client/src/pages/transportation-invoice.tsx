@@ -93,7 +93,7 @@ export default function TransportationInvoicePage() {
     const matchSearch =
       !searchQuery ||
       inv.invoiceNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      inv.driverName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (inv.driverName || "").toLowerCase().includes(searchQuery.toLowerCase()) ||
       inv.departureLocation.toLowerCase().includes(searchQuery.toLowerCase()) ||
       inv.arrivalLocation.toLowerCase().includes(searchQuery.toLowerCase());
     const matchStatus = statusFilter === "all" || inv.status === statusFilter;
@@ -281,7 +281,7 @@ export default function TransportationInvoicePage() {
                       <TableCell className="font-mono text-sm font-medium">{inv.invoiceNumber}</TableCell>
                       <TableCell className="text-sm">{inv.date ? new Date(inv.date).toLocaleDateString() : "-"}</TableCell>
                       <TableCell>{getDirectionBadge(inv.direction)}</TableCell>
-                      <TableCell className="text-sm hidden md:table-cell">{inv.driverName}</TableCell>
+                      <TableCell className="text-sm hidden md:table-cell">{inv.driverName || "-"}</TableCell>
                       <TableCell className="text-sm hidden lg:table-cell">
                         {inv.departureLocation} → {inv.arrivalLocation}
                       </TableCell>
@@ -441,7 +441,7 @@ function CreateTransportDialog({
   };
 
   const handleSubmit = () => {
-    if (!form.driverName || !form.departureLocation || !form.arrivalLocation || !form.responsible) {
+    if (!form.departureLocation || !form.arrivalLocation) {
       toast({ title: t("common.error"), description: "Fill required fields", variant: "destructive" });
       return;
     }
@@ -882,12 +882,12 @@ function ViewTransportDialog({
   </div>
 
   <div style="display:flex;gap:20px;margin-bottom:20px;">
-    <div style="flex:1;padding:12px;background:${primaryColor}10;border-radius:6px;">
+    ${(invoice.driverName || invoice.vehiclePlate || invoice.responsible) ? `<div style="flex:1;padding:12px;background:${primaryColor}10;border-radius:6px;">
       <h4 style="margin:0 0 6px;color:${primaryColor};font-size:13px;">${t("transportation.tripDetails")}</h4>
-      <p style="margin:2px 0;font-size:13px;"><span style="color:#666;">${t("transportation.driverName")}:</span> <strong>${esc(invoice.driverName)}</strong></p>
-      <p style="margin:2px 0;font-size:12px;"><span style="color:#666;">${t("transportation.vehiclePlate")}:</span> ${esc(invoice.vehiclePlate || "-")}</p>
-      <p style="margin:2px 0;font-size:12px;"><span style="color:#666;">${t("transportation.responsible")}:</span> ${esc(invoice.responsible)}</p>
-    </div>
+      ${invoice.driverName ? `<p style="margin:2px 0;font-size:13px;"><span style="color:#666;">${t("transportation.driverName")}:</span> <strong>${esc(invoice.driverName)}</strong></p>` : ''}
+      ${invoice.vehiclePlate ? `<p style="margin:2px 0;font-size:12px;"><span style="color:#666;">${t("transportation.vehiclePlate")}:</span> ${esc(invoice.vehiclePlate)}</p>` : ''}
+      ${invoice.responsible ? `<p style="margin:2px 0;font-size:12px;"><span style="color:#666;">${t("transportation.responsible")}:</span> ${esc(invoice.responsible)}</p>` : ''}
+    </div>` : ''}
     <div style="flex:1;padding:12px;background:#f5f5f5;border-radius:6px;">
       <h4 style="margin:0 0 6px;color:${primaryColor};font-size:13px;">${t("transportation.route")}</h4>
       <p style="margin:2px 0;font-size:13px;"><span style="color:#666;">${t("transportation.departureLocation")}:</span> <strong>${esc(invoice.departureLocation)}</strong></p>
@@ -921,13 +921,13 @@ function ViewTransportDialog({
   </table>
   ` : ''}
 
-  <div style="padding:12px;background:${primaryColor}08;border:1px solid ${primaryColor}30;border-radius:6px;margin-bottom:20px;">
+  ${(invoice.totalCost || 0) > 0 ? `<div style="padding:12px;background:${primaryColor}08;border:1px solid ${primaryColor}30;border-radius:6px;margin-bottom:20px;">
     <h4 style="margin:0 0 8px;color:${primaryColor};font-size:13px;">${t("transportation.costBreakdown")}</h4>
-    <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>${t("transportation.fuelCost")}</span><span>${(invoice.fuelCost || 0).toLocaleString()} ${currency}</span></div>
-    <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>${t("transportation.driverFee")}</span><span>${(invoice.driverFee || 0).toLocaleString()} ${currency}</span></div>
-    <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>${t("transportation.otherCosts")}</span><span>${(invoice.otherCosts || 0).toLocaleString()} ${currency}</span></div>
+    ${(invoice.fuelCost || 0) > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>${t("transportation.fuelCost")}</span><span>${(invoice.fuelCost || 0).toLocaleString()} ${currency}</span></div>` : ''}
+    ${(invoice.driverFee || 0) > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>${t("transportation.driverFee")}</span><span>${(invoice.driverFee || 0).toLocaleString()} ${currency}</span></div>` : ''}
+    ${(invoice.otherCosts || 0) > 0 ? `<div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>${t("transportation.otherCosts")}</span><span>${(invoice.otherCosts || 0).toLocaleString()} ${currency}</span></div>` : ''}
     <div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:16px;font-weight:700;border-top:2px solid ${primaryColor};margin-top:4px;color:${primaryColor};"><span>${t("transportation.totalCost")}</span><span>${(invoice.totalCost || 0).toLocaleString()} ${currency}</span></div>
-  </div>
+  </div>` : ''}
 
   ${invoice.notes ? `<div style="margin-bottom:20px;padding:10px;background:#fffde7;border:1px solid #fff9c4;border-radius:4px;">
     <p style="margin:0;font-size:11px;color:#666;"><strong>${t("transportation.notes")}:</strong> ${esc(invoice.notes)}</p>
@@ -979,14 +979,18 @@ function ViewTransportDialog({
                   <span className="text-muted-foreground">{t("transportation.direction")}:</span>
                   <span className="ml-2">{getDirectionLongLabel(invoice.direction, t)}</span>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">{t("transportation.driverName")}:</span>
-                  <span className="ml-2 font-medium">{invoice.driverName}</span>
-                </div>
-                <div>
-                  <span className="text-muted-foreground">{t("transportation.vehiclePlate")}:</span>
-                  <span className="ml-2 font-mono">{invoice.vehiclePlate || "-"}</span>
-                </div>
+                {invoice.driverName && (
+                  <div>
+                    <span className="text-muted-foreground">{t("transportation.driverName")}:</span>
+                    <span className="ml-2 font-medium">{invoice.driverName}</span>
+                  </div>
+                )}
+                {invoice.vehiclePlate && (
+                  <div>
+                    <span className="text-muted-foreground">{t("transportation.vehiclePlate")}:</span>
+                    <span className="ml-2 font-mono">{invoice.vehiclePlate}</span>
+                  </div>
+                )}
                 <div>
                   <span className="text-muted-foreground">{t("transportation.departureLocation")}:</span>
                   <span className="ml-2">{invoice.departureLocation}</span>
@@ -995,10 +999,12 @@ function ViewTransportDialog({
                   <span className="text-muted-foreground">{t("transportation.arrivalLocation")}:</span>
                   <span className="ml-2">{invoice.arrivalLocation}</span>
                 </div>
-                <div>
-                  <span className="text-muted-foreground">{t("transportation.responsible")}:</span>
-                  <span className="ml-2">{invoice.responsible}</span>
-                </div>
+                {invoice.responsible && (
+                  <div>
+                    <span className="text-muted-foreground">{t("transportation.responsible")}:</span>
+                    <span className="ml-2">{invoice.responsible}</span>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -1041,31 +1047,39 @@ function ViewTransportDialog({
             </Card>
           )}
 
-          <Card>
-            <CardHeader className="pb-3">
-              <CardTitle className="text-sm">{t("transportation.costBreakdown")}</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-1 text-sm">
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t("transportation.fuelCost")}</span>
-                  <span className="font-mono">{(invoice.fuelCost || 0).toLocaleString()} {t("common.currency")}</span>
+          {(invoice.totalCost || 0) > 0 && (
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-sm">{t("transportation.costBreakdown")}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1 text-sm">
+                  {(invoice.fuelCost || 0) > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t("transportation.fuelCost")}</span>
+                      <span className="font-mono">{(invoice.fuelCost || 0).toLocaleString()} {t("common.currency")}</span>
+                    </div>
+                  )}
+                  {(invoice.driverFee || 0) > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t("transportation.driverFee")}</span>
+                      <span className="font-mono">{(invoice.driverFee || 0).toLocaleString()} {t("common.currency")}</span>
+                    </div>
+                  )}
+                  {(invoice.otherCosts || 0) > 0 && (
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">{t("transportation.otherCosts")}</span>
+                      <span className="font-mono">{(invoice.otherCosts || 0).toLocaleString()} {t("common.currency")}</span>
+                    </div>
+                  )}
+                  <div className="flex justify-between border-t pt-2 font-bold">
+                    <span>{t("transportation.totalCost")}</span>
+                    <span className="font-mono text-lg">{(invoice.totalCost || 0).toLocaleString()} {t("common.currency")}</span>
+                  </div>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t("transportation.driverFee")}</span>
-                  <span className="font-mono">{(invoice.driverFee || 0).toLocaleString()} {t("common.currency")}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">{t("transportation.otherCosts")}</span>
-                  <span className="font-mono">{(invoice.otherCosts || 0).toLocaleString()} {t("common.currency")}</span>
-                </div>
-                <div className="flex justify-between border-t pt-2 font-bold">
-                  <span>{t("transportation.totalCost")}</span>
-                  <span className="font-mono text-lg">{(invoice.totalCost || 0).toLocaleString()} {t("common.currency")}</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+              </CardContent>
+            </Card>
+          )}
 
           {invoice.notes && (
             <Card>

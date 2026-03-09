@@ -498,7 +498,7 @@ export const transportationInvoices = pgTable("transportation_invoices", {
   invoiceNumber: text("invoice_number").unique().notNull(),
   date: text("date").notNull(),
   direction: text("direction").notNull(),
-  driverName: text("driver_name").notNull(),
+  driverName: text("driver_name"),
   vehiclePlate: text("vehicle_plate"),
   departureLocation: text("departure_location").notNull(),
   arrivalLocation: text("arrival_location").notNull(),
@@ -509,7 +509,7 @@ export const transportationInvoices = pgTable("transportation_invoices", {
   totalWeight: real("total_weight").default(0),
   totalValue: real("total_value").default(0),
   notes: text("notes"),
-  responsible: text("responsible").notNull(),
+  responsible: text("responsible"),
   status: text("status").default("pending"),
   createdAt: text("created_at").notNull(),
 });
