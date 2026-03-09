@@ -52,7 +52,7 @@ const defaultCompanyInfo: CompanyInfo = {
   artisanNumber: "28/00 - 2896688A24",
   articleNumber: "",
   fiscalNumber: "",
-  phone: "+213 6 70 04 91 24",
+  phone: "+213 6 70 04 91 24 / +213 6 70 04 91 36",
   email: "contact@polyflectaplastica.com",
   website: "www.polyflectaplastica.com",
 };
