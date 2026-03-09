@@ -567,6 +567,145 @@ export async function registerRoutes(
     }
   });
 
+  // ===================== TRANSPORTATION INVOICE ROUTES =====================
+
+  app.get("/api/transportation-invoices/next-number", requireAuth, async (req, res) => {
+    try {
+      const nextNumber = await storage.getNextTransportationNumber();
+      res.json({ nextNumber });
+    } catch (error) {
+      handleError(res, "getNextTransportationNumber", error);
+    }
+  });
+
+  app.get("/api/transportation-invoices", requirePermission("transportation"), async (req, res) => {
+    try {
+      const invoicesList = await storage.getTransportationInvoices();
+      res.json(invoicesList);
+    } catch (error) {
+      handleError(res, "getTransportationInvoices", error);
+    }
+  });
+
+  app.get("/api/transportation-invoices/:id", requirePermission("transportation"), async (req, res) => {
+    try {
+      const invoice = await storage.getTransportationInvoiceWithItems(req.params.id);
+      if (!invoice) return res.status(404).json({ error: "Transportation invoice not found" });
+      res.json(invoice);
+    } catch (error) {
+      handleError(res, "getTransportationInvoice", error);
+    }
+  });
+
+  app.post("/api/transportation-invoices", requirePermission("transportation"), async (req, res) => {
+    try {
+      const { invoice, items } = req.body;
+      const created = await storage.createTransportationInvoice(invoice, items || []);
+      try {
+        await storage.createAuditLog({
+          userId: (req as any).user?.id || "system",
+          username: req.session.username || "System",
+          action: "create",
+          entity: "transportation_invoice",
+          entityId: created.id,
+          details: `Created transportation invoice ${created.invoiceNumber} (${created.direction})`,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (e) {}
+      res.status(201).json(created);
+    } catch (error) {
+      handleError(res, "createTransportationInvoice", error);
+    }
+  });
+
+  app.patch("/api/transportation-invoices/:id/status", requirePermission("transportation"), async (req, res) => {
+    try {
+      const { status } = req.body;
+      const validStatuses = ["pending", "in_transit", "completed", "cancelled"];
+      if (!validStatuses.includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+
+      const existing = await storage.getTransportationInvoiceWithItems(req.params.id);
+      if (!existing) return res.status(404).json({ error: "Transportation invoice not found" });
+
+      if (existing.status === "completed" && status === "completed") {
+        return res.status(400).json({ error: "Invoice already completed" });
+      }
+
+      const updated = await storage.updateTransportationInvoiceStatus(req.params.id, status);
+      if (!updated) return res.status(404).json({ error: "Transportation invoice not found" });
+
+      if (status === "completed" && existing.status !== "completed") {
+        const invoiceWithItems = await storage.getTransportationInvoiceWithItems(req.params.id);
+        if (invoiceWithItems && invoiceWithItems.items.length > 0) {
+          for (const item of invoiceWithItems.items) {
+            if (item.productId) {
+              try {
+                const product = await storage.getProduct(item.productId);
+                if (product) {
+                  const movementType = invoiceWithItems.direction === "delivery" ? "in" : "out";
+                  const newQty = movementType === "in"
+                    ? product.stockQuantity + item.quantity
+                    : Math.max(0, product.stockQuantity - item.quantity);
+                  await storage.updateProduct(item.productId, { stockQuantity: newQty });
+                  await storage.createStockMovement({
+                    productId: item.productId,
+                    movementType,
+                    reason: "transport",
+                    quantity: movementType === "in" ? item.quantity : -item.quantity,
+                    previousStock: product.stockQuantity,
+                    newStock: newQty,
+                    reference: invoiceWithItems.invoiceNumber,
+                    createdAt: new Date().toISOString(),
+                    createdBy: (req as any).user?.displayName || "System",
+                  });
+                }
+              } catch (e) {
+                console.error(`[Transport] Stock movement error for product ${item.productId}:`, e);
+              }
+            }
+          }
+        }
+      }
+
+      try {
+        await storage.createAuditLog({
+          userId: (req as any).user?.id || "system",
+          username: req.session.username || "System",
+          action: "update",
+          entity: "transportation_invoice",
+          entityId: req.params.id,
+          details: `Updated transportation invoice status to ${status}`,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (e) {}
+      res.json(updated);
+    } catch (error) {
+      handleError(res, "updateTransportationInvoiceStatus", error);
+    }
+  });
+
+  app.delete("/api/transportation-invoices/:id", requireAdmin, async (req, res) => {
+    try {
+      await storage.deleteTransportationInvoice(req.params.id);
+      try {
+        await storage.createAuditLog({
+          userId: (req as any).user?.id || "system",
+          username: req.session.username || "System",
+          action: "delete",
+          entity: "transportation_invoice",
+          entityId: req.params.id,
+          details: `Deleted transportation invoice`,
+          createdAt: new Date().toISOString(),
+        });
+      } catch (e) {}
+      res.json({ success: true });
+    } catch (error) {
+      handleError(res, "deleteTransportationInvoice", error);
+    }
+  });
+
   // ===================== PARKED SALES ROUTES =====================
 
   app.get("/api/parked-sales", requireAuth, async (req, res) => {

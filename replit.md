@@ -47,12 +47,13 @@ Preferred communication style: Simple, everyday language.
 - **Notification Center:** Bell icon with badge showing low stock warnings, overdue invoices, and credit limit exceeded alerts with dismiss functionality.
 - **CSV Export:** Available on all major list pages (Sales, Invoices, Stock, Expenses, Customers, Salaries, Suppliers, Purchase Orders).
 - **DataTable Component:** Reusable table with sorting, pagination, search, selection, and bulk operations (`client/src/components/data-table.tsx`).
+- **Transportation Invoices (Bons de Transport):** Track product movements between manufacturer and storage/warehouse. Auto-numbered (BT-XXXX/YYYY), two directions (delivery=manufacturer→storage, return=storage→manufacturer), cost breakdown (fuel/driver/other), product line items with weight tracking. Status flow: pending→in_transit→completed→cancelled. Completing a delivery adds stock; completing a return removes stock. Print-ready with XSS-safe template. Page: `/transportation`.
 - **Backup & Restore:** Enhanced with last backup date tracking, restore file preview (entity counts), backup reminder warnings.
 
 ### Data Storage
 - **Type:** PostgreSQL database using Drizzle ORM.
 - **Schema:** Shared `shared/schema.ts` for type safety between frontend/backend.
-- **Key Entities:** Products (with `isFavorite`), Invoices (with `deliveryStatus`), Fabrication Invoices, Sales, Resellers, Employees, Salary Payments, Expenses, Customers, Quick Invoices, Suppliers, Purchase Orders, Purchase Order Items, Parked Sales, Audit Logs, Users (with roles/permissions).
+- **Key Entities:** Products (with `isFavorite`), Invoices (with `deliveryStatus`), Fabrication Invoices, Sales, Resellers, Employees, Salary Payments, Expenses, Customers, Quick Invoices, Suppliers, Purchase Orders, Purchase Order Items, Transportation Invoices, Transportation Items, Parked Sales, Audit Logs, Users (with roles/permissions).
 
 ### Key Design Decisions
 - **Shared Schema Pattern:** Centralized type definitions for consistent data structures.

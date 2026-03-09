@@ -546,6 +546,52 @@ async function runMigrations(): Promise<void> {
       `);
       console.log('[DB] Created audit_logs table');
     }
+
+    const transportExists = await client.query(`
+      SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'transportation_invoices')
+    `);
+    if (!transportExists.rows[0].exists) {
+      await client.query(`
+        CREATE TABLE transportation_invoices (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          invoice_number TEXT UNIQUE NOT NULL,
+          date TEXT NOT NULL,
+          direction TEXT NOT NULL,
+          driver_name TEXT NOT NULL,
+          vehicle_plate TEXT,
+          departure_location TEXT NOT NULL,
+          arrival_location TEXT NOT NULL,
+          fuel_cost REAL DEFAULT 0,
+          driver_fee REAL DEFAULT 0,
+          other_costs REAL DEFAULT 0,
+          total_cost REAL NOT NULL,
+          total_weight REAL DEFAULT 0,
+          notes TEXT,
+          responsible TEXT NOT NULL,
+          status TEXT DEFAULT 'pending',
+          created_at TEXT NOT NULL
+        )
+      `);
+      console.log('[DB] Created transportation_invoices table');
+    }
+
+    const transportItemsExists = await client.query(`
+      SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = 'public' AND table_name = 'transportation_items')
+    `);
+    if (!transportItemsExists.rows[0].exists) {
+      await client.query(`
+        CREATE TABLE transportation_items (
+          id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+          transportation_invoice_id VARCHAR NOT NULL,
+          product_id VARCHAR,
+          product_name TEXT NOT NULL,
+          quantity INTEGER NOT NULL,
+          weight_per_unit REAL DEFAULT 0,
+          total_weight REAL DEFAULT 0
+        )
+      `);
+      console.log('[DB] Created transportation_items table');
+    }
     
     console.log('[DB] Schema migrations complete');
   } catch (error) {

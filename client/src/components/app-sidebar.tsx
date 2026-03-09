@@ -33,6 +33,7 @@ import {
   BarChart3,
   ClipboardList,
   ScrollText,
+  PackageCheck,
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -111,6 +112,13 @@ export function AppSidebar() {
       icon: ClipboardList,
       testId: "nav-purchase-orders",
       permission: "purchase_orders",
+    },
+    {
+      title: t("nav.transportation"),
+      url: "/transportation",
+      icon: PackageCheck,
+      testId: "nav-transportation",
+      permission: "transportation",
     },
     {
       title: t("nav.salaries"),

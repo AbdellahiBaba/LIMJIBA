@@ -58,6 +58,11 @@ import {
   type InsertParkedSale,
   type AuditLog,
   type InsertAuditLog,
+  type TransportationInvoice,
+  type InsertTransportationInvoice,
+  type TransportationItem,
+  type InsertTransportationItem,
+  type TransportationInvoiceWithItems,
   users,
   products,
   invoices,
@@ -83,6 +88,8 @@ import {
   purchaseOrderItems,
   parkedSales,
   auditLogs,
+  transportationInvoices,
+  transportationItems,
 } from "@shared/schema";
 import { db, withRetry } from "./db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
@@ -220,6 +227,14 @@ export interface IStorage {
   createAuditLog(log: InsertAuditLog): Promise<AuditLog>;
 
   updateInvoiceDeliveryStatus(id: string, status: string): Promise<Invoice | undefined>;
+
+  getTransportationInvoices(): Promise<TransportationInvoice[]>;
+  getTransportationInvoice(id: string): Promise<TransportationInvoice | undefined>;
+  getTransportationInvoiceWithItems(id: string): Promise<TransportationInvoiceWithItems | undefined>;
+  createTransportationInvoice(invoice: InsertTransportationInvoice, items: InsertTransportationItem[]): Promise<TransportationInvoiceWithItems>;
+  updateTransportationInvoiceStatus(id: string, status: string): Promise<TransportationInvoice | undefined>;
+  deleteTransportationInvoice(id: string): Promise<boolean>;
+  getNextTransportationNumber(): Promise<string>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2105,6 +2120,85 @@ export class DatabaseStorage implements IStorage {
       const [updated] = await db.update(invoices).set({ deliveryStatus: status }).where(eq(invoices.id, id)).returning();
       cache.delete(CACHE_KEYS.INVOICES);
       return updated;
+    });
+  }
+
+  // ===================== TRANSPORTATION INVOICES =====================
+
+  async getTransportationInvoices(): Promise<TransportationInvoice[]> {
+    const cached = cache.get<TransportationInvoice[]>(CACHE_KEYS.TRANSPORTATION_INVOICES);
+    if (cached) return cached;
+    return await withRetry(async () => {
+      const result = await db.select().from(transportationInvoices).orderBy(desc(transportationInvoices.date));
+      cache.set(CACHE_KEYS.TRANSPORTATION_INVOICES, result, CACHE_TTL.SHORT);
+      return result;
+    });
+  }
+
+  async getTransportationInvoice(id: string): Promise<TransportationInvoice | undefined> {
+    return await withRetry(async () => {
+      const [invoice] = await db.select().from(transportationInvoices).where(eq(transportationInvoices.id, id));
+      return invoice || undefined;
+    });
+  }
+
+  async getTransportationInvoiceWithItems(id: string): Promise<TransportationInvoiceWithItems | undefined> {
+    return await withRetry(async () => {
+      const [invoice] = await db.select().from(transportationInvoices).where(eq(transportationInvoices.id, id));
+      if (!invoice) return undefined;
+      const items = await db.select().from(transportationItems).where(eq(transportationItems.transportationInvoiceId, id));
+      return { ...invoice, items };
+    });
+  }
+
+  async createTransportationInvoice(invoice: InsertTransportationInvoice, items: InsertTransportationItem[]): Promise<TransportationInvoiceWithItems> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(transportationInvoices).values(invoice).returning();
+      const createdItems: TransportationItem[] = [];
+      for (const item of items) {
+        const [createdItem] = await db.insert(transportationItems).values({
+          ...item,
+          transportationInvoiceId: created.id,
+        }).returning();
+        createdItems.push(createdItem);
+      }
+      cache.delete(CACHE_KEYS.TRANSPORTATION_INVOICES);
+      return { ...created, items: createdItems };
+    });
+  }
+
+  async updateTransportationInvoiceStatus(id: string, status: string): Promise<TransportationInvoice | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(transportationInvoices).set({ status }).where(eq(transportationInvoices.id, id)).returning();
+      cache.delete(CACHE_KEYS.TRANSPORTATION_INVOICES);
+      return updated;
+    });
+  }
+
+  async deleteTransportationInvoice(id: string): Promise<boolean> {
+    return await withRetry(async () => {
+      await db.delete(transportationItems).where(eq(transportationItems.transportationInvoiceId, id));
+      const result = await db.delete(transportationInvoices).where(eq(transportationInvoices.id, id));
+      cache.delete(CACHE_KEYS.TRANSPORTATION_INVOICES);
+      return (result.rowCount ?? 0) > 0;
+    });
+  }
+
+  async getNextTransportationNumber(): Promise<string> {
+    return await withRetry(async () => {
+      const year = new Date().getFullYear();
+      const prefix = `BT-`;
+      const allInvoices = await db.select({ invoiceNumber: transportationInvoices.invoiceNumber }).from(transportationInvoices);
+      let maxNum = 0;
+      for (const inv of allInvoices) {
+        const match = inv.invoiceNumber.match(/^BT-(\d+)\//);
+        if (match) {
+          const num = parseInt(match[1], 10);
+          if (num > maxNum) maxNum = num;
+        }
+      }
+      const nextNum = String(maxNum + 1).padStart(4, "0");
+      return `${prefix}${nextNum}/${year}`;
     });
   }
 }

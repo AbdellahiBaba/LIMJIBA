@@ -36,6 +36,7 @@ import Suppliers from "@/pages/suppliers";
 import PurchaseOrders from "@/pages/purchase-orders";
 import Reports from "@/pages/reports";
 import AuditLog from "@/pages/audit-log";
+import TransportationInvoice from "@/pages/transportation-invoice";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
@@ -54,6 +55,7 @@ function Router() {
       <Route path="/customers" component={Customers} />
       <Route path="/suppliers" component={Suppliers} />
       <Route path="/purchase-orders" component={PurchaseOrders} />
+      <Route path="/transportation" component={TransportationInvoice} />
       <Route path="/salaries" component={Salaries} />
       <Route path="/expenses" component={Expenses} />
       <Route path="/branding" component={Branding} />

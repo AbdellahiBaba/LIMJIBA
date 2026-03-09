@@ -84,6 +84,7 @@ export const CACHE_KEYS = {
   EXPENSES: "expenses",
   FABRICATION_INVOICES: "fabrication_invoices",
   SALARY_PAYMENTS: "salary_payments",
+  TRANSPORTATION_INVOICES: "transportation_invoices",
 };
 
 // TTL values (in milliseconds)

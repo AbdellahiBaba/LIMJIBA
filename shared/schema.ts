@@ -30,7 +30,7 @@ export type User = typeof users.$inferSelect;
 export const ALL_PERMISSIONS = [
   "dashboard", "pos", "stock", "invoices", "sales", "customers",
   "resellers", "expenses", "salaries", "reports", "suppliers",
-  "purchase_orders", "branding", "settings", "audit_log"
+  "purchase_orders", "transportation", "branding", "settings", "audit_log"
 ] as const;
 export type Permission = typeof ALL_PERMISSIONS[number];
 
@@ -492,6 +492,45 @@ export const auditLogs = pgTable("audit_logs", {
 export const insertAuditLogSchema = createInsertSchema(auditLogs).omit({ id: true });
 export type InsertAuditLog = z.infer<typeof insertAuditLogSchema>;
 export type AuditLog = typeof auditLogs.$inferSelect;
+
+export const transportationInvoices = pgTable("transportation_invoices", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  invoiceNumber: text("invoice_number").unique().notNull(),
+  date: text("date").notNull(),
+  direction: text("direction").notNull(),
+  driverName: text("driver_name").notNull(),
+  vehiclePlate: text("vehicle_plate"),
+  departureLocation: text("departure_location").notNull(),
+  arrivalLocation: text("arrival_location").notNull(),
+  fuelCost: real("fuel_cost").default(0),
+  driverFee: real("driver_fee").default(0),
+  otherCosts: real("other_costs").default(0),
+  totalCost: real("total_cost").notNull(),
+  totalWeight: real("total_weight").default(0),
+  notes: text("notes"),
+  responsible: text("responsible").notNull(),
+  status: text("status").default("pending"),
+  createdAt: text("created_at").notNull(),
+});
+
+export const insertTransportationInvoiceSchema = createInsertSchema(transportationInvoices).omit({ id: true });
+export type InsertTransportationInvoice = z.infer<typeof insertTransportationInvoiceSchema>;
+export type TransportationInvoice = typeof transportationInvoices.$inferSelect;
+
+export const transportationItems = pgTable("transportation_items", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  transportationInvoiceId: varchar("transportation_invoice_id").notNull(),
+  productId: varchar("product_id"),
+  productName: text("product_name").notNull(),
+  quantity: integer("quantity").notNull(),
+  weightPerUnit: real("weight_per_unit").default(0),
+  totalWeight: real("total_weight").default(0),
+});
+
+export const insertTransportationItemSchema = createInsertSchema(transportationItems).omit({ id: true });
+export type InsertTransportationItem = z.infer<typeof insertTransportationItemSchema>;
+export type TransportationItem = typeof transportationItems.$inferSelect;
+export type TransportationInvoiceWithItems = TransportationInvoice & { items: TransportationItem[] };
 
 export interface ProductInventoryValue {
   id: string;
