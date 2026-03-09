@@ -1,6 +1,5 @@
 import { QueryClient, QueryFunction } from "@tanstack/react-query";
 
-// Parse error response body to extract meaningful error message
 async function parseErrorResponse(res: Response): Promise<string> {
   try {
     const text = await res.text();
@@ -8,10 +7,8 @@ async function parseErrorResponse(res: Response): Promise<string> {
       return res.statusText || `HTTP ${res.status}`;
     }
     
-    // Try to parse as JSON to get structured error
     try {
       const json = JSON.parse(text);
-      // Return the most descriptive message available
       if (json.message) return json.message;
       if (json.error) {
         if (json.details && typeof json.details === 'string') {
@@ -21,7 +18,6 @@ async function parseErrorResponse(res: Response): Promise<string> {
       }
       return text;
     } catch {
-      // Not JSON, return as plain text
       return text;
     }
   } catch {
@@ -35,7 +31,6 @@ async function throwIfResNotOk(res: Response) {
     const error = new Error(errorMessage) as Error & { status: number; retryable?: boolean };
     error.status = res.status;
     
-    // Mark 503 errors as retryable
     if (res.status === 503) {
       error.retryable = true;
     }
@@ -44,12 +39,22 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+function fetchWithTimeout(input: RequestInfo | URL, init?: RequestInit, timeoutMs = 30000): Promise<Response> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  
+  return fetch(input, {
+    ...init,
+    signal: controller.signal,
+  }).finally(() => clearTimeout(timer));
+}
+
 export async function apiRequest(
   method: string,
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
-  const res = await fetch(url, {
+  const res = await fetchWithTimeout(url, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
     body: data ? JSON.stringify(data) : undefined,
@@ -66,7 +71,7 @@ export const getQueryFn: <T>(options: {
 }) => QueryFunction<T> =
   ({ on401: unauthorizedBehavior }) =>
   async ({ queryKey }) => {
-    const res = await fetch(queryKey.join("/") as string, {
+    const res = await fetchWithTimeout(queryKey.join("/") as string, {
       credentials: "include",
     });
 
@@ -84,8 +89,13 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      retry: false,
+      refetchOnReconnect: true,
+      staleTime: 30000,
+      retry: (failureCount, error: any) => {
+        if (error?.status === 401 || error?.status === 403 || error?.status === 404) return false;
+        return failureCount < 2;
+      },
+      retryDelay: (attemptIndex) => Math.min(1000 * (attemptIndex + 1), 5000),
     },
     mutations: {
       retry: false,
