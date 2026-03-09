@@ -272,20 +272,22 @@ export function ResellerAccountDialog({ open, onOpenChange, resellerId }: Resell
                                   </Button>
                                 )}
                                 {isPayingThis && (
-                                  <div className="flex flex-col sm:flex-row items-end sm:items-center gap-1 sm:gap-1.5" data-testid={`payment-form-${sale.id}`}>
-                                    <Input
-                                      type="number"
-                                      value={paymentAmount}
-                                      onChange={(e) => setPaymentAmount(e.target.value)}
-                                      className="w-20 sm:w-24 h-7 sm:h-8 text-xs"
-                                      min="0"
-                                      max={remaining}
-                                      step="0.01"
-                                      data-testid={`input-payment-amount-${sale.id}`}
-                                    />
+                                  <div className="flex flex-col gap-1.5" data-testid={`payment-form-${sale.id}`}>
+                                    <div className="flex items-center gap-1">
+                                      <Input
+                                        type="number"
+                                        value={paymentAmount}
+                                        onChange={(e) => setPaymentAmount(e.target.value)}
+                                        className="w-24 h-7 text-xs"
+                                        min="0"
+                                        max={remaining}
+                                        step="0.01"
+                                        data-testid={`input-payment-amount-${sale.id}`}
+                                      />
+                                    </div>
                                     <div className="flex items-center gap-1">
                                       <Select value={paymentMethod} onValueChange={setPaymentMethod}>
-                                        <SelectTrigger className="w-20 sm:w-24 h-7 sm:h-8 text-[10px] sm:text-xs" data-testid={`select-payment-method-${sale.id}`}>
+                                        <SelectTrigger className="w-24 h-7 text-[10px]" data-testid={`select-payment-method-${sale.id}`}>
                                           <SelectValue />
                                         </SelectTrigger>
                                         <SelectContent>
@@ -297,7 +299,7 @@ export function ResellerAccountDialog({ open, onOpenChange, resellerId }: Resell
                                       </Select>
                                       <Button
                                         size="sm"
-                                        className="h-7 sm:h-8 w-7 sm:w-8 p-0"
+                                        className="h-7 w-7 p-0 shrink-0"
                                         onClick={handleConfirmPayment}
                                         disabled={recordPaymentMutation.isPending}
                                         data-testid={`button-confirm-payment-${sale.id}`}
@@ -307,7 +309,7 @@ export function ResellerAccountDialog({ open, onOpenChange, resellerId }: Resell
                                       <Button
                                         size="sm"
                                         variant="ghost"
-                                        className="h-7 sm:h-8 w-7 sm:w-8 p-0"
+                                        className="h-7 w-7 p-0 shrink-0"
                                         onClick={() => setPayingSaleId(null)}
                                         data-testid={`button-cancel-payment-${sale.id}`}
                                       >
