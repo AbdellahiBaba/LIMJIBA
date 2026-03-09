@@ -56,6 +56,20 @@ interface TransportItem {
   quantity: number;
   weightPerUnit: number;
   totalWeight: number;
+  unitPrice: number;
+  totalValue: number;
+}
+
+function getDirectionShortLabel(direction: string, t: (key: string) => string) {
+  if (direction === "delivery") return t("transportation.deliveryShort");
+  if (direction === "client_return") return t("transportation.clientReturnShort");
+  return t("transportation.returnShort");
+}
+
+function getDirectionLongLabel(direction: string, t: (key: string) => string) {
+  if (direction === "delivery") return t("transportation.directionDelivery");
+  if (direction === "client_return") return t("transportation.directionClientReturn");
+  return t("transportation.directionReturn");
 }
 
 export default function TransportationInvoicePage() {
@@ -99,7 +113,6 @@ export default function TransportationInvoicePage() {
       apiRequest("PATCH", `/api/transportation-invoices/${id}/status`, { status }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/transportation-invoices"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       toast({ title: t("transportation.statusUpdateSuccess") });
     },
   });
@@ -138,6 +151,9 @@ export default function TransportationInvoicePage() {
     if (direction === "delivery") {
       return <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/40 dark:text-blue-300" data-testid="badge-direction-delivery">{t("transportation.deliveryShort")}</Badge>;
     }
+    if (direction === "client_return") {
+      return <Badge className="bg-green-100 text-green-800 dark:bg-green-900/40 dark:text-green-300" data-testid="badge-direction-client-return">{t("transportation.clientReturnShort")}</Badge>;
+    }
     return <Badge className="bg-orange-100 text-orange-800 dark:bg-orange-900/40 dark:text-orange-300" data-testid="badge-direction-return">{t("transportation.returnShort")}</Badge>;
   };
 
@@ -155,12 +171,13 @@ export default function TransportationInvoicePage() {
       t("transportation.otherCosts"),
       t("transportation.totalCost"),
       t("transportation.totalWeight"),
+      t("transportation.totalValue"),
       t("transportation.status"),
     ];
     const rows = filtered.map((inv) => [
       inv.invoiceNumber,
       inv.date,
-      inv.direction === "delivery" ? t("transportation.deliveryShort") : t("transportation.returnShort"),
+      getDirectionShortLabel(inv.direction, t),
       inv.driverName,
       inv.vehiclePlate || "",
       inv.departureLocation,
@@ -170,6 +187,7 @@ export default function TransportationInvoicePage() {
       inv.otherCosts || 0,
       inv.totalCost,
       inv.totalWeight || 0,
+      inv.totalValue || 0,
       inv.status || "pending",
     ]);
     const csv = [headers, ...rows].map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
@@ -251,6 +269,7 @@ export default function TransportationInvoicePage() {
                     <TableHead className="text-xs hidden md:table-cell">{t("transportation.driverName")}</TableHead>
                     <TableHead className="text-xs hidden lg:table-cell">{t("transportation.route")}</TableHead>
                     <TableHead className="text-xs text-right">{t("transportation.totalCost")}</TableHead>
+                    <TableHead className="text-xs text-right hidden md:table-cell">{t("transportation.totalValue")}</TableHead>
                     <TableHead className="text-xs hidden md:table-cell text-right">{t("transportation.totalWeight")}</TableHead>
                     <TableHead className="text-xs">{t("transportation.status")}</TableHead>
                     <TableHead className="text-xs text-right">{t("common.actions")}</TableHead>
@@ -268,6 +287,9 @@ export default function TransportationInvoicePage() {
                       </TableCell>
                       <TableCell className="text-sm text-right font-mono">
                         {(inv.totalCost || 0).toLocaleString()} {t("common.currency")}
+                      </TableCell>
+                      <TableCell className="text-sm text-right font-mono hidden md:table-cell">
+                        {(inv.totalValue || 0).toLocaleString()} {t("common.currency")}
                       </TableCell>
                       <TableCell className="text-sm text-right font-mono hidden md:table-cell">
                         {(inv.totalWeight || 0).toLocaleString()} {t("transportation.kg")}
@@ -369,7 +391,7 @@ function CreateTransportDialog({
 
   const [form, setForm] = useState({
     date: new Date().toISOString().slice(0, 10),
-    direction: "delivery" as "delivery" | "return",
+    direction: "delivery" as "delivery" | "return" | "client_return",
     driverName: "",
     vehiclePlate: "",
     departureLocation: "",
@@ -384,6 +406,7 @@ function CreateTransportDialog({
 
   const totalCost = (form.fuelCost || 0) + (form.driverFee || 0) + (form.otherCosts || 0);
   const totalWeight = items.reduce((sum, item) => sum + (item.totalWeight || 0), 0);
+  const totalValue = items.reduce((sum, item) => sum + (item.totalValue || 0), 0);
 
   const createMutation = useMutation({
     mutationFn: (data: { invoice: any; items: any[] }) =>
@@ -437,6 +460,7 @@ function CreateTransportDialog({
         otherCosts: form.otherCosts,
         totalCost,
         totalWeight,
+        totalValue,
         notes: form.notes,
         responsible: form.responsible,
         status: "pending",
@@ -448,12 +472,14 @@ function CreateTransportDialog({
         quantity: item.quantity,
         weightPerUnit: item.weightPerUnit,
         totalWeight: item.totalWeight,
+        unitPrice: item.unitPrice,
+        totalValue: item.totalValue,
       })),
     });
   };
 
   const addItem = () => {
-    setItems([...items, { productId: "", productName: "", quantity: 1, weightPerUnit: 0, totalWeight: 0 }]);
+    setItems([...items, { productId: "", productName: "", quantity: 1, weightPerUnit: 0, totalWeight: 0, unitPrice: 0, totalValue: 0 }]);
   };
 
   const updateItem = (index: number, field: string, value: any) => {
@@ -462,12 +488,17 @@ function CreateTransportDialog({
     if (field === "quantity" || field === "weightPerUnit") {
       updated[index].totalWeight = updated[index].quantity * updated[index].weightPerUnit;
     }
+    if (field === "quantity" || field === "unitPrice") {
+      updated[index].totalValue = updated[index].quantity * updated[index].unitPrice;
+    }
     if (field === "productId" && value) {
       const product = products.find((p) => p.id === value);
       if (product) {
         updated[index].productName = product.name;
         updated[index].weightPerUnit = product.weightPerUnit || 0;
+        updated[index].unitPrice = product.unitPrice || 0;
         updated[index].totalWeight = updated[index].quantity * (product.weightPerUnit || 0);
+        updated[index].totalValue = updated[index].quantity * (product.unitPrice || 0);
       }
     }
     setItems(updated);
@@ -512,13 +543,14 @@ function CreateTransportDialog({
                 </div>
                 <div>
                   <Label className="text-xs">{t("transportation.direction")}</Label>
-                  <Select value={form.direction} onValueChange={(v: "delivery" | "return") => setForm({ ...form, direction: v })}>
+                  <Select value={form.direction} onValueChange={(v: "delivery" | "return" | "client_return") => setForm({ ...form, direction: v })}>
                     <SelectTrigger data-testid="select-direction">
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="delivery">{t("transportation.directionDelivery")}</SelectItem>
                       <SelectItem value="return">{t("transportation.directionReturn")}</SelectItem>
+                      <SelectItem value="client_return">{t("transportation.directionClientReturn")}</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -631,86 +663,115 @@ function CreateTransportDialog({
               ) : (
                 <div className="space-y-2">
                   {items.map((item, index) => (
-                    <div key={index} className="grid grid-cols-12 gap-2 items-end border rounded-lg p-2" data-testid={`item-row-${index}`}>
-                      <div className="col-span-12 sm:col-span-4">
-                        <Label className="text-[10px]">{t("transportation.productName")}</Label>
-                        <Select
-                          value={item.productId || "custom"}
-                          onValueChange={(v) => {
-                            if (v === "custom") {
-                              updateItem(index, "productId", "");
-                            } else {
-                              updateItem(index, "productId", v);
-                            }
-                          }}
-                        >
-                          <SelectTrigger className="h-8 text-xs" data-testid={`select-product-${index}`}>
-                            <SelectValue placeholder={t("transportation.selectProduct")} />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="custom">{t("transportation.customProduct")}</SelectItem>
-                            {products.map((p) => (
-                              <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        {!item.productId && (
+                    <div key={index} className="border rounded-lg p-2 space-y-2" data-testid={`item-row-${index}`}>
+                      <div className="grid grid-cols-12 gap-2 items-end">
+                        <div className="col-span-12 sm:col-span-5">
+                          <Label className="text-[10px]">{t("transportation.productName")}</Label>
+                          <Select
+                            value={item.productId || "custom"}
+                            onValueChange={(v) => {
+                              if (v === "custom") {
+                                updateItem(index, "productId", "");
+                              } else {
+                                updateItem(index, "productId", v);
+                              }
+                            }}
+                          >
+                            <SelectTrigger className="h-8 text-xs" data-testid={`select-product-${index}`}>
+                              <SelectValue placeholder={t("transportation.selectProduct")} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="custom">{t("transportation.customProduct")}</SelectItem>
+                              {products.map((p) => (
+                                <SelectItem key={p.id} value={p.id}>{p.name} — {p.unitPrice.toLocaleString()} {t("common.currency")}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {!item.productId && (
+                            <Input
+                              value={item.productName}
+                              onChange={(e) => updateItem(index, "productName", e.target.value)}
+                              className="h-8 text-xs mt-1"
+                              placeholder={t("transportation.customProduct")}
+                              data-testid={`input-product-name-${index}`}
+                            />
+                          )}
+                        </div>
+                        <div className="col-span-4 sm:col-span-2">
+                          <Label className="text-[10px]">{t("transportation.quantity")}</Label>
                           <Input
-                            value={item.productName}
-                            onChange={(e) => updateItem(index, "productName", e.target.value)}
-                            className="h-8 text-xs mt-1"
-                            placeholder={t("transportation.customProduct")}
-                            data-testid={`input-product-name-${index}`}
+                            type="number"
+                            value={item.quantity}
+                            onChange={(e) => updateItem(index, "quantity", parseInt(e.target.value) || 0)}
+                            className="h-8 text-xs"
+                            min="1"
+                            data-testid={`input-qty-${index}`}
                           />
-                        )}
-                      </div>
-                      <div className="col-span-4 sm:col-span-2">
-                        <Label className="text-[10px]">{t("transportation.quantity")}</Label>
-                        <Input
-                          type="number"
-                          value={item.quantity}
-                          onChange={(e) => updateItem(index, "quantity", parseInt(e.target.value) || 0)}
-                          className="h-8 text-xs"
-                          min="1"
-                          data-testid={`input-qty-${index}`}
-                        />
-                      </div>
-                      <div className="col-span-4 sm:col-span-2">
-                        <Label className="text-[10px]">{t("transportation.weightPerUnit")}</Label>
-                        <Input
-                          type="number"
-                          value={item.weightPerUnit || ""}
-                          onChange={(e) => updateItem(index, "weightPerUnit", parseFloat(e.target.value) || 0)}
-                          className="h-8 text-xs"
-                          min="0"
-                          step="0.01"
-                          data-testid={`input-weight-${index}`}
-                        />
-                      </div>
-                      <div className="col-span-3 sm:col-span-3">
-                        <Label className="text-[10px]">{t("transportation.itemTotalWeight")}</Label>
-                        <div className="h-8 flex items-center text-xs font-mono" data-testid={`text-item-weight-${index}`}>
-                          {(item.totalWeight || 0).toFixed(2)} {t("transportation.kg")}
+                        </div>
+                        <div className="col-span-4 sm:col-span-2">
+                          <Label className="text-[10px]">{t("transportation.unitPrice")}</Label>
+                          <Input
+                            type="number"
+                            value={item.unitPrice || ""}
+                            onChange={(e) => updateItem(index, "unitPrice", parseFloat(e.target.value) || 0)}
+                            className="h-8 text-xs"
+                            min="0"
+                            data-testid={`input-unit-price-${index}`}
+                          />
+                        </div>
+                        <div className="col-span-3 sm:col-span-2">
+                          <Label className="text-[10px]">{t("transportation.itemTotalValue")}</Label>
+                          <div className="h-8 flex items-center text-xs font-mono font-medium" data-testid={`text-item-value-${index}`}>
+                            {(item.totalValue || 0).toLocaleString()} {t("common.currency")}
+                          </div>
+                        </div>
+                        <div className="col-span-1 flex justify-end">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-destructive"
+                            onClick={() => removeItem(index)}
+                            data-testid={`button-remove-item-${index}`}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
                         </div>
                       </div>
-                      <div className="col-span-1 flex justify-end">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 w-8 p-0 text-destructive"
-                          onClick={() => removeItem(index)}
-                          data-testid={`button-remove-item-${index}`}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                      <div className="grid grid-cols-12 gap-2 items-end">
+                        <div className="col-span-4 sm:col-span-4">
+                          <Label className="text-[10px]">{t("transportation.weightPerUnit")}</Label>
+                          <Input
+                            type="number"
+                            value={item.weightPerUnit || ""}
+                            onChange={(e) => updateItem(index, "weightPerUnit", parseFloat(e.target.value) || 0)}
+                            className="h-8 text-xs"
+                            min="0"
+                            step="0.01"
+                            data-testid={`input-weight-${index}`}
+                          />
+                        </div>
+                        <div className="col-span-4 sm:col-span-4">
+                          <Label className="text-[10px]">{t("transportation.itemTotalWeight")}</Label>
+                          <div className="h-8 flex items-center text-xs font-mono" data-testid={`text-item-weight-${index}`}>
+                            {(item.totalWeight || 0).toFixed(2)} {t("transportation.kg")}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   ))}
-                  <div className="text-right text-sm">
-                    <span className="text-muted-foreground">{t("transportation.totalWeight")}: </span>
-                    <span className="font-bold font-mono" data-testid="text-total-weight">
-                      {totalWeight.toFixed(2)} {t("transportation.kg")}
-                    </span>
+                  <div className="flex justify-between text-sm pt-2 border-t">
+                    <div>
+                      <span className="text-muted-foreground">{t("transportation.totalWeight")}: </span>
+                      <span className="font-bold font-mono" data-testid="text-total-weight">
+                        {totalWeight.toFixed(2)} {t("transportation.kg")}
+                      </span>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">{t("transportation.totalValue")}: </span>
+                      <span className="font-bold font-mono" data-testid="text-total-value">
+                        {totalValue.toLocaleString()} {t("common.currency")}
+                      </span>
+                    </div>
                   </div>
                 </div>
               )}
@@ -779,9 +840,11 @@ function ViewTransportDialog({
     const address = branding?.companyInfo?.address || "";
     const phone = branding?.companyInfo?.phone || "";
     const primaryColor = branding?.primaryColor || "#1976D2";
-    const directionLabel = invoice.direction === "delivery" ? t("transportation.deliveryShort") : t("transportation.returnShort");
-    const directionColor = invoice.direction === "delivery" ? "#1565C0" : "#E65100";
+    const directionLabel = getDirectionShortLabel(invoice.direction, t);
+    const directionColors: Record<string, string> = { delivery: "#1565C0", return: "#E65100", client_return: "#2E7D32" };
+    const directionColor = directionColors[invoice.direction] || "#1565C0";
     const currency = t("common.currency");
+    const hasValues = invoice.items.some(item => (item.unitPrice || 0) > 0);
 
     const itemRows = invoice.items.map((item, i) => `
       <tr style="background:${i % 2 === 0 ? '#f9f9f9' : '#fff'};">
@@ -790,6 +853,8 @@ function ViewTransportDialog({
         <td style="border:1px solid #ddd;padding:8px;text-align:center;">${item.quantity}</td>
         <td style="border:1px solid #ddd;padding:8px;text-align:center;">${(item.weightPerUnit || 0).toFixed(2)} kg</td>
         <td style="border:1px solid #ddd;padding:8px;text-align:center;font-weight:500;">${(item.totalWeight || 0).toFixed(2)} kg</td>
+        ${hasValues ? `<td style="border:1px solid #ddd;padding:8px;text-align:right;">${(item.unitPrice || 0).toLocaleString()} ${currency}</td>
+        <td style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:500;">${(item.totalValue || 0).toLocaleString()} ${currency}</td>` : ''}
       </tr>
     `).join("");
 
@@ -806,12 +871,12 @@ function ViewTransportDialog({
       <h2 style="margin:0;color:${primaryColor};font-size:18px;">${esc(companyName)}</h2>
       <p style="margin:2px 0;font-size:12px;color:#666;">${esc(tagline)}</p>
       ${address ? `<p style="margin:2px 0;font-size:11px;color:#999;">${esc(address)}</p>` : ''}
-      ${phone ? `<p style="margin:2px 0;font-size:11px;color:#999;">Tél: ${esc(phone)}</p>` : ''}
+      ${phone ? `<p style="margin:2px 0;font-size:11px;color:#999;">${esc(phone)}</p>` : ''}
     </div>
     <div style="text-align:right;">
-      <h3 style="margin:0;font-size:22px;color:${primaryColor};">BON DE TRANSPORT</h3>
+      <h3 style="margin:0;font-size:22px;color:${primaryColor};">${esc(t("transportation.title"))}</h3>
       <p style="margin:4px 0;font-size:13px;color:#666;">N°: ${esc(invoice.invoiceNumber)}</p>
-      <p style="margin:2px 0;font-size:13px;color:#666;">${t("transportation.date")}: ${esc(invoice.date)}</p>
+      <p style="margin:2px 0;font-size:13px;color:#666;">${esc(t("transportation.date"))}: ${esc(invoice.date)}</p>
       <div style="margin-top:6px;display:inline-block;padding:4px 12px;border-radius:4px;background:${directionColor};color:#fff;font-size:12px;font-weight:600;">${esc(directionLabel)}</div>
     </div>
   </div>
@@ -836,17 +901,21 @@ function ViewTransportDialog({
       <tr style="background:${primaryColor};">
         <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);width:30px;text-align:center;">#</th>
         <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:left;">${t("transportation.productName")}</th>
-        <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:center;width:60px;">${t("transportation.quantity")}</th>
-        <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:center;width:80px;">${t("transportation.weightPerUnit")}</th>
-        <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:center;width:90px;">${t("transportation.itemTotalWeight")}</th>
+        <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:center;width:50px;">${t("transportation.quantity")}</th>
+        <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:center;width:70px;">${t("transportation.weightPerUnit")}</th>
+        <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:center;width:80px;">${t("transportation.itemTotalWeight")}</th>
+        ${hasValues ? `<th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:right;width:80px;">${t("transportation.unitPrice")}</th>
+        <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:right;width:90px;">${t("transportation.itemTotalValue")}</th>` : ''}
       </tr>
     </thead>
     <tbody>${itemRows}</tbody>
     <tfoot>
       <tr style="background:#f0f0f0;">
-        <td colspan="3" style="border:1px solid #ddd;padding:8px;font-weight:600;">${t("transportation.totalWeight")}</td>
+        <td colspan="3" style="border:1px solid #ddd;padding:8px;font-weight:600;">${t("transportation.totalWeight")} / ${t("transportation.totalValue")}</td>
         <td style="border:1px solid #ddd;padding:8px;"></td>
         <td style="border:1px solid #ddd;padding:8px;text-align:center;font-weight:600;">${(invoice.totalWeight || 0).toFixed(2)} kg</td>
+        ${hasValues ? `<td style="border:1px solid #ddd;padding:8px;"></td>
+        <td style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:600;color:${primaryColor};">${(invoice.totalValue || 0).toLocaleString()} ${currency}</td>` : ''}
       </tr>
     </tfoot>
   </table>
@@ -866,11 +935,11 @@ function ViewTransportDialog({
 
   <div style="display:flex;justify-content:space-between;margin-top:30px;">
     <div>
-      <p style="font-size:12px;font-weight:600;margin-bottom:8px;">${t("transportation.driverName")}</p>
+      <p style="font-size:12px;font-weight:600;margin-bottom:8px;">${esc(t("transportation.driverName"))}</p>
       <div style="width:200px;height:50px;border-bottom:1px solid #ccc;"></div>
     </div>
     <div style="text-align:right;">
-      <p style="font-size:12px;font-weight:600;margin-bottom:8px;">Cachet et signature</p>
+      <p style="font-size:12px;font-weight:600;margin-bottom:8px;">${esc(t("invoices.stampAndSignature"))}</p>
       <div style="width:200px;height:50px;border-bottom:1px solid #ccc;"></div>
     </div>
   </div>
@@ -908,9 +977,7 @@ function ViewTransportDialog({
                 </div>
                 <div>
                   <span className="text-muted-foreground">{t("transportation.direction")}:</span>
-                  <span className="ml-2">
-                    {invoice.direction === "delivery" ? t("transportation.directionDelivery") : t("transportation.directionReturn")}
-                  </span>
+                  <span className="ml-2">{getDirectionLongLabel(invoice.direction, t)}</span>
                 </div>
                 <div>
                   <span className="text-muted-foreground">{t("transportation.driverName")}:</span>
@@ -949,6 +1016,8 @@ function ViewTransportDialog({
                       <TableHead className="text-xs text-right">{t("transportation.quantity")}</TableHead>
                       <TableHead className="text-xs text-right">{t("transportation.weightPerUnit")}</TableHead>
                       <TableHead className="text-xs text-right">{t("transportation.itemTotalWeight")}</TableHead>
+                      <TableHead className="text-xs text-right">{t("transportation.unitPrice")}</TableHead>
+                      <TableHead className="text-xs text-right">{t("transportation.itemTotalValue")}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -958,12 +1027,15 @@ function ViewTransportDialog({
                         <TableCell className="text-sm text-right font-mono">{item.quantity}</TableCell>
                         <TableCell className="text-sm text-right font-mono">{(item.weightPerUnit || 0).toFixed(2)} {t("transportation.kg")}</TableCell>
                         <TableCell className="text-sm text-right font-mono">{(item.totalWeight || 0).toFixed(2)} {t("transportation.kg")}</TableCell>
+                        <TableCell className="text-sm text-right font-mono">{(item.unitPrice || 0).toLocaleString()} {t("common.currency")}</TableCell>
+                        <TableCell className="text-sm text-right font-mono font-medium">{(item.totalValue || 0).toLocaleString()} {t("common.currency")}</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
-                <div className="text-right px-4 py-2 text-sm font-bold">
-                  {t("transportation.totalWeight")}: {(invoice.totalWeight || 0).toFixed(2)} {t("transportation.kg")}
+                <div className="flex justify-between px-4 py-2 text-sm font-bold border-t">
+                  <span>{t("transportation.totalWeight")}: {(invoice.totalWeight || 0).toFixed(2)} {t("transportation.kg")}</span>
+                  <span>{t("transportation.totalValue")}: {(invoice.totalValue || 0).toLocaleString()} {t("common.currency")}</span>
                 </div>
               </CardContent>
             </Card>

@@ -592,6 +592,33 @@ async function runMigrations(): Promise<void> {
       `);
       console.log('[DB] Created transportation_items table');
     }
+
+    const transportValueCol = await client.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'transportation_invoices' AND column_name = 'total_value'
+    `);
+    if (transportValueCol.rows.length === 0) {
+      await client.query(`ALTER TABLE transportation_invoices ADD COLUMN total_value REAL DEFAULT 0`);
+      console.log('[DB] Added total_value column to transportation_invoices');
+    }
+
+    const itemPriceCol = await client.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'transportation_items' AND column_name = 'unit_price'
+    `);
+    if (itemPriceCol.rows.length === 0) {
+      await client.query(`ALTER TABLE transportation_items ADD COLUMN unit_price REAL DEFAULT 0`);
+      console.log('[DB] Added unit_price column to transportation_items');
+    }
+
+    const itemValueCol = await client.query(`
+      SELECT column_name FROM information_schema.columns
+      WHERE table_schema = 'public' AND table_name = 'transportation_items' AND column_name = 'total_value'
+    `);
+    if (itemValueCol.rows.length === 0) {
+      await client.query(`ALTER TABLE transportation_items ADD COLUMN total_value REAL DEFAULT 0`);
+      console.log('[DB] Added total_value column to transportation_items');
+    }
     
     console.log('[DB] Schema migrations complete');
   } catch (error) {

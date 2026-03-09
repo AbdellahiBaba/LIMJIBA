@@ -636,39 +636,6 @@ export async function registerRoutes(
       const updated = await storage.updateTransportationInvoiceStatus(req.params.id, status);
       if (!updated) return res.status(404).json({ error: "Transportation invoice not found" });
 
-      if (status === "completed" && existing.status !== "completed") {
-        const invoiceWithItems = await storage.getTransportationInvoiceWithItems(req.params.id);
-        if (invoiceWithItems && invoiceWithItems.items.length > 0) {
-          for (const item of invoiceWithItems.items) {
-            if (item.productId) {
-              try {
-                const product = await storage.getProduct(item.productId);
-                if (product) {
-                  const movementType = invoiceWithItems.direction === "delivery" ? "in" : "out";
-                  const newQty = movementType === "in"
-                    ? product.stockQuantity + item.quantity
-                    : Math.max(0, product.stockQuantity - item.quantity);
-                  await storage.updateProduct(item.productId, { stockQuantity: newQty });
-                  await storage.createStockMovement({
-                    productId: item.productId,
-                    movementType,
-                    reason: "transport",
-                    quantity: movementType === "in" ? item.quantity : -item.quantity,
-                    previousStock: product.stockQuantity,
-                    newStock: newQty,
-                    reference: invoiceWithItems.invoiceNumber,
-                    createdAt: new Date().toISOString(),
-                    createdBy: (req as any).user?.displayName || "System",
-                  });
-                }
-              } catch (e) {
-                console.error(`[Transport] Stock movement error for product ${item.productId}:`, e);
-              }
-            }
-          }
-        }
-      }
-
       try {
         await storage.createAuditLog({
           userId: (req as any).user?.id || "system",

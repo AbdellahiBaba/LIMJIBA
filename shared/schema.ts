@@ -507,6 +507,7 @@ export const transportationInvoices = pgTable("transportation_invoices", {
   otherCosts: real("other_costs").default(0),
   totalCost: real("total_cost").notNull(),
   totalWeight: real("total_weight").default(0),
+  totalValue: real("total_value").default(0),
   notes: text("notes"),
   responsible: text("responsible").notNull(),
   status: text("status").default("pending"),
@@ -525,6 +526,8 @@ export const transportationItems = pgTable("transportation_items", {
   quantity: integer("quantity").notNull(),
   weightPerUnit: real("weight_per_unit").default(0),
   totalWeight: real("total_weight").default(0),
+  unitPrice: real("unit_price").default(0),
+  totalValue: real("total_value").default(0),
 });
 
 export const insertTransportationItemSchema = createInsertSchema(transportationItems).omit({ id: true });
