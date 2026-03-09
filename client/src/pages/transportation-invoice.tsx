@@ -479,7 +479,11 @@ function CreateTransportDialog({
 
   return (
     <Dialog open={open} onOpenChange={(o) => { onOpenChange(o); if (!o) resetForm(); }}>
-      <DialogContent className="w-[95vw] max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent
+        className="w-[95vw] max-w-4xl max-h-[90vh] !flex !flex-col"
+        onPointerDownOutside={(e) => e.preventDefault()}
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TruckIcon className="h-5 w-5 text-primary" />
@@ -490,7 +494,7 @@ function CreateTransportDialog({
           </DialogTitle>
         </DialogHeader>
 
-        <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1" style={{ WebkitOverflowScrolling: "touch" }}>
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm">{t("transportation.invoiceDetails")}</CardTitle>
@@ -880,7 +884,10 @@ function ViewTransportDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-3xl max-h-[90vh] flex flex-col overflow-hidden">
+      <DialogContent
+        className="w-[95vw] max-w-3xl max-h-[90vh] !flex !flex-col"
+        onInteractOutside={(e) => e.preventDefault()}
+      >
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <TruckIcon className="h-5 w-5 text-primary" />
@@ -888,7 +895,7 @@ function ViewTransportDialog({
             <span className="ml-2">{getStatusBadge(invoice.status)}</span>
           </DialogTitle>
         </DialogHeader>
-        <div className="flex-1 overflow-y-auto space-y-4 pr-1">
+        <div className="flex-1 min-h-0 overflow-y-auto space-y-4 pr-1" style={{ WebkitOverflowScrolling: "touch" }}>
           <Card>
             <CardHeader className="pb-3">
               <CardTitle className="text-sm">{t("transportation.invoiceDetails")}</CardTitle>
