@@ -670,6 +670,7 @@
     "departureLocation": "Départ",
     "arrivalLocation": "Arrivée",
     "route": "Trajet",
+    "tripDetails": "Détails du trajet",
     "fuelCost": "Carburant",
     "driverFee": "Frais Chauffeur",
     "otherCosts": "Autres Frais",

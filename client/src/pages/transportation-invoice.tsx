@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
-import { useLanguage } from "@/contexts/language-context";
+import { useLanguage, useBranding } from "@/contexts/language-context";
 import { useToast } from "@/hooks/use-toast";
 import type { TransportationInvoice, TransportationInvoiceWithItems, Product } from "@shared/schema";
 import { Button } from "@/components/ui/button";
@@ -747,6 +747,7 @@ function ViewTransportDialog({
   invoice: TransportationInvoiceWithItems;
 }) {
   const { t } = useLanguage();
+  const { branding } = useBranding();
 
   const getStatusBadge = (status: string | null) => {
     const s = status || "pending";
@@ -768,72 +769,113 @@ function ViewTransportDialog({
       div.textContent = s;
       return div.innerHTML;
     };
+
+    const companyName = branding?.companyInfo?.name || branding?.companyName || "POLY FLECTA PLASTICA";
+    const tagline = branding?.companyInfo?.tagline || "FABRICATION D'EMBALLAGE EN PLASTIQUE";
+    const address = branding?.companyInfo?.address || "";
+    const phone = branding?.companyInfo?.phone || "";
+    const primaryColor = branding?.primaryColor || "#1976D2";
     const directionLabel = invoice.direction === "delivery" ? t("transportation.deliveryShort") : t("transportation.returnShort");
-    printWindow.document.write(`
-      <html>
-        <head>
-          <title>${invoice.invoiceNumber}</title>
-          <style>
-            body { font-family: Arial, sans-serif; padding: 20px; color: #333; }
-            h1 { font-size: 20px; border-bottom: 2px solid #1976D2; padding-bottom: 8px; }
-            .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 16px 0; }
-            .info-item { font-size: 13px; }
-            .info-label { font-weight: bold; color: #666; }
-            table { width: 100%; border-collapse: collapse; margin: 16px 0; }
-            th, td { border: 1px solid #ddd; padding: 8px; text-align: left; font-size: 13px; }
-            th { background: #f5f5f5; font-weight: bold; }
-            .costs { margin: 16px 0; }
-            .costs-row { display: flex; justify-content: space-between; padding: 4px 0; font-size: 13px; }
-            .costs-total { font-weight: bold; font-size: 16px; border-top: 2px solid #333; padding-top: 8px; }
-            @media print { body { padding: 0; } }
-          </style>
-        </head>
-        <body>
-          <h1>BON DE TRANSPORT - ${esc(invoice.invoiceNumber)}</h1>
-          <div class="info-grid">
-            <div class="info-item"><span class="info-label">${t("transportation.date")}:</span> ${esc(invoice.date)}</div>
-            <div class="info-item"><span class="info-label">${t("transportation.direction")}:</span> ${esc(directionLabel)}</div>
-            <div class="info-item"><span class="info-label">${t("transportation.driverName")}:</span> ${esc(invoice.driverName)}</div>
-            <div class="info-item"><span class="info-label">${t("transportation.vehiclePlate")}:</span> ${esc(invoice.vehiclePlate || "-")}</div>
-            <div class="info-item"><span class="info-label">${t("transportation.departureLocation")}:</span> ${esc(invoice.departureLocation)}</div>
-            <div class="info-item"><span class="info-label">${t("transportation.arrivalLocation")}:</span> ${esc(invoice.arrivalLocation)}</div>
-            <div class="info-item"><span class="info-label">${t("transportation.responsible")}:</span> ${esc(invoice.responsible)}</div>
-          </div>
-          ${invoice.items.length > 0 ? `
-          <table>
-            <thead>
-              <tr>
-                <th>${t("transportation.productName")}</th>
-                <th>${t("transportation.quantity")}</th>
-                <th>${t("transportation.weightPerUnit")}</th>
-                <th>${t("transportation.itemTotalWeight")}</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${invoice.items.map(item => `
-                <tr>
-                  <td>${esc(item.productName)}</td>
-                  <td>${item.quantity}</td>
-                  <td>${(item.weightPerUnit || 0).toFixed(2)} ${t("transportation.kg")}</td>
-                  <td>${(item.totalWeight || 0).toFixed(2)} ${t("transportation.kg")}</td>
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
-          <div style="text-align:right;font-weight:bold;">${t("transportation.totalWeight")}: ${(invoice.totalWeight || 0).toFixed(2)} ${t("transportation.kg")}</div>
-          ` : ""}
-          <div class="costs">
-            <div class="costs-row"><span>${t("transportation.fuelCost")}</span><span>${(invoice.fuelCost || 0).toLocaleString()} ${t("common.currency")}</span></div>
-            <div class="costs-row"><span>${t("transportation.driverFee")}</span><span>${(invoice.driverFee || 0).toLocaleString()} ${t("common.currency")}</span></div>
-            <div class="costs-row"><span>${t("transportation.otherCosts")}</span><span>${(invoice.otherCosts || 0).toLocaleString()} ${t("common.currency")}</span></div>
-            <div class="costs-row costs-total"><span>${t("transportation.totalCost")}</span><span>${(invoice.totalCost || 0).toLocaleString()} ${t("common.currency")}</span></div>
-          </div>
-          ${invoice.notes ? `<p style="font-size:13px;color:#666;margin-top:16px;"><strong>${t("transportation.notes")}:</strong> ${esc(invoice.notes)}</p>` : ""}
-          <script>window.print();</script>
-        </body>
-      </html>
-    `);
+    const directionColor = invoice.direction === "delivery" ? "#1565C0" : "#E65100";
+    const currency = t("common.currency");
+
+    const itemRows = invoice.items.map((item, i) => `
+      <tr style="background:${i % 2 === 0 ? '#f9f9f9' : '#fff'};">
+        <td style="border:1px solid #ddd;padding:8px;text-align:center;">${i + 1}</td>
+        <td style="border:1px solid #ddd;padding:8px;">${esc(item.productName)}</td>
+        <td style="border:1px solid #ddd;padding:8px;text-align:center;">${item.quantity}</td>
+        <td style="border:1px solid #ddd;padding:8px;text-align:center;">${(item.weightPerUnit || 0).toFixed(2)} kg</td>
+        <td style="border:1px solid #ddd;padding:8px;text-align:center;font-weight:500;">${(item.totalWeight || 0).toFixed(2)} kg</td>
+      </tr>
+    `).join("");
+
+    const html = `<!DOCTYPE html>
+<html><head><title>Bon de Transport ${esc(invoice.invoiceNumber)}</title>
+<style>
+  @media print { body { margin: 0; } @page { margin: 15mm; } }
+  body { font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
+</style>
+</head><body>
+  <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:15px;border-bottom:3px solid ${primaryColor};margin-bottom:20px;">
+    <div>
+      ${branding?.logo ? `<img src="${branding.logo}" alt="Logo" style="height:60px;margin-bottom:8px;" />` : `<div style="width:60px;height:60px;background:${primaryColor};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;border-radius:6px;margin-bottom:8px;">PFP</div>`}
+      <h2 style="margin:0;color:${primaryColor};font-size:18px;">${esc(companyName)}</h2>
+      <p style="margin:2px 0;font-size:12px;color:#666;">${esc(tagline)}</p>
+      ${address ? `<p style="margin:2px 0;font-size:11px;color:#999;">${esc(address)}</p>` : ''}
+      ${phone ? `<p style="margin:2px 0;font-size:11px;color:#999;">Tél: ${esc(phone)}</p>` : ''}
+    </div>
+    <div style="text-align:right;">
+      <h3 style="margin:0;font-size:22px;color:${primaryColor};">BON DE TRANSPORT</h3>
+      <p style="margin:4px 0;font-size:13px;color:#666;">N°: ${esc(invoice.invoiceNumber)}</p>
+      <p style="margin:2px 0;font-size:13px;color:#666;">${t("transportation.date")}: ${esc(invoice.date)}</p>
+      <div style="margin-top:6px;display:inline-block;padding:4px 12px;border-radius:4px;background:${directionColor};color:#fff;font-size:12px;font-weight:600;">${esc(directionLabel)}</div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:20px;margin-bottom:20px;">
+    <div style="flex:1;padding:12px;background:${primaryColor}10;border-radius:6px;">
+      <h4 style="margin:0 0 6px;color:${primaryColor};font-size:13px;">${t("transportation.tripDetails")}</h4>
+      <p style="margin:2px 0;font-size:13px;"><span style="color:#666;">${t("transportation.driverName")}:</span> <strong>${esc(invoice.driverName)}</strong></p>
+      <p style="margin:2px 0;font-size:12px;"><span style="color:#666;">${t("transportation.vehiclePlate")}:</span> ${esc(invoice.vehiclePlate || "-")}</p>
+      <p style="margin:2px 0;font-size:12px;"><span style="color:#666;">${t("transportation.responsible")}:</span> ${esc(invoice.responsible)}</p>
+    </div>
+    <div style="flex:1;padding:12px;background:#f5f5f5;border-radius:6px;">
+      <h4 style="margin:0 0 6px;color:${primaryColor};font-size:13px;">${t("transportation.route")}</h4>
+      <p style="margin:2px 0;font-size:13px;"><span style="color:#666;">${t("transportation.departureLocation")}:</span> <strong>${esc(invoice.departureLocation)}</strong></p>
+      <p style="margin:2px 0;font-size:13px;"><span style="color:#666;">${t("transportation.arrivalLocation")}:</span> <strong>${esc(invoice.arrivalLocation)}</strong></p>
+    </div>
+  </div>
+
+  ${invoice.items.length > 0 ? `
+  <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:15px;">
+    <thead>
+      <tr style="background:${primaryColor};">
+        <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);width:30px;text-align:center;">#</th>
+        <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:left;">${t("transportation.productName")}</th>
+        <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:center;width:60px;">${t("transportation.quantity")}</th>
+        <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:center;width:80px;">${t("transportation.weightPerUnit")}</th>
+        <th style="color:#fff;padding:8px;border:1px solid rgba(255,255,255,0.2);text-align:center;width:90px;">${t("transportation.itemTotalWeight")}</th>
+      </tr>
+    </thead>
+    <tbody>${itemRows}</tbody>
+    <tfoot>
+      <tr style="background:#f0f0f0;">
+        <td colspan="3" style="border:1px solid #ddd;padding:8px;font-weight:600;">${t("transportation.totalWeight")}</td>
+        <td style="border:1px solid #ddd;padding:8px;"></td>
+        <td style="border:1px solid #ddd;padding:8px;text-align:center;font-weight:600;">${(invoice.totalWeight || 0).toFixed(2)} kg</td>
+      </tr>
+    </tfoot>
+  </table>
+  ` : ''}
+
+  <div style="padding:12px;background:${primaryColor}08;border:1px solid ${primaryColor}30;border-radius:6px;margin-bottom:20px;">
+    <h4 style="margin:0 0 8px;color:${primaryColor};font-size:13px;">${t("transportation.costBreakdown")}</h4>
+    <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>${t("transportation.fuelCost")}</span><span>${(invoice.fuelCost || 0).toLocaleString()} ${currency}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>${t("transportation.driverFee")}</span><span>${(invoice.driverFee || 0).toLocaleString()} ${currency}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:4px 0;font-size:13px;"><span>${t("transportation.otherCosts")}</span><span>${(invoice.otherCosts || 0).toLocaleString()} ${currency}</span></div>
+    <div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:16px;font-weight:700;border-top:2px solid ${primaryColor};margin-top:4px;color:${primaryColor};"><span>${t("transportation.totalCost")}</span><span>${(invoice.totalCost || 0).toLocaleString()} ${currency}</span></div>
+  </div>
+
+  ${invoice.notes ? `<div style="margin-bottom:20px;padding:10px;background:#fffde7;border:1px solid #fff9c4;border-radius:4px;">
+    <p style="margin:0;font-size:11px;color:#666;"><strong>${t("transportation.notes")}:</strong> ${esc(invoice.notes)}</p>
+  </div>` : ''}
+
+  <div style="display:flex;justify-content:space-between;margin-top:30px;">
+    <div>
+      <p style="font-size:12px;font-weight:600;margin-bottom:8px;">${t("transportation.driverName")}</p>
+      <div style="width:200px;height:50px;border-bottom:1px solid #ccc;"></div>
+    </div>
+    <div style="text-align:right;">
+      <p style="font-size:12px;font-weight:600;margin-bottom:8px;">Cachet et signature</p>
+      <div style="width:200px;height:50px;border-bottom:1px solid #ccc;"></div>
+    </div>
+  </div>
+</body></html>`;
+
+    printWindow.document.write(html);
     printWindow.document.close();
+    printWindow.focus();
+    setTimeout(() => printWindow.print(), 300);
   };
 
   return (

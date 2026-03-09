@@ -670,6 +670,7 @@
     "departureLocation": "نقطة الانطلاق",
     "arrivalLocation": "نقطة الوصول",
     "route": "المسار",
+    "tripDetails": "تفاصيل الرحلة",
     "fuelCost": "تكلفة الوقود",
     "driverFee": "أجرة السائق",
     "otherCosts": "تكاليف أخرى",

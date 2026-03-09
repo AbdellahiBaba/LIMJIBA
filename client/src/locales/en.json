@@ -670,6 +670,7 @@
     "departureLocation": "Departure",
     "arrivalLocation": "Arrival",
     "route": "Route",
+    "tripDetails": "Trip Details",
     "fuelCost": "Fuel Cost",
     "driverFee": "Driver Fee",
     "otherCosts": "Other Costs",
