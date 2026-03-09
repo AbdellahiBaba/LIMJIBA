@@ -453,7 +453,7 @@ export default function FabricationInvoice() {
   </div>
 
   <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid ${branding.primaryColor}; font-size: 11px; color: #666;">
-    <p>${companyInfo.website || "www.polyflectaplastica.com"} | ${companyInfo.email || "contact@polyflectaplastica.com"} | ${companyInfo.phone || "+213 6 70 04 91 24"}</p>
+    <p>${companyInfo.website || "www.polyflectaplastica.com"} | ${companyInfo.email || "contact@polyflectaplastica.com"} | ${companyInfo.phone || "+213 6 70 04 91 24 / +213 6 70 04 91 36"}</p>
   </div>
 </body>
 </html>

@@ -935,7 +935,7 @@ function ViewTransportDialog({
 
   <div style="display:flex;justify-content:space-between;margin-top:30px;">
     <div>
-      <p style="font-size:12px;font-weight:600;margin-bottom:8px;">${esc(t("transportation.driverName"))}</p>
+      <p style="font-size:12px;font-weight:600;margin-bottom:8px;">Signature</p>
       <div style="width:200px;height:50px;border-bottom:1px solid #ccc;"></div>
     </div>
     <div style="text-align:right;">
