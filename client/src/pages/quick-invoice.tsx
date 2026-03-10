@@ -293,8 +293,8 @@ export default function QuickInvoice() {
         <td style="border:1px solid #ddd;padding:8px;text-align:center;">${item.quantity}</td>
         ${weightColsHtml ? `<td style="border:1px solid #ddd;padding:8px;text-align:center;">${item.weightPerUnit > 0 ? item.weightPerUnit.toFixed(2) : '-'}</td>
         <td style="border:1px solid #ddd;padding:8px;text-align:center;font-weight:500;">${item.totalWeight.toFixed(2)} kg</td>` : ''}
-        <td style="border:1px solid #ddd;padding:8px;text-align:right;">${item.unitPrice.toLocaleString()} DZD</td>
-        <td style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:500;">${item.total.toLocaleString()} DZD</td>
+        <td style="border:1px solid #ddd;padding:8px;text-align:right;">${item.unitPrice.toLocaleString()} MRU</td>
+        <td style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:500;">${item.total.toLocaleString()} MRU</td>
       </tr>
     `).join("");
 
@@ -360,19 +360,19 @@ export default function QuickInvoice() {
         <td colspan="${weightColsHtml ? 4 : 2}" style="border:1px solid #ddd;padding:8px;font-weight:600;">Total H.T</td>
         ${weightColsHtml ? `<td style="border:1px solid #ddd;padding:8px;text-align:center;font-weight:600;">${totalWeight.toFixed(2)} kg</td>` : ''}
         <td style="border:1px solid #ddd;padding:8px;"></td>
-        <td style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:600;">${totalHT.toLocaleString()} DZD</td>
+        <td style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:600;">${totalHT.toLocaleString()} MRU</td>
       </tr>
       ${discountAmount > 0 ? `<tr style="background:#fff3e0;">
         <td colspan="${weightColsHtml ? 6 : 4}" style="border:1px solid #ddd;padding:8px;text-align:right;color:#e65100;">Remise ${formData.discountType === 'percent' ? `(${formData.discountValue}%)` : ''}</td>
-        <td style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:500;color:#e65100;">-${discountAmount.toLocaleString()} DZD</td>
+        <td style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:500;color:#e65100;">-${discountAmount.toLocaleString()} MRU</td>
       </tr>` : ''}
       ${formData.applyTva ? `<tr style="background:#fafafa;">
         <td colspan="${weightColsHtml ? 6 : 4}" style="border:1px solid #ddd;padding:8px;text-align:right;">TVA (${(formData.tvaRate * 100).toFixed(0)}%)</td>
-        <td style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:500;">${tvaAmount.toLocaleString()} DZD</td>
+        <td style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:500;">${tvaAmount.toLocaleString()} MRU</td>
       </tr>` : ''}
       <tr style="background:#e0e0e0;">
         <td colspan="${weightColsHtml ? 6 : 4}" style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:700;">Total T.T.C</td>
-        <td style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:700;color:${primaryColor};">${finalTotal.toLocaleString()} DZD</td>
+        <td style="border:1px solid #ddd;padding:8px;text-align:right;font-weight:700;color:${primaryColor};">${finalTotal.toLocaleString()} MRU</td>
       </tr>
     </tfoot>
   </table>
@@ -624,7 +624,7 @@ export default function QuickInvoice() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="percent">%</SelectItem>
-                  <SelectItem value="fixed">DZD</SelectItem>
+                  <SelectItem value="fixed">MRU</SelectItem>
                 </SelectContent>
               </Select>
               <Input
@@ -659,9 +659,9 @@ export default function QuickInvoice() {
                   <TableHead className="w-10 text-center">#</TableHead>
                   <TableHead className="min-w-[70px]">{t("invoices.qty")}</TableHead>
                   <TableHead className="min-w-[200px]">{t("invoices.designation")}</TableHead>
-                  <TableHead className="min-w-[100px]">{t("invoices.unitPrice")} (DZD)</TableHead>
+                  <TableHead className="min-w-[100px]">{t("invoices.unitPrice")} (MRU)</TableHead>
                   <TableHead className="min-w-[80px]">{t("invoices.weightPerUnit")}</TableHead>
-                  <TableHead className="min-w-[100px] text-right">{t("invoices.amount")} (DZD)</TableHead>
+                  <TableHead className="min-w-[100px] text-right">{t("invoices.amount")} (MRU)</TableHead>
                   <TableHead className="w-12"></TableHead>
                 </TableRow>
               </TableHeader>
@@ -873,8 +873,8 @@ export default function QuickInvoice() {
                         <td className="p-3 text-center border">{item.weightPerUnit > 0 ? item.weightPerUnit.toFixed(2) : "—"}</td>
                         <td className="p-3 text-center border font-medium">{item.totalWeight.toFixed(2)} kg</td>
                       </>}
-                      <td className="p-3 text-right border">{item.unitPrice.toLocaleString()} DZD</td>
-                      <td className="p-3 text-right border font-medium">{item.total.toLocaleString()} DZD</td>
+                      <td className="p-3 text-right border">{item.unitPrice.toLocaleString()} MRU</td>
+                      <td className="p-3 text-right border font-medium">{item.total.toLocaleString()} MRU</td>
                     </tr>
                   ))}
                 </tbody>
@@ -883,26 +883,26 @@ export default function QuickInvoice() {
                     <td colSpan={hasWeight ? 4 : 2} className="p-3 border font-semibold">Total H.T</td>
                     {hasWeight && <td className="p-3 text-center border font-semibold">{totalWeight.toFixed(2)} kg</td>}
                     <td className="p-3 border"></td>
-                    <td className="p-3 text-right border font-semibold">{totalHT.toLocaleString()} DZD</td>
+                    <td className="p-3 text-right border font-semibold">{totalHT.toLocaleString()} MRU</td>
                   </tr>
                   {discountAmount > 0 && (
                     <tr className="bg-orange-50">
                       <td colSpan={hasWeight ? 6 : 4} className="p-3 border text-right text-orange-700">
                         Remise {formData.discountType === "percent" ? `(${formData.discountValue}%)` : ""}
                       </td>
-                      <td className="p-3 text-right border font-medium text-orange-700">-{discountAmount.toLocaleString()} DZD</td>
+                      <td className="p-3 text-right border font-medium text-orange-700">-{discountAmount.toLocaleString()} MRU</td>
                     </tr>
                   )}
                   {formData.applyTva && (
                     <tr className="bg-gray-50">
                       <td colSpan={hasWeight ? 6 : 4} className="p-3 border text-right">TVA ({(formData.tvaRate * 100).toFixed(0)}%)</td>
-                      <td className="p-3 text-right border font-medium">{tvaAmount.toLocaleString()} DZD</td>
+                      <td className="p-3 text-right border font-medium">{tvaAmount.toLocaleString()} MRU</td>
                     </tr>
                   )}
                   <tr className="bg-gray-200">
                     <td colSpan={hasWeight ? 6 : 4} className="p-3 border text-right font-bold">Total T.T.C</td>
                     <td className="p-3 text-right border font-bold" style={{ color: branding.primaryColor }}>
-                      {finalTotal.toLocaleString()} DZD
+                      {finalTotal.toLocaleString()} MRU
                     </td>
                   </tr>
                 </tfoot>

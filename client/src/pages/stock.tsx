@@ -53,17 +53,9 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv-export";
-import type { Product, InsertProduct, StockMovementWithProduct, InventoryValuation } from "@shared/schema";
+import type { Product, InsertProduct, StockMovementWithProduct, InventoryValuation, Category } from "@shared/schema";
 
-const categoryKeys = [
-  { value: "General Products", key: "stock.categories.plasticBags" },
-  { value: "Food & Beverages", key: "stock.categories.foodPackaging" },
-  { value: "Industrial Supplies", key: "stock.categories.industrialPackaging" },
-  { value: "Accessories", key: "stock.categories.accessories" },
-  { value: "Other", key: "stock.categories.other" },
-];
-
-const categories = categoryKeys.map(c => c.value);
+const fallbackCategories = ["General Products", "Food & Beverages", "Industrial Supplies", "Accessories", "Other"];
 
 const stockReasonKeys = [
   { value: "purchase", key: "stock.reasons.purchase" },
@@ -80,17 +72,20 @@ function ProductFormDialog({
   product,
   onSuccess,
   t,
+  dynamicCategories,
 }: {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   product?: Product;
   onSuccess: () => void;
   t: (key: string) => string;
+  dynamicCategories: Category[];
 }) {
+  const catNames = dynamicCategories.length > 0 ? dynamicCategories.map(c => c.name) : fallbackCategories;
   const { toast } = useToast();
   const [formData, setFormData] = useState<Partial<InsertProduct>>({
     name: product?.name ?? "",
-    category: product?.category ?? categories[0],
+    category: product?.category ?? catNames[0],
     unitPrice: product?.unitPrice ?? 0,
     costPrice: product?.costPrice ?? 0,
     weightPerUnit: product?.weightPerUnit ?? 0,
@@ -104,7 +99,7 @@ function ProductFormDialog({
     if (open) {
       setFormData({
         name: product?.name ?? "",
-        category: product?.category ?? categories[0],
+        category: product?.category ?? catNames[0],
         unitPrice: product?.unitPrice ?? 0,
         costPrice: product?.costPrice ?? 0,
         weightPerUnit: product?.weightPerUnit ?? 0,
@@ -196,15 +191,17 @@ function ProductFormDialog({
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                {categoryKeys.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>{t(cat.key)}</SelectItem>
+                {dynamicCategories.length > 0 ? dynamicCategories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                )) : fallbackCategories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
           </div>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="unitPrice">{t("stock.unitPrice")} (DZD) *</Label>
+              <Label htmlFor="unitPrice">{t("stock.unitPrice")} (MRU) *</Label>
               <Input
                 id="unitPrice"
                 type="number"
@@ -217,7 +214,7 @@ function ProductFormDialog({
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="costPrice">{t("stock.costPrice")} (DZD) *</Label>
+              <Label htmlFor="costPrice">{t("stock.costPrice")} (MRU) *</Label>
               <Input
                 id="costPrice"
                 type="number"
@@ -689,6 +686,10 @@ export default function Stock() {
     queryKey: ["/api/inventory/valuation"],
   });
 
+  const { data: dynamicCategories = [] } = useQuery<Category[]>({
+    queryKey: ["/api/categories"],
+  });
+
   const toggleFavoriteMutation = useMutation({
     mutationFn: (id: string) => apiRequest("PATCH", `/api/products/${id}/favorite`),
     onSuccess: () => {
@@ -755,7 +756,7 @@ export default function Stock() {
         <div class="name">${p.name}</div>
         <div class="barcode-text">${p.barcode || p.id.slice(0, 12)}</div>
         <svg class="barcode-svg" id="bc-${p.id}"></svg>
-        <div class="price">${p.unitPrice.toLocaleString()} DZD</div>
+        <div class="price">${p.unitPrice.toLocaleString()} MRU</div>
       </div>
     `).join("");
     win.document.write(`<!DOCTYPE html><html><head><title>Barcode Labels</title>
@@ -920,7 +921,7 @@ export default function Stock() {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold text-primary" data-testid="text-total-inventory-value">
-                {inventoryValuation.totalInventoryValue.toLocaleString()} DZD
+                {inventoryValuation.totalInventoryValue.toLocaleString()} MRU
               </div>
               <p className="text-xs text-muted-foreground mt-1">
                 {t("stock.perGaapIfrs")}
@@ -1005,8 +1006,10 @@ export default function Stock() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">{t("stock.allCategories")}</SelectItem>
-                {categoryKeys.map((cat) => (
-                  <SelectItem key={cat.value} value={cat.value}>{t(cat.key)}</SelectItem>
+                {dynamicCategories.length > 0 ? dynamicCategories.map((cat) => (
+                  <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                )) : fallbackCategories.map((cat) => (
+                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
@@ -1077,14 +1080,14 @@ export default function Stock() {
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary" className="font-normal">
-                            {categoryKeys.find(c => c.value === product.category) ? t(categoryKeys.find(c => c.value === product.category)!.key) : product.category}
+                            {product.category}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right font-mono">
-                          {product.unitPrice.toLocaleString()} DZD
+                          {product.unitPrice.toLocaleString()} MRU
                         </TableCell>
                         <TableCell className={`text-right font-mono ${hasCostWarning ? "text-red-600 dark:text-red-400 font-medium" : ""}`}>
-                          {product.costPrice.toLocaleString()} DZD
+                          {product.costPrice.toLocaleString()} MRU
                           {hasCostWarning && (
                             <AlertTriangle className="inline-block ml-1 h-3 w-3 text-red-500" />
                           )}
@@ -1098,7 +1101,7 @@ export default function Stock() {
                           )}
                         </TableCell>
                         <TableCell className={`text-right font-mono ${hasCostWarning ? "text-red-600 dark:text-red-400" : ""}`} data-testid={`text-inventory-value-${product.id}`}>
-                          {inventoryValue.toLocaleString()} DZD
+                          {inventoryValue.toLocaleString()} MRU
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">
@@ -1184,6 +1187,7 @@ export default function Stock() {
         product={editingProduct}
         onSuccess={handleDialogClose}
         t={t}
+        dynamicCategories={dynamicCategories}
       />
 
       <StockAdjustmentDialog

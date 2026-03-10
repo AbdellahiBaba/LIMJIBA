@@ -69,7 +69,7 @@ export default function StoreOrdersAdmin() {
                       </div>
                     </div>
                     <div className="flex items-center gap-3">
-                      <span className="font-bold">{order.total.toFixed(2)} DZD</span>
+                      <span className="font-bold">{order.total.toFixed(2)} MRU</span>
                       <Badge className="flex items-center gap-1" style={{ backgroundColor: `${statusConfig.color}20`, color: statusConfig.color }}>
                         <StatusIcon className="h-3 w-3" />
                         {statusConfig.label}
@@ -105,20 +105,20 @@ export default function StoreOrdersAdmin() {
                           {orderItems.map((item: any, idx: number) => (
                             <div key={idx} className="flex justify-between text-sm bg-muted/50 px-3 py-1.5 rounded">
                               <span>{item.productName} × {item.quantity}</span>
-                              <span>{(item.unitPrice * item.quantity).toFixed(2)} DZD</span>
+                              <span>{(item.unitPrice * item.quantity).toFixed(2)} MRU</span>
                             </div>
                           ))}
                         </div>
                         <div className="flex justify-between mt-2 text-sm">
-                          <span>Subtotal</span><span>{order.subtotal.toFixed(2)} DZD</span>
+                          <span>Subtotal</span><span>{order.subtotal.toFixed(2)} MRU</span>
                         </div>
                         {order.discount > 0 && (
                           <div className="flex justify-between text-sm text-green-600">
-                            <span>Discount</span><span>-{order.discount.toFixed(2)} DZD</span>
+                            <span>Discount</span><span>-{order.discount.toFixed(2)} MRU</span>
                           </div>
                         )}
                         <div className="flex justify-between font-bold mt-1">
-                          <span>Total</span><span>{order.total.toFixed(2)} DZD</span>
+                          <span>Total</span><span>{order.total.toFixed(2)} MRU</span>
                         </div>
                       </div>
 

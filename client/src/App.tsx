@@ -42,7 +42,8 @@ import CmsManagement from "@/pages/cms";
 import PromoCodesPage from "@/pages/promo-codes";
 import StoreOrdersAdmin from "@/pages/store-orders";
 import LimjibaAdmin from "@/components/limjiba-admin";
-import StoreLayout from "@/components/store-layout";
+import StoreLayout, { StoreLanguageProvider } from "@/components/store-layout";
+import { StoreAuthProvider } from "@/contexts/store-auth-context";
 import LimjibaChat from "@/components/limjiba-chat";
 import StoreHome from "@/pages/store/home";
 import StoreProducts from "@/pages/store/products";
@@ -53,6 +54,9 @@ import StoreOrders from "@/pages/store/orders";
 import StoreAbout from "@/pages/store/about";
 import StoreContact from "@/pages/store/contact";
 import StoreTerms from "@/pages/store/terms";
+import StoreLogin from "@/pages/store/login";
+import StoreSignup from "@/pages/store/signup";
+import StoreProfile from "@/pages/store/profile";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
@@ -92,27 +96,34 @@ function Router() {
 
 function StoreRouter() {
   return (
-    <CartProvider>
-      <StoreLayout>
-        <Switch>
-          <Route path="/store" component={StoreHome} />
-          <Route path="/store/products/:id" component={StoreProductDetail} />
-          <Route path="/store/products" component={StoreProducts} />
-          <Route path="/store/cart" component={StoreCart} />
-          <Route path="/store/checkout" component={StoreCheckout} />
-          <Route path="/store/orders" component={StoreOrders} />
-          <Route path="/store/about" component={StoreAbout} />
-          <Route path="/store/contact" component={StoreContact} />
-          <Route path="/store/terms" component={StoreTerms} />
-          <Route>
-            <div className="text-center py-20">
-              <h2 className="text-2xl font-bold text-gray-500">Page Not Found</h2>
-            </div>
-          </Route>
-        </Switch>
-      </StoreLayout>
-      <LimjibaChat />
-    </CartProvider>
+    <StoreLanguageProvider>
+      <StoreAuthProvider>
+        <CartProvider>
+          <StoreLayout>
+            <Switch>
+              <Route path="/store" component={StoreHome} />
+              <Route path="/store/products/:id" component={StoreProductDetail} />
+              <Route path="/store/products" component={StoreProducts} />
+              <Route path="/store/cart" component={StoreCart} />
+              <Route path="/store/checkout" component={StoreCheckout} />
+              <Route path="/store/orders" component={StoreOrders} />
+              <Route path="/store/about" component={StoreAbout} />
+              <Route path="/store/contact" component={StoreContact} />
+              <Route path="/store/terms" component={StoreTerms} />
+              <Route path="/store/login" component={StoreLogin} />
+              <Route path="/store/signup" component={StoreSignup} />
+              <Route path="/store/profile" component={StoreProfile} />
+              <Route>
+                <div className="text-center py-20">
+                  <h2 className="text-2xl font-bold text-gray-500">Page Not Found</h2>
+                </div>
+              </Route>
+            </Switch>
+          </StoreLayout>
+          <LimjibaChat />
+        </CartProvider>
+      </StoreAuthProvider>
+    </StoreLanguageProvider>
   );
 }
 

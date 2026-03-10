@@ -463,7 +463,7 @@ export default function InvoiceForm() {
                   placeholder="0"
                   data-testid="input-delivery-cost"
                 />
-                <span className="text-sm text-muted-foreground">DZD</span>
+                <span className="text-sm text-muted-foreground">MRU</span>
               </div>
             </div>
           </CardContent>
@@ -484,10 +484,10 @@ export default function InvoiceForm() {
                   <TableRow>
                     <TableHead className="min-w-[80px]">{t("invoices.qty")}</TableHead>
                     <TableHead className="min-w-[200px]">{t("invoices.designation")}</TableHead>
-                    <TableHead className="min-w-[100px]">{t("invoices.unitPriceDZD")}</TableHead>
+                    <TableHead className="min-w-[100px]">{t("invoices.unitPriceMRU")}</TableHead>
                     <TableHead className="min-w-[80px]">{t("invoices.weightPerUnitKg")}</TableHead>
                     <TableHead className="min-w-[80px] text-right">{t("invoices.totalWeightKg")}</TableHead>
-                    <TableHead className="min-w-[100px] text-right">{t("invoices.totalDZD")}</TableHead>
+                    <TableHead className="min-w-[100px] text-right">{t("invoices.totalMRU")}</TableHead>
                     <TableHead className="w-12"></TableHead>
                   </TableRow>
                 </TableHeader>
@@ -523,7 +523,7 @@ export default function InvoiceForm() {
                               <SelectItem value="custom">{t("invoices.customItem")}</SelectItem>
                               {products?.map((product) => (
                                 <SelectItem key={product.id} value={product.id}>
-                                  {product.name} - {product.unitPrice.toLocaleString()} DZD
+                                  {product.name} - {product.unitPrice.toLocaleString()} MRU
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -597,14 +597,14 @@ export default function InvoiceForm() {
               <div className="flex gap-8 text-sm">
                 <span className="text-muted-foreground">{t("invoices.totalHT")}:</span>
                 <span className="font-mono font-medium" data-testid="text-total-ht">
-                  {totalHT.toLocaleString()} DZD
+                  {totalHT.toLocaleString()} MRU
                 </span>
               </div>
               {formData.applyTva && (
                 <div className="flex gap-8 text-sm">
                   <span className="text-muted-foreground">TVA ({(formData.tvaRate * 100).toFixed(0)}%):</span>
                   <span className="font-mono font-medium" data-testid="text-tva-amount">
-                    {tvaAmount.toLocaleString()} DZD
+                    {tvaAmount.toLocaleString()} MRU
                   </span>
                 </div>
               )}
@@ -612,14 +612,14 @@ export default function InvoiceForm() {
                 <div className="flex gap-8 text-sm">
                   <span className="text-muted-foreground">{t("transportation.deliveryCost")}:</span>
                   <span className="font-mono font-medium" data-testid="text-delivery-cost">
-                    {(formData.deliveryCost || 0).toLocaleString()} DZD
+                    {(formData.deliveryCost || 0).toLocaleString()} MRU
                   </span>
                 </div>
               )}
               <div className="flex gap-8 text-lg font-semibold">
                 <span>{t("invoices.totalTTC")}:</span>
                 <span className="font-mono" data-testid="text-total-ttc">
-                  {totalTTC.toLocaleString()} DZD
+                  {totalTTC.toLocaleString()} MRU
                 </span>
               </div>
               <p className="text-sm text-muted-foreground italic mt-2" data-testid="text-amount-words">
@@ -772,8 +772,8 @@ export default function InvoiceForm() {
                       <td className="p-3 text-center border">{item.quantity}</td>
                       <td className="p-3 text-center border">{item.weightPerUnit > 0 ? item.weightPerUnit.toFixed(2) : "-"}</td>
                       <td className="p-3 text-center border font-medium">{item.totalWeight.toFixed(2)} kg</td>
-                      <td className="p-3 text-right border">{item.unitPrice.toLocaleString()} DZD</td>
-                      <td className="p-3 text-right border font-medium">{item.total.toLocaleString()} DZD</td>
+                      <td className="p-3 text-right border">{item.unitPrice.toLocaleString()} MRU</td>
+                      <td className="p-3 text-right border font-medium">{item.total.toLocaleString()} MRU</td>
                     </tr>
                   ))}
                 </tbody>
@@ -783,14 +783,14 @@ export default function InvoiceForm() {
                     <td className="p-3 text-center border font-semibold">{totalWeight.toFixed(2)} kg</td>
                     <td className="p-3 border"></td>
                     <td className="p-3 text-right border font-semibold">
-                      {totalHT.toLocaleString()} DZD
+                      {totalHT.toLocaleString()} MRU
                     </td>
                   </tr>
                   {formData.applyTva && (
                     <tr className="bg-gray-50">
                       <td colSpan={6} className="p-3 border text-right">TVA ({(formData.tvaRate * 100).toFixed(0)}%)</td>
                       <td className="p-3 text-right border font-medium">
-                        {tvaAmount.toLocaleString()} DZD
+                        {tvaAmount.toLocaleString()} MRU
                       </td>
                     </tr>
                   )}
@@ -798,7 +798,7 @@ export default function InvoiceForm() {
                     <tr className="bg-gray-50">
                       <td colSpan={6} className="p-3 border text-right">{t("transportation.deliveryCost")}</td>
                       <td className="p-3 text-right border font-medium">
-                        {(formData.deliveryCost || 0).toLocaleString()} DZD
+                        {(formData.deliveryCost || 0).toLocaleString()} MRU
                       </td>
                     </tr>
                   )}
@@ -808,7 +808,7 @@ export default function InvoiceForm() {
                       className="p-3 text-right border font-bold"
                       style={{ color: branding.primaryColor }}
                     >
-                      {totalTTC.toLocaleString()} DZD
+                      {totalTTC.toLocaleString()} MRU
                     </td>
                   </tr>
                 </tfoot>

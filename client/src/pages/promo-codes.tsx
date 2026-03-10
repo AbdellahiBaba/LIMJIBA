@@ -111,7 +111,7 @@ export default function PromoCodesPage() {
                   <SelectTrigger className="mt-1" data-testid="select-discount-type"><SelectValue /></SelectTrigger>
                   <SelectContent>
                     <SelectItem value="percentage">Percentage (%)</SelectItem>
-                    <SelectItem value="fixed">Fixed (DZD)</SelectItem>
+                    <SelectItem value="fixed">Fixed (MRU)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
@@ -167,7 +167,7 @@ export default function PromoCodesPage() {
                         </Button>
                       </div>
                       <div className="flex items-center gap-2 mt-1 text-sm text-muted-foreground">
-                        <span>{promo.discountType === "percentage" ? `${promo.discountValue}%` : `${promo.discountValue} DZD`} off</span>
+                        <span>{promo.discountType === "percentage" ? `${promo.discountValue}%` : `${promo.discountValue} MRU`} off</span>
                         <span>•</span>
                         <span>{promo.currentUses}/{promo.maxUses || "∞"} uses</span>
                         <span>•</span>

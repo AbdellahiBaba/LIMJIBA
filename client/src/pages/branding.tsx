@@ -656,14 +656,14 @@ export default function Branding() {
                   <tr className="border-b">
                     <td className="p-2">100</td>
                     <td className="p-2">Product A - Standard</td>
-                    <td className="p-2 text-right">250 DZD</td>
-                    <td className="p-2 text-right">25,000 DZD</td>
+                    <td className="p-2 text-right">250 MRU</td>
+                    <td className="p-2 text-right">25,000 MRU</td>
                   </tr>
                   <tr className="border-b bg-gray-50">
                     <td className="p-2">50</td>
                     <td className="p-2">Product B - Premium</td>
-                    <td className="p-2 text-right">450 DZD</td>
-                    <td className="p-2 text-right">22,500 DZD</td>
+                    <td className="p-2 text-right">450 MRU</td>
+                    <td className="p-2 text-right">22,500 MRU</td>
                   </tr>
                 </tbody>
               </table>
@@ -671,13 +671,13 @@ export default function Branding() {
               <div className={`text-${branding.invoiceLanguage === "ar" ? "left" : "right"} text-gray-800`}>
                 <p className="text-sm">
                   {branding.invoiceLanguage === "ar" ? "المجموع (قبل الضريبة)" : "TOTAL H.T"}: 
-                  <strong> 47,500 DZD</strong>
+                  <strong> 47,500 MRU</strong>
                 </p>
                 <p 
                   className="text-lg font-bold mt-1"
                   style={{ color: branding.primaryColor }}
                 >
-                  {branding.invoiceLanguage === "ar" ? "المجموع الكلي" : "TOTAL T.T.C"}: 47,500 DZD
+                  {branding.invoiceLanguage === "ar" ? "المجموع الكلي" : "TOTAL T.T.C"}: 47,500 MRU
                 </p>
               </div>
 

@@ -23,6 +23,8 @@ import {
   insertCustomerSchema,
   insertPromoCodeSchema,
   insertCmsBannerSchema,
+  insertCategorySchema,
+  insertStoreCustomerSchema,
 } from "@shared/schema";
 import { z } from "zod";
 import { handleCustomerChat, handleAdminChat, generatePromoCode, getCustomerGreeting } from "./limjiba";
@@ -2790,7 +2792,7 @@ export async function registerRoutes(
           r.name.toLowerCase().includes(q) ||
           (r.phone && r.phone.toLowerCase().includes(q))
         ) {
-          results.push({ type: "reseller", id: r.id, title: r.name, subtitle: `Revendeur · ${(r.totalPurchases || 0).toLocaleString()} DZD`, url: "/resellers" });
+          results.push({ type: "reseller", id: r.id, title: r.name, subtitle: `Revendeur · ${(r.totalPurchases || 0).toLocaleString()} MRU`, url: "/resellers" });
         }
         if (results.length >= 35) break;
       }
@@ -2857,7 +2859,7 @@ export async function registerRoutes(
               type: "overdue_invoice",
               severity: "critical",
               title: "Facture en retard",
-              message: `${inv.invoiceNumber} — ${inv.clientName || "Client"} · ${(inv.totalTTC || 0).toLocaleString()} DZD`,
+              message: `${inv.invoiceNumber} — ${inv.clientName || "Client"} · ${(inv.totalTTC || 0).toLocaleString()} MRU`,
               date: inv.dueDate,
               link: `/invoices/${inv.id}`,
             });
@@ -2872,7 +2874,7 @@ export async function registerRoutes(
             type: "credit_exceeded",
             severity: "warning",
             title: "Limite de crédit dépassée",
-            message: `${c.name}: ${c.currentBalance.toLocaleString()} / ${c.creditLimit.toLocaleString()} DZD`,
+            message: `${c.name}: ${c.currentBalance.toLocaleString()} / ${c.creditLimit.toLocaleString()} MRU`,
             date: now,
             link: "/customers",
           });
@@ -3160,6 +3162,163 @@ export async function registerRoutes(
       res.json({ greeting });
     } catch (error) {
       handleError(res, "storeGreeting", error);
+    }
+  });
+
+  // ==========================================
+  // PUBLIC: Store Categories
+  // ==========================================
+
+  app.get("/api/store/categories", async (req: Request, res: Response) => {
+    try {
+      const cats = await storage.getCategories();
+      res.json(cats.filter(c => c.isActive));
+    } catch (error) {
+      handleError(res, "getStoreCategories", error);
+    }
+  });
+
+  // ==========================================
+  // ADMIN: Categories Management
+  // ==========================================
+
+  app.get("/api/categories", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const cats = await storage.getCategories();
+      res.json(cats);
+    } catch (error) {
+      handleError(res, "getCategories", error);
+    }
+  });
+
+  app.post("/api/categories", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const data = insertCategorySchema.parse(req.body);
+      const cat = await storage.createCategory(data);
+      res.status(201).json(cat);
+    } catch (error) {
+      handleError(res, "createCategory", error);
+    }
+  });
+
+  app.put("/api/categories/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const updated = await storage.updateCategory(req.params.id, req.body);
+      if (!updated) return res.status(404).json({ error: "Category not found" });
+      res.json(updated);
+    } catch (error) {
+      handleError(res, "updateCategory", error);
+    }
+  });
+
+  app.delete("/api/categories/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const deleted = await storage.deleteCategory(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Category not found" });
+      res.json({ success: true });
+    } catch (error) {
+      handleError(res, "deleteCategory", error);
+    }
+  });
+
+  // ==========================================
+  // STORE CUSTOMER AUTH
+  // ==========================================
+
+  app.post("/api/store/auth/signup", async (req: Request, res: Response) => {
+    try {
+      const { email, password, fullName, phone } = req.body;
+      if (!email || !password || !fullName) {
+        return res.status(400).json({ error: "Email, password, and full name are required" });
+      }
+      const existing = await storage.getStoreCustomerByEmail(email);
+      if (existing) {
+        return res.status(409).json({ error: "An account with this email already exists" });
+      }
+      const hashedPassword = await bcrypt.hash(password, 10);
+      const customer = await storage.createStoreCustomer({
+        email,
+        password: hashedPassword,
+        fullName,
+        phone: phone || null,
+        address: null,
+        language: req.body.language || "en",
+        isActive: true,
+      });
+      (req.session as any).storeCustomer = { id: customer.id, email: customer.email, fullName: customer.fullName };
+      res.status(201).json({ id: customer.id, email: customer.email, fullName: customer.fullName, phone: customer.phone });
+    } catch (error) {
+      handleError(res, "storeSignup", error);
+    }
+  });
+
+  app.post("/api/store/auth/login", async (req: Request, res: Response) => {
+    try {
+      const { email, password } = req.body;
+      if (!email || !password) {
+        return res.status(400).json({ error: "Email and password are required" });
+      }
+      const customer = await storage.getStoreCustomerByEmail(email);
+      if (!customer || !customer.isActive) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+      const valid = await bcrypt.compare(password, customer.password);
+      if (!valid) {
+        return res.status(401).json({ error: "Invalid email or password" });
+      }
+      (req.session as any).storeCustomer = { id: customer.id, email: customer.email, fullName: customer.fullName };
+      res.json({ id: customer.id, email: customer.email, fullName: customer.fullName, phone: customer.phone, address: customer.address });
+    } catch (error) {
+      handleError(res, "storeLogin", error);
+    }
+  });
+
+  app.post("/api/store/auth/logout", async (req: Request, res: Response) => {
+    try {
+      delete (req.session as any).storeCustomer;
+      res.json({ success: true });
+    } catch (error) {
+      handleError(res, "storeLogout", error);
+    }
+  });
+
+  app.get("/api/store/auth/session", async (req: Request, res: Response) => {
+    try {
+      const sc = (req.session as any).storeCustomer;
+      if (sc) {
+        const customer = await storage.getStoreCustomerById(sc.id);
+        if (customer && customer.isActive) {
+          return res.json({ isAuthenticated: true, customer: { id: customer.id, email: customer.email, fullName: customer.fullName, phone: customer.phone, address: customer.address } });
+        }
+      }
+      res.json({ isAuthenticated: false });
+    } catch (error) {
+      handleError(res, "storeSession", error);
+    }
+  });
+
+  app.get("/api/store/auth/profile", async (req: Request, res: Response) => {
+    try {
+      const sc = (req.session as any).storeCustomer;
+      if (!sc) return res.status(401).json({ error: "Not authenticated" });
+      const customer = await storage.getStoreCustomerById(sc.id);
+      if (!customer) return res.status(404).json({ error: "Customer not found" });
+      res.json({ id: customer.id, email: customer.email, fullName: customer.fullName, phone: customer.phone, address: customer.address, language: customer.language });
+    } catch (error) {
+      handleError(res, "storeProfile", error);
+    }
+  });
+
+  app.put("/api/store/auth/profile", async (req: Request, res: Response) => {
+    try {
+      const sc = (req.session as any).storeCustomer;
+      if (!sc) return res.status(401).json({ error: "Not authenticated" });
+      const { fullName, phone, address, language } = req.body;
+      const updated = await storage.updateStoreCustomer(sc.id, { fullName, phone, address, language });
+      if (!updated) return res.status(404).json({ error: "Customer not found" });
+      res.json({ id: updated.id, email: updated.email, fullName: updated.fullName, phone: updated.phone, address: updated.address, language: updated.language });
+    } catch (error) {
+      handleError(res, "updateStoreProfile", error);
     }
   });
 
@@ -3594,10 +3753,10 @@ function generateInvoicePDF(invoice: any, branding: InvoiceBranding = {
           <tr>
             <td>${item.quantity}</td>
             <td>${item.designation}</td>
-            <td>${item.unitPrice > 0 ? item.unitPrice.toLocaleString() + ' DZD' : '- DZD'}</td>
+            <td>${item.unitPrice > 0 ? item.unitPrice.toLocaleString() + ' MRU' : '- MRU'}</td>
             <td>${(item.weightPerUnit || 0).toFixed(2)} kg</td>
             <td>${(item.totalWeight || 0).toFixed(2)} kg</td>
-            <td>${item.total > 0 ? item.total.toLocaleString() + ' DZD' : '- DZD'}</td>
+            <td>${item.total > 0 ? item.total.toLocaleString() + ' MRU' : '- MRU'}</td>
           </tr>
         `).join('')}
       </tbody>
@@ -3611,17 +3770,17 @@ function generateInvoicePDF(invoice: any, branding: InvoiceBranding = {
         </div>
         <div class="totals-row">
           <span>${labels.totalHT}:</span>
-          <span>${invoice.totalHT.toLocaleString()} DZD</span>
+          <span>${invoice.totalHT.toLocaleString()} MRU</span>
         </div>
         ${invoice.applyTva ? `
         <div class="totals-row">
           <span>${isArabic ? 'ضريبة القيمة المضافة' : 'TVA'} (${((invoice.tvaRate || 0.19) * 100).toFixed(0)}%):</span>
-          <span>${(invoice.tvaAmount || 0).toLocaleString()} DZD</span>
+          <span>${(invoice.tvaAmount || 0).toLocaleString()} MRU</span>
         </div>
         ` : ''}
         <div class="totals-row final">
           <span>${labels.totalTTC}:</span>
-          <span>${invoice.totalTTC.toLocaleString()} DZD</span>
+          <span>${invoice.totalTTC.toLocaleString()} MRU</span>
         </div>
       </div>
     </div>

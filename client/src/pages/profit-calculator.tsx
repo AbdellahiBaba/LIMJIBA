@@ -107,7 +107,7 @@ export default function ProfitCalculator() {
   });
 
   const formatCurrency = (value: number) => {
-    return value.toLocaleString("fr-DZ", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " DZD";
+    return value.toLocaleString("fr-DZ", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " MRU";
   };
 
   const getPeriodLabel = () => {

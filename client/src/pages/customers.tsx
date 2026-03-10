@@ -299,7 +299,7 @@ export default function Customers() {
                         <TableCell className="text-right">
                           <div className="flex items-center justify-end gap-2">
                             <CreditCard className="h-4 w-4 text-muted-foreground" />
-                            {(customer.creditLimit || 0).toLocaleString()} DZD
+                            {(customer.creditLimit || 0).toLocaleString()} MRU
                           </div>
                         </TableCell>
                         <TableCell className="text-right">
@@ -308,7 +308,7 @@ export default function Customers() {
                               <AlertTriangle className="h-4 w-4 text-destructive" />
                             )}
                             <span className={isOverLimit ? "text-destructive font-medium" : ""}>
-                              {(customer.currentBalance || 0).toLocaleString()} DZD
+                              {(customer.currentBalance || 0).toLocaleString()} MRU
                             </span>
                             {isOverLimit && (
                               <Badge variant="destructive" className="text-xs">
@@ -438,7 +438,7 @@ export default function Customers() {
                 name="creditLimit"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>{t("customers.creditLimit")} (DZD)</FormLabel>
+                    <FormLabel>{t("customers.creditLimit")} (MRU)</FormLabel>
                     <FormControl>
                       <Input
                         {...field}

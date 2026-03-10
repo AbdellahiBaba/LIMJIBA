@@ -326,8 +326,8 @@ export default function FabricationInvoice() {
       designation: getLabel("Désignation", "الوصف"),
       unitWeight: getLabel("Poids/U (Kg)", "الوزن/و"),
       totalWeight: getLabel("Poids Total (Kg)", "الوزن الكلي"),
-      unitPrice: getLabel("Prix U (DZD)", "سعر الوحدة"),
-      amount: getLabel("Montant (DZD)", "المبلغ"),
+      unitPrice: getLabel("Prix U (MRU)", "سعر الوحدة"),
+      amount: getLabel("Montant (MRU)", "المبلغ"),
       totalHT: getLabel("TOTAL H.T", "المجموع"),
       totalTTC: getLabel("TOTAL T.T.C", "المجموع الكلي"),
       weight: getLabel("Poids Total", "الوزن الكلي"),
@@ -436,9 +436,9 @@ export default function FabricationInvoice() {
 
   <div class="totals">
     <p>${labels.weight}: <strong>${totalWeight.toFixed(2)} Kg</strong></p>
-    <p>${labels.totalHT}: <strong>${formatNumber(totalHT)} DZD</strong></p>
-    ${formData.applyTva ? `<p>${getLabel("TVA", "ضريبة القيمة المضافة")} (${(formData.tvaRate * 100).toFixed(0)}%): <strong>${formatNumber(tvaAmount)} DZD</strong></p>` : ""}
-    <p class="grand-total">${labels.totalTTC}: ${formatNumber(totalTTC)} DZD</p>
+    <p>${labels.totalHT}: <strong>${formatNumber(totalHT)} MRU</strong></p>
+    ${formData.applyTva ? `<p>${getLabel("TVA", "ضريبة القيمة المضافة")} (${(formData.tvaRate * 100).toFixed(0)}%): <strong>${formatNumber(tvaAmount)} MRU</strong></p>` : ""}
+    <p class="grand-total">${labels.totalTTC}: ${formatNumber(totalTTC)} MRU</p>
   </div>
 
   <div class="footer">
@@ -467,7 +467,7 @@ export default function FabricationInvoice() {
     return new Intl.NumberFormat("fr-DZ", {
       minimumFractionDigits: 2,
       maximumFractionDigits: 2,
-    }).format(amount) + " DZD";
+    }).format(amount) + " MRU";
   };
 
   const getAmountInWords = (amount: number) => {

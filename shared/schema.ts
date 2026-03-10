@@ -691,6 +691,37 @@ export const insertCmsBannerSchema = createInsertSchema(cmsBanners).omit({ id: t
 export type InsertCmsBanner = z.infer<typeof insertCmsBannerSchema>;
 export type CmsBanner = typeof cmsBanners.$inferSelect;
 
+export const categories = pgTable("categories", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  nameAr: text("name_ar"),
+  nameFr: text("name_fr"),
+  icon: text("icon"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertCategorySchema = createInsertSchema(categories).omit({ id: true, createdAt: true });
+export type InsertCategory = z.infer<typeof insertCategorySchema>;
+export type Category = typeof categories.$inferSelect;
+
+export const storeCustomers = pgTable("store_customers", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  email: text("email").notNull().unique(),
+  password: text("password").notNull(),
+  fullName: text("full_name").notNull(),
+  phone: text("phone"),
+  address: text("address"),
+  language: text("language").notNull().default("en"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertStoreCustomerSchema = createInsertSchema(storeCustomers).omit({ id: true, createdAt: true });
+export type InsertStoreCustomer = z.infer<typeof insertStoreCustomerSchema>;
+export type StoreCustomer = typeof storeCustomers.$inferSelect;
+
 export const storeSettings = pgTable("store_settings", {
   id: varchar("id").primaryKey().default(sql`'default'`),
   storeName: text("store_name").notNull().default("LEMJIBA"),

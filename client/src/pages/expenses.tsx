@@ -50,7 +50,7 @@ import type { Expense, InsertExpense } from "@shared/schema";
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("fr-DZ", {
     style: "currency",
-    currency: "DZD",
+    currency: "MRU",
     minimumFractionDigits: 2,
   }).format(amount);
 };

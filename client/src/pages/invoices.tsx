@@ -306,7 +306,7 @@ export default function Invoices() {
                           )}
                         </TableCell>
                         <TableCell className="text-right font-mono font-medium">
-                          {invoice.totalTTC.toLocaleString()} DZD
+                          {invoice.totalTTC.toLocaleString()} MRU
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-1">

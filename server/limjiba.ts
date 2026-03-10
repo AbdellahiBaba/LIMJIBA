@@ -68,7 +68,7 @@ async function getProductContext(): Promise<string> {
   const products = await storage.getProducts();
   const inStock = products.filter(p => p.stockQuantity > 0);
   return inStock.length > 0
-    ? inStock.map(p => `${p.name}|${p.category}|${p.unitPrice}DZD|qty:${p.stockQuantity}|${p.unit}`).join("\n")
+    ? inStock.map(p => `${p.name}|${p.category}|${p.unitPrice}MRU|qty:${p.stockQuantity}|${p.unit}`).join("\n")
     : "No products in stock.";
 }
 
@@ -87,7 +87,7 @@ async function getSalesContext(): Promise<string> {
     } catch {}
   }
   return Object.values(ps).sort((a, b) => b.rev - a.rev).slice(0, 10)
-    .map((p, i) => `${i + 1}.${p.name}:${p.qty}sold,${p.rev.toFixed(0)}DZD`).join("\n");
+    .map((p, i) => `${i + 1}.${p.name}:${p.qty}sold,${p.rev.toFixed(0)}MRU`).join("\n");
 }
 
 async function getLowStockContext(): Promise<string> {
@@ -100,10 +100,10 @@ async function getLowStockContext(): Promise<string> {
   return lines.length > 0 ? lines.join("\n") : "All stocked.";
 }
 
-const CUSTOMER_PROMPT = `LEMJIBA store assistant. Help customers find products, check stock/prices, suggest alternatives. Rules: only recommend in-stock items, prices in DZD, suggest same-category alternatives for out-of-stock, be concise, respond in customer's language (AR/FR/EN), redirect off-topic questions to store.
+const CUSTOMER_PROMPT = `LEMJIBA store assistant (Mauritania). Help customers find products, check stock/prices, suggest alternatives. Rules: only recommend in-stock items, prices in MRU (Mauritanian Ouguiya), suggest same-category alternatives for out-of-stock, be concise, respond in customer's language (AR/FR/EN), redirect off-topic questions to store.
 Catalog:\n{PRODUCTS}`;
 
-const ADMIN_PROMPT = `LEMJIBA business assistant. Analyze sales, suggest restocking, generate promo codes (PROMO-XXXXX format, keep margin>15%, 1-3day expiry), provide insights.
+const ADMIN_PROMPT = `LEMJIBA business assistant (Mauritania). Analyze sales in MRU (Mauritanian Ouguiya), suggest restocking, generate promo codes (PROMO-XXXXX format, keep margin>15%, 1-3day expiry), provide insights.
 Inventory:\n{PRODUCTS}\nTop sellers:\n{SALES}\nAlerts:\n{STOCK_ALERTS}`;
 
 export async function handleCustomerChat(

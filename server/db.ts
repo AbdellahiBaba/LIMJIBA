@@ -814,6 +814,74 @@ async function runMigrations(): Promise<void> {
         AND (primary_color = '#4A0E4E' OR store_name = 'Limjiba Store')
     `);
 
+    // ===================== CATEGORIES TABLE =====================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS categories (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL,
+        name_ar TEXT,
+        name_fr TEXT,
+        icon TEXT,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    const existingCategories = await client.query(`SELECT id FROM categories LIMIT 1`);
+    if (existingCategories.rows.length === 0) {
+      await client.query(`
+        INSERT INTO categories (name, name_ar, name_fr, icon, sort_order) VALUES
+          ('Electronics', 'إلكترونيات', 'Électronique', 'Cpu', 1),
+          ('Fashion', 'أزياء', 'Mode', 'Shirt', 2),
+          ('Home & Living', 'منزل ومعيشة', 'Maison & Vie', 'Home', 3),
+          ('Beauty & Health', 'جمال وصحة', 'Beauté & Santé', 'Heart', 4),
+          ('Food & Groceries', 'طعام وبقالة', 'Alimentation', 'ShoppingBasket', 5),
+          ('Sports & Outdoors', 'رياضة وأنشطة', 'Sports & Plein Air', 'Dumbbell', 6),
+          ('Books & Stationery', 'كتب وقرطاسية', 'Livres & Papeterie', 'BookOpen', 7),
+          ('Accessories', 'إكسسوارات', 'Accessoires', 'Watch', 8),
+          ('Other', 'أخرى', 'Autre', 'Package', 9)
+      `);
+      console.log('[DB] Seeded default categories');
+    }
+
+    // ===================== STORE CUSTOMERS TABLE =====================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS store_customers (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        email TEXT NOT NULL UNIQUE,
+        password TEXT NOT NULL,
+        full_name TEXT NOT NULL,
+        phone TEXT,
+        address TEXT,
+        language TEXT NOT NULL DEFAULT 'en',
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // ===================== CLEANUP: Remove plastic products =====================
+    const plasticCheck = await client.query(`SELECT id FROM products WHERE category = 'Sacs en plastique' OR name ILIKE '%plastique%' LIMIT 1`);
+    if (plasticCheck.rows.length > 0) {
+      await client.query(`DELETE FROM products WHERE category = 'Sacs en plastique' OR name ILIKE '%plastique%'`);
+      console.log('[DB] Removed plastic bag products');
+    }
+
+    // Update CMS pages with rich trilingual content
+    await client.query(`
+      UPDATE cms_pages SET content = '{"body":"<h2>About LEMJIBA</h2><p>LEMJIBA (لمجيبه) is a premium e-commerce platform born in Mauritania, dedicated to bringing you the finest products with exceptional service.</p><h3>Our Mission</h3><p>We strive to provide a seamless shopping experience with curated products, competitive prices in MRU, and reliable delivery across Mauritania and beyond.</p><h3>Our Values</h3><ul><li><strong>Quality First</strong> — Every product is carefully selected</li><li><strong>Customer Trust</strong> — Your satisfaction is our priority</li><li><strong>Local Pride</strong> — Proudly Mauritanian, globally inspired</li></ul><h3>عن لمجيبه</h3><p>لمجيبه هي منصة تجارة إلكترونية متميزة من موريتانيا، مكرسة لتقديم أفضل المنتجات بخدمة استثنائية.</p><h3>À propos de LEMJIBA</h3><p>LEMJIBA est une plateforme e-commerce premium née en Mauritanie, dédiée à vous offrir les meilleurs produits avec un service exceptionnel.</p>"}'
+      WHERE slug = 'about'
+    `);
+    await client.query(`
+      UPDATE cms_pages SET content = '{"body":"<h2>Contact Us</h2><p>We would love to hear from you! Reach out to our team for any questions, orders, or support.</p><p><strong>Email:</strong> contact@lemjiba.com</p><p><strong>Phone:</strong> +222 00 00 00 00</p><p><strong>Address:</strong> Nouakchott, Mauritania</p><h3>اتصل بنا</h3><p>يسعدنا سماع رأيك! تواصل مع فريقنا لأي استفسار أو طلب.</p><h3>Contactez-nous</h3><p>Nous serions ravis de vous entendre! Contactez notre équipe pour toute question.</p>"}'
+      WHERE slug = 'contact'
+    `);
+    await client.query(`
+      UPDATE cms_pages SET content = '{"body":"<h2>Terms & Conditions</h2><h3>1. General</h3><p>By using LEMJIBA, you agree to these terms. All prices are in MRU (Mauritanian Ouguiya).</p><h3>2. Orders & Payments</h3><p>Orders are confirmed upon receipt. Payment is required before shipping. We accept cash on delivery and bank transfer.</p><h3>3. Shipping & Delivery</h3><p>We deliver across Mauritania. Delivery times vary by location. Shipping costs are calculated at checkout.</p><h3>4. Returns & Refunds</h3><p>Returns are accepted within 7 days of delivery for unused items in original packaging. Refunds are processed within 5 business days.</p><h3>5. Privacy</h3><p>We protect your personal information. Your data is never shared with third parties without consent.</p>"}'
+      WHERE slug = 'terms'
+    `);
+    console.log('[DB] Updated CMS pages with rich content');
+
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);

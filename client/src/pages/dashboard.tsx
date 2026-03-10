@@ -419,7 +419,7 @@ export default function Dashboard() {
                 <StatCard
                   title={t("dashboard.quickInvoices")}
                   value={stats?.quickInvoicesCount ?? 0}
-                  description={`${(stats?.quickInvoicesTotal ?? 0).toLocaleString()} DZD`}
+                  description={`${(stats?.quickInvoicesTotal ?? 0).toLocaleString()} MRU`}
                   icon={Zap}
                 />
               </>
@@ -437,7 +437,7 @@ export default function Dashboard() {
             ) : (
               <>
                 <StatCard
-                  title={t("common.total") + " (DZD)"}
+                  title={t("common.total") + " (MRU)"}
                   value={`${(stats?.todayRevenue ?? 0).toLocaleString()}`}
                   icon={TrendingUp}
                   variant="success"
@@ -474,13 +474,13 @@ export default function Dashboard() {
               <>
                 <StatCard
                   title={t("dashboard.avgOrderValue")}
-                  value={`${(filteredStats?.avgOrderValue ?? 0).toLocaleString()} DZD`}
+                  value={`${(filteredStats?.avgOrderValue ?? 0).toLocaleString()} MRU`}
                   icon={Receipt}
                   testId="stat-avg-order-value"
                 />
                 <StatCard
                   title={t("dashboard.outstandingCredit")}
-                  value={`${(filteredStats?.outstandingCredit ?? 0).toLocaleString()} DZD`}
+                  value={`${(filteredStats?.outstandingCredit ?? 0).toLocaleString()} MRU`}
                   icon={CreditCard}
                   variant={(filteredStats?.outstandingCredit ?? 0) > 0 ? "warning" : "default"}
                   testId="stat-outstanding-credit"
@@ -489,12 +489,12 @@ export default function Dashboard() {
                   title={t("dashboard.topCustomer")}
                   value={filteredStats?.topCustomer?.name ?? "—"}
                   icon={Crown}
-                  description={`${(filteredStats?.topCustomer?.amount ?? 0).toLocaleString()} DZD`}
+                  description={`${(filteredStats?.topCustomer?.amount ?? 0).toLocaleString()} MRU`}
                   testId="stat-top-customer"
                 />
                 <StatCard
                   title={t("dashboard.netIncome")}
-                  value={`${(filteredStats?.netIncome ?? 0).toLocaleString()} DZD`}
+                  value={`${(filteredStats?.netIncome ?? 0).toLocaleString()} MRU`}
                   icon={TrendingUp}
                   variant={(filteredStats?.netIncome ?? 0) >= 0 ? "success" : "warning"}
                   testId="stat-net-income"
@@ -520,7 +520,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between gap-2 text-sm">
                     <span className="text-muted-foreground">{t("dashboard.revenue")}</span>
                     <span className="font-semibold text-green-600 dark:text-green-400" data-testid="text-total-revenue">
-                      {(filteredStats?.totalRevenue ?? 0).toLocaleString()} DZD
+                      {(filteredStats?.totalRevenue ?? 0).toLocaleString()} MRU
                     </span>
                   </div>
                   <div className="relative h-6 rounded-md overflow-hidden bg-muted">
@@ -538,7 +538,7 @@ export default function Dashboard() {
                   <div className="flex items-center justify-between gap-2 text-sm">
                     <span className="text-muted-foreground">{t("dashboard.expensesLabel")}</span>
                     <span className="font-semibold text-red-600 dark:text-red-400" data-testid="text-total-expenses">
-                      {(filteredStats?.totalExpenses ?? 0).toLocaleString()} DZD
+                      {(filteredStats?.totalExpenses ?? 0).toLocaleString()} MRU
                     </span>
                   </div>
                   <div className="flex items-center justify-between gap-2 pt-2 border-t text-sm">
@@ -547,7 +547,7 @@ export default function Dashboard() {
                       className={`font-bold ${(filteredStats?.netIncome ?? 0) >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
                       data-testid="text-net-result"
                     >
-                      {(filteredStats?.netIncome ?? 0) >= 0 ? "+" : ""}{(filteredStats?.netIncome ?? 0).toLocaleString()} DZD
+                      {(filteredStats?.netIncome ?? 0) >= 0 ? "+" : ""}{(filteredStats?.netIncome ?? 0).toLocaleString()} MRU
                     </span>
                   </div>
                 </>
@@ -603,7 +603,7 @@ export default function Dashboard() {
                           </div>
                           <div className="flex-shrink-0 flex items-center gap-2">
                             <Badge variant={getActivityBadgeVariant(activity.type)} className="text-[10px]">
-                              {activity.type === "expense" ? "-" : "+"}{(activity.amount || 0).toLocaleString()} DZD
+                              {activity.type === "expense" ? "-" : "+"}{(activity.amount || 0).toLocaleString()} MRU
                             </Badge>
                           </div>
                         </div>
@@ -832,7 +832,7 @@ export default function Dashboard() {
                         </div>
                         <div className="text-right flex-shrink-0">
                           <div className="text-xs sm:text-sm font-semibold">{product.quantity} {t("dashboard.sold")}</div>
-                          <div className="text-[10px] sm:text-xs text-muted-foreground">{product.revenue.toLocaleString()} DZD</div>
+                          <div className="text-[10px] sm:text-xs text-muted-foreground">{product.revenue.toLocaleString()} MRU</div>
                         </div>
                       </div>
                     ))}

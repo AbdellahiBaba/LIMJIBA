@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, Link } from "wouter";
 import { useCart } from "@/contexts/cart-context";
+import { useStoreLanguage } from "@/components/store-layout";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -12,6 +13,7 @@ export default function StoreProductDetail() {
   const [, params] = useRoute("/store/products/:id");
   const productId = params?.id;
   const { addItem } = useCart();
+  const { t } = useStoreLanguage();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
@@ -66,10 +68,10 @@ export default function StoreProductDetail() {
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
         <Package className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-        <h2 className="text-2xl font-bold text-gray-500 mb-2">Product Not Found</h2>
+        <h2 className="text-2xl font-bold text-gray-500 mb-2">{t("detail.notFound")}</h2>
         <Link href="/store/products">
           <Button variant="outline" className="rounded-full mt-4">
-            <ArrowLeft className="h-4 w-4 mr-2" /> Back to Products
+            <ArrowLeft className="h-4 w-4 mr-2" /> {t("detail.back")}
           </Button>
         </Link>
       </div>
@@ -80,7 +82,7 @@ export default function StoreProductDetail() {
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Link href="/store/products">
         <Button variant="ghost" size="sm" className="mb-6 rounded-full" data-testid="button-back-products">
-          <ArrowLeft className="h-4 w-4 mr-1" /> Back to Products
+          <ArrowLeft className="h-4 w-4 mr-1" /> {t("detail.back")}
         </Button>
       </Link>
 
@@ -95,21 +97,21 @@ export default function StoreProductDetail() {
           <div>
             <Badge className="mb-3" style={{ backgroundColor: `${accentColor}20`, color: primaryColor }}>{product.category}</Badge>
             <h1 className="text-3xl font-bold mb-2" style={{ color: primaryColor }} data-testid="text-product-name">{product.name}</h1>
-            <p className="text-gray-500 text-sm">SKU: {product.barcode || product.id.substring(0, 8)}</p>
+            <p className="text-gray-500 text-sm">{t("detail.sku")}: {product.barcode || product.id.substring(0, 8)}</p>
           </div>
 
           <div className="text-4xl font-bold" style={{ color: primaryColor }} data-testid="text-product-price">
-            {product.unitPrice.toFixed(2)} <span className="text-lg font-normal">DZD</span>
+            {product.unitPrice.toFixed(2)} <span className="text-lg font-normal">{t("currency")}</span>
           </div>
 
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm text-gray-600">
               <Check className="h-4 w-4 text-green-500" />
-              <span>{product.stockQuantity} units available</span>
+              <span>{product.stockQuantity} {t("detail.available")}</span>
             </div>
             {product.weightPerUnit > 0 && (
               <div className="text-sm text-gray-600">
-                Weight: {product.weightPerUnit} kg per {product.unit}
+                {t("detail.weight")}: {product.weightPerUnit} kg / {product.unit}
               </div>
             )}
           </div>
@@ -131,7 +133,7 @@ export default function StoreProductDetail() {
               onClick={handleAddToCart}
               data-testid="button-add-to-cart"
             >
-              {added ? <><Check className="h-5 w-5 mr-2" /> Added!</> : <><ShoppingCart className="h-5 w-5 mr-2" /> Add to Cart</>}
+              {added ? <><Check className="h-5 w-5 mr-2" /> {t("detail.added")}</> : <><ShoppingCart className="h-5 w-5 mr-2" /> {t("detail.addToCart")}</>}
             </Button>
           </div>
         </div>
@@ -139,7 +141,7 @@ export default function StoreProductDetail() {
 
       {related.length > 0 && (
         <section className="mt-16">
-          <h2 className="text-2xl font-bold mb-6" style={{ color: primaryColor }}>Related Products</h2>
+          <h2 className="text-2xl font-bold mb-6" style={{ color: primaryColor }}>{t("detail.related")}</h2>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {related.map(p => (
               <Link key={p.id} href={`/store/products/${p.id}`}>
@@ -149,7 +151,7 @@ export default function StoreProductDetail() {
                   </div>
                   <div className="p-3">
                     <p className="font-semibold text-sm line-clamp-1">{p.name}</p>
-                    <p className="font-bold mt-1" style={{ color: primaryColor }}>{p.unitPrice.toFixed(2)} DZD</p>
+                    <p className="font-bold mt-1" style={{ color: primaryColor }}>{p.unitPrice.toFixed(2)} {t("currency")}</p>
                   </div>
                 </div>
               </Link>

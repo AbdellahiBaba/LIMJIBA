@@ -355,7 +355,7 @@ export default function InvoiceView() {
                       <TableCell className="font-mono">{item.quantity}</TableCell>
                       <TableCell>{item.designation}</TableCell>
                       <TableCell className="text-right font-mono">
-                        {item.unitPrice > 0 ? `${item.unitPrice.toLocaleString()} DZD` : "- DZD"}
+                        {item.unitPrice > 0 ? `${item.unitPrice.toLocaleString()} MRU` : "- MRU"}
                       </TableCell>
                       <TableCell className="text-right font-mono">
                         {(item.weightPerUnit || 0).toFixed(2)} kg
@@ -364,7 +364,7 @@ export default function InvoiceView() {
                         {(item.totalWeight || 0).toFixed(2)} kg
                       </TableCell>
                       <TableCell className="text-right font-mono">
-                        {item.total > 0 ? `${item.total.toLocaleString()} DZD` : "- DZD"}
+                        {item.total > 0 ? `${item.total.toLocaleString()} MRU` : "- MRU"}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -382,14 +382,14 @@ export default function InvoiceView() {
               <div className="flex gap-8 text-sm">
                 <span className="text-muted-foreground">{t("invoices.totalHT")}:</span>
                 <span className="font-mono font-medium">
-                  {invoice.totalHT.toLocaleString()} DZD
+                  {invoice.totalHT.toLocaleString()} MRU
                 </span>
               </div>
               {invoice.applyTva && (
                 <div className="flex gap-8 text-sm">
                   <span className="text-muted-foreground">TVA ({((invoice.tvaRate || 0.19) * 100).toFixed(0)}%):</span>
                   <span className="font-mono font-medium">
-                    {(invoice.tvaAmount || 0).toLocaleString()} DZD
+                    {(invoice.tvaAmount || 0).toLocaleString()} MRU
                   </span>
                 </div>
               )}
@@ -397,14 +397,14 @@ export default function InvoiceView() {
                 <div className="flex gap-8 text-sm">
                   <span className="text-muted-foreground">{t("transportation.deliveryCost")}:</span>
                   <span className="font-mono font-medium" data-testid="text-delivery-cost">
-                    {(invoice.deliveryCost || 0).toLocaleString()} DZD
+                    {(invoice.deliveryCost || 0).toLocaleString()} MRU
                   </span>
                 </div>
               )}
               <div className="flex gap-8 text-lg font-semibold">
                 <span>{t("invoices.totalTTC")}:</span>
                 <span className="font-mono">
-                  {invoice.totalTTC.toLocaleString()} DZD
+                  {invoice.totalTTC.toLocaleString()} MRU
                 </span>
               </div>
             </div>
@@ -466,16 +466,16 @@ export default function InvoiceView() {
             <CardContent className="space-y-3 text-sm">
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("invoices.invoiceTotal")}:</span>
-                <span className="font-mono" data-testid="text-invoice-total">{invoice.totalTTC.toLocaleString()} DZD</span>
+                <span className="font-mono" data-testid="text-invoice-total">{invoice.totalTTC.toLocaleString()} MRU</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-muted-foreground">{t("invoices.paidAmount")}:</span>
-                <span className="font-mono text-green-600" data-testid="text-paid-amount">{(paymentsData?.paidAmount || 0).toLocaleString()} DZD</span>
+                <span className="font-mono text-green-600" data-testid="text-paid-amount">{(paymentsData?.paidAmount || 0).toLocaleString()} MRU</span>
               </div>
               <div className="flex justify-between font-medium">
                 <span>{t("invoices.remainingAmount")}:</span>
                 <span className={`font-mono ${remainingAmount > 0 ? "text-destructive" : "text-green-600"}`} data-testid="text-remaining-amount">
-                  {remainingAmount.toLocaleString()} DZD
+                  {remainingAmount.toLocaleString()} MRU
                 </span>
               </div>
               <Progress
@@ -491,7 +491,7 @@ export default function InvoiceView() {
                     {paymentsData.payments.map((payment) => (
                       <div key={payment.id} className="flex items-center justify-between text-xs bg-muted/50 p-2 rounded">
                         <div>
-                          <p className="font-medium">{payment.amount.toLocaleString()} DZD</p>
+                          <p className="font-medium">{payment.amount.toLocaleString()} MRU</p>
                           <p className="text-muted-foreground">
                             {formatDateDMY(payment.paymentDate)} - {payment.paymentMethod}
                           </p>
@@ -614,7 +614,7 @@ export default function InvoiceView() {
                     setEmailTo(invoice.clientName ? "" : "");
                     setEmailSubject(`${t("invoices.invoiceNumber")} ${invoice.invoiceNumber} - ${branding.companyInfo.name}`);
                     setEmailBody(
-                      `${t("invoices.invoiceNumber")} ${invoice.invoiceNumber} - ${formatDateDMY(invoice.date)} - ${invoice.totalTTC.toLocaleString()} DZD\n\n${branding.companyInfo.name}\n${branding.companyInfo.phone}`
+                      `${t("invoices.invoiceNumber")} ${invoice.invoiceNumber} - ${formatDateDMY(invoice.date)} - ${invoice.totalTTC.toLocaleString()} MRU\n\n${branding.companyInfo.name}\n${branding.companyInfo.phone}`
                     );
                     setEmailDialogOpen(true);
                   }
@@ -642,12 +642,12 @@ export default function InvoiceView() {
           <DialogHeader>
             <DialogTitle>{t("invoices.recordPayment")}</DialogTitle>
             <DialogDescription>
-              {t("invoices.remainingToPay")}: {remainingAmount.toLocaleString()} DZD
+              {t("invoices.remainingToPay")}: {remainingAmount.toLocaleString()} MRU
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label>{t("invoices.amountDZD")}</Label>
+              <Label>{t("invoices.amountMRU")}</Label>
               <Input
                 type="number"
                 value={paymentAmount}

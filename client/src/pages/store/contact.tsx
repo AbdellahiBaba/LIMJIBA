@@ -1,9 +1,11 @@
 import { useQuery } from "@tanstack/react-query";
+import { useStoreLanguage } from "@/components/store-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Phone, Mail, MapPin } from "lucide-react";
 import type { CmsPage, StoreSettings } from "@shared/schema";
 
 export default function StoreContact() {
+  const { t } = useStoreLanguage();
   const { data: page, isLoading } = useQuery<CmsPage>({ queryKey: ["/api/store/pages/contact"] });
   const { data: settings } = useQuery<StoreSettings>({ queryKey: ["/api/store/settings"] });
   const primaryColor = settings?.primaryColor || "#1B3A6B";
@@ -25,13 +27,13 @@ export default function StoreContact() {
     <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
       <h1 className="text-3xl font-bold mb-6" style={{ color: primaryColor }} data-testid="text-contact-title">
         <Phone className="inline h-8 w-8 mr-2" style={{ color: accentColor }} />
-        {page?.title || "Contact Us"}
+        {t("contact.title")}
       </h1>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         <div className="space-y-6">
           {content.body && (
-            <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">{content.body}</p>
+            <div className="text-gray-700 leading-relaxed" dangerouslySetInnerHTML={{ __html: content.body }} />
           )}
           <div className="space-y-4">
             {settings?.contactEmail && (
@@ -40,7 +42,7 @@ export default function StoreContact() {
                   <Mail className="h-5 w-5" style={{ color: accentColor }} />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Email</p>
+                  <p className="text-sm text-gray-500">{t("checkout.email")}</p>
                   <p className="font-semibold" data-testid="text-contact-email">{settings.contactEmail}</p>
                 </div>
               </div>
@@ -51,7 +53,7 @@ export default function StoreContact() {
                   <Phone className="h-5 w-5" style={{ color: accentColor }} />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Phone</p>
+                  <p className="text-sm text-gray-500">{t("checkout.phone")}</p>
                   <p className="font-semibold" data-testid="text-contact-phone">{settings.contactPhone}</p>
                 </div>
               </div>
@@ -62,7 +64,7 @@ export default function StoreContact() {
                   <MapPin className="h-5 w-5" style={{ color: accentColor }} />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500">Address</p>
+                  <p className="text-sm text-gray-500">{t("checkout.address")}</p>
                   <p className="font-semibold" data-testid="text-contact-address">{settings.contactAddress}</p>
                 </div>
               </div>
@@ -72,7 +74,7 @@ export default function StoreContact() {
         <div className="rounded-xl p-8 flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${primaryColor}08, ${accentColor}08)` }}>
           <div className="text-center">
             <span className="text-6xl mb-4 block">💬</span>
-            <p className="text-gray-600">Use the chat assistant for quick help!</p>
+            <p className="text-gray-600">{t("chat.assistant")}</p>
           </div>
         </div>
       </div>

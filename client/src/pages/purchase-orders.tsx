@@ -348,10 +348,10 @@ export default function PurchaseOrders() {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell className="text-right font-mono">{po.totalAmount.toFixed(2)} DZD</TableCell>
+                    <TableCell className="text-right font-mono">{po.totalAmount.toFixed(2)} MRU</TableCell>
                     <TableCell className="text-right font-mono">
                       {po.shippingCost && po.shippingCost > 0
-                        ? `${po.shippingCost.toFixed(2)} DZD`
+                        ? `${po.shippingCost.toFixed(2)} MRU`
                         : <span className="text-muted-foreground">-</span>
                       }
                     </TableCell>
@@ -495,7 +495,7 @@ export default function PurchaseOrders() {
               </div>
               <div className="flex justify-end mt-2">
                 <span className="text-sm font-semibold">
-                  {t("common.total")}: {items.reduce((sum, i) => sum + i.total, 0).toFixed(2)} DZD
+                  {t("common.total")}: {items.reduce((sum, i) => sum + i.total, 0).toFixed(2)} MRU
                 </span>
               </div>
             </div>
@@ -697,19 +697,19 @@ export default function PurchaseOrders() {
               <div className="flex flex-col items-end gap-1 text-sm">
                 <div className="flex gap-4">
                   <span className="text-muted-foreground">{t("common.total")}:</span>
-                  <span className="font-mono font-semibold" data-testid="text-detail-total">{detailPO.totalAmount.toFixed(2)} DZD</span>
+                  <span className="font-mono font-semibold" data-testid="text-detail-total">{detailPO.totalAmount.toFixed(2)} MRU</span>
                 </div>
                 {detailPO.shippingCost && detailPO.shippingCost > 0 && (
                   <>
                     <div className="flex gap-4">
                       <span className="text-muted-foreground">{t("purchaseOrders.shippingCost")}:</span>
-                      <span className="font-mono font-semibold" data-testid="text-detail-shipping">{detailPO.shippingCost.toFixed(2)} DZD</span>
+                      <span className="font-mono font-semibold" data-testid="text-detail-shipping">{detailPO.shippingCost.toFixed(2)} MRU</span>
                     </div>
                     <Separator className="w-32" />
                     <div className="flex gap-4">
                       <span className="text-muted-foreground font-semibold">{t("common.total")} + {t("purchaseOrders.shippingCost")}:</span>
                       <span className="font-mono font-bold" data-testid="text-detail-grand-total">
-                        {(detailPO.totalAmount + detailPO.shippingCost).toFixed(2)} DZD
+                        {(detailPO.totalAmount + detailPO.shippingCost).toFixed(2)} MRU
                       </span>
                     </div>
                   </>
@@ -724,7 +724,7 @@ export default function PurchaseOrders() {
                     <div className="mt-2 grid grid-cols-3 gap-4">
                       <div>
                         <Label className="text-xs text-muted-foreground">{t("purchaseOrders.totalShipping")}</Label>
-                        <p className="font-mono font-medium" data-testid="text-detail-shipping-total">{detailPO.shippingCost.toFixed(2)} DZD</p>
+                        <p className="font-mono font-medium" data-testid="text-detail-shipping-total">{detailPO.shippingCost.toFixed(2)} MRU</p>
                       </div>
                       <div>
                         <Label className="text-xs text-muted-foreground">{t("purchaseOrders.shippingMethod")}</Label>

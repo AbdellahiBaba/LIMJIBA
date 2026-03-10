@@ -582,7 +582,7 @@ export default function POS() {
                               {product.name}
                             </h3>
                             <p className="text-center font-mono text-[10px] sm:text-sm text-primary font-semibold">
-                              {product.unitPrice.toLocaleString()} DZD
+                              {product.unitPrice.toLocaleString()} MRU
                             </p>
                             {inCart && (
                               <div className="flex justify-center mt-1">
@@ -619,7 +619,7 @@ export default function POS() {
                         {product.name}
                       </h3>
                       <p className="text-center font-mono text-[10px] sm:text-sm text-primary font-semibold">
-                        {product.unitPrice.toLocaleString()} DZD
+                        {product.unitPrice.toLocaleString()} MRU
                       </p>
                       {inCart && (
                         <div className="flex justify-center mt-1">
@@ -707,7 +707,7 @@ export default function POS() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate leading-tight">{item.productName}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
-                          {item.unitPrice.toLocaleString()} DZD
+                          {item.unitPrice.toLocaleString()} MRU
                         </p>
                       </div>
                       <Button
@@ -749,7 +749,7 @@ export default function POS() {
                       </div>
                       <div className="text-right">
                         <p className="font-mono text-base font-bold text-primary whitespace-nowrap">
-                          {item.total.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">DZD</span>
+                          {item.total.toLocaleString()} <span className="text-xs font-normal text-muted-foreground">MRU</span>
                         </p>
                       </div>
                     </div>
@@ -764,7 +764,7 @@ export default function POS() {
               <div className="bg-muted/50 rounded-lg p-3 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t("pos.subtotal")}</span>
-                  <span className="font-mono font-medium">{subtotal.toLocaleString()} DZD</span>
+                  <span className="font-mono font-medium">{subtotal.toLocaleString()} MRU</span>
                 </div>
                 {totalDiscount > 0 && (
                   <div className="flex justify-between text-sm">
@@ -772,22 +772,22 @@ export default function POS() {
                       {t("pos.discount")}
                       {discountPercent > 0 && ` (${discountPercent}%)`}
                       {discountPercent > 0 && discountAmount > 0 && " +"}
-                      {discountAmount > 0 && ` ${discountAmount.toLocaleString()} DZD`}
+                      {discountAmount > 0 && ` ${discountAmount.toLocaleString()} MRU`}
                     </span>
-                    <span className="font-mono font-medium text-green-600 dark:text-green-400">-{totalDiscount.toLocaleString()} DZD</span>
+                    <span className="font-mono font-medium text-green-600 dark:text-green-400">-{totalDiscount.toLocaleString()} MRU</span>
                   </div>
                 )}
                 {deliveryCost > 0 && (
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">{t("transportation.deliveryCost")}</span>
-                    <span className="font-mono font-medium">+{deliveryCost.toLocaleString()} DZD</span>
+                    <span className="font-mono font-medium">+{deliveryCost.toLocaleString()} MRU</span>
                   </div>
                 )}
                 <Separator />
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-bold">{t("pos.total")}</span>
                   <span className="font-mono text-xl font-bold text-primary" data-testid="text-cart-total">
-                    {total.toLocaleString()} DZD
+                    {total.toLocaleString()} MRU
                   </span>
                 </div>
               </div>
@@ -813,7 +813,7 @@ export default function POS() {
                     min="0"
                     value={discountAmount || ""}
                     onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}
-                    placeholder="DZD"
+                    placeholder="MRU"
                     className="h-9"
                     data-testid="input-discount-amount"
                   />
@@ -825,7 +825,7 @@ export default function POS() {
                     min="0"
                     value={deliveryCost || ""}
                     onChange={(e) => setDeliveryCost(parseFloat(e.target.value) || 0)}
-                    placeholder="DZD"
+                    placeholder="MRU"
                     className="h-9"
                     data-testid="input-delivery-cost"
                   />
@@ -984,7 +984,7 @@ export default function POS() {
                           <p className="text-xs text-muted-foreground">{sale.date}</p>
                         </div>
                         <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="font-mono font-semibold text-xs">{sale.total.toLocaleString()} DZD</span>
+                          <span className="font-mono font-semibold text-xs">{sale.total.toLocaleString()} MRU</span>
                           <Button
                             size="icon"
                             variant="ghost"
@@ -1015,7 +1015,7 @@ export default function POS() {
           <div className="space-y-4">
             <div className="text-center py-4">
               <p className="text-3xl font-bold font-mono" data-testid="text-checkout-total">
-                {total.toLocaleString()} DZD
+                {total.toLocaleString()} MRU
               </p>
               <p className="text-sm text-muted-foreground mt-1">
                 {cart.reduce((sum, item) => sum + item.quantity, 0)} {t("pos.items")}
@@ -1076,7 +1076,7 @@ export default function POS() {
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t("pos.remainingBalance")}</span>
                   <span className="font-mono font-medium text-orange-600 dark:text-orange-400">
-                    {remainingBalance.toLocaleString()} DZD
+                    {remainingBalance.toLocaleString()} MRU
                   </span>
                 </div>
               )}
@@ -1197,7 +1197,7 @@ export default function POS() {
               />
             </div>
             <div className="text-sm text-muted-foreground">
-              {cart.reduce((sum, item) => sum + item.quantity, 0)} {t("pos.article")} - {total.toLocaleString()} DZD
+              {cart.reduce((sum, item) => sum + item.quantity, 0)} {t("pos.article")} - {total.toLocaleString()} MRU
             </div>
           </div>
           <DialogFooter>
@@ -1285,7 +1285,7 @@ export default function POS() {
                 </div>
                 <div className="flex justify-between gap-2 text-sm">
                   <span className="text-muted-foreground">Total:</span>
-                  <span className="font-mono font-semibold">{returnLookupData.total?.toLocaleString()} DZD</span>
+                  <span className="font-mono font-semibold">{returnLookupData.total?.toLocaleString()} MRU</span>
                 </div>
                 <div className="flex justify-between gap-2 text-sm">
                   <span className="text-muted-foreground">{t("pos.status")}:</span>
@@ -1324,7 +1324,7 @@ export default function POS() {
                               )}
                             </div>
                           </div>
-                          <span className="font-mono text-sm">{item.unitPrice?.toLocaleString()} DZD</span>
+                          <span className="font-mono text-sm">{item.unitPrice?.toLocaleString()} MRU</span>
                         </div>
                         {maxReturnable > 0 ? (
                           <div className="flex items-center gap-2">
@@ -1372,7 +1372,7 @@ export default function POS() {
                             <span className="text-xs text-muted-foreground">/ {maxReturnable}</span>
                             {currentReturnQty > 0 && (
                               <span className="ml-auto font-mono text-sm font-semibold text-primary">
-                                {(currentReturnQty * item.unitPrice).toLocaleString()} DZD
+                                {(currentReturnQty * item.unitPrice).toLocaleString()} MRU
                               </span>
                             )}
                           </div>
@@ -1402,7 +1402,7 @@ export default function POS() {
                   <div className="flex justify-between items-center">
                     <span className="font-semibold">{t("pos.refundTotal")}:</span>
                     <span className="font-mono text-xl font-bold text-primary" data-testid="text-refund-total">
-                      {Math.round(returnRefundTotal * 100 / 100).toLocaleString()} DZD
+                      {Math.round(returnRefundTotal * 100 / 100).toLocaleString()} MRU
                     </span>
                   </div>
                 </div>

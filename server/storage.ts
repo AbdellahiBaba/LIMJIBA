@@ -76,6 +76,10 @@ import {
   type InsertCmsBanner,
   type StoreSettings,
   type InsertStoreSettings,
+  type Category,
+  type InsertCategory,
+  type StoreCustomer,
+  type InsertStoreCustomer,
   users,
   products,
   invoices,
@@ -108,6 +112,8 @@ import {
   cmsPages,
   cmsBanners,
   storeSettings,
+  categories,
+  storeCustomers,
 } from "@shared/schema";
 import { db, withRetry } from "./db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
@@ -283,6 +289,17 @@ export interface IStorage {
 
   getStoreSettings(): Promise<StoreSettings | undefined>;
   updateStoreSettings(data: Partial<InsertStoreSettings>): Promise<StoreSettings | undefined>;
+
+  getCategories(): Promise<Category[]>;
+  getCategory(id: string): Promise<Category | undefined>;
+  createCategory(category: InsertCategory): Promise<Category>;
+  updateCategory(id: string, data: Partial<InsertCategory>): Promise<Category | undefined>;
+  deleteCategory(id: string): Promise<boolean>;
+
+  getStoreCustomerByEmail(email: string): Promise<StoreCustomer | undefined>;
+  getStoreCustomerById(id: string): Promise<StoreCustomer | undefined>;
+  createStoreCustomer(customer: InsertStoreCustomer): Promise<StoreCustomer>;
+  updateStoreCustomer(id: string, data: Partial<InsertStoreCustomer>): Promise<StoreCustomer | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2632,6 +2649,68 @@ export class DatabaseStorage implements IStorage {
   async updateStoreSettings(data: Partial<InsertStoreSettings>): Promise<StoreSettings | undefined> {
     return await withRetry(async () => {
       const [updated] = await db.update(storeSettings).set({ ...data, updatedAt: new Date().toISOString() }).where(eq(storeSettings.id, 'default')).returning();
+      return updated || undefined;
+    });
+  }
+
+  async getCategories(): Promise<Category[]> {
+    return await withRetry(async () => {
+      return await db.select().from(categories).orderBy(categories.sortOrder);
+    });
+  }
+
+  async getCategory(id: string): Promise<Category | undefined> {
+    return await withRetry(async () => {
+      const [cat] = await db.select().from(categories).where(eq(categories.id, id));
+      return cat || undefined;
+    });
+  }
+
+  async createCategory(category: InsertCategory): Promise<Category> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(categories).values(category).returning();
+      return created;
+    });
+  }
+
+  async updateCategory(id: string, data: Partial<InsertCategory>): Promise<Category | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(categories).set(data).where(eq(categories.id, id)).returning();
+      return updated || undefined;
+    });
+  }
+
+  async deleteCategory(id: string): Promise<boolean> {
+    return await withRetry(async () => {
+      const result = await db.delete(categories).where(eq(categories.id, id)).returning();
+      return result.length > 0;
+    });
+  }
+
+  async getStoreCustomerByEmail(email: string): Promise<StoreCustomer | undefined> {
+    return await withRetry(async () => {
+      const [customer] = await db.select().from(storeCustomers).where(eq(storeCustomers.email, email));
+      return customer || undefined;
+    });
+  }
+
+  async getStoreCustomerById(id: string): Promise<StoreCustomer | undefined> {
+    return await withRetry(async () => {
+      const [customer] = await db.select().from(storeCustomers).where(eq(storeCustomers.id, id));
+      return customer || undefined;
+    });
+  }
+
+  async createStoreCustomer(customer: InsertStoreCustomer): Promise<StoreCustomer> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(storeCustomers).values(customer).returning();
+      return created;
+    });
+  }
+
+  async updateStoreCustomer(id: string, data: Partial<InsertStoreCustomer>): Promise<StoreCustomer | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(storeCustomers).set(data).where(eq(storeCustomers.id, id)).returning();
       return updated || undefined;
     });
   }

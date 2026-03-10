@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useCart } from "@/contexts/cart-context";
+import { useStoreLanguage } from "@/components/store-layout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShoppingCart, ArrowRight, Star, Sparkles } from "lucide-react";
@@ -8,6 +9,7 @@ import type { Product, CmsBanner, StoreSettings } from "@shared/schema";
 
 export default function StoreHome() {
   const { addItem } = useCart();
+  const { t } = useStoreLanguage();
 
   const { data: products, isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/store/products"],
@@ -34,17 +36,17 @@ export default function StoreHome() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm mb-6" style={{ backgroundColor: `${accentColor}20`, color: accentColor, border: `1px solid ${accentColor}40` }}>
             <Sparkles className="h-4 w-4" />
-            Premium Quality Products
+            {t("home.badge")}
           </div>
           <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 tracking-tight brand-name" style={{ letterSpacing: "0.05em" }}>
-            {settings?.heroTitle || "Welcome to Our Store"}
+            {settings?.heroTitle || t("home.heroTitle")}
           </h1>
           <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
-            {settings?.heroSubtitle || "Discover premium products at the best prices"}
+            {settings?.heroSubtitle || t("home.heroSubtitle")}
           </p>
           <Link href="/store/products">
             <Button size="lg" className="text-lg px-8 py-6 rounded-full font-semibold shadow-xl store-btn-gold" style={{ backgroundColor: accentColor, color: "#0A1628" }} data-testid="button-shop-now">
-              Shop Now <ArrowRight className="ml-2 h-5 w-5" />
+              {t("home.shopNow")} <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
         </div>
@@ -69,9 +71,9 @@ export default function StoreHome() {
         <div className="text-center mb-12">
           <h2 className="text-3xl font-bold mb-3" style={{ color: primaryColor }}>
             <Star className="inline h-8 w-8 mr-2" style={{ color: accentColor }} />
-            Featured Products
+            {t("home.featured")}
           </h2>
-          <p className="text-gray-600">Discover our best offerings</p>
+          <p className="text-gray-600">{t("home.featuredSub")}</p>
         </div>
 
         {productsLoading ? (
@@ -93,7 +95,7 @@ export default function StoreHome() {
                     <h3 className="font-semibold text-sm mb-2 hover:underline cursor-pointer line-clamp-2" data-testid={`link-product-${product.id}`}>{product.name}</h3>
                   </Link>
                   <div className="flex items-center justify-between mt-3">
-                    <span className="text-lg font-bold" style={{ color: primaryColor }}>{product.unitPrice.toFixed(2)} <span className="text-xs">DZD</span></span>
+                    <span className="text-lg font-bold" style={{ color: primaryColor }}>{product.unitPrice.toFixed(2)} <span className="text-xs">{t("currency")}</span></span>
                     <Button
                       size="sm"
                       className="rounded-full h-8 w-8 p-0"
@@ -114,7 +116,7 @@ export default function StoreHome() {
           <div className="text-center mt-12">
             <Link href="/store/products">
               <Button variant="outline" size="lg" className="rounded-full px-8" style={{ borderColor: primaryColor, color: primaryColor }} data-testid="button-view-all">
-                View All Products <ArrowRight className="ml-2 h-4 w-4" />
+                {t("home.viewAll")} <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
             </Link>
           </div>

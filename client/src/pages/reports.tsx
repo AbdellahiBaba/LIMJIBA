@@ -267,38 +267,38 @@ export default function Reports() {
                   <div className="grid gap-3">
                     <div className="flex justify-between items-center py-2 border-b">
                       <span className="text-sm">{t("reports.salesRevenuePOS")}</span>
-                      <span className="font-mono">{fmt(pnl.totalSalesRevenue)} DZD</span>
+                      <span className="font-mono">{fmt(pnl.totalSalesRevenue)} MRU</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b">
                       <span className="text-sm">{t("reports.invoiceRevenue")}</span>
-                      <span className="font-mono">{fmt(pnl.totalInvoiceRevenue)} DZD</span>
+                      <span className="font-mono">{fmt(pnl.totalInvoiceRevenue)} MRU</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b-2 border-primary font-semibold">
                       <span>{t("reports.totalRevenue")}</span>
-                      <span className="font-mono text-primary">{fmt(pnl.totalRevenue)} DZD</span>
+                      <span className="font-mono text-primary">{fmt(pnl.totalRevenue)} MRU</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b text-destructive">
                       <span className="text-sm">{t("reports.cogsCost")}</span>
-                      <span className="font-mono">-{fmt(pnl.totalProductCosts)} DZD</span>
+                      <span className="font-mono">-{fmt(pnl.totalProductCosts)} MRU</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b-2 font-semibold">
                       <span>{t("reports.grossMargin")}</span>
                       <span className={`font-mono ${pnl.grossProfit >= 0 ? "text-green-600" : "text-destructive"}`}>
-                        {fmt(pnl.grossProfit)} DZD
+                        {fmt(pnl.grossProfit)} MRU
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b text-muted-foreground">
                       <span className="text-sm">{t("reports.salariesCost")}</span>
-                      <span className="font-mono">-{fmt(pnl.totalSalaries)} DZD</span>
+                      <span className="font-mono">-{fmt(pnl.totalSalaries)} MRU</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b text-muted-foreground">
                       <span className="text-sm">{t("reports.operatingExpenses")}</span>
-                      <span className="font-mono">-{fmt(pnl.totalExpenses)} DZD</span>
+                      <span className="font-mono">-{fmt(pnl.totalExpenses)} MRU</span>
                     </div>
                     <div className="flex justify-between items-center py-3 border-t-2 border-b-2 border-primary text-lg font-bold">
                       <span>{t("reports.netResult")}</span>
                       <span className={`font-mono ${pnl.netProfit >= 0 ? "text-green-600" : "text-destructive"}`}>
-                        {fmt(pnl.netProfit)} DZD
+                        {fmt(pnl.netProfit)} MRU
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2">
@@ -329,7 +329,7 @@ export default function Reports() {
                 <CardTitle className="text-sm text-muted-foreground">{t("reports.totalRevenueLabel")}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl font-bold font-mono" data-testid="text-total-revenue">{fmt(salesAnalysis?.totalRevenue || 0)} DZD</p>
+                <p className="text-2xl font-bold font-mono" data-testid="text-total-revenue">{fmt(salesAnalysis?.totalRevenue || 0)} MRU</p>
               </CardContent>
             </Card>
             <Card>
@@ -337,7 +337,7 @@ export default function Reports() {
                 <CardTitle className="text-sm text-muted-foreground">{t("reports.avgOrderValue")}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-2xl font-bold font-mono" data-testid="text-avg-order">{fmt(salesAnalysis?.averageOrderValue || 0)} DZD</p>
+                <p className="text-2xl font-bold font-mono" data-testid="text-avg-order">{fmt(salesAnalysis?.averageOrderValue || 0)} MRU</p>
               </CardContent>
             </Card>
           </div>
@@ -361,7 +361,7 @@ export default function Reports() {
                       <TableRow key={i}>
                         <TableCell className="font-medium">{c.name}</TableCell>
                         <TableCell className="text-right">{c.count}</TableCell>
-                        <TableCell className="text-right font-mono">{fmt(c.total)} DZD</TableCell>
+                        <TableCell className="text-right font-mono">{fmt(c.total)} MRU</TableCell>
                       </TableRow>
                     ))}
                   </TableBody>
@@ -390,7 +390,7 @@ export default function Reports() {
                       .map(([month, amount]) => (
                         <TableRow key={month}>
                           <TableCell>{month}</TableCell>
-                          <TableCell className="text-right font-mono">{fmt(amount as number)} DZD</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(amount as number)} MRU</TableCell>
                         </TableRow>
                       ))}
                   </TableBody>
@@ -429,7 +429,7 @@ export default function Reports() {
                       {(productPerf?.bestPerformers || []).map((p: any) => (
                         <TableRow key={p.id}>
                           <TableCell className="font-medium">{p.name}</TableCell>
-                          <TableCell className="text-right font-mono">{fmt(p.revenue)} DZD</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(p.revenue)} MRU</TableCell>
                           <TableCell className="text-right">
                             <span className={p.margin >= 0 ? "text-green-600" : "text-destructive"}>
                               {p.margin.toFixed(1)}%
@@ -464,7 +464,7 @@ export default function Reports() {
                       {(productPerf?.worstPerformers || []).map((p: any) => (
                         <TableRow key={p.id}>
                           <TableCell className="font-medium">{p.name}</TableCell>
-                          <TableCell className="text-right font-mono">{fmt(p.revenue)} DZD</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(p.revenue)} MRU</TableCell>
                           <TableCell className="text-right">
                             <span className={p.margin >= 0 ? "text-green-600" : "text-destructive"}>
                               {p.margin.toFixed(1)}%
@@ -500,8 +500,8 @@ export default function Reports() {
                       <TableRow key={p.id}>
                         <TableCell className="font-medium">{p.name}</TableCell>
                         <TableCell className="text-right">{p.quantity}</TableCell>
-                        <TableCell className="text-right font-mono">{fmt(p.revenue)} DZD</TableCell>
-                        <TableCell className="text-right font-mono">{fmt(p.cost)} DZD</TableCell>
+                        <TableCell className="text-right font-mono">{fmt(p.revenue)} MRU</TableCell>
+                        <TableCell className="text-right font-mono">{fmt(p.cost)} MRU</TableCell>
                         <TableCell className="text-right">
                           <span className={p.margin >= 0 ? "text-green-600" : "text-destructive"}>
                             {p.margin.toFixed(1)}%
@@ -556,11 +556,11 @@ export default function Reports() {
                             <Badge variant="secondary" className="text-xs">{p.category}</Badge>
                           </TableCell>
                           <TableCell className="text-right">{p.currentStock}</TableCell>
-                          <TableCell className="text-right font-mono">{fmt(p.totalRevenue)} DZD</TableCell>
-                          <TableCell className="text-right font-mono">{fmt(p.totalCost)} DZD</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(p.totalRevenue)} MRU</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(p.totalCost)} MRU</TableCell>
                           <TableCell className="text-right font-mono">
                             <span className={p.totalProfit >= 0 ? "text-green-600" : "text-destructive"}>
-                              {fmt(p.totalProfit)} DZD
+                              {fmt(p.totalProfit)} MRU
                             </span>
                           </TableCell>
                           <TableCell className="text-right">
@@ -568,7 +568,7 @@ export default function Reports() {
                               {p.profitMargin.toFixed(1)}%
                             </span>
                           </TableCell>
-                          <TableCell className="text-right font-mono">{fmt(p.inventoryValue)} DZD</TableCell>
+                          <TableCell className="text-right font-mono">{fmt(p.inventoryValue)} MRU</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -657,15 +657,15 @@ export default function Reports() {
                             <TableRow key={`${p.productId}-${batch.purchaseOrderId}-${idx}`} data-testid={`row-true-cost-${p.productId}-${idx}`}>
                               <TableCell className="font-medium">{p.productName}</TableCell>
                               <TableCell>{batch.orderNumber}</TableCell>
-                              <TableCell className="text-right font-mono">{fmt(batch.unitCost)} DZD</TableCell>
+                              <TableCell className="text-right font-mono">{fmt(batch.unitCost)} MRU</TableCell>
                               <TableCell className="text-right font-mono">
                                 {shippingPerUnit > 0 ? (
-                                  <span className="text-orange-600 dark:text-orange-400">+{fmt(shippingPerUnit)} DZD</span>
+                                  <span className="text-orange-600 dark:text-orange-400">+{fmt(shippingPerUnit)} MRU</span>
                                 ) : (
                                   <span className="text-muted-foreground">-</span>
                                 )}
                               </TableCell>
-                              <TableCell className="text-right font-mono font-semibold">{fmt(batch.adjustedUnitCost)} DZD</TableCell>
+                              <TableCell className="text-right font-mono font-semibold">{fmt(batch.adjustedUnitCost)} MRU</TableCell>
                               <TableCell className="text-right">{batch.quantityPurchased - batch.quantityRemaining}</TableCell>
                               <TableCell className="text-right">{batch.quantityRemaining}</TableCell>
                             </TableRow>
@@ -717,7 +717,7 @@ export default function Reports() {
                         <CardTitle className="text-sm text-muted-foreground">{t("reports.totalRevenue")}</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-xl font-bold font-mono" data-testid="text-profit-date-revenue">{fmt(profitByDate.totalRevenue)} DZD</p>
+                        <p className="text-xl font-bold font-mono" data-testid="text-profit-date-revenue">{fmt(profitByDate.totalRevenue)} MRU</p>
                       </CardContent>
                     </Card>
                     <Card>
@@ -725,7 +725,7 @@ export default function Reports() {
                         <CardTitle className="text-sm text-muted-foreground">{t("reports.totalCOGS")}</CardTitle>
                       </CardHeader>
                       <CardContent>
-                        <p className="text-xl font-bold font-mono text-destructive" data-testid="text-profit-date-cogs">{fmt(profitByDate.totalProductCosts)} DZD</p>
+                        <p className="text-xl font-bold font-mono text-destructive" data-testid="text-profit-date-cogs">{fmt(profitByDate.totalProductCosts)} MRU</p>
                       </CardContent>
                     </Card>
                     <Card>
@@ -734,7 +734,7 @@ export default function Reports() {
                       </CardHeader>
                       <CardContent>
                         <p className={`text-xl font-bold font-mono ${profitByDate.grossProfit >= 0 ? "text-green-600" : "text-destructive"}`} data-testid="text-profit-date-gross">
-                          {fmt(profitByDate.grossProfit)} DZD
+                          {fmt(profitByDate.grossProfit)} MRU
                         </p>
                       </CardContent>
                     </Card>
@@ -744,7 +744,7 @@ export default function Reports() {
                       </CardHeader>
                       <CardContent>
                         <p className={`text-xl font-bold font-mono ${profitByDate.netProfit >= 0 ? "text-green-600" : "text-destructive"}`} data-testid="text-profit-date-net">
-                          {fmt(profitByDate.netProfit)} DZD
+                          {fmt(profitByDate.netProfit)} MRU
                         </p>
                       </CardContent>
                     </Card>
@@ -753,46 +753,46 @@ export default function Reports() {
                   <div className="grid gap-3">
                     <div className="flex justify-between items-center py-2 border-b">
                       <span className="text-sm">{t("reports.salesRevenuePOS")}</span>
-                      <span className="font-mono">{fmt(profitByDate.totalSalesRevenue)} DZD</span>
+                      <span className="font-mono">{fmt(profitByDate.totalSalesRevenue)} MRU</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b">
                       <span className="text-sm">{t("reports.invoiceRevenue")}</span>
-                      <span className="font-mono">{fmt(profitByDate.totalInvoiceRevenue)} DZD</span>
+                      <span className="font-mono">{fmt(profitByDate.totalInvoiceRevenue)} MRU</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b-2 border-primary font-semibold">
                       <span>{t("reports.totalRevenue")}</span>
-                      <span className="font-mono text-primary">{fmt(profitByDate.totalRevenue)} DZD</span>
+                      <span className="font-mono text-primary">{fmt(profitByDate.totalRevenue)} MRU</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b text-destructive">
                       <span className="text-sm">{t("reports.cogsCost")}</span>
-                      <span className="font-mono">-{fmt(profitByDate.totalProductCosts)} DZD</span>
+                      <span className="font-mono">-{fmt(profitByDate.totalProductCosts)} MRU</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b text-muted-foreground">
                       <span className="text-sm">{t("reports.shippingCosts")}</span>
-                      <span className="font-mono">-{fmt(profitByDate.totalShippingCosts)} DZD</span>
+                      <span className="font-mono">-{fmt(profitByDate.totalShippingCosts)} MRU</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b text-muted-foreground">
                       <span className="text-sm">{t("reports.deliveryCosts")}</span>
-                      <span className="font-mono">-{fmt(profitByDate.totalDeliveryCosts)} DZD</span>
+                      <span className="font-mono">-{fmt(profitByDate.totalDeliveryCosts)} MRU</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b-2 font-semibold">
                       <span>{t("reports.grossProfit")}</span>
                       <span className={`font-mono ${profitByDate.grossProfit >= 0 ? "text-green-600" : "text-destructive"}`}>
-                        {fmt(profitByDate.grossProfit)} DZD
+                        {fmt(profitByDate.grossProfit)} MRU
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b text-muted-foreground">
                       <span className="text-sm">{t("reports.salariesCost")}</span>
-                      <span className="font-mono">-{fmt(profitByDate.totalSalaries)} DZD</span>
+                      <span className="font-mono">-{fmt(profitByDate.totalSalaries)} MRU</span>
                     </div>
                     <div className="flex justify-between items-center py-2 border-b text-muted-foreground">
                       <span className="text-sm">{t("reports.operatingExpenses")}</span>
-                      <span className="font-mono">-{fmt(profitByDate.totalExpenses)} DZD</span>
+                      <span className="font-mono">-{fmt(profitByDate.totalExpenses)} MRU</span>
                     </div>
                     <div className="flex justify-between items-center py-3 border-t-2 border-b-2 border-primary text-lg font-bold">
                       <span>{t("reports.netResult")}</span>
                       <span className={`font-mono ${profitByDate.netProfit >= 0 ? "text-green-600" : "text-destructive"}`}>
-                        {fmt(profitByDate.netProfit)} DZD
+                        {fmt(profitByDate.netProfit)} MRU
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-2">
@@ -847,30 +847,30 @@ function BatchProfitCard({ po, totalItemsCost, shippingCost, trueCost, fmt, t }:
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
         <div className="bg-muted/50 rounded p-2">
           <p className="text-muted-foreground text-xs">{t("reports.purchaseCost")}</p>
-          <p className="font-mono font-semibold">{fmt(totalItemsCost)} DZD</p>
+          <p className="font-mono font-semibold">{fmt(totalItemsCost)} MRU</p>
         </div>
         <div className="bg-orange-50 dark:bg-orange-900/20 rounded p-2">
           <p className="text-muted-foreground text-xs">{t("reports.shippingCost")}</p>
-          <p className="font-mono font-semibold text-orange-600">{shippingCost > 0 ? fmt(shippingCost) : "-"} {shippingCost > 0 ? "DZD" : ""}</p>
+          <p className="font-mono font-semibold text-orange-600">{shippingCost > 0 ? fmt(shippingCost) : "-"} {shippingCost > 0 ? "MRU" : ""}</p>
         </div>
         <div className="bg-muted/50 rounded p-2">
           <p className="text-muted-foreground text-xs">{t("reports.trueCost")}</p>
-          <p className="font-mono font-semibold">{fmt(trueCost)} DZD</p>
+          <p className="font-mono font-semibold">{fmt(trueCost)} MRU</p>
         </div>
         <div className="bg-green-50 dark:bg-green-900/20 rounded p-2">
           <p className="text-muted-foreground text-xs">{t("reports.revenue")}</p>
-          <p className="font-mono font-semibold text-green-600">{profitability ? fmt(profitability.totalRevenue) : "-"} {profitability ? "DZD" : ""}</p>
+          <p className="font-mono font-semibold text-green-600">{profitability ? fmt(profitability.totalRevenue) : "-"} {profitability ? "MRU" : ""}</p>
         </div>
         <div className={`rounded p-2 ${profitability && profitability.totalProfit >= 0 ? "bg-green-50 dark:bg-green-900/20" : "bg-red-50 dark:bg-red-900/20"}`}>
           <p className="text-muted-foreground text-xs">{t("reports.profit")}</p>
           <p className={`font-mono font-semibold ${profitability && profitability.totalProfit >= 0 ? "text-green-600" : "text-red-600"}`}>
-            {profitability ? fmt(profitability.totalProfit) : "-"} {profitability ? "DZD" : ""}
+            {profitability ? fmt(profitability.totalProfit) : "-"} {profitability ? "MRU" : ""}
           </p>
         </div>
       </div>
       {profitability && profitability.remainingStock > 0 && (
         <div className="text-xs text-muted-foreground">
-          {profitability.remainingStock} units remaining in stock (value: {fmt(profitability.remainingValue)} DZD)
+          {profitability.remainingStock} units remaining in stock (value: {fmt(profitability.remainingValue)} MRU)
         </div>
       )}
     </div>

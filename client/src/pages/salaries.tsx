@@ -53,7 +53,7 @@ import type { Employee, InsertEmployee, SalaryPayment, InsertSalaryPayment, Sala
 const formatCurrency = (amount: number) => {
   return new Intl.NumberFormat("fr-DZ", {
     style: "currency",
-    currency: "DZD",
+    currency: "MRU",
     minimumFractionDigits: 2,
   }).format(amount);
 };
@@ -180,7 +180,7 @@ function EmployeeFormDialog({
             />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="monthlySalary">{t("salaries.monthlySalary")} (DZD)</Label>
+            <Label htmlFor="monthlySalary">{t("salaries.monthlySalary")} (MRU)</Label>
             <Input
               id="monthlySalary"
               type="number"
@@ -331,7 +331,7 @@ function PaymentFormDialog({
             </Select>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="amount">{t("salaries.paymentAmount")} (DZD)</Label>
+            <Label htmlFor="amount">{t("salaries.paymentAmount")} (MRU)</Label>
             <Input
               id="amount"
               type="number"
