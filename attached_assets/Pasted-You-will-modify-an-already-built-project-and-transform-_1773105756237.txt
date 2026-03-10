@@ -1,0 +1,107 @@
+You will modify an already‑built project and transform it from a plastic‑industry management system into a full E‑commerce management system.  
+Your task is to update the existing codebase, add new modules, and integrate the following features exactly as described:
+
+====================================================
+🔄 1) Add Shipping Cost After Purchase Registration
+====================================================
+
+Current issue:
+The system only allows entering shipping cost at the moment of purchase.  
+But in real workflows, the shipping invoice often arrives days later.
+
+Required modifications:
+
+- Add the ability to attach a shipping cost to an existing purchase invoice at any time.
+- Automatically distribute the shipping cost across all products in that purchase using one of two methods:
+  - Distribution by quantity
+  - Distribution by product value
+- Recalculate and update the **actual unit cost** after adding shipping.
+
+Example:
+Purchased 100 units at 10 each → total 1000  
+Shipping invoice arrives later → 200  
+New total = 1200  
+New unit cost = 12
+
+====================================================
+📊 2) Profitability per Product & per Purchase Batch
+====================================================
+
+Current issue:
+The same product may be sold at different prices (retail, wholesale, discounts, offers).  
+The system must calculate profit based on the actual cost of each purchase batch.
+
+Required modifications:
+
+- Track profitability per purchase batch.
+- Track profitability per sale transaction.
+- Track remaining profit in stock.
+
+Example:
+Purchase batch:
+100 units at cost 12
+
+Sales:
+30 units at 20  
+40 units at 18  
+30 units at 15  
+
+System must show:
+- Total profit for this batch
+- Profit per sale
+- Profit remaining in inventory
+
+====================================================
+🚚 3) Add Customer Delivery Cost to Sales Invoice
+====================================================
+
+Required modifications:
+
+- Add a field named “Delivery Cost” to sales invoices.
+- Delivery cost must be added to the invoice total.
+- Delivery cost must appear in:
+  - Invoice view
+  - Reports
+  - Profit calculations
+
+Example:
+Products total = 100  
+Delivery = 5  
+Invoice total = 105
+
+====================================================
+📈 4) Required Reports
+====================================================
+
+Add reporting modules for:
+
+- Product profitability
+- Profitability per purchase batch
+- True product cost (purchase + shipping)
+- Profit by date range
+
+====================================================
+🛒 5) Convert the Entire System to E‑commerce Context
+====================================================
+
+Modify the existing project so it becomes an E‑commerce management system instead of a plastic‑industry system.  
+This includes:
+
+- Updating terminology (products, customers, orders, delivery, stock, etc.)
+- Ensuring all new features integrate smoothly with the existing architecture
+- Maintaining clean, modular code
+- Ensuring all calculations update automatically across the system
+
+====================================================
+🧩 Final Deliverables
+====================================================
+
+- Updated codebase with all new features implemented.
+- Clear documentation explaining:
+  - New modules
+  - Updated database fields
+  - How shipping distribution works
+  - How profitability is calculated
+- Ensure backward compatibility with existing data where possible.
+
+Proceed with implementing all modifications now.
