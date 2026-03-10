@@ -55,11 +55,13 @@ Preferred communication style: Simple, everyday language.
 
 ### Public Storefront (LEMJIBA / لمجيبه)
 - **Path:** `/store/*` (public, no auth required for browsing)
-- **Features:** Trilingual (AR/FR/EN) with language switcher, product browsing (in-stock only), search/filter by dynamic categories, product detail pages, cart with localStorage persistence, promo code validation, checkout with order placement, order tracking by email/order number.
+- **Features:** Trilingual (AR/FR/EN) with language switcher, product browsing (in-stock only), search/filter by dynamic categories, product detail pages, cart with localStorage persistence, promo code validation, checkout with wallet payment selection and payment proof upload, order tracking with visual timeline by email/order number.
 - **Customer Auth:** Separate from admin login. Customers can register, login, view profile, and auto-fill checkout. Session stored in `req.session.storeCustomer`.
-- **Theme:** Royal Blue (#1B3A6B) + Deep Gold (#C9A84C) + Black (#0A1628) with Montserrat typography.
-- **Pages:** home, products, product detail, cart, checkout, orders, about, contact, terms, login, signup, profile.
-- **Translation System:** `client/src/locales/store.ts` with full AR/FR/EN translations. `StoreLanguageProvider` + `useStoreLanguage()` hook. Language switcher in store header (EN/FR/عر buttons).
+- **Theme:** Royal Blue (#1B3A6B) + Deep Gold (#C9A84C) + Black (#0A1628) with Montserrat typography. LEMJIBA logo integrated across all pages.
+- **Pages:** home, products, product detail, cart, checkout (with payment step), orders (with visual timeline), about, contact, terms, login, signup, profile.
+- **Payment System:** 3 mobile wallet options (Bankily, Masrvi, Sedad) stored in `payment_wallets` table. Checkout requires selecting a wallet, viewing its number, and uploading payment proof screenshot before order submission. Server-side enforcement of payment proof.
+- **Order Tracking:** Visual 4-step timeline (Placed → Confirmed → Shipped → Delivered) with color-coded progress. Search by order number or email.
+- **Translation System:** `client/src/locales/store.ts` with full AR/FR/EN translations including payment, wallet, and order tracking strings. `StoreLanguageProvider` + `useStoreLanguage()` hook. Language switcher in store header (EN/FR/عر buttons).
 - **RTL Support:** When Arabic selected, `dir="rtl"` set on store container.
 - **CMS Pages:** About/Contact/Terms render HTML content via `dangerouslySetInnerHTML`.
 
@@ -77,9 +79,16 @@ Preferred communication style: Simple, everyday language.
 
 ### LEMJIBA AI Agent
 - AI-powered assistant using OpenAI (gpt-4o-mini via Replit AI Integrations).
-- Customer-facing chat widget on all store pages (floating bubble, bottom-right) answers product queries, recommends items, speaks AR/FR/EN.
+- Customer-facing chat widget on all store pages (floating bubble, bottom-right) answers product queries, recommends items, tracks orders by number (ORD-XXXX/YYYY), speaks AR/FR/EN. Knows store inventory, payment methods (Bankily/Masrvi/Sedad wallets), delivery policies, and return policies.
+- Order tracking: Agent detects order numbers in conversation, looks up order data, and reports status/items/total to customer.
 - Admin-side chat panel at `/limjiba` provides sales insights, restock alerts, promo code generation.
 - Backend: `server/limjiba.ts`. Cost optimizations: SHA-256 response cache (30min TTL, 200 max entries, namespaced by mode+context fingerprint), compressed system prompts, history limited to 10 messages with 2000-char assistant truncation.
+
+### Payment Wallets
+- **Table:** `payment_wallets` in schema.ts with id, name, nameAr, nameFr, walletNumber, iconType, isActive, sortOrder.
+- **API:** GET `/api/store/wallets` (public, active only), CRUD at `/api/payment-wallets` (admin).
+- **Seeded Wallets:** Bankily, Masrvi, Sedad with placeholder numbers.
+- **Store Orders:** Now include `paymentMethod` and `paymentProof` fields. Server enforces payment proof before order creation.
 
 ### Promo Codes
 - Full CRUD management at `/promo-codes`. Supports percentage/fixed discounts, min order amounts, max uses, expiry dates. AI-generated promo codes with safe margin calculation.

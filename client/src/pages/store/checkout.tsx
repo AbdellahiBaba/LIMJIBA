@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, Link } from "wouter";
 import { useCart } from "@/contexts/cart-context";
 import { useStoreLanguage } from "@/components/store-layout";
@@ -8,16 +8,21 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ShoppingBag, Check, ArrowLeft, Loader2, Package } from "lucide-react";
-import type { StoreSettings } from "@shared/schema";
+import { ShoppingBag, Check, ArrowLeft, Loader2, Package, Upload, Copy, CheckCircle2, Wallet, ImageIcon } from "lucide-react";
+import type { StoreSettings, PaymentWallet } from "@shared/schema";
 
 export default function StoreCheckout() {
   const { items, subtotal, clearCart } = useCart();
-  const { t } = useStoreLanguage();
+  const { t, lang } = useStoreLanguage();
   const { customer, isAuthenticated } = useStoreAuth();
   const [, setLocation] = useLocation();
   const [orderPlaced, setOrderPlaced] = useState<{ orderNumber: string; total: number } | null>(null);
   const [form, setForm] = useState({ customerName: "", customerEmail: "", customerPhone: "", customerAddress: "", notes: "" });
+  const [selectedWallet, setSelectedWallet] = useState<PaymentWallet | null>(null);
+  const [paymentProof, setPaymentProof] = useState<string | null>(null);
+  const [proofFileName, setProofFileName] = useState<string>("");
+  const [copied, setCopied] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     if (isAuthenticated && customer) {
@@ -39,6 +44,33 @@ export default function StoreCheckout() {
   const accentColor = settings?.accentColor || "#C9A84C";
   const currency = t("currency");
 
+  const { data: wallets } = useQuery<PaymentWallet[]>({ queryKey: ["/api/store/wallets"] });
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) return;
+    setProofFileName(file.name);
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPaymentProof(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const copyWalletNumber = () => {
+    if (!selectedWallet) return;
+    navigator.clipboard.writeText(selectedWallet.walletNumber);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const getWalletDisplayName = (w: PaymentWallet) => {
+    if (lang === "ar" && w.nameAr) return w.nameAr;
+    if (lang === "fr" && w.nameFr) return w.nameFr;
+    return w.name;
+  };
+
   const placeOrder = useMutation({
     mutationFn: async () => {
       const res = await fetch("/api/store/orders", {
@@ -48,6 +80,8 @@ export default function StoreCheckout() {
           ...form,
           items: items.map(i => ({ productId: i.productId, productName: i.productName, quantity: i.quantity, unitPrice: i.unitPrice })),
           promoCode: promoCode || undefined,
+          paymentMethod: selectedWallet?.name || null,
+          paymentProof: paymentProof || null,
         }),
       });
       if (!res.ok) {
@@ -96,6 +130,8 @@ export default function StoreCheckout() {
     );
   }
 
+  const canSubmit = form.customerName && form.customerPhone && form.customerAddress && selectedWallet && paymentProof;
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Link href="/store/cart">
@@ -136,6 +172,98 @@ export default function StoreCheckout() {
               </div>
             </div>
           </div>
+
+          <div className="rounded-xl border bg-white shadow-sm p-6">
+            <h3 className="text-lg font-bold mb-2" style={{ color: primaryColor }}>
+              <Wallet className="inline h-5 w-5 mr-2" style={{ color: accentColor }} />
+              {t("payment.title")}
+            </h3>
+            <p className="text-sm text-gray-500 mb-5">{t("payment.subtitle")}</p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+              {wallets?.map(w => (
+                <button
+                  key={w.id}
+                  onClick={() => { setSelectedWallet(w); setCopied(false); }}
+                  className={`relative rounded-xl border-2 p-4 text-center transition-all hover:shadow-md ${
+                    selectedWallet?.id === w.id ? "shadow-md" : "border-gray-200 hover:border-gray-300"
+                  }`}
+                  style={selectedWallet?.id === w.id ? { borderColor: accentColor, backgroundColor: `${accentColor}10` } : {}}
+                  data-testid={`wallet-${w.iconType}`}
+                >
+                  {selectedWallet?.id === w.id && (
+                    <CheckCircle2 className="absolute top-2 right-2 h-4 w-4" style={{ color: accentColor }} />
+                  )}
+                  <div className="h-12 w-12 mx-auto rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: `${primaryColor}15` }}>
+                    <Wallet className="h-6 w-6" style={{ color: primaryColor }} />
+                  </div>
+                  <p className="font-bold text-sm" style={{ color: primaryColor }}>{getWalletDisplayName(w)}</p>
+                </button>
+              ))}
+            </div>
+
+            {selectedWallet && (
+              <div className="rounded-lg border p-4 mb-5" style={{ backgroundColor: `${primaryColor}08`, borderColor: `${primaryColor}20` }}>
+                <p className="text-xs text-gray-500 mb-1">{t("payment.transferTo")} <strong>{getWalletDisplayName(selectedWallet)}</strong></p>
+                <div className="flex items-center gap-2">
+                  <p className="text-2xl font-mono font-bold tracking-wider" style={{ color: primaryColor }} data-testid="text-wallet-number">
+                    {selectedWallet.walletNumber}
+                  </p>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full text-xs h-7 px-3"
+                    onClick={copyWalletNumber}
+                    data-testid="button-copy-wallet"
+                  >
+                    {copied ? <><CheckCircle2 className="h-3 w-3 mr-1" />{t("payment.copied")}</> : <><Copy className="h-3 w-3 mr-1" />{t("payment.copyNumber")}</>}
+                  </Button>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <Label className="text-sm font-semibold mb-2 block">{t("payment.uploadProof")}</Label>
+              <p className="text-xs text-gray-500 mb-3">{t("payment.uploadHint")}</p>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                onChange={handleFileUpload}
+                className="hidden"
+                data-testid="input-payment-proof"
+              />
+              {paymentProof ? (
+                <div className="rounded-lg border overflow-hidden">
+                  <img src={paymentProof} alt="Payment proof" className="w-full max-h-48 object-contain bg-gray-50" data-testid="img-payment-proof" />
+                  <div className="p-2 flex items-center justify-between bg-gray-50 border-t">
+                    <span className="text-xs text-green-600 flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3" /> {t("payment.proofUploaded")}
+                    </span>
+                    <Button variant="ghost" size="sm" className="text-xs h-6" onClick={() => fileInputRef.current?.click()} data-testid="button-change-proof">
+                      {t("payment.changeProof")}
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <button
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-full rounded-lg border-2 border-dashed border-gray-300 hover:border-gray-400 p-8 text-center transition-colors"
+                  data-testid="button-upload-proof"
+                >
+                  <Upload className="h-8 w-8 mx-auto text-gray-400 mb-2" />
+                  <p className="text-sm text-gray-500">{t("payment.uploadProof")}</p>
+                  <p className="text-xs text-gray-400 mt-1">{t("payment.uploadHint")}</p>
+                </button>
+              )}
+            </div>
+
+            {!paymentProof && selectedWallet && (
+              <p className="text-xs text-amber-600 mt-3 flex items-center gap-1">
+                <ImageIcon className="h-3 w-3" /> {t("payment.required")}
+              </p>
+            )}
+          </div>
         </div>
 
         <div>
@@ -154,6 +282,12 @@ export default function StoreCheckout() {
                   <span className="font-semibold">{subtotal.toFixed(2)} {currency}</span>
                 </div>
               </div>
+              {selectedWallet && (
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-600">{t("orders.paymentMethod")}</span>
+                  <span className="font-semibold">{getWalletDisplayName(selectedWallet)}</span>
+                </div>
+              )}
             </div>
 
             {placeOrder.isError && (
@@ -165,13 +299,18 @@ export default function StoreCheckout() {
             <Button
               className="w-full rounded-full font-semibold"
               size="lg"
-              style={{ backgroundColor: accentColor, color: primaryColor }}
+              style={{ backgroundColor: canSubmit ? accentColor : "#ccc", color: canSubmit ? primaryColor : "#666" }}
               onClick={() => placeOrder.mutate()}
-              disabled={placeOrder.isPending || !form.customerName || !form.customerPhone || !form.customerAddress}
+              disabled={placeOrder.isPending || !canSubmit}
               data-testid="button-place-order"
             >
               {placeOrder.isPending ? <><Loader2 className="h-5 w-5 mr-2 animate-spin" /> {t("checkout.placing")}</> : <>{t("checkout.placeOrder")}</>}
             </Button>
+            {!canSubmit && (
+              <p className="text-xs text-center text-gray-400 mt-2">
+                {!selectedWallet ? t("payment.selectWallet") : !paymentProof ? t("payment.required") : ""}
+              </p>
+            )}
           </div>
         </div>
       </div>

@@ -80,6 +80,8 @@ import {
   type InsertCategory,
   type StoreCustomer,
   type InsertStoreCustomer,
+  type PaymentWallet,
+  type InsertPaymentWallet,
   users,
   products,
   invoices,
@@ -114,6 +116,7 @@ import {
   storeSettings,
   categories,
   storeCustomers,
+  paymentWallets,
 } from "@shared/schema";
 import { db, withRetry } from "./db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
@@ -274,9 +277,15 @@ export interface IStorage {
 
   getStoreOrders(): Promise<StoreOrder[]>;
   getStoreOrder(id: string): Promise<StoreOrder | undefined>;
+  getStoreOrderByNumber(orderNumber: string): Promise<StoreOrder | undefined>;
   createStoreOrder(order: InsertStoreOrder): Promise<StoreOrder>;
   updateStoreOrderStatus(id: string, status: string): Promise<StoreOrder | undefined>;
   getNextOrderNumber(): Promise<string>;
+
+  getPaymentWallets(): Promise<PaymentWallet[]>;
+  createPaymentWallet(wallet: InsertPaymentWallet): Promise<PaymentWallet>;
+  updatePaymentWallet(id: string, data: Partial<InsertPaymentWallet>): Promise<PaymentWallet | undefined>;
+  deletePaymentWallet(id: string): Promise<boolean>;
 
   getStoreProducts(): Promise<Product[]>;
 
@@ -2553,6 +2562,13 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  async getStoreOrderByNumber(orderNumber: string): Promise<StoreOrder | undefined> {
+    return await withRetry(async () => {
+      const allOrders = await db.select().from(storeOrders);
+      return allOrders.find(o => o.orderNumber.toLowerCase() === orderNumber.toLowerCase()) || undefined;
+    });
+  }
+
   async createStoreOrder(order: InsertStoreOrder): Promise<StoreOrder> {
     return await withRetry(async () => {
       const [created] = await db.insert(storeOrders).values(order).returning();
@@ -2588,6 +2604,33 @@ export class DatabaseStorage implements IStorage {
         return match ? Math.max(max, parseInt(match[1])) : max;
       }, 0);
       return `ORD-${String(maxNum + 1).padStart(4, '0')}/${year}`;
+    });
+  }
+
+  async getPaymentWallets(): Promise<PaymentWallet[]> {
+    return await withRetry(async () => {
+      return await db.select().from(paymentWallets).orderBy(paymentWallets.sortOrder);
+    });
+  }
+
+  async createPaymentWallet(wallet: InsertPaymentWallet): Promise<PaymentWallet> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(paymentWallets).values(wallet).returning();
+      return created;
+    });
+  }
+
+  async updatePaymentWallet(id: string, data: Partial<InsertPaymentWallet>): Promise<PaymentWallet | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(paymentWallets).set(data).where(eq(paymentWallets.id, id)).returning();
+      return updated || undefined;
+    });
+  }
+
+  async deletePaymentWallet(id: string): Promise<boolean> {
+    return await withRetry(async () => {
+      const [deleted] = await db.delete(paymentWallets).where(eq(paymentWallets.id, id)).returning();
+      return !!deleted;
     });
   }
 

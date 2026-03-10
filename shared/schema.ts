@@ -656,12 +656,29 @@ export const storeOrders = pgTable("store_orders", {
   total: real("total").notNull(),
   status: text("status").notNull().default("pending"),
   notes: text("notes"),
+  paymentMethod: text("payment_method"),
+  paymentProof: text("payment_proof"),
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
 export const insertStoreOrderSchema = createInsertSchema(storeOrders).omit({ id: true, createdAt: true });
 export type InsertStoreOrder = z.infer<typeof insertStoreOrderSchema>;
 export type StoreOrder = typeof storeOrders.$inferSelect;
+
+export const paymentWallets = pgTable("payment_wallets", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  name: text("name").notNull(),
+  nameAr: text("name_ar"),
+  nameFr: text("name_fr"),
+  walletNumber: text("wallet_number").notNull(),
+  iconType: text("icon_type").notNull().default("wallet"),
+  isActive: boolean("is_active").notNull().default(true),
+  sortOrder: integer("sort_order").notNull().default(0),
+});
+
+export const insertPaymentWalletSchema = createInsertSchema(paymentWallets).omit({ id: true });
+export type InsertPaymentWallet = z.infer<typeof insertPaymentWalletSchema>;
+export type PaymentWallet = typeof paymentWallets.$inferSelect;
 
 export const cmsPages = pgTable("cms_pages", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

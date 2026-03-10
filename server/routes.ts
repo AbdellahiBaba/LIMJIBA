@@ -3048,9 +3048,12 @@ export async function registerRoutes(
 
   app.post("/api/store/orders", async (req: Request, res: Response) => {
     try {
-      const { customerName, customerEmail, customerPhone, customerAddress, items, promoCode, deliveryCost, notes } = req.body;
+      const { customerName, customerEmail, customerPhone, customerAddress, items, promoCode, deliveryCost, notes, paymentMethod, paymentProof } = req.body;
       if (!customerName || !items || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ error: "Customer name and items are required" });
+      }
+      if (!paymentMethod || !paymentProof) {
+        return res.status(400).json({ error: "Payment method and payment proof are required" });
       }
 
       let subtotal = 0;
@@ -3100,6 +3103,8 @@ export async function registerRoutes(
         total,
         status: "pending",
         notes: notes || null,
+        paymentMethod: paymentMethod || null,
+        paymentProof: paymentProof || null,
       });
 
       res.status(201).json(order);
@@ -3125,11 +3130,41 @@ export async function registerRoutes(
         discount: o.discount,
         total: o.total,
         status: o.status,
+        paymentMethod: o.paymentMethod,
         createdAt: o.createdAt,
       }));
       res.json(safe);
     } catch (error) {
       handleError(res, "lookupStoreOrders", error);
+    }
+  });
+
+  app.get("/api/store/wallets", async (_req: Request, res: Response) => {
+    try {
+      const wallets = await storage.getPaymentWallets();
+      res.json(wallets.filter(w => w.isActive));
+    } catch (error) {
+      handleError(res, "getPaymentWallets", error);
+    }
+  });
+
+  app.get("/api/store/orders/:orderNumber/track", async (req: Request, res: Response) => {
+    try {
+      const { orderNumber } = req.params;
+      const order = await storage.getStoreOrderByNumber(orderNumber);
+      if (!order) return res.status(404).json({ error: "Order not found" });
+      res.json({
+        orderNumber: order.orderNumber,
+        status: order.status,
+        items: order.items,
+        subtotal: order.subtotal,
+        discount: order.discount,
+        total: order.total,
+        paymentMethod: order.paymentMethod,
+        createdAt: order.createdAt,
+      });
+    } catch (error) {
+      handleError(res, "trackOrder", error);
     }
   });
 
@@ -3405,6 +3440,48 @@ export async function registerRoutes(
       res.json(updated);
     } catch (error) {
       handleError(res, "updateStoreOrderStatus", error);
+    }
+  });
+
+  // ==========================================
+  // ADMIN: Payment Wallets
+  // ==========================================
+
+  app.get("/api/payment-wallets", requireAuth, async (_req: Request, res: Response) => {
+    try {
+      const wallets = await storage.getPaymentWallets();
+      res.json(wallets);
+    } catch (error) {
+      handleError(res, "getPaymentWallets", error);
+    }
+  });
+
+  app.post("/api/payment-wallets", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const wallet = await storage.createPaymentWallet(req.body);
+      res.status(201).json(wallet);
+    } catch (error) {
+      handleError(res, "createPaymentWallet", error);
+    }
+  });
+
+  app.put("/api/payment-wallets/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const updated = await storage.updatePaymentWallet(req.params.id, req.body);
+      if (!updated) return res.status(404).json({ error: "Wallet not found" });
+      res.json(updated);
+    } catch (error) {
+      handleError(res, "updatePaymentWallet", error);
+    }
+  });
+
+  app.delete("/api/payment-wallets/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const deleted = await storage.deletePaymentWallet(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Wallet not found" });
+      res.json({ success: true });
+    } catch (error) {
+      handleError(res, "deletePaymentWallet", error);
     }
   });
 

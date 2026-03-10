@@ -3,7 +3,7 @@ import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useCart } from "@/contexts/cart-context";
 import { useStoreAuth } from "@/contexts/store-auth-context";
-import { ShoppingCart, Menu, X, Home, Package, Phone, Info, FileText, Globe, User, LogOut } from "lucide-react";
+import { ShoppingCart, Menu, X, Home, Package, Phone, Info, FileText, Globe, User, LogOut, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { StoreSettings } from "@shared/schema";
@@ -59,6 +59,7 @@ export function StoreLanguageProvider({ children }: { children: React.ReactNode 
 const NAV_KEYS = [
   { path: "/store", key: "nav.home", icon: Home },
   { path: "/store/products", key: "nav.products", icon: Package },
+  { path: "/store/orders", key: "nav.trackOrder", icon: Search },
   { path: "/store/about", key: "nav.about", icon: Info },
   { path: "/store/contact", key: "nav.contact", icon: Phone },
   { path: "/store/terms", key: "nav.terms", icon: FileText },

@@ -4,8 +4,10 @@ import { useStoreLanguage } from "@/components/store-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { Search, Package, Clock, CheckCircle2, Truck, PackageCheck } from "lucide-react";
+import { Search, Package, Clock, CheckCircle2, Truck, PackageCheck, XCircle } from "lucide-react";
 import type { StoreOrder, StoreSettings } from "@shared/schema";
+
+const TIMELINE_STEPS = ["pending", "confirmed", "shipped", "delivered"] as const;
 
 export default function StoreOrders() {
   const { t } = useStoreLanguage();
@@ -17,7 +19,14 @@ export default function StoreOrders() {
     confirmed: { label: t("orders.status.confirmed"), icon: CheckCircle2, color: "#3b82f6" },
     shipped: { label: t("orders.status.shipped"), icon: Truck, color: "#8b5cf6" },
     delivered: { label: t("orders.status.delivered"), icon: PackageCheck, color: "#22c55e" },
-    cancelled: { label: t("orders.status.cancelled"), icon: Package, color: "#ef4444" },
+    cancelled: { label: t("orders.status.cancelled"), icon: XCircle, color: "#ef4444" },
+  };
+
+  const TIMELINE_LABELS: Record<string, string> = {
+    pending: t("orders.timeline.placed"),
+    confirmed: t("orders.timeline.confirmed"),
+    shipped: t("orders.timeline.shipped"),
+    delivered: t("orders.timeline.delivered"),
   };
 
   const { data: settings } = useQuery<StoreSettings>({ queryKey: ["/api/store/settings"] });
@@ -39,6 +48,11 @@ export default function StoreOrders() {
   const handleSearch = () => {
     setSearched(true);
     refetch();
+  };
+
+  const getStepIndex = (status: string) => {
+    const idx = TIMELINE_STEPS.indexOf(status as typeof TIMELINE_STEPS[number]);
+    return idx >= 0 ? idx : -1;
   };
 
   return (
@@ -78,34 +92,91 @@ export default function StoreOrders() {
       )}
 
       {orders && orders.length > 0 && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {orders.map(order => {
             const statusConfig = STATUS_CONFIG[order.status] || STATUS_CONFIG.pending;
             const StatusIcon = statusConfig.icon;
             const orderItems = JSON.parse(order.items);
+            const currentStep = getStepIndex(order.status);
+            const isCancelled = order.status === "cancelled";
+
             return (
-              <div key={order.id} className="rounded-xl border bg-white shadow-sm p-6" data-testid={`order-card-${order.id}`}>
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h3 className="font-bold text-lg" style={{ color: primaryColor }}>{order.orderNumber}</h3>
-                    <p className="text-sm text-gray-500">{order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ""}</p>
-                  </div>
-                  <Badge className="flex items-center gap-1 px-3 py-1" style={{ backgroundColor: `${statusConfig.color}20`, color: statusConfig.color }}>
-                    <StatusIcon className="h-3 w-3" />
-                    {statusConfig.label}
-                  </Badge>
-                </div>
-                <div className="space-y-2 mb-4">
-                  {orderItems.map((item: any, idx: number) => (
-                    <div key={idx} className="flex justify-between text-sm">
-                      <span className="text-gray-600">{item.productName} × {item.quantity}</span>
-                      <span>{(item.unitPrice * item.quantity).toFixed(2)} {currency}</span>
+              <div key={order.id} className="rounded-xl border bg-white shadow-sm overflow-hidden" data-testid={`order-card-${order.id}`}>
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className="font-bold text-lg" style={{ color: primaryColor }}>{order.orderNumber}</h3>
+                      <p className="text-sm text-gray-500">
+                        {t("orders.orderDate")}: {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ""}
+                      </p>
                     </div>
-                  ))}
-                </div>
-                <div className="border-t pt-3 flex justify-between items-center">
-                  <span className="text-sm text-gray-500">{t("cart.total")}</span>
-                  <span className="text-xl font-bold" style={{ color: primaryColor }}>{order.total.toFixed(2)} {currency}</span>
+                    <Badge className="flex items-center gap-1 px-3 py-1" style={{ backgroundColor: `${statusConfig.color}20`, color: statusConfig.color }}>
+                      <StatusIcon className="h-3 w-3" />
+                      {statusConfig.label}
+                    </Badge>
+                  </div>
+
+                  {!isCancelled && (
+                    <div className="mb-6">
+                      <div className="flex items-center justify-between relative">
+                        {TIMELINE_STEPS.map((step, idx) => {
+                          const isCompleted = idx <= currentStep;
+                          const isCurrent = idx === currentStep;
+                          const StepIcon = STATUS_CONFIG[step].icon;
+                          return (
+                            <div key={step} className="flex flex-col items-center relative z-10" style={{ width: "25%" }}>
+                              <div
+                                className={`h-10 w-10 rounded-full flex items-center justify-center border-2 transition-all ${
+                                  isCompleted ? "text-white" : "bg-gray-100 text-gray-400 border-gray-200"
+                                } ${isCurrent ? "ring-4 ring-opacity-30" : ""}`}
+                                style={isCompleted ? {
+                                  backgroundColor: STATUS_CONFIG[step].color,
+                                  borderColor: STATUS_CONFIG[step].color,
+                                  ...(isCurrent ? { boxShadow: `0 0 0 4px ${STATUS_CONFIG[step].color}30` } : {})
+                                } : {}}
+                              >
+                                <StepIcon className="h-4 w-4" />
+                              </div>
+                              <p className={`text-xs mt-2 text-center font-medium ${isCompleted ? "" : "text-gray-400"}`}
+                                style={isCompleted ? { color: STATUS_CONFIG[step].color } : {}}
+                              >
+                                {TIMELINE_LABELS[step]}
+                              </p>
+                            </div>
+                          );
+                        })}
+                        <div className="absolute top-5 left-[12.5%] right-[12.5%] h-0.5 bg-gray-200 -z-0">
+                          <div
+                            className="h-full transition-all duration-500"
+                            style={{
+                              width: currentStep >= 0 ? `${(currentStep / (TIMELINE_STEPS.length - 1)) * 100}%` : "0%",
+                              background: `linear-gradient(90deg, ${STATUS_CONFIG[TIMELINE_STEPS[0]].color}, ${STATUS_CONFIG[TIMELINE_STEPS[Math.min(currentStep, 3)]].color})`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="space-y-2 mb-4">
+                    {orderItems.map((item: any, idx: number) => (
+                      <div key={idx} className="flex justify-between text-sm">
+                        <span className="text-gray-600">{item.productName} × {item.quantity}</span>
+                        <span>{(item.unitPrice * item.quantity).toFixed(2)} {currency}</span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {order.paymentMethod && (
+                    <div className="text-sm text-gray-500 mb-2">
+                      {t("orders.paymentMethod")}: <span className="font-medium" style={{ color: primaryColor }}>{order.paymentMethod}</span>
+                    </div>
+                  )}
+
+                  <div className="border-t pt-3 flex justify-between items-center">
+                    <span className="text-sm text-gray-500">{t("cart.total")}</span>
+                    <span className="text-xl font-bold" style={{ color: primaryColor }}>{order.total.toFixed(2)} {currency}</span>
+                  </div>
                 </div>
               </div>
             );

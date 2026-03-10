@@ -100,25 +100,76 @@ async function getLowStockContext(): Promise<string> {
   return lines.length > 0 ? lines.join("\n") : "All stocked.";
 }
 
-const CUSTOMER_PROMPT = `LEMJIBA store assistant (Mauritania). Help customers find products, check stock/prices, suggest alternatives. Rules: only recommend in-stock items, prices in MRU (Mauritanian Ouguiya), suggest same-category alternatives for out-of-stock, be concise, respond in customer's language (AR/FR/EN), redirect off-topic questions to store.
-Catalog:\n{PRODUCTS}`;
+const CUSTOMER_PROMPT = `You are LEMJIBA (لمجيبه) store assistant — a premium import company in Mauritania. Help customers find products, check stock/prices, suggest alternatives, and track orders.
+
+Rules:
+- Only recommend in-stock items. Prices in MRU (Mauritanian Ouguiya).
+- Suggest same-category alternatives for out-of-stock items.
+- Be concise, friendly, and professional. Respond in customer's language (AR/FR/EN).
+- Redirect off-topic questions to store.
+- When customer asks about order status/tracking: ask for their order number (format: ORD-XXXX/YYYY). If an order number is detected in the conversation, use the order data provided below.
+- Payment methods: We accept Bankily, Masrvi, and Sedad mobile wallets. Payment proof (screenshot) is required before order processing.
+- Delivery: We deliver across Mauritania. Delivery times vary by location.
+- For returns: Items can be returned within 7 days if unused and in original packaging.
+
+Catalog:
+{PRODUCTS}
+{ORDER_DATA}`;
 
 const ADMIN_PROMPT = `LEMJIBA business assistant (Mauritania). Analyze sales in MRU (Mauritanian Ouguiya), suggest restocking, generate promo codes (PROMO-XXXXX format, keep margin>15%, 1-3day expiry), provide insights.
 Inventory:\n{PRODUCTS}\nTop sellers:\n{SALES}\nAlerts:\n{STOCK_ALERTS}`;
+
+function extractOrderNumbers(text: string): string[] {
+  const matches = text.match(/ORD-\d{4}\/\d{4}/gi);
+  return matches || [];
+}
+
+async function getOrderContext(messages: { role: string; content: string }[], currentMessage: string): Promise<string> {
+  const allText = [...messages.map(m => m.content), currentMessage].join(" ");
+  const orderNums = extractOrderNumbers(allText);
+  if (orderNums.length === 0) return "";
+
+  const results: string[] = [];
+  for (const num of orderNums.slice(0, 3)) {
+    const order = await storage.getStoreOrderByNumber(num);
+    if (order) {
+      const statusMap: Record<string, string> = {
+        pending: "Pending (قيد الانتظار)",
+        confirmed: "Confirmed (مؤكد)",
+        shipped: "Shipped (تم الشحن)",
+        delivered: "Delivered (تم التوصيل)",
+        cancelled: "Cancelled (ملغي)",
+      };
+      const items = JSON.parse(order.items);
+      const itemList = items.map((i: any) => `${i.productName}×${i.quantity}`).join(", ");
+      results.push(
+        `Order ${order.orderNumber}: Status=${statusMap[order.status] || order.status}, Total=${order.total}MRU, Items=[${itemList}], Date=${order.createdAt}, Payment=${order.paymentMethod || "N/A"}`
+      );
+    } else {
+      results.push(`Order ${num}: NOT FOUND`);
+    }
+  }
+  return results.length > 0 ? "\nOrder Data:\n" + results.join("\n") : "";
+}
 
 export async function handleCustomerChat(
   message: string,
   conversationHistory: { role: string; content: string }[] = []
 ): Promise<string> {
   const trimmed = trimHistory(conversationHistory);
-  const productContext = await getProductContext();
-  const ctxFp = fingerprint(productContext);
+  const [productContext, orderData] = await Promise.all([
+    getProductContext(),
+    getOrderContext(trimmed, message),
+  ]);
+  const ctxFp = fingerprint(productContext + orderData);
   const allMsgs = [...trimmed, { role: "user", content: message }];
   const cacheKey = getCacheKey("customer", ctxFp, allMsgs);
   const cached = getCached(cacheKey);
   if (cached) return cached;
 
-  const systemPrompt = CUSTOMER_PROMPT.replace("{PRODUCTS}", productContext);
+  const systemPrompt = CUSTOMER_PROMPT
+    .replace("{PRODUCTS}", productContext)
+    .replace("{ORDER_DATA}", orderData);
 
   const messages: OpenAI.ChatCompletionMessageParam[] = [
     { role: "system", content: systemPrompt },
@@ -129,7 +180,7 @@ export async function handleCustomerChat(
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages,
-    max_tokens: 400,
+    max_tokens: 500,
     temperature: 0.7,
   });
 

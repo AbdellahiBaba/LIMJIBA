@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, X, Send, Loader2, Bot, User } from "lucide-react";
+import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
 
 interface Message {
   role: "user" | "assistant";
@@ -19,7 +20,12 @@ export default function LimjibaChat() {
   useEffect(() => {
     if (open && !greeted) {
       setGreeted(true);
-      setMessages([{ role: "assistant", content: "Welcome to our store! 👋 I'm LEMJIBA, your shopping assistant. How can I help you today?" }]);
+      const storedLang = localStorage.getItem("store-language") || "en";
+      fetch(`/api/store/greeting?lang=${storedLang}`).then(r => r.json()).then(data => {
+        setMessages([{ role: "assistant", content: data.greeting || "Welcome! How can I help you today?" }]);
+      }).catch(() => {
+        setMessages([{ role: "assistant", content: "Welcome! How can I help you today?" }]);
+      });
     }
   }, [open, greeted]);
 
@@ -71,12 +77,10 @@ export default function LimjibaChat() {
         <div className="w-[360px] h-[500px] rounded-2xl shadow-2xl flex flex-col overflow-hidden border" style={{ background: "white" }}>
           <div className="px-4 py-3 flex items-center justify-between" style={{ background: "linear-gradient(135deg, #1B3A6B, #0A1628)" }}>
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "#C9A84C30" }}>
-                <Bot className="h-4 w-4" style={{ color: "#C9A84C" }} />
-              </div>
+              <img src={logoImg} alt="LEMJIBA" className="h-8 w-8 rounded-full object-contain bg-white/10 p-0.5" />
               <div>
-                <p className="text-white font-semibold text-sm">LEMJIBA Agent</p>
-                <p className="text-white/60 text-xs">Your shopping assistant</p>
+                <p className="text-white font-semibold text-sm brand-name">LEMJIBA</p>
+                <p className="text-white/60 text-xs brand-name-ar">مساعد لمجيبه</p>
               </div>
             </div>
             <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-white/60 hover:text-white hover:bg-white/10 rounded-full" onClick={() => setOpen(false)} data-testid="button-close-chat">
@@ -132,7 +136,7 @@ export default function LimjibaChat() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && sendMessage()}
-                placeholder="Ask about products..."
+                placeholder="Ask about products, orders..."
                 className="rounded-full text-sm"
                 disabled={loading}
                 data-testid="input-chat-message"

@@ -882,6 +882,38 @@ async function runMigrations(): Promise<void> {
     `);
     console.log('[DB] Updated CMS pages with rich content');
 
+    // ===================== Payment wallets table & order payment fields =====================
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS payment_wallets (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        name TEXT NOT NULL,
+        name_ar TEXT,
+        name_fr TEXT,
+        wallet_number TEXT NOT NULL,
+        icon_type TEXT NOT NULL DEFAULT 'wallet',
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        sort_order INTEGER NOT NULL DEFAULT 0
+      )
+    `);
+
+    try {
+      await client.query(`ALTER TABLE store_orders ADD COLUMN payment_method TEXT`);
+    } catch {}
+    try {
+      await client.query(`ALTER TABLE store_orders ADD COLUMN payment_proof TEXT`);
+    } catch {}
+
+    const walletCheck = await client.query(`SELECT id FROM payment_wallets LIMIT 1`);
+    if (walletCheck.rows.length === 0) {
+      await client.query(`
+        INSERT INTO payment_wallets (name, name_ar, name_fr, wallet_number, icon_type, sort_order) VALUES
+        ('Bankily', 'بنكيلي', 'Bankily', '00000000', 'bankily', 0),
+        ('Masrvi', 'مصرفي', 'Masrvi', '00000000', 'masrvi', 1),
+        ('Sedad', 'سداد', 'Sedad', '00000000', 'sedad', 2)
+      `);
+      console.log('[DB] Seeded default payment wallets');
+    }
+
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);
