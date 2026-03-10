@@ -32,7 +32,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Core Modules
 - **Dashboard:** Business statistics, sales, invoices, low stock alerts, quick invoices stat, recent activity feed, clickable low stock alerts, period-filtered KPIs (today/week/month/year), average order value, outstanding credit, top customer, revenue vs expenses comparison. Widget customization with visibility toggles, ordering (move up/down), and localStorage persistence.
-- **Stock Management:** CRUD for products, cost price, weight, low stock alerts, favorite products toggle (`isFavorite`), barcode label printing (individual and bulk, Code128 format, 3-column A4 grid layout). Dynamic categories fetched from `/api/categories`.
+- **Stock Management:** CRUD for products with full cost breakdown (purchase price, shipping cost, additional cost → auto-calculated cost price per unit), weight, low stock alerts, favorite products toggle (`isFavorite`), barcode label printing (individual and bulk, Code128 format, 3-column A4 grid layout). Dynamic categories fetched from `/api/categories`.
 - **Invoice Generation:** Standard (FA-) and Manufacturing (FAB-) invoices with PDF generation, delivery status tracking (none/prepared/shipped/delivered), multi-payment timeline, email draft feature.
 - **Quick Invoice:** Standalone service invoice generator with auto-numbering (FR-XXXX/YYYY), discount support (% or fixed), saved copies in history, preview and print-ready. Independent from main system (no stock/sales/accounting impact).
 - **POS (Point of Sale):** Product grid with favorites section, cart with quick customer name input, checkout, payment modes, receipt printing, recent sales panel, out-of-stock overlays, stock quantity badges, park/hold sale (F3 shortcut) with resume functionality.
@@ -94,15 +94,15 @@ Preferred communication style: Simple, everyday language.
 - Full CRUD management at `/promo-codes`. Supports percentage/fixed discounts, min order amounts, max uses, expiry dates. AI-generated promo codes with safe margin calculation.
 
 ### Store Orders
-- Admin order management at `/store-orders`. View all customer orders, update status (pending→confirmed→shipped→delivered→cancelled), expand for detail view.
+- Admin order management at `/store-orders`. View all customer orders, update status (pending→confirmed→shipped→delivered→cancelled), expand for detail view. Payment method and payment proof display with proof image viewer dialog. Stock impact: confirming an order deducts inventory, cancelling a confirmed order restores inventory. Audit logging on status changes.
 
 ### CMS (Content Management)
-- Admin CMS at `/cms` with tabs for Pages (home/about/contact/terms editing), Banners (create/toggle/delete promotional banners), and Store Settings (store name, colors, hero text, contact info).
+- Admin CMS at `/cms` with tabs for Pages (home/about/contact/terms editing), Banners (create/toggle/delete promotional banners), and Store Settings (store name, colors, hero text, contact info, social media links for WhatsApp/Instagram/Facebook/Snapchat/TikTok).
 
 ### Data Storage
 - **Type:** PostgreSQL database using Drizzle ORM.
 - **Schema:** Shared `shared/schema.ts` for type safety between frontend/backend.
-- **Key Entities:** Products (with `isFavorite`), Invoices (with `deliveryStatus`, `deliveryCost`), Manufacturing Invoices, Sales (with `deliveryCost`), Resellers, Employees, Salary Payments, Expenses, Customers, Quick Invoices, Suppliers, Purchase Orders (with `shippingCost`), Purchase Order Items (with `shippingCostShare`, `adjustedUnitCost`), Shipments, Shipment Items, Parked Sales, Audit Logs, Users (with roles/permissions), Promo Codes, Store Orders, CMS Pages, CMS Banners, Store Settings, Conversations, Messages, Categories, Store Customers.
+- **Key Entities:** Products (with `isFavorite`, `purchasePrice`, `shippingCost`, `additionalCost`), Invoices (with `deliveryStatus`, `deliveryCost`), Manufacturing Invoices, Sales (with `deliveryCost`), Resellers, Employees, Salary Payments, Expenses, Customers, Quick Invoices, Suppliers, Purchase Orders (with `shippingCost`), Purchase Order Items (with `shippingCostShare`, `adjustedUnitCost`), Shipments, Shipment Items, Parked Sales, Audit Logs, Users (with roles/permissions), Promo Codes, Store Orders, CMS Pages, CMS Banners, Store Settings, Conversations, Messages, Categories, Store Customers.
 
 ### Key Design Decisions
 - **Shared Schema Pattern:** Centralized type definitions for consistent data structures.

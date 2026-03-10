@@ -2572,17 +2572,6 @@ export class DatabaseStorage implements IStorage {
   async createStoreOrder(order: InsertStoreOrder): Promise<StoreOrder> {
     return await withRetry(async () => {
       const [created] = await db.insert(storeOrders).values(order).returning();
-      const orderItems = JSON.parse(order.items);
-      for (const item of orderItems) {
-        if (item.productId) {
-          const [product] = await db.select().from(products).where(eq(products.id, item.productId));
-          if (product && product.stockQuantity >= item.quantity) {
-            await db.update(products).set({
-              stockQuantity: product.stockQuantity - item.quantity
-            }).where(eq(products.id, item.productId));
-          }
-        }
-      }
       return created;
     });
   }

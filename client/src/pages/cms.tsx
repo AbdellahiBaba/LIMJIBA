@@ -11,6 +11,7 @@ import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { FileText, Image, Settings, Save, Plus, Trash2, Edit, Loader2 } from "lucide-react";
+import { SiWhatsapp, SiInstagram, SiFacebook, SiSnapchat, SiTiktok } from "react-icons/si";
 import type { CmsPage, CmsBanner, StoreSettings } from "@shared/schema";
 
 function PagesTab() {
@@ -278,6 +279,44 @@ function SettingsTab() {
             <Label>Address</Label>
             <Input value={form.contactAddress || ""} onChange={e => setForm(f => ({ ...f, contactAddress: e.target.value }))} className="mt-1" data-testid="input-contact-address" />
           </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle className="text-lg flex items-center gap-2"><SiInstagram className="h-4 w-4" /> Social Media Links</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          {(() => {
+            let socialLinks: Record<string, string> = {};
+            try { socialLinks = JSON.parse(form.socialLinks || "{}"); } catch { socialLinks = {}; }
+            const updateSocial = (key: string, value: string) => {
+              const updated = { ...socialLinks, [key]: value };
+              setForm(f => ({ ...f, socialLinks: JSON.stringify(updated) }));
+            };
+            return (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <Label className="flex items-center gap-2"><SiWhatsapp className="h-4 w-4 text-green-500" /> WhatsApp</Label>
+                  <Input value={socialLinks.whatsapp || ""} onChange={e => updateSocial("whatsapp", e.target.value)} placeholder="https://wa.me/1234567890" className="mt-1" data-testid="input-social-whatsapp" />
+                </div>
+                <div>
+                  <Label className="flex items-center gap-2"><SiInstagram className="h-4 w-4 text-pink-500" /> Instagram</Label>
+                  <Input value={socialLinks.instagram || ""} onChange={e => updateSocial("instagram", e.target.value)} placeholder="https://instagram.com/yourpage" className="mt-1" data-testid="input-social-instagram" />
+                </div>
+                <div>
+                  <Label className="flex items-center gap-2"><SiFacebook className="h-4 w-4 text-blue-600" /> Facebook</Label>
+                  <Input value={socialLinks.facebook || ""} onChange={e => updateSocial("facebook", e.target.value)} placeholder="https://facebook.com/yourpage" className="mt-1" data-testid="input-social-facebook" />
+                </div>
+                <div>
+                  <Label className="flex items-center gap-2"><SiSnapchat className="h-4 w-4 text-yellow-400" /> Snapchat</Label>
+                  <Input value={socialLinks.snapchat || ""} onChange={e => updateSocial("snapchat", e.target.value)} placeholder="https://snapchat.com/add/yourname" className="mt-1" data-testid="input-social-snapchat" />
+                </div>
+                <div>
+                  <Label className="flex items-center gap-2"><SiTiktok className="h-4 w-4" /> TikTok</Label>
+                  <Input value={socialLinks.tiktok || ""} onChange={e => updateSocial("tiktok", e.target.value)} placeholder="https://tiktok.com/@yourname" className="mt-1" data-testid="input-social-tiktok" />
+                </div>
+              </div>
+            );
+          })()}
         </CardContent>
       </Card>
 

@@ -251,6 +251,21 @@ async function runMigrations(): Promise<void> {
       await client.query(`ALTER TABLE products ADD COLUMN is_favorite BOOLEAN NOT NULL DEFAULT false`);
       console.log('[DB] Added is_favorite column to products');
     }
+
+    if (!prodCols.includes('purchase_price')) {
+      await client.query(`ALTER TABLE products ADD COLUMN purchase_price REAL NOT NULL DEFAULT 0`);
+      console.log('[DB] Added purchase_price column to products');
+    }
+
+    if (!prodCols.includes('shipping_cost')) {
+      await client.query(`ALTER TABLE products ADD COLUMN shipping_cost REAL NOT NULL DEFAULT 0`);
+      console.log('[DB] Added shipping_cost column to products');
+    }
+
+    if (!prodCols.includes('additional_cost')) {
+      await client.query(`ALTER TABLE products ADD COLUMN additional_cost REAL NOT NULL DEFAULT 0`);
+      console.log('[DB] Added additional_cost column to products');
+    }
     
     // Check sale_items table for cost_price column (GAAP/IFRS historical COGS tracking)
     const saleItemsColumns = await client.query(`

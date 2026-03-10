@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useCart } from "@/contexts/cart-context";
 import { useStoreAuth } from "@/contexts/store-auth-context";
 import { ShoppingCart, Menu, X, Home, Package, Phone, Info, FileText, Globe, User, LogOut, Search } from "lucide-react";
+import { SiWhatsapp, SiInstagram, SiFacebook, SiSnapchat, SiTiktok } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { StoreSettings } from "@shared/schema";
@@ -266,6 +267,38 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               {settings?.contactEmail && <p className="text-sm text-gray-400">{settings.contactEmail}</p>}
               {settings?.contactPhone && <p className="text-sm text-gray-400">{settings.contactPhone}</p>}
               {settings?.contactAddress && <p className="text-sm text-gray-400">{settings.contactAddress}</p>}
+              {(() => {
+                let socialLinks: Record<string, string> = {};
+                try { socialLinks = JSON.parse(settings?.socialLinks || "{}"); } catch { socialLinks = {}; }
+                const socialItems = [
+                  { key: "whatsapp", icon: SiWhatsapp, label: "WhatsApp" },
+                  { key: "instagram", icon: SiInstagram, label: "Instagram" },
+                  { key: "facebook", icon: SiFacebook, label: "Facebook" },
+                  { key: "snapchat", icon: SiSnapchat, label: "Snapchat" },
+                  { key: "tiktok", icon: SiTiktok, label: "TikTok" },
+                ].filter(item => {
+                  const url = socialLinks[item.key]?.trim();
+                  return url && (url.startsWith("https://") || url.startsWith("http://"));
+                });
+                if (socialItems.length === 0) return null;
+                return (
+                  <div className="flex items-center gap-3 mt-4" data-testid="footer-social-links">
+                    {socialItems.map(item => (
+                      <a
+                        key={item.key}
+                        href={socialLinks[item.key]}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-gray-400 hover:text-white transition-colors"
+                        aria-label={item.label}
+                        data-testid={`link-social-${item.key}`}
+                      >
+                        <item.icon className="h-5 w-5" />
+                      </a>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-700/50 text-center text-sm text-gray-500">

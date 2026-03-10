@@ -88,6 +88,9 @@ function ProductFormDialog({
     category: product?.category ?? catNames[0],
     unitPrice: product?.unitPrice ?? 0,
     costPrice: product?.costPrice ?? 0,
+    purchasePrice: product?.purchasePrice ?? 0,
+    shippingCost: product?.shippingCost ?? 0,
+    additionalCost: product?.additionalCost ?? 0,
     weightPerUnit: product?.weightPerUnit ?? 0,
     stockQuantity: product?.stockQuantity ?? 0,
     lowStockThreshold: product?.lowStockThreshold ?? 10,
@@ -102,6 +105,9 @@ function ProductFormDialog({
         category: product?.category ?? catNames[0],
         unitPrice: product?.unitPrice ?? 0,
         costPrice: product?.costPrice ?? 0,
+        purchasePrice: product?.purchasePrice ?? 0,
+        shippingCost: product?.shippingCost ?? 0,
+        additionalCost: product?.additionalCost ?? 0,
         weightPerUnit: product?.weightPerUnit ?? 0,
         stockQuantity: product?.stockQuantity ?? 0,
         lowStockThreshold: product?.lowStockThreshold ?? 10,
@@ -110,6 +116,25 @@ function ProductFormDialog({
       });
     }
   }, [open, product]);
+
+  const computedCostPrice = (() => {
+    const pp = formData.purchasePrice || 0;
+    const sc = formData.shippingCost || 0;
+    const ac = formData.additionalCost || 0;
+    const qty = formData.stockQuantity || 1;
+    const totalCost = pp + sc + ac;
+    return qty > 0 ? Math.round((totalCost / qty) * 100) / 100 : 0;
+  })();
+
+  useEffect(() => {
+    const pp = formData.purchasePrice || 0;
+    const sc = formData.shippingCost || 0;
+    const ac = formData.additionalCost || 0;
+    const qty = formData.stockQuantity || 1;
+    const totalCost = pp + sc + ac;
+    const cost = qty > 0 ? Math.round((totalCost / qty) * 100) / 100 : 0;
+    setFormData(prev => ({ ...prev, costPrice: cost }));
+  }, [formData.purchasePrice, formData.shippingCost, formData.additionalCost, formData.stockQuantity]);
 
   const createMutation = useMutation({
     mutationFn: (data: InsertProduct) => apiRequest("POST", "/api/products", data),
@@ -199,32 +224,62 @@ function ProductFormDialog({
               </SelectContent>
             </Select>
           </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="unitPrice">{t("stock.unitPrice")} (MRU) *</Label>
-              <Input
-                id="unitPrice"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.unitPrice}
-                onChange={(e) => setFormData({ ...formData, unitPrice: parseFloat(e.target.value) || 0 })}
-                required
-                data-testid="input-unit-price"
-              />
+          <div className="space-y-2">
+            <Label htmlFor="unitPrice">{t("stock.unitPrice")} (MRU) *</Label>
+            <Input
+              id="unitPrice"
+              type="number"
+              step="0.01"
+              min="0"
+              value={formData.unitPrice}
+              onChange={(e) => setFormData({ ...formData, unitPrice: parseFloat(e.target.value) || 0 })}
+              required
+              data-testid="input-unit-price"
+            />
+          </div>
+          <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
+            <p className="text-sm font-semibold text-muted-foreground">{t("stock.costBreakdown")}</p>
+            <div className="grid grid-cols-3 gap-3">
+              <div className="space-y-1">
+                <Label htmlFor="purchasePrice" className="text-xs">{t("stock.purchasePrice")} (MRU)</Label>
+                <Input
+                  id="purchasePrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.purchasePrice}
+                  onChange={(e) => setFormData({ ...formData, purchasePrice: parseFloat(e.target.value) || 0 })}
+                  data-testid="input-purchase-price"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="shippingCost" className="text-xs">{t("stock.shippingCost")} (MRU)</Label>
+                <Input
+                  id="shippingCost"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.shippingCost}
+                  onChange={(e) => setFormData({ ...formData, shippingCost: parseFloat(e.target.value) || 0 })}
+                  data-testid="input-shipping-cost"
+                />
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="additionalCost" className="text-xs">{t("stock.additionalCost")} (MRU)</Label>
+                <Input
+                  id="additionalCost"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.additionalCost}
+                  onChange={(e) => setFormData({ ...formData, additionalCost: parseFloat(e.target.value) || 0 })}
+                  data-testid="input-additional-cost"
+                />
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="costPrice">{t("stock.costPrice")} (MRU) *</Label>
-              <Input
-                id="costPrice"
-                type="number"
-                step="0.01"
-                min="0"
-                value={formData.costPrice}
-                onChange={(e) => setFormData({ ...formData, costPrice: parseFloat(e.target.value) || 0 })}
-                required
-                data-testid="input-cost-price"
-              />
+            <div className="flex items-center justify-between pt-1 border-t">
+              <span className="text-xs font-medium text-muted-foreground">{t("stock.costPrice")} (MRU)</span>
+              <span className="text-sm font-bold" data-testid="text-computed-cost">{computedCostPrice.toFixed(2)}</span>
             </div>
           </div>
           <div className="grid grid-cols-2 gap-4">
@@ -877,6 +932,9 @@ export default function Stock() {
                   { header: t("stock.csvName"), accessor: (p) => p.name },
                   { header: t("stock.csvCategory"), accessor: (p) => p.category },
                   { header: t("stock.csvUnitPrice"), accessor: (p) => p.unitPrice },
+                  { header: t("stock.purchasePrice"), accessor: (p) => p.purchasePrice },
+                  { header: t("stock.shippingCost"), accessor: (p) => p.shippingCost },
+                  { header: t("stock.additionalCost"), accessor: (p) => p.additionalCost },
                   { header: t("stock.csvCostPrice"), accessor: (p) => p.costPrice },
                   { header: t("stock.csvStock"), accessor: (p) => p.stockQuantity },
                   { header: t("stock.csvUnit"), accessor: (p) => p.unit },

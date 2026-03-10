@@ -5,8 +5,9 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingBag, Loader2, Clock, CheckCircle2, Truck, PackageCheck, XCircle, ChevronDown, ChevronUp } from "lucide-react";
+import { ShoppingBag, Loader2, Clock, CheckCircle2, Truck, PackageCheck, XCircle, ChevronDown, ChevronUp, CreditCard, Image } from "lucide-react";
 import type { StoreOrder } from "@shared/schema";
 
 const STATUS_OPTIONS = [
@@ -20,6 +21,7 @@ const STATUS_OPTIONS = [
 export default function StoreOrdersAdmin() {
   const { toast } = useToast();
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const [proofDialogUrl, setProofDialogUrl] = useState<string | null>(null);
 
   const { data: orders, isLoading } = useQuery<StoreOrder[]>({ queryKey: ["/api/store-orders"] });
 
@@ -30,6 +32,7 @@ export default function StoreOrdersAdmin() {
     onSuccess: () => {
       toast({ title: "Order status updated" });
       queryClient.invalidateQueries({ queryKey: ["/api/store-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
     },
   });
 
@@ -61,14 +64,14 @@ export default function StoreOrdersAdmin() {
             return (
               <Card key={order.id} data-testid={`admin-order-${order.id}`}>
                 <CardContent className="pt-4">
-                  <div className="flex items-center justify-between cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : order.id)}>
+                  <div className="flex items-center justify-between gap-2 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : order.id)}>
                     <div className="flex items-center gap-4">
                       <div>
                         <p className="font-bold">{order.orderNumber}</p>
                         <p className="text-sm text-muted-foreground">{order.customerName} • {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ""}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
                       <span className="font-bold">{order.total.toFixed(2)} MRU</span>
                       <Badge className="flex items-center gap-1" style={{ backgroundColor: `${statusConfig.color}20`, color: statusConfig.color }}>
                         <StatusIcon className="h-3 w-3" />
@@ -99,30 +102,52 @@ export default function StoreOrdersAdmin() {
                         </div>
                       </div>
 
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <p className="text-muted-foreground flex items-center gap-1"><CreditCard className="h-3 w-3" /> Payment Method</p>
+                          <p className="font-medium" data-testid={`text-payment-method-${order.id}`}>{order.paymentMethod || "-"}</p>
+                        </div>
+                        <div>
+                          <p className="text-muted-foreground flex items-center gap-1 flex-wrap"><Image className="h-3 w-3" /> Payment Proof</p>
+                          {order.paymentProof ? (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={(e) => { e.stopPropagation(); setProofDialogUrl(order.paymentProof); }}
+                              data-testid={`button-view-proof-${order.id}`}
+                            >
+                              View Proof
+                            </Button>
+                          ) : (
+                            <p className="font-medium">-</p>
+                          )}
+                        </div>
+                      </div>
+
                       <div>
                         <p className="text-sm font-semibold mb-2">Items</p>
                         <div className="space-y-1">
                           {orderItems.map((item: any, idx: number) => (
-                            <div key={idx} className="flex justify-between text-sm bg-muted/50 px-3 py-1.5 rounded">
+                            <div key={idx} className="flex justify-between gap-2 text-sm bg-muted/50 px-3 py-1.5 rounded">
                               <span>{item.productName} × {item.quantity}</span>
                               <span>{(item.unitPrice * item.quantity).toFixed(2)} MRU</span>
                             </div>
                           ))}
                         </div>
-                        <div className="flex justify-between mt-2 text-sm">
+                        <div className="flex justify-between gap-2 mt-2 text-sm">
                           <span>Subtotal</span><span>{order.subtotal.toFixed(2)} MRU</span>
                         </div>
                         {order.discount > 0 && (
-                          <div className="flex justify-between text-sm text-green-600">
+                          <div className="flex justify-between gap-2 text-sm text-green-600">
                             <span>Discount</span><span>-{order.discount.toFixed(2)} MRU</span>
                           </div>
                         )}
-                        <div className="flex justify-between font-bold mt-1">
+                        <div className="flex justify-between gap-2 font-bold mt-1">
                           <span>Total</span><span>{order.total.toFixed(2)} MRU</span>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-3 flex-wrap">
                         <Label className="text-sm font-medium">Update Status:</Label>
                         <Select value={order.status} onValueChange={v => updateStatus.mutate({ id: order.id, status: v })}>
                           <SelectTrigger className="w-48" data-testid={`select-order-status-${order.id}`}>
@@ -134,6 +159,7 @@ export default function StoreOrdersAdmin() {
                             ))}
                           </SelectContent>
                         </Select>
+                        {updateStatus.isPending && <Loader2 className="h-4 w-4 animate-spin" />}
                       </div>
 
                       {order.notes && (
@@ -150,6 +176,24 @@ export default function StoreOrdersAdmin() {
           })}
         </div>
       )}
+
+      <Dialog open={!!proofDialogUrl} onOpenChange={() => setProofDialogUrl(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Payment Proof</DialogTitle>
+          </DialogHeader>
+          {proofDialogUrl && (
+            <div className="flex justify-center">
+              <img
+                src={proofDialogUrl}
+                alt="Payment proof"
+                className="max-w-full max-h-[70vh] rounded object-contain"
+                data-testid="img-payment-proof"
+              />
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

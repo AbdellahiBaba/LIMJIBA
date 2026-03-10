@@ -3435,8 +3435,71 @@ export async function registerRoutes(
   app.patch("/api/store-orders/:id/status", requireAuth, async (req: Request, res: Response) => {
     try {
       const { status } = req.body;
+      const order = await storage.getStoreOrder(req.params.id);
+      if (!order) return res.status(404).json({ error: "Order not found" });
+
+      const previousStatus = order.status;
+      let orderItems: any[] = [];
+      try { orderItems = JSON.parse(order.items); } catch {}
+
+      if (status === "confirmed" && previousStatus !== "confirmed" && previousStatus !== "shipped" && previousStatus !== "delivered") {
+        for (const item of orderItems) {
+          if (item.productId) {
+            await storage.updateStock(item.productId, -(item.quantity || 0));
+            try {
+              await storage.createStockMovement({
+                productId: item.productId,
+                movementType: "out",
+                reason: "sale",
+                quantity: -(item.quantity || 0),
+                previousStock: 0,
+                newStock: 0,
+                reference: `Store Order ${order.orderNumber}`,
+                createdAt: new Date().toISOString(),
+                createdBy: req.session?.username || "system",
+              });
+            } catch {}
+          }
+        }
+      }
+
+      if (status === "cancelled" && (previousStatus === "confirmed" || previousStatus === "shipped")) {
+        for (const item of orderItems) {
+          if (item.productId) {
+            await storage.updateStock(item.productId, item.quantity || 0);
+            try {
+              await storage.createStockMovement({
+                productId: item.productId,
+                movementType: "in",
+                reason: "return",
+                quantity: item.quantity || 0,
+                previousStock: 0,
+                newStock: 0,
+                reference: `Store Order ${order.orderNumber} cancelled`,
+                createdAt: new Date().toISOString(),
+                createdBy: req.session?.username || "system",
+              });
+            } catch {}
+          }
+        }
+      }
+
       const updated = await storage.updateStoreOrderStatus(req.params.id, status);
       if (!updated) return res.status(404).json({ error: "Order not found" });
+
+      try {
+        await storage.createAuditLog({
+          userId: req.session.userId,
+          username: req.session.username || "system",
+          action: "update",
+          entity: "store_order",
+          entityId: req.params.id,
+          details: JSON.stringify({ previousStatus, newStatus: status, orderNumber: order.orderNumber }),
+          ipAddress: req.ip || null,
+          createdAt: new Date().toISOString(),
+        });
+      } catch {}
+
       res.json(updated);
     } catch (error) {
       handleError(res, "updateStoreOrderStatus", error);
