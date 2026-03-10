@@ -100,21 +100,72 @@ async function getLowStockContext(): Promise<string> {
   return lines.length > 0 ? lines.join("\n") : "All stocked.";
 }
 
-const CUSTOMER_PROMPT = `You are LIMJIBA (لمجيبة) store assistant — a premium import company in Mauritania. Help customers find products, check stock/prices, suggest alternatives, and track orders.
+async function getActivePromosContext(): Promise<string> {
+  try {
+    const promos = await storage.getPromoCodes();
+    const active = promos.filter(p => p.isActive && (!p.expiresAt || new Date(p.expiresAt) > new Date()));
+    if (active.length === 0) return "";
+    return "\nActive Promotions:\n" + active.map(p =>
+      `Code: ${p.code} | ${p.discountType === "percentage" ? p.discountValue + "% off" : p.discountValue + " MRU off"} | Min order: ${p.minOrderAmount || 0} MRU${p.expiresAt ? ` | Expires: ${new Date(p.expiresAt).toLocaleDateString()}` : ""}`
+    ).join("\n");
+  } catch {
+    return "";
+  }
+}
 
-Rules:
+async function getBestSellersContext(): Promise<string> {
+  const salesCtx = await getSalesContext();
+  if (!salesCtx || salesCtx === "") return "";
+  return "\nBest Sellers:\n" + salesCtx;
+}
+
+const CUSTOMER_PROMPT = `You are LIMJIBA (لمجيبة) smart shopping assistant — a premium import company in Mauritania. You are a marketing-savvy assistant that helps customers discover great products, find deals, check orders, and make purchases.
+
+LANGUAGE RULES:
+- The customer's preferred language is: {LANG}
+- You MUST respond in {LANG_NAME}. Never switch languages unless the customer writes in a different language.
+- If lang=ar, respond in Arabic. If lang=fr, respond in French. If lang=en, respond in English.
+
+SCOPE - You may ONLY help with:
+1. Product recommendations, availability, prices, and suggestions
+2. Order tracking and payment status (when given an order number)
+3. Promotions, promo codes, and current deals
+4. Delivery information and policies
+5. Payment methods (Bankily, Masrvi, Sedad mobile wallets) and payment proof requirements
+6. Returns policy (7 days, unused, original packaging)
+7. Contact information and store details
+
+For ANY other topic (politics, weather, personal advice, etc.), politely redirect:
+- EN: "I can only help with LIMJIBA store matters. Would you like to see our products or check an order?"
+- FR: "Je ne peux vous aider qu'avec les affaires de LIMJIBA. Voulez-vous voir nos produits ou suivre une commande?"
+- AR: "يمكنني مساعدتك فقط في شؤون لمجيبة. هل تريد رؤية منتجاتنا أو تتبع طلب؟"
+
+MARKETING BEHAVIOR:
+- Proactively suggest popular products and best sellers
+- Mention active promotions and promo codes when relevant
+- Recommend related products when a customer asks about a specific item
+- Be enthusiastic about product quality and value
+- Use the best sellers data to recommend trending items
+
+RULES:
 - Only recommend in-stock items. Prices in MRU (Mauritanian Ouguiya).
 - Suggest same-category alternatives for out-of-stock items.
-- Be concise, friendly, and professional. Respond in customer's language (AR/FR/EN).
-- Redirect off-topic questions to store.
-- When customer asks about order status/tracking: ask for their order number (format: ORD-XXXX/YYYY). If an order number is detected in the conversation, use the order data provided below.
-- Payment methods: We accept Bankily, Masrvi, and Sedad mobile wallets. Payment proof (screenshot) is required before order processing.
+- Be concise, friendly, and professional.
+- When customer asks about order status/tracking: ask for their order number (format: ORD-XXXX/YYYY).
+- When providing payment status, clearly state whether payment is confirmed or pending.
 - Delivery: We deliver across Mauritania. Delivery times vary by location.
-- For returns: Items can be returned within 7 days if unused and in original packaging.
 
 Catalog:
 {PRODUCTS}
+{PROMOS}
+{BEST_SELLERS}
 {ORDER_DATA}`;
+
+const LANG_NAMES: Record<string, string> = {
+  ar: "Arabic (العربية)",
+  fr: "French (Français)",
+  en: "English",
+};
 
 const ADMIN_PROMPT = `LIMJIBA business assistant (Mauritania). Analyze sales in MRU (Mauritanian Ouguiya), suggest restocking, generate promo codes (PROMO-XXXXX format, keep margin>15%, 1-3day expiry), provide insights.
 Inventory:\n{PRODUCTS}\nTop sellers:\n{SALES}\nAlerts:\n{STOCK_ALERTS}`;
@@ -142,8 +193,11 @@ async function getOrderContext(messages: { role: string; content: string }[], cu
       };
       const items = JSON.parse(order.items);
       const itemList = items.map((i: any) => `${i.productName}×${i.quantity}`).join(", ");
+      const paymentStatus = order.paymentConfirmed
+        ? "Payment CONFIRMED ✓"
+        : "Payment PENDING (not yet confirmed by admin)";
       results.push(
-        `Order ${order.orderNumber}: Status=${statusMap[order.status] || order.status}, Total=${order.total}MRU, Items=[${itemList}], Date=${order.createdAt}, Payment=${order.paymentMethod || "N/A"}`
+        `Order ${order.orderNumber}: Status=${statusMap[order.status] || order.status}, ${paymentStatus}, Total=${order.total}MRU, Items=[${itemList}], Date=${order.createdAt}, Payment=${order.paymentMethod || "N/A"}`
       );
     } else {
       results.push(`Order ${num}: NOT FOUND`);
@@ -154,14 +208,17 @@ async function getOrderContext(messages: { role: string; content: string }[], cu
 
 export async function handleCustomerChat(
   message: string,
-  conversationHistory: { role: string; content: string }[] = []
+  conversationHistory: { role: string; content: string }[] = [],
+  lang: string = "en"
 ): Promise<string> {
   const trimmed = trimHistory(conversationHistory);
-  const [productContext, orderData] = await Promise.all([
+  const [productContext, orderData, promosContext, bestSellers] = await Promise.all([
     getProductContext(),
     getOrderContext(trimmed, message),
+    getActivePromosContext(),
+    getBestSellersContext(),
   ]);
-  const ctxFp = fingerprint(productContext + orderData);
+  const ctxFp = fingerprint(productContext + orderData + promosContext + bestSellers + lang);
   const allMsgs = [...trimmed, { role: "user", content: message }];
   const cacheKey = getCacheKey("customer", ctxFp, allMsgs);
   const cached = getCached(cacheKey);
@@ -169,7 +226,11 @@ export async function handleCustomerChat(
 
   const systemPrompt = CUSTOMER_PROMPT
     .replace("{PRODUCTS}", productContext)
-    .replace("{ORDER_DATA}", orderData);
+    .replace("{ORDER_DATA}", orderData)
+    .replace("{PROMOS}", promosContext)
+    .replace("{BEST_SELLERS}", bestSellers)
+    .replace(/{LANG}/g, lang)
+    .replace("{LANG_NAME}", LANG_NAMES[lang] || "English");
 
   const messages: OpenAI.ChatCompletionMessageParam[] = [
     { role: "system", content: systemPrompt },
@@ -266,10 +327,26 @@ export async function generatePromoCode(margin?: number): Promise<{
 export async function getCustomerGreeting(language: string = "en"): Promise<string> {
   const products = await storage.getStoreProducts();
   const cats = [...new Set(products.map(p => p.category))].length;
+
+  let promoLine = "";
+  try {
+    const promos = await storage.getPromoCodes();
+    const active = promos.filter(p => p.isActive && (!p.expiresAt || new Date(p.expiresAt) > new Date()));
+    if (active.length > 0) {
+      const best = active[0];
+      const discount = best.discountType === "percentage" ? `${best.discountValue}%` : `${best.discountValue} MRU`;
+      promoLine = language === "ar"
+        ? `\n🏷️ عرض خاص: استخدم الكود ${best.code} للحصول على خصم ${discount}!`
+        : language === "fr"
+        ? `\n🏷️ Offre spéciale: Utilisez le code ${best.code} pour ${discount} de réduction!`
+        : `\n🏷️ Special offer: Use code ${best.code} for ${discount} off!`;
+    }
+  } catch {}
+
   const greetings: Record<string, string> = {
-    en: `Welcome! We have ${products.length} products in ${cats} categories. How can I help?`,
-    fr: `Bienvenue! ${products.length} produits dans ${cats} catégories. Comment puis-je vous aider?`,
-    ar: `مرحباً! لدينا ${products.length} منتج في ${cats} فئات. كيف أساعدك؟`,
+    en: `Welcome to LIMJIBA! 🛍️ We have ${products.length} products in ${cats} categories. How can I help you today?${promoLine}`,
+    fr: `Bienvenue chez LIMJIBA! 🛍️ ${products.length} produits dans ${cats} catégories. Comment puis-je vous aider?${promoLine}`,
+    ar: `مرحباً بكم في لمجيبة! 🛍️ لدينا ${products.length} منتج في ${cats} فئات. كيف أساعدك؟${promoLine}`,
   };
   return greetings[language] || greetings.en;
 }

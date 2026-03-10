@@ -1,0 +1,24 @@
+{
+  "name": "LIMJIBA - لمجيبة",
+  "short_name": "LIMJIBA",
+  "description": "Premium import products from Mauritania",
+  "start_url": "/store",
+  "display": "standalone",
+  "background_color": "#0D1520",
+  "theme_color": "#1B2D4A",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/favicon.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/favicon.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any maskable"
+    }
+  ]
+}

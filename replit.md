@@ -62,8 +62,11 @@ Preferred communication style: Simple, everyday language.
 - **Pages:** home, products, product detail, cart, checkout (with payment step), orders (with visual timeline), about, contact, terms, login, signup, profile.
 - **Payment System:** 3 mobile wallet options (Bankily, Masrvi, Sedad) stored in `payment_wallets` table. Checkout requires selecting a wallet, viewing its number, and uploading payment proof screenshot before order submission. Server-side enforcement of payment proof.
 - **Order Tracking:** Visual 4-step timeline (Placed → Confirmed → Shipped → Delivered) with color-coded progress. Search by order number or email.
-- **Translation System:** `client/src/locales/store.ts` with full AR/FR/EN translations including payment, wallet, and order tracking strings. `StoreLanguageProvider` + `useStoreLanguage()` hook. Language switcher in store header (EN/FR/عر buttons).
+- **Translation System:** `client/src/locales/store.ts` with full AR/FR/EN translations including payment, wallet, order tracking, and checkout account prompt strings. `StoreLanguageProvider` + `useStoreLanguage()` hook. Language switcher in store header (EN/FR/عر buttons).
+- **Auto Language Detection:** First-time visitors automatically see the store in their browser's language (navigator.language → ar/fr/en). Stored in localStorage after first detection; subsequent visits respect manual selection.
 - **RTL Support:** When Arabic selected, `dir="rtl"` set on store container.
+- **Guest vs Account Checkout:** Non-authenticated users see a prompt at checkout offering to create an account (with benefits: order tracking, faster checkout, notifications) or continue as guest. Login/signup pages support `?redirect=checkout` to return users to checkout after authentication.
+- **PWA Support:** Installable as a Progressive Web App. Manifest at `/manifest.json`, service worker at `/sw.js` with network-first caching strategy. Install prompt component (`pwa-install-prompt.tsx`) shows install banner on supported browsers and iOS Safari instructions. Dismissible with 7-day re-prompt.
 - **CMS Pages:** About/Contact/Terms render HTML content via `dangerouslySetInnerHTML`.
 
 ### Category Management
@@ -80,8 +83,9 @@ Preferred communication style: Simple, everyday language.
 
 ### LIMJIBA AI Agent
 - AI-powered assistant using OpenAI (gpt-4o-mini via Replit AI Integrations).
-- Customer-facing chat widget on all store pages (floating bubble, bottom-right) answers product queries, recommends items, tracks orders by number (ORD-XXXX/YYYY), speaks AR/FR/EN. Knows store inventory, payment methods (Bankily/Masrvi/Sedad wallets), delivery policies, and return policies.
-- Order tracking: Agent detects order numbers in conversation, looks up order data, and reports status/items/total to customer.
+- Customer-facing smart marketing chat widget on all store pages (floating bubble, bottom-right). Opens with quick-action chips: Best Sellers, Promotions, Track Order, Payment Status, Contact Us (all trilingual). Agent proactively suggests popular products, mentions active promo codes, and recommends related items. Strictly scoped to store-related topics only.
+- Store language passed to chat API so agent responds in the correct language (AR/FR/EN).
+- Order tracking: Agent detects order numbers in conversation, looks up order data including payment confirmation status, and reports status/items/total to customer.
 - Admin-side chat panel at `/limjiba` provides sales insights, restock alerts, promo code generation.
 - Backend: `server/limjiba.ts`. Cost optimizations: SHA-256 response cache (30min TTL, 200 max entries, namespaced by mode+context fingerprint), compressed system prompts, history limited to 10 messages with 2000-char assistant truncation.
 

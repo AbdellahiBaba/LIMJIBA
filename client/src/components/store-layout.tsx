@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { StoreSettings, StoreNotification } from "@shared/schema";
 import { type StoreLanguage, getStoreTranslation } from "@/locales/store";
+import PwaInstallPrompt from "@/components/pwa-install-prompt";
 import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
 
 interface StoreLanguageContextType {
@@ -30,10 +31,26 @@ export function useStoreLanguage() {
   return useContext(StoreLanguageContext);
 }
 
+function detectBrowserLanguage(): StoreLanguage {
+  try {
+    const browserLang = navigator.language || (navigator as any).userLanguage || "en";
+    const code = browserLang.toLowerCase().split("-")[0];
+    if (code === "ar") return "ar";
+    if (code === "fr") return "fr";
+    return "en";
+  } catch {
+    return "en";
+  }
+}
+
 export function StoreLanguageProvider({ children }: { children: React.ReactNode }) {
   const [lang, setLangState] = useState<StoreLanguage>(() => {
     if (typeof window !== "undefined") {
-      return (localStorage.getItem("store-language") as StoreLanguage) || "en";
+      const stored = localStorage.getItem("store-language") as StoreLanguage;
+      if (stored) return stored;
+      const detected = detectBrowserLanguage();
+      localStorage.setItem("store-language", detected);
+      return detected;
     }
     return "en";
   });
@@ -304,6 +321,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
       <main className="flex-1">
         {children}
       </main>
+      <PwaInstallPrompt />
 
       <footer className="border-t text-gray-300" style={{ background: "#0D1520" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">

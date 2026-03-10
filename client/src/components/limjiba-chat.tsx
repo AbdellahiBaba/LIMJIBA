@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, X, Send, Loader2, Bot, User } from "lucide-react";
+import { useStoreLanguage } from "@/components/store-layout";
 import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
 
 interface Message {
@@ -9,17 +10,30 @@ interface Message {
   content: string;
 }
 
+const QUICK_ACTIONS: Record<string, { en: string; fr: string; ar: string }[]> = {
+  chips: [
+    { en: "🔥 Best Sellers", fr: "🔥 Meilleures ventes", ar: "🔥 الأكثر مبيعاً" },
+    { en: "🏷️ Promotions", fr: "🏷️ Promotions", ar: "🏷️ العروض" },
+    { en: "📦 Track My Order", fr: "📦 Suivre ma commande", ar: "📦 تتبع طلبي" },
+    { en: "💰 Payment Status", fr: "💰 État du paiement", ar: "💰 حالة الدفع" },
+    { en: "📞 Contact Us", fr: "📞 Contactez-nous", ar: "📞 اتصل بنا" },
+  ],
+};
+
 export default function LimjibaChat() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [greeted, setGreeted] = useState(false);
+  const [showChips, setShowChips] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const { lang } = useStoreLanguage();
 
   useEffect(() => {
     if (open && !greeted) {
       setGreeted(true);
+      setShowChips(true);
       const storedLang = localStorage.getItem("store-language") || "en";
       fetch(`/api/store/greeting?lang=${storedLang}`).then(r => r.json()).then(data => {
         setMessages([{ role: "assistant", content: data.greeting || "Welcome! How can I help you today?" }]);
@@ -33,10 +47,11 @@ export default function LimjibaChat() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
 
-  const sendMessage = async () => {
-    if (!input.trim() || loading) return;
-    const userMsg = input.trim();
-    setInput("");
+  const sendMessage = async (text?: string) => {
+    const userMsg = (text || input).trim();
+    if (!userMsg || loading) return;
+    if (!text) setInput("");
+    setShowChips(false);
     const updatedMessages = [...messages, { role: "user" as const, content: userMsg }];
     setMessages(updatedMessages);
     setLoading(true);
@@ -45,7 +60,7 @@ export default function LimjibaChat() {
       const res = await fetch("/api/store/chat", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: userMsg, history: updatedMessages.slice(-10) }),
+        body: JSON.stringify({ message: userMsg, history: updatedMessages.slice(-10), lang }),
       });
       const data = await res.json();
       setMessages(prev => [...prev, { role: "assistant", content: data.response || "Sorry, I couldn't process that." }]);
@@ -54,6 +69,10 @@ export default function LimjibaChat() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const chipLabel = (chip: { en: string; fr: string; ar: string }) => {
+    return chip[lang] || chip.en;
   };
 
   return (
@@ -74,7 +93,7 @@ export default function LimjibaChat() {
       </div>
 
       <div className={`fixed bottom-6 right-6 z-50 transition-all duration-300 origin-bottom-right ${open ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none"}`}>
-        <div className="w-[360px] h-[500px] rounded-2xl shadow-2xl flex flex-col overflow-hidden border" style={{ background: "white" }}>
+        <div className="w-[360px] max-w-[calc(100vw-3rem)] h-[500px] max-h-[calc(100vh-6rem)] rounded-2xl shadow-2xl flex flex-col overflow-hidden border" style={{ background: "white" }}>
           <div className="px-4 py-3 flex items-center justify-between" style={{ background: "linear-gradient(135deg, #1B2D4A, #0D1520)" }}>
             <div className="flex items-center gap-2">
               <img src={logoImg} alt="LIMJIBA" className="h-8 w-8 rounded-full object-contain bg-white/10 p-0.5" />
@@ -114,6 +133,22 @@ export default function LimjibaChat() {
                 )}
               </div>
             ))}
+
+            {showChips && messages.length > 0 && !loading && (
+              <div className="flex flex-wrap gap-2 mt-2" data-testid="chat-quick-actions">
+                {QUICK_ACTIONS.chips.map((chip, i) => (
+                  <button
+                    key={i}
+                    onClick={() => sendMessage(chipLabel(chip))}
+                    className="px-3 py-1.5 rounded-full text-xs font-medium border border-[#1B2D4A]/20 bg-white hover:bg-[#1B2D4A]/5 text-[#1B2D4A] transition-colors shadow-sm whitespace-nowrap"
+                    data-testid={`chip-action-${i}`}
+                  >
+                    {chipLabel(chip)}
+                  </button>
+                ))}
+              </div>
+            )}
+
             {loading && (
               <div className="flex gap-2">
                 <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#1B2D4A15" }}>
@@ -136,7 +171,7 @@ export default function LimjibaChat() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && sendMessage()}
-                placeholder="Ask about products, orders..."
+                placeholder={lang === "ar" ? "اسأل عن المنتجات، الطلبات..." : lang === "fr" ? "Posez vos questions..." : "Ask about products, orders..."}
                 className="rounded-full text-sm"
                 disabled={loading}
                 data-testid="input-chat-message"
@@ -145,7 +180,7 @@ export default function LimjibaChat() {
                 size="sm"
                 className="rounded-full h-9 w-9 p-0 shrink-0"
                 style={{ backgroundColor: "#1B2D4A" }}
-                onClick={sendMessage}
+                onClick={() => sendMessage()}
                 disabled={!input.trim() || loading}
                 data-testid="button-send-chat"
               >

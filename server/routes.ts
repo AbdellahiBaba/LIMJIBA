@@ -3181,9 +3181,11 @@ export async function registerRoutes(
 
   app.post("/api/store/chat", async (req: Request, res: Response) => {
     try {
-      const { message, history, language } = req.body;
+      const { message, history, lang } = req.body;
       if (!message) return res.status(400).json({ error: "Message required" });
-      const response = await handleCustomerChat(message, history || []);
+      const validLangs = ["en", "fr", "ar"];
+      const safeLang = validLangs.includes(lang) ? lang : "en";
+      const response = await handleCustomerChat(message, history || [], safeLang);
       res.json({ response });
     } catch (error) {
       handleError(res, "storeChat", error);

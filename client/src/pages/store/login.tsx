@@ -23,13 +23,20 @@ export default function StoreLogin() {
   const primaryColor = settings?.primaryColor || "#1B2D4A";
   const accentColor = settings?.accentColor || "#96823A";
 
+  const searchParams = new URLSearchParams(window.location.search);
+  const redirectParam = searchParams.get("redirect");
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
     try {
       await login(email, password);
-      setLocation("/store");
+      if (redirectParam === "checkout") {
+        setLocation("/store/checkout");
+      } else {
+        setLocation("/store");
+      }
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {
@@ -62,7 +69,7 @@ export default function StoreLogin() {
           </Button>
           <p className="text-center text-sm text-gray-500">
             {t("auth.noAccount")}{" "}
-            <Link href="/store/signup" className="font-semibold hover:underline" style={{ color: primaryColor }} data-testid="link-signup">
+            <Link href={redirectParam ? `/store/signup?redirect=${redirectParam}` : "/store/signup"} className="font-semibold hover:underline" style={{ color: primaryColor }} data-testid="link-signup">
               {t("nav.signup")}
             </Link>
           </p>

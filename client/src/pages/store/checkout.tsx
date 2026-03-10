@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ShoppingBag, Check, ArrowLeft, Loader2, Package, Upload, Copy, CheckCircle2, Wallet, ImageIcon } from "lucide-react";
+import { ShoppingBag, Check, ArrowLeft, Loader2, Package, Upload, Copy, CheckCircle2, Wallet, ImageIcon, UserPlus, ShieldCheck, Bell, Zap, ArrowRight } from "lucide-react";
 import type { StoreSettings, PaymentWallet } from "@shared/schema";
 
 export default function StoreCheckout() {
@@ -22,6 +22,7 @@ export default function StoreCheckout() {
   const [paymentProof, setPaymentProof] = useState<string | null>(null);
   const [proofFileName, setProofFileName] = useState<string>("");
   const [copied, setCopied] = useState(false);
+  const [guestContinue, setGuestContinue] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -126,6 +127,76 @@ export default function StoreCheckout() {
         <Link href="/store/products">
           <Button className="rounded-full" style={{ backgroundColor: accentColor, color: primaryColor }}>{t("home.shopNow")}</Button>
         </Link>
+      </div>
+    );
+  }
+
+  if (!isAuthenticated && !guestContinue) {
+    const benefitItems = [
+      { icon: ShieldCheck, text: t("checkout.benefitTracking") },
+      { icon: Zap, text: t("checkout.benefitFaster") },
+      { icon: Bell, text: t("checkout.benefitNotifications") },
+    ];
+
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-12">
+        <Link href="/store/cart">
+          <Button variant="ghost" size="sm" className="mb-6 rounded-full" data-testid="button-back-cart">
+            <ArrowLeft className="h-4 w-4 mr-1" /> {t("cart.title")}
+          </Button>
+        </Link>
+
+        <div className="rounded-2xl border bg-white shadow-lg overflow-hidden">
+          <div className="p-6 text-center" style={{ background: `linear-gradient(135deg, ${primaryColor}, #0D1520)` }}>
+            <UserPlus className="h-12 w-12 mx-auto text-white/80 mb-3" />
+            <h2 className="text-xl font-bold text-white mb-1">{t("checkout.accountPromptTitle")}</h2>
+            <p className="text-white/70 text-sm">{t("checkout.accountPromptSubtitle")}</p>
+          </div>
+
+          <div className="p-6 space-y-6">
+            <div className="space-y-3">
+              <h3 className="font-semibold text-sm" style={{ color: primaryColor }}>{t("checkout.accountBenefits")}</h3>
+              {benefitItems.map((item, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="h-8 w-8 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: `${accentColor}20` }}>
+                    <item.icon className="h-4 w-4" style={{ color: accentColor }} />
+                  </div>
+                  <span className="text-sm text-gray-600">{item.text}</span>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-3">
+              <Link href="/store/signup?redirect=checkout">
+                <Button
+                  className="w-full rounded-full font-semibold text-sm"
+                  size="lg"
+                  style={{ backgroundColor: accentColor, color: primaryColor }}
+                  data-testid="button-create-account-checkout"
+                >
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  {t("checkout.createAccount")}
+                </Button>
+              </Link>
+
+              <button
+                onClick={() => setGuestContinue(true)}
+                className="w-full text-center text-sm py-3 rounded-full border border-gray-200 hover:bg-gray-50 transition-colors font-medium text-gray-600"
+                data-testid="button-continue-guest"
+              >
+                {t("checkout.continueGuest")}
+                <ArrowRight className="h-4 w-4 inline ml-1" />
+              </button>
+            </div>
+
+            <p className="text-xs text-center text-gray-400">
+              {t("checkout.alreadyHaveAccount")}{" "}
+              <Link href="/store/login?redirect=checkout" className="font-semibold hover:underline" style={{ color: primaryColor }}>
+                {t("nav.login")}
+              </Link>
+            </p>
+          </div>
+        </div>
       </div>
     );
   }
