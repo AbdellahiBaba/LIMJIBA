@@ -25,10 +25,39 @@ import {
   insertCmsBannerSchema,
   insertCategorySchema,
   insertStoreCustomerSchema,
+  insertPaymentWalletSchema,
+  insertCmsPageSchema,
+  insertStoreSettingsSchema,
+  insertProductVariantSchema,
+  insertPurchaseOrderSchema,
+  insertPurchaseOrderItemSchema,
 } from "@shared/schema";
 import { z } from "zod";
 import { handleCustomerChat, handleAdminChat, generatePromoCode, getCustomerGreeting, generateProductDescriptions } from "./limjiba";
 import { sendOrderStatusEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail } from "./email";
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#x27;');
+}
+
+function sanitizeColor(color: string, fallback: string = "#1976D2"): string {
+  if (/^#[0-9a-fA-F]{3,8}$/.test(color)) {
+    return color;
+  }
+  return fallback;
+}
+
+function sanitizeUrl(url: string): string {
+  if (/^https:\/\//i.test(url)) {
+    return url;
+  }
+  return '';
+}
 
 const loginSchema = z.object({
   username: z.string().min(1),
@@ -79,10 +108,11 @@ function logError(context: string, error: unknown): string {
   return errorMessage;
 }
 
+const isProd = process.env.NODE_ENV === "production";
+
 function handleError(res: any, context: string, error: unknown, defaultStatus: number = 500) {
   const errorMessage = logError(context, error);
   
-  // Handle Zod validation errors - 400 Bad Request
   if (error instanceof z.ZodError) {
     return res.status(400).json({ 
       error: "Validation failed", 
@@ -91,8 +121,6 @@ function handleError(res: any, context: string, error: unknown, defaultStatus: n
     });
   }
   
-  // For transient DB errors (after retries failed), return 500 not 503
-  // This ensures API always responds and never blocks due to DB status
   if (isTransientError(error)) {
     return res.status(500).json({ 
       error: "Database operation failed", 
@@ -101,36 +129,250 @@ function handleError(res: any, context: string, error: unknown, defaultStatus: n
     });
   }
   
-  // Handle PostgreSQL constraint violations - 409 Conflict
   const pgError = error as any;
-  if (pgError?.code === '23505') { // Unique violation
+  if (pgError?.code === '23505') {
     return res.status(409).json({
       error: "Duplicate entry",
-      details: pgError?.detail || errorMessage
+      details: isProd ? "A record with this value already exists." : (pgError?.detail || errorMessage)
     });
   }
-  if (pgError?.code === '23503') { // Foreign key violation
+  if (pgError?.code === '23503') {
     return res.status(400).json({
       error: "Referenced record not found",
-      details: pgError?.detail || errorMessage
+      details: isProd ? "A referenced record could not be found." : (pgError?.detail || errorMessage)
     });
   }
-  if (pgError?.code === '23502') { // Not null violation
+  if (pgError?.code === '23502') {
     return res.status(400).json({
       error: "Required field missing",
-      details: pgError?.detail || errorMessage
+      details: isProd ? "A required field was not provided." : (pgError?.detail || errorMessage)
     });
   }
   
-  // All other errors - return appropriate status
   return res.status(defaultStatus).json({ 
     error: `Failed to ${context}`, 
-    details: errorMessage 
+    details: isProd ? "An unexpected error occurred." : errorMessage 
   });
 }
 
 const statusSchema = z.object({
   status: z.enum(["pending", "unpaid", "paid", "cancelled"])
+});
+
+const saleStatusSchema = z.object({
+  status: z.enum(["completed", "partial", "credit", "pending"])
+});
+
+const purchaseOrderStatusSchema = z.object({
+  status: z.enum(["draft", "ordered", "received", "cancelled"])
+});
+
+const storeOrderStatusSchema = z.object({
+  status: z.enum(["pending", "confirmed", "shipped", "delivered", "cancelled"])
+});
+
+const supportConversationStatusSchema = z.object({
+  status: z.enum(["open", "resolved", "closed"])
+});
+
+const deliveryStatusSchema = z.object({
+  status: z.enum(["none", "prepared", "shipped", "delivered"])
+});
+
+const transportationStatusSchema = z.object({
+  status: z.enum(["pending", "in_transit", "completed", "cancelled"])
+});
+
+const quickInvoiceInputSchema = z.object({
+  invoiceNumber: z.string().min(1).max(100),
+  date: z.string().min(1).max(50),
+  responsible: z.string().max(200).nullable().optional(),
+  role: z.string().max(200).nullable().optional(),
+  paymentMode: z.string().min(1).max(100),
+  dueDate: z.string().max(50).nullable().optional(),
+  clientName: z.string().max(200).nullable().optional(),
+  clientAddress: z.string().max(500).nullable().optional(),
+  clientPhone: z.string().max(50).nullable().optional(),
+  applyTva: z.boolean().optional(),
+  tvaRate: z.number().min(0).max(1).optional(),
+  totalHT: z.number().min(0).optional(),
+  tvaAmount: z.number().min(0).optional(),
+  totalTTC: z.number().min(0).optional(),
+  totalWeight: z.number().min(0).optional(),
+  notes: z.string().max(2000).nullable().optional(),
+  items: z.string().min(1),
+  createdAt: z.string().min(1),
+});
+
+const createUserInputSchema = z.object({
+  username: z.string().min(1).max(100),
+  password: z.string().min(4).max(200),
+  isAdmin: z.boolean().optional(),
+  displayName: z.string().max(200).optional(),
+  role: z.string().max(100).optional(),
+  permissions: z.string().max(5000).optional(),
+  isActive: z.boolean().optional(),
+});
+
+const updateUserInputSchema = z.object({
+  username: z.string().min(1).max(100).optional(),
+  password: z.string().min(4).max(200).optional(),
+  isAdmin: z.boolean().optional(),
+  displayName: z.string().max(200).optional(),
+  role: z.string().max(100).optional(),
+  permissions: z.string().max(5000).optional(),
+  isActive: z.boolean().optional(),
+});
+
+const supplierInputSchema = z.object({
+  name: z.string().min(1).max(200),
+  phone: z.string().max(50).nullable().optional(),
+  email: z.string().max(200).nullable().optional(),
+  address: z.string().max(500).nullable().optional(),
+  notes: z.string().max(2000).nullable().optional(),
+  createdAt: z.string().optional(),
+});
+
+const stockAdjustSchema = z.object({
+  productId: z.string().min(1),
+  quantity: z.number().int(),
+  reason: z.string().min(1).max(200),
+  reference: z.string().max(200).nullable().optional(),
+  createdBy: z.string().max(200).nullable().optional(),
+});
+
+const salePaymentInputSchema = z.object({
+  amount: z.union([z.number(), z.string()]).transform(val => {
+    const parsed = typeof val === 'string' ? parseFloat(val) : val;
+    if (isNaN(parsed) || parsed <= 0) throw new Error("Invalid payment amount");
+    return parsed;
+  }),
+  paymentMethod: z.string().max(100).optional(),
+  reference: z.string().max(200).nullable().optional(),
+  notes: z.string().max(2000).nullable().optional(),
+});
+
+const saleEditSchema = z.object({
+  items: z.array(z.object({
+    productId: z.string().min(1),
+    productName: z.string().min(1).max(500),
+    quantity: z.number().int().min(1),
+    unitPrice: z.number().min(0),
+  })).min(1),
+  discount: z.number().min(0).optional(),
+  deliveryCost: z.number().min(0).optional(),
+  customerName: z.string().max(200).nullable().optional(),
+  customerPhone: z.string().max(50).nullable().optional(),
+});
+
+const saleUpdateSchema = insertSaleSchema.partial();
+
+const parkedSaleInputSchema = z.object({
+  label: z.string().min(1).max(200),
+  customerName: z.string().max(200).nullable().optional(),
+  items: z.string().min(1),
+  discount: z.number().min(0).optional(),
+});
+
+const customerBalanceSchema = z.object({
+  amount: z.number(),
+});
+
+const walletTransferSchema = z.object({
+  fromWalletId: z.string().min(1),
+  toWalletId: z.string().min(1),
+  amount: z.union([z.number(), z.string()]).transform(val => {
+    const parsed = typeof val === 'string' ? parseFloat(val) : val;
+    if (!Number.isFinite(parsed) || parsed <= 0) throw new Error("Amount must be a positive number");
+    return parsed;
+  }),
+});
+
+const walletCreditSchema = z.object({
+  amount: z.union([z.number(), z.string()]).transform(val => {
+    const parsed = typeof val === 'string' ? parseFloat(val) : val;
+    if (!Number.isFinite(parsed) || parsed <= 0) throw new Error("Amount must be a positive number");
+    return parsed;
+  }),
+  method: z.enum(["cash", "bank_transfer", "check_deposit", "mobile_wallet", "other"]),
+  note: z.string().max(500).optional(),
+});
+
+const openingBalanceSchema = z.object({
+  openingBalance: z.union([z.number(), z.string()]).transform(val => {
+    const parsed = typeof val === 'string' ? parseFloat(val) : val;
+    if (!Number.isFinite(parsed)) throw new Error("Opening balance must be a number");
+    return parsed;
+  }),
+});
+
+const storeSignupSchema = z.object({
+  email: z.string().email().max(200),
+  password: z.string().min(4).max(200),
+  fullName: z.string().min(1).max(200),
+  phone: z.string().max(50).nullable().optional(),
+  language: z.string().max(10).optional(),
+});
+
+const storeLoginSchema = z.object({
+  email: z.string().email().max(200),
+  password: z.string().min(1).max(200),
+});
+
+const storeProfileUpdateSchema = z.object({
+  fullName: z.string().min(1).max(200).optional(),
+  phone: z.string().max(50).nullable().optional(),
+  address: z.string().max(500).nullable().optional(),
+  language: z.string().max(10).optional(),
+});
+
+const storeChatSchema = z.object({
+  message: z.string().min(1).max(5000),
+  history: z.array(z.any()).optional(),
+  lang: z.string().max(10).optional(),
+});
+
+const adminChatSchema = z.object({
+  message: z.string().min(1).max(5000),
+  history: z.array(z.any()).optional(),
+});
+
+const promoValidateSchema = z.object({
+  code: z.string().min(1).max(100),
+  orderAmount: z.number().min(0).optional(),
+});
+
+const settingValueSchema = z.object({
+  value: z.string(),
+});
+
+const csvImportSchema = z.object({
+  csvData: z.string().min(1),
+});
+
+const shippingSchema = z.object({
+  shippingCost: z.number().positive(),
+  distributionMethod: z.enum(["by_quantity", "by_value"]),
+});
+
+const bulkNotifySchema = z.object({
+  customerIds: z.array(z.string()).min(1),
+  title: z.string().max(500).optional(),
+  titleAr: z.string().max(500).optional(),
+  titleFr: z.string().max(500).optional(),
+  message: z.string().max(5000).optional(),
+  messageAr: z.string().max(5000).optional(),
+  messageFr: z.string().max(5000).optional(),
+  sendEmail: z.boolean().optional(),
+});
+
+const productReviewSchema = z.object({
+  rating: z.number().int().min(1).max(5),
+  reviewText: z.string().max(2000).nullable().optional(),
+});
+
+const supportMessageSchema = z.object({
+  content: z.string().min(1).max(5000),
 });
 
 export async function registerRoutes(
@@ -312,7 +554,8 @@ export async function registerRoutes(
 
   app.post("/api/quick-invoices", requireAuth, async (req, res) => {
     try {
-      const invoice = await storage.createQuickInvoice(req.body);
+      const data = quickInvoiceInputSchema.parse(req.body);
+      const invoice = await storage.createQuickInvoice(data);
       res.status(201).json(invoice);
     } catch (error) {
       handleError(res, "createQuickInvoice", error);
@@ -342,8 +585,7 @@ export async function registerRoutes(
 
   app.post("/api/users", requireAdmin, async (req, res) => {
     try {
-      const { username, password, isAdmin, displayName, role, permissions } = req.body;
-      if (!username || !password) return res.status(400).json({ error: "Username and password required" });
+      const { username, password, isAdmin, displayName, role, permissions } = createUserInputSchema.parse(req.body);
       const hashedPassword = await bcrypt.hash(password, 10);
       const user = await storage.createUser({
         username,
@@ -372,7 +614,8 @@ export async function registerRoutes(
 
   app.patch("/api/users/:id", requireAdmin, async (req, res) => {
     try {
-      const { password, ...rest } = req.body;
+      const validated = updateUserInputSchema.parse(req.body);
+      const { password, ...rest } = validated;
       const updateData: any = { ...rest };
       if (password) {
         updateData.password = await bcrypt.hash(password, 10);
@@ -440,8 +683,9 @@ export async function registerRoutes(
 
   app.post("/api/suppliers", requirePermission("suppliers"), async (req, res) => {
     try {
+      const data = supplierInputSchema.parse(req.body);
       const supplier = await storage.createSupplier({
-        ...req.body,
+        ...data,
         createdAt: new Date().toISOString(),
       });
       await storage.createAuditLog({
@@ -462,7 +706,8 @@ export async function registerRoutes(
 
   app.patch("/api/suppliers/:id", requireAuth, async (req, res) => {
     try {
-      const supplier = await storage.updateSupplier(req.params.id, req.body);
+      const data = supplierInputSchema.partial().parse(req.body);
+      const supplier = await storage.updateSupplier(req.params.id, data);
       if (!supplier) return res.status(404).json({ error: "Supplier not found" });
       res.json(supplier);
     } catch (error) {
@@ -511,9 +756,13 @@ export async function registerRoutes(
 
   app.post("/api/purchase-orders", requirePermission("suppliers"), async (req, res) => {
     try {
-      const { items, ...poData } = req.body;
+      const body = z.object({
+        items: z.array(insertPurchaseOrderItemSchema).optional(),
+      }).passthrough().parse(req.body);
+      const { items, ...rawPoData } = body;
+      const poData = insertPurchaseOrderSchema.parse({ ...rawPoData, createdAt: new Date().toISOString() });
       const po = await storage.createPurchaseOrder(
-        { ...poData, createdAt: new Date().toISOString() },
+        poData,
         items || []
       );
       await storage.createAuditLog({
@@ -579,7 +828,7 @@ export async function registerRoutes(
 
   app.patch("/api/purchase-orders/:id/status", requireAuth, async (req, res) => {
     try {
-      const { status } = req.body;
+      const { status } = purchaseOrderStatusSchema.parse(req.body);
       const po = await storage.updatePurchaseOrderStatus(req.params.id, status);
       if (!po) return res.status(404).json({ error: "Purchase order not found" });
       res.json(po);
@@ -599,13 +848,7 @@ export async function registerRoutes(
 
   app.post("/api/purchase-orders/:id/shipping", requireAuth, async (req, res) => {
     try {
-      const { shippingCost, distributionMethod } = req.body;
-      if (!shippingCost || shippingCost <= 0) {
-        return res.status(400).json({ error: "Shipping cost must be a positive number" });
-      }
-      if (!['by_quantity', 'by_value'].includes(distributionMethod)) {
-        return res.status(400).json({ error: "Distribution method must be 'by_quantity' or 'by_value'" });
-      }
+      const { shippingCost, distributionMethod } = shippingSchema.parse(req.body);
       const po = await storage.addShippingToPurchaseOrder(req.params.id, shippingCost, distributionMethod);
       if (!po) return res.status(404).json({ error: "Purchase order not found or not received" });
       try {
@@ -694,7 +937,11 @@ export async function registerRoutes(
 
   app.post("/api/transportation-invoices", requirePermission("transportation"), async (req, res) => {
     try {
-      const { invoice, items } = req.body;
+      const body = z.object({
+        invoice: z.record(z.any()),
+        items: z.array(z.record(z.any())).optional(),
+      }).parse(req.body);
+      const { invoice, items } = body;
       const created = await storage.createTransportationInvoice(invoice, items || []);
       try {
         await storage.createAuditLog({
@@ -715,11 +962,7 @@ export async function registerRoutes(
 
   app.patch("/api/transportation-invoices/:id/status", requirePermission("transportation"), async (req, res) => {
     try {
-      const { status } = req.body;
-      const validStatuses = ["pending", "in_transit", "completed", "cancelled"];
-      if (!validStatuses.includes(status)) {
-        return res.status(400).json({ error: "Invalid status" });
-      }
+      const { status } = transportationStatusSchema.parse(req.body);
 
       const existing = await storage.getTransportationInvoiceWithItems(req.params.id);
       if (!existing) return res.status(404).json({ error: "Transportation invoice not found" });
@@ -781,8 +1024,9 @@ export async function registerRoutes(
 
   app.post("/api/parked-sales", requireAuth, async (req, res) => {
     try {
+      const data = parkedSaleInputSchema.parse(req.body);
       const parked = await storage.createParkedSale({
-        ...req.body,
+        ...data,
         createdAt: new Date().toISOString(),
         createdBy: req.session.username || "unknown",
       });
@@ -822,10 +1066,7 @@ export async function registerRoutes(
 
   app.patch("/api/invoices/:id/delivery-status", requireAuth, async (req, res) => {
     try {
-      const { status } = req.body;
-      if (!["none", "prepared", "shipped", "delivered"].includes(status)) {
-        return res.status(400).json({ error: "Invalid delivery status" });
-      }
+      const { status } = deliveryStatusSchema.parse(req.body);
       const invoice = await storage.updateInvoiceDeliveryStatus(req.params.id, status);
       if (!invoice) return res.status(404).json({ error: "Invoice not found" });
       await storage.createAuditLog({
@@ -944,10 +1185,7 @@ export async function registerRoutes(
 
   app.put("/api/settings/:key", requireAuth, async (req, res) => {
     try {
-      const { value } = req.body;
-      if (typeof value !== "string") {
-        return res.status(400).json({ error: "Value must be a string" });
-      }
+      const { value } = settingValueSchema.parse(req.body);
       const setting = await storage.setSetting(req.params.key, value);
       res.json(setting);
     } catch (error) {
@@ -964,15 +1202,20 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Invoice not found", id: req.params.id });
       }
 
+      const logoPositionRaw = (req.query.logoPosition as string) || "left";
+      const validPositions = ["left", "center", "right"];
+      const invoiceLangRaw = (req.query.invoiceLanguage as string) || "fr";
+      const validLangs = ["fr", "ar", "bilingual"];
+
       const branding = {
-        logo: req.query.logo as string | undefined,
-        watermark: req.query.watermark as string | undefined,
+        logo: req.query.logo ? sanitizeUrl(req.query.logo as string) : undefined,
+        watermark: req.query.watermark ? sanitizeUrl(req.query.watermark as string) : undefined,
         enableWatermark: req.query.enableWatermark === "true",
-        watermarkOpacity: parseFloat(req.query.watermarkOpacity as string) || 0.12,
-        logoPosition: (req.query.logoPosition as "left" | "center" | "right") || "left",
-        primaryColor: (req.query.primaryColor as string) || "#1976D2",
-        accentColor: (req.query.accentColor as string) || "#42A5F5",
-        invoiceLanguage: (req.query.invoiceLanguage as "fr" | "ar" | "bilingual") || "fr",
+        watermarkOpacity: Math.min(Math.max(parseFloat(req.query.watermarkOpacity as string) || 0.12, 0), 1),
+        logoPosition: (validPositions.includes(logoPositionRaw) ? logoPositionRaw : "left") as "left" | "center" | "right",
+        primaryColor: sanitizeColor((req.query.primaryColor as string) || "#1976D2"),
+        accentColor: sanitizeColor((req.query.accentColor as string) || "#42A5F5", "#42A5F5"),
+        invoiceLanguage: (validLangs.includes(invoiceLangRaw) ? invoiceLangRaw : "fr") as "fr" | "ar" | "bilingual",
       };
 
       const html = generateInvoicePDF(invoice, branding);
@@ -1026,8 +1269,8 @@ export async function registerRoutes(
       }
 
       const branding = {
-        logo: req.query.logo as string | undefined,
-        primaryColor: (req.query.primaryColor as string) || "#1976D2",
+        logo: req.query.logo ? sanitizeUrl(req.query.logo as string) : undefined,
+        primaryColor: sanitizeColor((req.query.primaryColor as string) || "#1976D2"),
       };
 
       const html = generateDeliveryNotePDF(invoice, branding);
@@ -1111,10 +1354,9 @@ export async function registerRoutes(
         // Use defaults
       }
 
-      // Merge with any URL params (URL params override server settings)
       const queryParams = {
-        logo: req.query.logo || branding.logo || '',
-        primaryColor: req.query.primaryColor || branding.primaryColor || '#1976D2',
+        logo: req.query.logo ? sanitizeUrl(req.query.logo as string) : (branding.logo ? sanitizeUrl(branding.logo) : ''),
+        primaryColor: sanitizeColor((req.query.primaryColor as string) || branding.primaryColor || '#1976D2'),
       };
 
       const html = generateReceiptHTML(sale, queryParams, reseller);
@@ -1421,11 +1663,8 @@ export async function registerRoutes(
 
   app.post("/api/stock-movements/adjust", async (req, res) => {
     try {
-      const { productId, quantity, reason, reference, createdBy } = req.body;
-      if (!productId || quantity === undefined || !reason) {
-        return res.status(400).json({ error: "productId, quantity, and reason are required" });
-      }
-      const result = await storage.adjustStock(productId, quantity, reason, reference, createdBy);
+      const { productId, quantity, reason, reference, createdBy } = stockAdjustSchema.parse(req.body);
+      const result = await storage.adjustStock(productId, quantity, reason, reference || undefined, createdBy || undefined);
       res.status(201).json(result);
     } catch (error) {
       handleError(res, "adjust stock", error);
@@ -1495,10 +1734,7 @@ export async function registerRoutes(
   // CSV Import for products
   app.post("/api/products/import/csv", async (req, res) => {
     try {
-      const { csvData } = req.body;
-      if (!csvData) {
-        return res.status(400).json({ error: "csvData is required" });
-      }
+      const { csvData } = csvImportSchema.parse(req.body);
 
       const lines = csvData.split("\n").filter((line: string) => line.trim());
       if (lines.length < 2) {
@@ -1887,7 +2123,11 @@ export async function registerRoutes(
         reseller = await storage.getReseller(sale.resellerId);
       }
 
-      const html = generateReceiptHTML(sale, req.query, reseller);
+      const sanitizedQuery = {
+        logo: req.query.logo ? sanitizeUrl(req.query.logo as string) : '',
+        primaryColor: sanitizeColor((req.query.primaryColor as string) || '#1976D2'),
+      };
+      const html = generateReceiptHTML(sale, sanitizedQuery, reseller);
       res.setHeader("Content-Type", "text/html");
       res.send(html);
     } catch (error) {
@@ -1897,10 +2137,7 @@ export async function registerRoutes(
 
   app.patch("/api/sales/:id/status", async (req, res) => {
     try {
-      const { status } = req.body;
-      if (!status) {
-        return res.status(400).json({ error: "Missing status" });
-      }
+      const { status } = saleStatusSchema.parse(req.body);
       const updated = await storage.updateSaleStatus(req.params.id, status);
       if (!updated) {
         return res.status(404).json({ error: "Sale not found", id: req.params.id });
@@ -1937,10 +2174,7 @@ export async function registerRoutes(
 
   app.put("/api/sales/:id/edit", async (req, res) => {
     try {
-      const { items, discount, deliveryCost, customerName, customerPhone } = req.body;
-      if (!items || !Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({ error: "Sale must have at least one item" });
-      }
+      const { items, discount, deliveryCost, customerName, customerPhone } = saleEditSchema.parse(req.body);
 
       const existingSale = await storage.getSale(req.params.id);
       if (!existingSale) {
@@ -1992,7 +2226,8 @@ export async function registerRoutes(
   // Update sale (for partial payments)
   app.patch("/api/sales/:id", async (req, res) => {
     try {
-      const updated = await storage.updateSale(req.params.id, req.body);
+      const data = saleUpdateSchema.parse(req.body);
+      const updated = await storage.updateSale(req.params.id, data);
       if (!updated) {
         return res.status(404).json({ error: "Sale not found", id: req.params.id });
       }
@@ -2014,10 +2249,7 @@ export async function registerRoutes(
 
   app.post("/api/sales/:id/payments", async (req, res) => {
     try {
-      const { amount, paymentMethod, reference, notes } = req.body;
-      if (!amount || amount <= 0) {
-        return res.status(400).json({ error: "Invalid payment amount" });
-      }
+      const { amount, paymentMethod, reference, notes } = salePaymentInputSchema.parse(req.body);
 
       const sale = await storage.getSale(req.params.id);
       if (!sale) {
@@ -2029,7 +2261,7 @@ export async function registerRoutes(
 
       const payment = await storage.createSalePayment({
         saleId: req.params.id,
-        amount: parseFloat(amount),
+        amount,
         paymentDate,
         paymentMethod: paymentMethod || "CASH",
         reference: reference || null,
@@ -2038,7 +2270,7 @@ export async function registerRoutes(
       });
 
       // Update sale's amountPaid and status
-      const newAmountPaid = (sale.amountPaid || 0) + parseFloat(amount);
+      const newAmountPaid = (sale.amountPaid || 0) + amount;
       const remaining = sale.total - newAmountPaid;
       let newStatus = sale.status;
       
@@ -2075,10 +2307,13 @@ export async function registerRoutes(
         return res.status(404).json({ error: "Sale not found" });
       }
 
-      const { items, reason } = req.body;
-      if (!items || !Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({ error: "At least one return item is required" });
-      }
+      const { items, reason } = z.object({
+        items: z.array(z.object({
+          productId: z.string().min(1),
+          quantity: z.number().int().positive(),
+        })).min(1),
+        reason: z.string().max(500).nullable().optional(),
+      }).parse(req.body);
 
       const saleWithItems = await storage.getSaleWithItems(req.params.id);
       if (!saleWithItems) {
@@ -2485,7 +2720,7 @@ export async function registerRoutes(
       if (!customer) return res.status(404).json({ error: "Customer not found" });
       const token = crypto
         .createHash("sha256")
-        .update(req.params.id + (process.env.SESSION_SECRET || "pfp-portal-salt"))
+        .update(req.params.id + process.env.SESSION_SECRET!)
         .digest("hex")
         .substring(0, 16);
       res.json({ token, url: `/portal/${req.params.id}?token=${token}` });
@@ -2564,10 +2799,7 @@ export async function registerRoutes(
 
   app.patch("/api/customers/:id/balance", async (req, res) => {
     try {
-      const { amount } = req.body;
-      if (typeof amount !== 'number') {
-        return res.status(400).json({ error: "Amount must be a number" });
-      }
+      const { amount } = customerBalanceSchema.parse(req.body);
       const customer = await storage.updateCustomerBalance(req.params.id, amount);
       if (!customer) {
         return res.status(404).json({ error: "Customer not found", id: req.params.id });
@@ -2699,7 +2931,7 @@ export async function registerRoutes(
       const token = req.query.token as string;
       const expectedToken = crypto
         .createHash("sha256")
-        .update(req.params.customerId + (process.env.SESSION_SECRET || "pfp-portal-salt"))
+        .update(req.params.customerId + process.env.SESSION_SECRET!)
         .digest("hex")
         .substring(0, 16);
       if (!token || token !== expectedToken) {
@@ -3083,13 +3315,22 @@ export async function registerRoutes(
 
   app.post("/api/store/orders", async (req: Request, res: Response) => {
     try {
-      const { customerName, customerEmail, customerPhone, customerAddress, items, promoCode, deliveryCost, notes, paymentMethod, paymentProof } = req.body;
-      if (!customerName || !items || !Array.isArray(items) || items.length === 0) {
-        return res.status(400).json({ error: "Customer name and items are required" });
-      }
-      if (!paymentMethod || !paymentProof) {
-        return res.status(400).json({ error: "Payment method and payment proof are required" });
-      }
+      const storeOrderInputSchema = z.object({
+        customerName: z.string().min(1).max(200),
+        customerEmail: z.string().email().max(200).nullable().optional(),
+        customerPhone: z.string().max(50).nullable().optional(),
+        customerAddress: z.string().max(500).nullable().optional(),
+        items: z.array(z.object({
+          productId: z.string().min(1),
+          quantity: z.number().int().positive(),
+        })).min(1),
+        promoCode: z.string().max(100).nullable().optional(),
+        deliveryCost: z.number().min(0).optional(),
+        notes: z.string().max(2000).nullable().optional(),
+        paymentMethod: z.string().min(1).max(100),
+        paymentProof: z.string().min(1).max(5000),
+      });
+      const { customerName, customerEmail, customerPhone, customerAddress, items, promoCode, deliveryCost, notes, paymentMethod, paymentProof } = storeOrderInputSchema.parse(req.body);
 
       let subtotal = 0;
       const validatedItems: { productId: string; productName: string; quantity: number; unitPrice: number }[] = [];
@@ -3185,12 +3426,37 @@ export async function registerRoutes(
 
   app.get("/api/store/orders/lookup", async (req: Request, res: Response) => {
     try {
-      const q = (req.query.q as string || "").trim();
-      if (!q) return res.json([]);
+      const sc = (req.session as any)?.storeCustomer;
+      const orderNumber = (req.query.orderNumber as string || "").trim();
+      const email = (req.query.email as string || "").trim();
+
+      if (sc && sc.email) {
+        const allOrders = await storage.getStoreOrders();
+        const filtered = allOrders.filter(o =>
+          o.customerEmail && o.customerEmail.toLowerCase() === sc.email.toLowerCase()
+        );
+        const safe = filtered.map(o => ({
+          id: o.id,
+          orderNumber: o.orderNumber,
+          items: o.items,
+          subtotal: o.subtotal,
+          discount: o.discount,
+          total: o.total,
+          status: o.status,
+          paymentMethod: o.paymentMethod,
+          createdAt: o.createdAt,
+        }));
+        return res.json(safe);
+      }
+
+      if (!orderNumber || !email) {
+        return res.status(400).json({ error: "Both order number and email are required for guest lookup" });
+      }
+
       const allOrders = await storage.getStoreOrders();
       const filtered = allOrders.filter(o =>
-        o.orderNumber.toLowerCase() === q.toLowerCase() ||
-        (o.customerEmail && o.customerEmail.toLowerCase() === q.toLowerCase())
+        o.orderNumber.toLowerCase() === orderNumber.toLowerCase() &&
+        o.customerEmail && o.customerEmail.toLowerCase() === email.toLowerCase()
       );
       const safe = filtered.map(o => ({
         id: o.id,
@@ -3221,18 +3487,30 @@ export async function registerRoutes(
   app.get("/api/store/orders/:orderNumber/track", async (req: Request, res: Response) => {
     try {
       const { orderNumber } = req.params;
+      const email = (req.query.email as string || "").trim();
       const order = await storage.getStoreOrderByNumber(orderNumber);
       if (!order) return res.status(404).json({ error: "Order not found" });
-      res.json({
-        orderNumber: order.orderNumber,
-        status: order.status,
-        items: order.items,
-        subtotal: order.subtotal,
-        discount: order.discount,
-        total: order.total,
-        paymentMethod: order.paymentMethod,
-        createdAt: order.createdAt,
-      });
+
+      const sc = (req.session as any)?.storeCustomer;
+      const isAuthenticated = sc && sc.email && order.customerEmail &&
+        sc.email.toLowerCase() === order.customerEmail.toLowerCase();
+      const isEmailVerified = email && order.customerEmail &&
+        email.toLowerCase() === order.customerEmail.toLowerCase();
+
+      if (isAuthenticated || isEmailVerified) {
+        return res.json({
+          orderNumber: order.orderNumber,
+          status: order.status,
+          items: order.items,
+          subtotal: order.subtotal,
+          discount: order.discount,
+          total: order.total,
+          paymentMethod: order.paymentMethod,
+          createdAt: order.createdAt,
+        });
+      }
+
+      return res.status(403).json({ error: "Email verification required to track this order" });
     } catch (error) {
       handleError(res, "trackOrder", error);
     }
@@ -3240,8 +3518,7 @@ export async function registerRoutes(
 
   app.post("/api/store/promo/validate", async (req: Request, res: Response) => {
     try {
-      const { code, orderAmount } = req.body;
-      if (!code) return res.status(400).json({ error: "Promo code required" });
+      const { code, orderAmount } = promoValidateSchema.parse(req.body);
       const result = await storage.validatePromoCode(code, orderAmount || 0);
       res.json(result);
     } catch (error) {
@@ -3251,10 +3528,9 @@ export async function registerRoutes(
 
   app.post("/api/store/chat", async (req: Request, res: Response) => {
     try {
-      const { message, history, lang } = req.body;
-      if (!message) return res.status(400).json({ error: "Message required" });
+      const { message, history, lang } = storeChatSchema.parse(req.body);
       const validLangs = ["en", "fr", "ar"];
-      const safeLang = validLangs.includes(lang) ? lang : "en";
+      const safeLang = lang && validLangs.includes(lang) ? lang : "en";
       const response = await handleCustomerChat(message, history || [], safeLang);
       res.json({ response });
     } catch (error) {
@@ -3310,7 +3586,8 @@ export async function registerRoutes(
 
   app.put("/api/categories/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const updated = await storage.updateCategory(req.params.id, req.body);
+      const data = insertCategorySchema.partial().parse(req.body);
+      const updated = await storage.updateCategory(req.params.id, data);
       if (!updated) return res.status(404).json({ error: "Category not found" });
       res.json(updated);
     } catch (error) {
@@ -3334,10 +3611,7 @@ export async function registerRoutes(
 
   app.post("/api/store/auth/signup", async (req: Request, res: Response) => {
     try {
-      const { email, password, fullName, phone } = req.body;
-      if (!email || !password || !fullName) {
-        return res.status(400).json({ error: "Email, password, and full name are required" });
-      }
+      const { email, password, fullName, phone, language } = storeSignupSchema.parse(req.body);
       const existing = await storage.getStoreCustomerByEmail(email);
       if (existing) {
         return res.status(409).json({ error: "An account with this email already exists" });
@@ -3377,10 +3651,7 @@ export async function registerRoutes(
 
   app.post("/api/store/auth/login", async (req: Request, res: Response) => {
     try {
-      const { email, password } = req.body;
-      if (!email || !password) {
-        return res.status(400).json({ error: "Email and password are required" });
-      }
+      const { email, password } = storeLoginSchema.parse(req.body);
       const customer = await storage.getStoreCustomerByEmail(email);
       if (!customer || !customer.isActive) {
         return res.status(401).json({ error: "Invalid email or password" });
@@ -3436,7 +3707,7 @@ export async function registerRoutes(
     try {
       const sc = (req.session as any).storeCustomer;
       if (!sc) return res.status(401).json({ error: "Not authenticated" });
-      const { fullName, phone, address, language } = req.body;
+      const { fullName, phone, address, language } = storeProfileUpdateSchema.parse(req.body);
       const updated = await storage.updateStoreCustomer(sc.id, { fullName, phone, address, language });
       if (!updated) return res.status(404).json({ error: "Customer not found" });
       res.json({ id: updated.id, email: updated.email, fullName: updated.fullName, phone: updated.phone, address: updated.address, language: updated.language });
@@ -3471,8 +3742,7 @@ export async function registerRoutes(
 
   app.post("/api/store/auth/forgot-password", async (req: Request, res: Response) => {
     try {
-      const { email } = req.body;
-      if (!email) return res.status(400).json({ error: "Email is required" });
+      const { email } = z.object({ email: z.string().email().max(200) }).parse(req.body);
       const customer = await storage.getStoreCustomerByEmail(email);
       if (!customer) return res.json({ message: "If an account exists, a reset link has been sent." });
       const token = crypto.randomBytes(32).toString("hex");
@@ -3505,9 +3775,10 @@ export async function registerRoutes(
 
   app.post("/api/store/auth/reset-password", async (req: Request, res: Response) => {
     try {
-      const { token, password } = req.body;
-      if (!token || !password) return res.status(400).json({ error: "Token and password are required" });
-      if (password.length < 6) return res.status(400).json({ error: "Password must be at least 6 characters" });
+      const { token, password } = z.object({
+        token: z.string().min(1).max(200),
+        password: z.string().min(6).max(200),
+      }).parse(req.body);
       const customer = await storage.getStoreCustomerByResetToken(token);
       if (!customer) return res.status(400).json({ error: "Invalid or expired reset token" });
       if (customer.resetTokenExpiry && new Date(customer.resetTokenExpiry) < new Date()) {
@@ -3535,8 +3806,7 @@ export async function registerRoutes(
     try {
       const sc = (req.session as any).storeCustomer;
       if (!sc) return res.status(401).json({ error: "Not authenticated" });
-      const { rating, reviewText } = req.body;
-      if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: "Rating must be 1-5" });
+      const { rating, reviewText } = productReviewSchema.parse(req.body);
       const existing = await storage.getProductReviews(req.params.id);
       if (existing.some(r => r.customerEmail.toLowerCase() === sc.email.toLowerCase())) {
         return res.status(400).json({ error: "You have already reviewed this product" });
@@ -3568,8 +3838,7 @@ export async function registerRoutes(
     try {
       const sc = (req.session as any).storeCustomer;
       if (!sc) return res.status(401).json({ error: "Not authenticated" });
-      const { rating, reviewText } = req.body;
-      if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: "Rating must be 1-5" });
+      const { rating, reviewText } = productReviewSchema.parse(req.body);
       const existing = await storage.getStoreReviews();
       if (existing.some(r => r.customerEmail.toLowerCase() === sc.email.toLowerCase())) {
         return res.status(400).json({ error: "You have already rated our store" });
@@ -3607,7 +3876,8 @@ export async function registerRoutes(
 
   app.post("/api/products/:id/variants", requireAuth, async (req: Request, res: Response) => {
     try {
-      const variant = await storage.createProductVariant({ ...req.body, productId: req.params.id });
+      const data = insertProductVariantSchema.omit({ productId: true }).parse(req.body);
+      const variant = await storage.createProductVariant({ ...data, productId: req.params.id });
       res.status(201).json(variant);
     } catch (error) {
       handleError(res, "createProductVariant", error);
@@ -3616,7 +3886,8 @@ export async function registerRoutes(
 
   app.patch("/api/product-variants/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const updated = await storage.updateProductVariant(req.params.id, req.body);
+      const data = insertProductVariantSchema.partial().parse(req.body);
+      const updated = await storage.updateProductVariant(req.params.id, data);
       if (!updated) return res.status(404).json({ error: "Variant not found" });
       res.json(updated);
     } catch (error) {
@@ -3670,10 +3941,11 @@ export async function registerRoutes(
 
   app.post("/api/ai/generate-descriptions", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { productName, category, variants } = req.body;
-      if (!productName || typeof productName !== "string") {
-        return res.status(400).json({ error: "Product name is required" });
-      }
+      const { productName, category, variants } = z.object({
+        productName: z.string().min(1).max(200),
+        category: z.string().max(100).optional(),
+        variants: z.array(z.string().max(100)).max(50).optional(),
+      }).parse(req.body);
       const variantLabels = Array.isArray(variants) ? variants.map((v: any) => String(v).substring(0, 100)).slice(0, 50) : [];
       const result = await generateProductDescriptions(
         productName.substring(0, 200),
@@ -3711,7 +3983,8 @@ export async function registerRoutes(
 
   app.patch("/api/promo-codes/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const updated = await storage.updatePromoCode(req.params.id, req.body);
+      const data = insertPromoCodeSchema.partial().parse(req.body);
+      const updated = await storage.updatePromoCode(req.params.id, data);
       if (!updated) return res.status(404).json({ error: "Promo code not found" });
       res.json(updated);
     } catch (error) {
@@ -3763,7 +4036,7 @@ export async function registerRoutes(
 
   app.patch("/api/store-orders/:id/status", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { status } = req.body;
+      const { status } = storeOrderStatusSchema.parse(req.body);
       const order = await storage.getStoreOrder(req.params.id);
       if (!order) return res.status(404).json({ error: "Order not found" });
 
@@ -3935,17 +4208,52 @@ export async function registerRoutes(
 
   // ==================== SUPPORT CHAT (Customer-facing) ====================
 
+  function generateSupportToken(conversationId: number, email: string): string {
+    return crypto.createHmac("sha256", process.env.SESSION_SECRET!)
+      .update(`${conversationId}:${email}`)
+      .digest("hex");
+  }
+
+  function verifySupportToken(token: string, conversationId: number, email: string): boolean {
+    if (!token || typeof token !== "string" || !/^[0-9a-f]+$/.test(token)) return false;
+    const expected = generateSupportToken(conversationId, email);
+    if (token.length !== expected.length) return false;
+    try {
+      return crypto.timingSafeEqual(Buffer.from(token, "hex"), Buffer.from(expected, "hex"));
+    } catch {
+      return false;
+    }
+  }
+
+  async function resolveGuestSupportEmail(req: Request, convId: number): Promise<string | null> {
+    const session = (req as any).session?.storeCustomer;
+    if (session?.email) return session.email;
+
+    const token = req.headers["x-support-token"] as string | undefined;
+    if (!token) return null;
+
+    const conv = await storage.getSupportConversation(convId);
+    if (!conv) return null;
+
+    if (verifySupportToken(token, convId, conv.customerEmail)) {
+      return conv.customerEmail;
+    }
+    return null;
+  }
+
   app.post("/api/store/support/conversations", async (req: Request, res: Response) => {
     try {
-      const { subject, message, customerEmail, customerName } = req.body;
-      if (!subject?.trim() || subject.trim().length > 200) return res.status(400).json({ error: "Subject required (max 200 chars)" });
-      if (!message?.trim() || message.trim().length > 5000) return res.status(400).json({ error: "Message required (max 5000 chars)" });
+      const { subject, message, customerEmail, customerName } = z.object({
+        subject: z.string().min(1).max(200),
+        message: z.string().min(1).max(5000),
+        customerEmail: z.string().email().max(200).optional(),
+        customerName: z.string().max(200).optional(),
+      }).parse(req.body);
 
       const session = (req as any).session?.storeCustomer;
       const email = session?.email || customerEmail;
       const name = session?.fullName || customerName;
       if (!email || !name) return res.status(400).json({ error: "Email and name required" });
-      if (typeof email === "string" && !email.includes("@")) return res.status(400).json({ error: "Valid email required" });
 
       const conv = await storage.createSupportConversation({
         customerEmail: email,
@@ -3961,7 +4269,12 @@ export async function registerRoutes(
         content: message,
       });
 
-      res.status(201).json(conv);
+      const responseData: any = { ...conv };
+      if (!session?.email) {
+        responseData.supportToken = generateSupportToken(conv.id, email);
+      }
+
+      res.status(201).json(responseData);
     } catch (error) {
       handleError(res, "createSupportConversation", error);
     }
@@ -3981,12 +4294,11 @@ export async function registerRoutes(
 
   app.get("/api/store/support/conversations/:id/messages", async (req: Request, res: Response) => {
     try {
-      const session = (req as any).session?.storeCustomer;
-      const guestEmail = req.headers["x-support-email"] as string | undefined;
-      const email = session?.email || guestEmail;
-      if (!email) return res.status(401).json({ error: "Login required" });
+      const convId = parseInt(req.params.id);
+      const email = await resolveGuestSupportEmail(req, convId);
+      if (!email) return res.status(401).json({ error: "Login required or invalid support token" });
 
-      const conv = await storage.getSupportConversation(parseInt(req.params.id));
+      const conv = await storage.getSupportConversation(convId);
       if (!conv) return res.status(404).json({ error: "Conversation not found" });
       if (conv.customerEmail !== email) return res.status(403).json({ error: "Access denied" });
 
@@ -4000,18 +4312,17 @@ export async function registerRoutes(
 
   app.post("/api/store/support/conversations/:id/messages", async (req: Request, res: Response) => {
     try {
-      const session = (req as any).session?.storeCustomer;
-      const guestEmail = req.headers["x-support-email"] as string | undefined;
-      const email = session?.email || guestEmail;
-      if (!email) return res.status(401).json({ error: "Login required" });
+      const convId = parseInt(req.params.id);
+      const email = await resolveGuestSupportEmail(req, convId);
+      if (!email) return res.status(401).json({ error: "Login required or invalid support token" });
 
-      const { content } = req.body;
-      if (!content?.trim() || content.trim().length > 5000) return res.status(400).json({ error: "Message content required (max 5000 chars)" });
+      const { content } = supportMessageSchema.parse(req.body);
 
-      const conv = await storage.getSupportConversation(parseInt(req.params.id));
+      const conv = await storage.getSupportConversation(convId);
       if (!conv) return res.status(404).json({ error: "Conversation not found" });
       if (conv.customerEmail !== email) return res.status(403).json({ error: "Access denied" });
 
+      const session = (req as any).session?.storeCustomer;
       const msg = await storage.createSupportMessage({
         conversationId: conv.id,
         senderType: "customer",
@@ -4031,12 +4342,11 @@ export async function registerRoutes(
 
   app.get("/api/store/support/conversations/:id/poll", async (req: Request, res: Response) => {
     try {
-      const session = (req as any).session?.storeCustomer;
-      const guestEmail = req.headers["x-support-email"] as string | undefined;
-      const email = session?.email || guestEmail;
-      if (!email) return res.status(401).json({ error: "Login required" });
+      const convId = parseInt(req.params.id);
+      const email = await resolveGuestSupportEmail(req, convId);
+      if (!email) return res.status(401).json({ error: "Login required or invalid support token" });
 
-      const conv = await storage.getSupportConversation(parseInt(req.params.id));
+      const conv = await storage.getSupportConversation(convId);
       if (!conv) return res.status(404).json({ error: "Conversation not found" });
       if (conv.customerEmail !== email) return res.status(403).json({ error: "Access denied" });
 
@@ -4075,8 +4385,7 @@ export async function registerRoutes(
 
   app.post("/api/support/conversations/:id/messages", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { content } = req.body;
-      if (!content?.trim() || content.trim().length > 5000) return res.status(400).json({ error: "Message content required (max 5000 chars)" });
+      const { content } = supportMessageSchema.parse(req.body);
 
       const conv = await storage.getSupportConversation(parseInt(req.params.id));
       if (!conv) return res.status(404).json({ error: "Conversation not found" });
@@ -4117,10 +4426,7 @@ export async function registerRoutes(
 
   app.patch("/api/support/conversations/:id/status", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { status } = req.body;
-      if (!["open", "resolved", "closed"].includes(status)) {
-        return res.status(400).json({ error: "Invalid status" });
-      }
+      const { status } = supportConversationStatusSchema.parse(req.body);
       const conv = await storage.updateSupportConversationStatus(parseInt(req.params.id), status);
       if (!conv) return res.status(404).json({ error: "Conversation not found" });
       res.json(conv);
@@ -4202,7 +4508,8 @@ export async function registerRoutes(
 
   app.post("/api/payment-wallets", requireAuth, async (req: Request, res: Response) => {
     try {
-      const wallet = await storage.createPaymentWallet(req.body);
+      const data = insertPaymentWalletSchema.parse(req.body);
+      const wallet = await storage.createPaymentWallet(data);
       res.status(201).json(wallet);
     } catch (error) {
       handleError(res, "createPaymentWallet", error);
@@ -4211,7 +4518,8 @@ export async function registerRoutes(
 
   app.put("/api/payment-wallets/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const updated = await storage.updatePaymentWallet(req.params.id, req.body);
+      const data = insertPaymentWalletSchema.partial().parse(req.body);
+      const updated = await storage.updatePaymentWallet(req.params.id, data);
       if (!updated) return res.status(404).json({ error: "Wallet not found" });
       res.json(updated);
     } catch (error) {
@@ -4231,13 +4539,9 @@ export async function registerRoutes(
 
   app.post("/api/wallets/transfer", requirePermission("suppliers"), async (req: Request, res: Response) => {
     try {
-      const { fromWalletId, toWalletId, amount } = req.body;
-      if (!fromWalletId || !toWalletId || fromWalletId === toWalletId) {
+      const { fromWalletId, toWalletId, amount: parsedAmount } = walletTransferSchema.parse(req.body);
+      if (fromWalletId === toWalletId) {
         return res.status(400).json({ error: "Invalid wallet selection" });
-      }
-      const parsedAmount = typeof amount === "number" ? amount : parseFloat(amount);
-      if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-        return res.status(400).json({ error: "Amount must be a positive number" });
       }
       await storage.transferWalletBalance(fromWalletId, toWalletId, parsedAmount);
       await storage.createAuditLog({
@@ -4261,15 +4565,7 @@ export async function registerRoutes(
 
   app.post("/api/wallets/:id/credit", requirePermission("suppliers"), async (req: Request, res: Response) => {
     try {
-      const { amount, note, method } = req.body;
-      const validMethods = ["cash", "bank_transfer", "check_deposit", "mobile_wallet", "other"];
-      if (!method || !validMethods.includes(method)) {
-        return res.status(400).json({ error: "Method required: cash, bank_transfer, check_deposit, mobile_wallet, or other" });
-      }
-      const parsedAmount = typeof amount === "number" ? amount : parseFloat(amount);
-      if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
-        return res.status(400).json({ error: "Amount must be a positive number" });
-      }
+      const { amount: parsedAmount, method, note } = walletCreditSchema.parse(req.body);
       const wallets = await storage.getPaymentWallets();
       const wallet = wallets.find(w => w.id === req.params.id);
       if (!wallet) return res.status(404).json({ error: "Wallet not found" });
@@ -4331,10 +4627,7 @@ export async function registerRoutes(
 
   app.post("/api/store-customers/bulk-notify", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { customerIds, title, titleAr, titleFr, message, messageAr, messageFr, sendEmail: doSendEmail } = req.body;
-      if (!customerIds || !Array.isArray(customerIds) || customerIds.length === 0) {
-        return res.status(400).json({ error: "Customer IDs are required" });
-      }
+      const { customerIds, title, titleAr, titleFr, message, messageAr, messageFr, sendEmail: doSendEmail } = bulkNotifySchema.parse(req.body);
       const allCustomers = await storage.getAllStoreCustomers();
       const selected = allCustomers.filter(c => customerIds.includes(c.id));
       let sent = 0;
@@ -4418,9 +4711,7 @@ export async function registerRoutes(
 
   app.post("/api/wallets/:id/opening-balance", requirePermission("suppliers"), async (req: Request, res: Response) => {
     try {
-      const { openingBalance } = req.body;
-      const parsedBalance = typeof openingBalance === "number" ? openingBalance : parseFloat(openingBalance);
-      if (!Number.isFinite(parsedBalance)) return res.status(400).json({ error: "Opening balance must be a number" });
+      const { openingBalance: parsedBalance } = openingBalanceSchema.parse(req.body);
 
       const wallets = await storage.getPaymentWallets();
       const currentWallet = wallets.find(w => w.id === req.params.id);
@@ -4456,8 +4747,7 @@ export async function registerRoutes(
 
   app.post("/api/dashboard/opening-balance", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { openingBalance } = req.body;
-      if (typeof openingBalance !== "number") return res.status(400).json({ error: "Opening balance must be a number" });
+      const { openingBalance } = openingBalanceSchema.parse(req.body);
       await storage.updateStoreSettings({ openingBalance } as any);
       res.json({ success: true, openingBalance });
     } catch (error) {
@@ -4532,7 +4822,8 @@ export async function registerRoutes(
 
   app.put("/api/cms/pages/:slug", requireAuth, async (req: Request, res: Response) => {
     try {
-      const updated = await storage.updateCmsPage(req.params.slug, req.body);
+      const data = insertCmsPageSchema.partial().parse(req.body);
+      const updated = await storage.updateCmsPage(req.params.slug, data);
       if (!updated) return res.status(404).json({ error: "Page not found" });
       res.json(updated);
     } catch (error) {
@@ -4561,7 +4852,8 @@ export async function registerRoutes(
 
   app.patch("/api/cms/banners/:id", requireAuth, async (req: Request, res: Response) => {
     try {
-      const updated = await storage.updateCmsBanner(req.params.id, req.body);
+      const data = insertCmsBannerSchema.partial().parse(req.body);
+      const updated = await storage.updateCmsBanner(req.params.id, data);
       if (!updated) return res.status(404).json({ error: "Banner not found" });
       res.json(updated);
     } catch (error) {
@@ -4594,7 +4886,8 @@ export async function registerRoutes(
 
   app.put("/api/store-settings", requireAuth, async (req: Request, res: Response) => {
     try {
-      const updated = await storage.updateStoreSettings(req.body);
+      const data = insertStoreSettingsSchema.partial().parse(req.body);
+      const updated = await storage.updateStoreSettings(data);
       res.json(updated);
     } catch (error) {
       handleError(res, "updateStoreSettings", error);
@@ -4607,8 +4900,7 @@ export async function registerRoutes(
 
   app.post("/api/admin/chat", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { message, history } = req.body;
-      if (!message) return res.status(400).json({ error: "Message required" });
+      const { message, history } = adminChatSchema.parse(req.body);
       const response = await handleAdminChat(message, history || []);
       res.json({ response });
     } catch (error) {
@@ -4750,13 +5042,13 @@ function generateInvoicePDF(invoice: any, branding: InvoiceBranding = {
     ? numberToArabicWords(Math.floor(invoice.totalTTC)) + " أوقية موريتانية"
     : numberToFrenchWords(Math.floor(invoice.totalTTC)) + " ouguiyas mauritaniens";
 
-  const logoHtml = branding.logo ? `<img src="${branding.logo}" style="max-height: 60px; max-width: 150px;" />` : '';
+  const logoHtml = branding.logo ? `<img src="${escapeHtml(branding.logo)}" style="max-height: 60px; max-width: 150px;" />` : '';
   
   const logoAlignment = branding.logoPosition === "center" ? "center" : branding.logoPosition === "right" ? "flex-end" : "flex-start";
 
   const watermarkHtml = branding.enableWatermark && branding.watermark ? `
     <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); opacity: ${branding.watermarkOpacity}; z-index: -1; pointer-events: none;">
-      <img src="${branding.watermark}" style="max-width: 400px; max-height: 400px;" />
+      <img src="${escapeHtml(branding.watermark)}" style="max-width: 400px; max-height: 400px;" />
     </div>
   ` : '';
 
@@ -4901,8 +5193,8 @@ function generateInvoicePDF(invoice: any, branding: InvoiceBranding = {
 }
 
 function generateDeliveryNotePDF(invoice: any, branding: { logo?: string; primaryColor?: string } = {}): string {
-  const primaryColor = branding.primaryColor || '#1976D2';
-  const logo = branding.logo;
+  const primaryColor = sanitizeColor(branding.primaryColor || '#1976D2');
+  const logo = branding.logo ? sanitizeUrl(branding.logo) : undefined;
   
   const formatDate = (dateStr: string) => {
     if (!dateStr) return '';
@@ -4956,7 +5248,7 @@ function generateDeliveryNotePDF(invoice: any, branding: { logo?: string; primar
         <p>Nouakchott, Mauritania<br>
         Tél: +222 00 00 00 00</p>
       </div>
-      ${logo ? `<img src="${logo}" class="logo" alt="Logo">` : ''}
+      ${logo ? `<img src="${escapeHtml(logo)}" class="logo" alt="Logo">` : ''}
     </div>
 
     <div class="document-title">BON DE LIVRAISON</div>
@@ -5021,8 +5313,8 @@ function generateDeliveryNotePDF(invoice: any, branding: { logo?: string; primar
 }
 
 function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null): string {
-  const logo = query.logo || '';
-  const primaryColor = query.primaryColor || '#1976D2';
+  const logo = query.logo ? sanitizeUrl(String(query.logo)) : '';
+  const primaryColor = sanitizeColor(String(query.primaryColor || '#1976D2'));
   const companyPhone = '+222 00 00 00 00';
   const companyAddress = 'Nouakchott, Mauritania';
   const companyName = 'LIMJIBA - لمجيبة';
@@ -5258,7 +5550,7 @@ function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null): 
 </head>
 <body>
   <div class="header">
-    ${logo ? `<div class="logo-container"><img src="${logo}" alt="Logo" class="logo" /></div>` : ''}
+    ${logo ? `<div class="logo-container"><img src="${escapeHtml(logo)}" alt="Logo" class="logo" /></div>` : ''}
     <div class="company-name">${companyName}</div>
     <div class="company-info">${companyAddress}</div>
     <div class="company-phone">Tel: ${companyPhone}</div>

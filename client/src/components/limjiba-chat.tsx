@@ -108,7 +108,7 @@ export default function LimjibaChat() {
   const [guestEmail, setGuestEmail] = useState("");
   const lastSupportMsgIdRef = useRef<number>(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const guestEmailRef = useRef<string>("");
+  const guestTokenRef = useRef<string>("");
 
   const isLoggedIn = useCallback(() => {
     return document.cookie.includes("connect.sid") || !!localStorage.getItem("store-customer");
@@ -133,8 +133,8 @@ export default function LimjibaChat() {
 
   const getSupportHeaders = useCallback((): HeadersInit => {
     const headers: HeadersInit = {};
-    if (!isLoggedIn() && guestEmailRef.current) {
-      headers["x-support-email"] = guestEmailRef.current;
+    if (!isLoggedIn() && guestTokenRef.current) {
+      headers["x-support-token"] = guestTokenRef.current;
     }
     return headers;
   }, [isLoggedIn]);
@@ -231,10 +231,6 @@ export default function LimjibaChat() {
       if (guestName) body.customerName = guestName.trim();
       if (guestEmail) body.customerEmail = guestEmail.trim();
 
-      if (!isLoggedIn() && guestEmail.trim()) {
-        guestEmailRef.current = guestEmail.trim();
-      }
-
       const res = await fetch("/api/store/support/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -247,6 +243,10 @@ export default function LimjibaChat() {
         return;
       }
       const conv = await res.json();
+
+      if (conv.supportToken && !isLoggedIn()) {
+        guestTokenRef.current = conv.supportToken;
+      }
 
       setSupportConvId(conv.id);
       setSupportLoading(true);

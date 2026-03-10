@@ -156,6 +156,7 @@ Preferred communication style: Simple, everyday language.
     - Migrations via runtime migration in `server/db.ts` `runMigrations()`.
 - **Cold-Start Optimization:** In-memory caching (`server/cache.ts`) for frequently accessed data with 30-second TTL.
 - **Session Separation:** Admin uses `req.session.userId`, store customers use `req.session.storeCustomer`.
+- **Security Hardening:** Helmet security headers (CSP, X-Frame-Options, HSTS, etc.), rate limiting on auth endpoints (5/15min) and API (100/min), Origin/Referer CSRF validation in production, persistent PostgreSQL session store in production (connect-pg-simple), sanitized error responses in production (no DB details leaked), HMAC-SHA256 tokens for guest support chat auth, Zod validation on all 40+ POST/PATCH routes, XSS-safe HTML generation with escapeHtml/sanitizeColor/sanitizeUrl utilities, IDOR protection on order tracking (requires email verification).
 - **Route Ordering:** Specific routes (e.g., `/api/promo-codes/generate`) MUST come before generic `/:id` param routes. Store route detection: `location === "/store" || location.startsWith("/store/")` (not `.startsWith("/store")` to avoid matching `/store-orders`).
 - **Granular Permissions:** `ALL_PERMISSIONS` exported from `shared/schema.ts`.
 - **Audit Logging:** `storage.createAuditLog(...)` called in login, user CRUD, supplier CRUD, PO operations, etc. Wrapped in try/catch.
@@ -189,6 +190,9 @@ Preferred communication style: Simple, everyday language.
 - bcrypt
 - crypto (Node built-in)
 - openai (via Replit AI Integrations)
+- helmet (security headers)
+- express-rate-limit (rate limiting)
+- connect-pg-simple (persistent sessions in production)
 
 ### Build Tools
 - Vite

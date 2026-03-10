@@ -1,10 +1,14 @@
 import express, { type Request, Response, NextFunction } from "express";
 import session from "express-session";
 import MemoryStore from "memorystore";
+import pgSession from "connect-pg-simple";
+import helmet from "helmet";
+import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
 import { verifyDatabaseConnection, isDatabaseReady, getPoolStats } from "./db";
+import pg from "pg";
 
 declare module "express-session" {
   interface SessionData {
@@ -36,6 +40,7 @@ app.use(
 app.use(express.urlencoded({ extended: false, limit: '50mb' }));
 
 const MemoryStoreSession = MemoryStore(session);
+const PgSessionStore = pgSession(session);
 
 if (!process.env.SESSION_SECRET) {
   throw new Error("SESSION_SECRET environment variable is required");
@@ -47,23 +52,103 @@ if (isProduction) {
   app.set("trust proxy", 1);
 }
 
+function createSessionStore() {
+  const dbUrl = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
+  if (isProduction && dbUrl) {
+    const pool = new pg.Pool({ connectionString: dbUrl, max: 3 });
+    return new PgSessionStore({
+      pool,
+      tableName: "user_sessions",
+      createTableIfMissing: true,
+      pruneSessionInterval: 60 * 15,
+    });
+  }
+  return new MemoryStoreSession({ checkPeriod: 86400000 });
+}
+
 app.use(
   session({
     secret: process.env.SESSION_SECRET,
     name: "pfp_session",
     resave: false,
     saveUninitialized: false,
-    store: new MemoryStoreSession({
-      checkPeriod: 86400000,
-    }),
+    store: createSessionStore(),
     cookie: {
       secure: isProduction,
       httpOnly: true,
       maxAge: 24 * 60 * 60 * 1000,
       sameSite: "lax",
+      path: "/",
     },
   })
 );
+
+app.use(helmet({
+  contentSecurityPolicy: isProduction ? {
+    directives: {
+      defaultSrc: ["'self'"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https:"],
+      connectSrc: ["'self'", "https:"],
+      frameSrc: ["'none'"],
+      objectSrc: ["'none'"],
+      baseUri: ["'self'"],
+    },
+  } : false,
+  crossOriginEmbedderPolicy: false,
+  crossOriginResourcePolicy: { policy: "cross-origin" },
+}));
+
+const authLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many login attempts. Please try again in 15 minutes." },
+});
+app.use("/api/auth/login", authLimiter);
+app.use("/api/store/auth/login", authLimiter);
+
+const signupLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 3,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many signup attempts. Please try again later." },
+});
+app.use("/api/store/auth/signup", signupLimiter);
+app.use("/api/store/auth/forgot-password", signupLimiter);
+
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests. Please slow down." },
+});
+app.use("/api/", apiLimiter);
+
+if (isProduction) {
+  const allowedOrigins = (process.env.ALLOWED_ORIGINS || "limjiba.com,limjiba.replit.app").split(",").map(d => d.trim());
+  app.use("/api/", (req: Request, res: Response, next: NextFunction) => {
+    if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
+    const origin = req.headers.origin || req.headers.referer;
+    if (!origin) {
+      if ((req.session as any)?.isAuthenticated || (req.session as any)?.storeCustomer) {
+        return res.status(403).json({ error: "Origin header required for authenticated requests" });
+      }
+      return next();
+    }
+    try {
+      const url = new URL(origin);
+      const host = url.hostname;
+      if (allowedOrigins.some(d => host === d || host.endsWith(`.${d}`))) return next();
+    } catch {}
+    return res.status(403).json({ error: "Cross-origin request blocked" });
+  });
+}
 
 export function log(message: string, source = "express") {
   const formattedTime = new Date().toLocaleTimeString("en-US", {
@@ -112,15 +197,14 @@ app.use((req, res, next) => {
     // Database status is reported in the response body for monitoring
     app.get("/health", (_req: Request, res: Response) => {
       const dbReady = isDatabaseReady();
-      const poolStats = getPoolStats();
-      
-      // Always return 200 to pass Replit health checks
-      // The actual database status is in the response body
-      res.status(200).json({ 
+      const response: any = { 
         status: dbReady ? "healthy" : "starting",
         database: dbReady ? "connected" : "connecting",
-        pool: poolStats
-      });
+      };
+      if (!isProduction) {
+        response.pool = getPoolStats();
+      }
+      res.status(200).json(response);
     });
 
     // NOTE: Removed blocking /api middleware that returned 503
@@ -172,7 +256,7 @@ app.use((req, res, next) => {
       const status = err.status || err.statusCode || 500;
       const message = err.message || "Internal Server Error";
       log(`Error handler: ${status} - ${message}`);
-      res.status(status).json({ message });
+      res.status(status).json({ message: isProduction && status >= 500 ? "Internal Server Error" : message });
     });
 
     // Setup vite in development or static files in production
