@@ -59,7 +59,7 @@ function createSessionStore() {
     return new PgSessionStore({
       pool,
       tableName: "user_sessions",
-      createTableIfMissing: true,
+      createTableIfMissing: false,
       pruneSessionInterval: 60 * 15,
     });
   }

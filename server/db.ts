@@ -1162,6 +1162,18 @@ async function runMigrations(): Promise<void> {
       console.log('[DB] Added image_url to categories');
     } catch {}
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS "user_sessions" (
+        "sid" VARCHAR NOT NULL PRIMARY KEY,
+        "sess" JSON NOT NULL,
+        "expire" TIMESTAMP(6) NOT NULL
+      )
+    `);
+    try {
+      await client.query(`CREATE INDEX IF NOT EXISTS "IDX_session_expire" ON "user_sessions" ("expire")`);
+    } catch {}
+    console.log('[DB] Ensured user_sessions table exists');
+
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);
