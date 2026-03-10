@@ -68,24 +68,23 @@ export function registerChatRoutes(app: Express): void {
       // Save user message
       await chatStorage.createMessage(conversationId, "user", content);
 
-      // Get conversation history for context
       const messages = await chatStorage.getMessagesByConversation(conversationId);
-      const chatMessages = messages.map((m) => ({
+      const chatMessages = messages.slice(-10).map((m) => ({
         role: m.role as "user" | "assistant",
-        content: m.content,
+        content: m.role === "assistant" && m.content.length > 2000
+          ? m.content.substring(0, 2000) + "..."
+          : m.content,
       }));
 
-      // Set up SSE
       res.setHeader("Content-Type", "text/event-stream");
       res.setHeader("Cache-Control", "no-cache");
       res.setHeader("Connection", "keep-alive");
 
-      // Stream response from OpenAI
       const stream = await openai.chat.completions.create({
-        model: "gpt-5.1",
+        model: "gpt-4o-mini",
         messages: chatMessages,
         stream: true,
-        max_completion_tokens: 8192,
+        max_completion_tokens: 2048,
       });
 
       let fullResponse = "";

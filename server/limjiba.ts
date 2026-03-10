@@ -1,4 +1,5 @@
 import OpenAI from "openai";
+import { createHash } from "crypto";
 import { storage } from "./storage";
 import type { Product } from "@shared/schema";
 
@@ -7,156 +8,175 @@ const openai = new OpenAI({
   baseURL: process.env.AI_INTEGRATIONS_OPENAI_BASE_URL,
 });
 
+const CACHE_TTL = 30 * 60 * 1000;
+const CACHE_MAX = 200;
+const HISTORY_LIMIT = 10;
+const ASSISTANT_TRUNCATE = 2000;
+
+interface CacheEntry {
+  response: string;
+  timestamp: number;
+}
+
+const responseCache = new Map<string, CacheEntry>();
+
+function getCacheKey(mode: "customer" | "admin", contextFingerprint: string, messages: { role: string; content: string }[]): string {
+  const last3 = messages.slice(-3);
+  const raw = mode + "|" + contextFingerprint + "|" + JSON.stringify(last3);
+  return createHash("sha256").update(raw).digest("hex");
+}
+
+function fingerprint(context: string): string {
+  return createHash("sha256").update(context).digest("hex").substring(0, 12);
+}
+
+function getCached(key: string): string | null {
+  const entry = responseCache.get(key);
+  if (!entry) return null;
+  if (Date.now() - entry.timestamp > CACHE_TTL) {
+    responseCache.delete(key);
+    return null;
+  }
+  return entry.response;
+}
+
+function setCache(key: string, response: string): void {
+  if (responseCache.size >= CACHE_MAX) {
+    let oldestKey = "";
+    let oldestTime = Infinity;
+    for (const [k, v] of responseCache) {
+      if (v.timestamp < oldestTime) {
+        oldestTime = v.timestamp;
+        oldestKey = k;
+      }
+    }
+    if (oldestKey) responseCache.delete(oldestKey);
+  }
+  responseCache.set(key, { response, timestamp: Date.now() });
+}
+
+function trimHistory(history: { role: string; content: string }[]): { role: string; content: string }[] {
+  return history.slice(-HISTORY_LIMIT).map(m => ({
+    role: m.role,
+    content: m.role === "assistant" && m.content.length > ASSISTANT_TRUNCATE
+      ? m.content.substring(0, ASSISTANT_TRUNCATE) + "..."
+      : m.content,
+  }));
+}
+
 async function getProductContext(): Promise<string> {
   const products = await storage.getProducts();
   const inStock = products.filter(p => p.stockQuantity > 0);
-  const lines = inStock.map(p =>
-    `- ${p.name} (${p.category}): ${p.unitPrice} DZD, ${p.stockQuantity} in stock, unit: ${p.unit}`
-  );
-  return lines.length > 0 ? lines.join("\n") : "No products currently in stock.";
+  return inStock.length > 0
+    ? inStock.map(p => `${p.name}|${p.category}|${p.unitPrice}DZD|qty:${p.stockQuantity}|${p.unit}`).join("\n")
+    : "No products in stock.";
 }
 
 async function getSalesContext(): Promise<string> {
   const allSales = await storage.getSales();
-  const productSales: Record<string, { name: string; qty: number; revenue: number }> = {};
+  const ps: Record<string, { name: string; qty: number; rev: number }> = {};
   for (const sale of allSales.slice(-200)) {
     try {
-      const saleWithItems = await storage.getSaleWithItems(sale.id);
-      if (saleWithItems) {
-        for (const item of saleWithItems.items) {
-          const key = item.productId;
-          if (!productSales[key]) {
-            productSales[key] = { name: item.productName, qty: 0, revenue: 0 };
-          }
-          productSales[key].qty += item.quantity;
-          productSales[key].revenue += item.total;
-        }
+      const s = await storage.getSaleWithItems(sale.id);
+      if (s) for (const item of s.items) {
+        const k = item.productId;
+        if (!ps[k]) ps[k] = { name: item.productName, qty: 0, rev: 0 };
+        ps[k].qty += item.quantity;
+        ps[k].rev += item.total;
       }
     } catch {}
   }
-  const sorted = Object.values(productSales).sort((a, b) => b.revenue - a.revenue);
-  const top10 = sorted.slice(0, 10);
-  return top10.map((p, i) => `${i + 1}. ${p.name}: ${p.qty} units sold, ${p.revenue.toFixed(2)} DZD revenue`).join("\n");
+  return Object.values(ps).sort((a, b) => b.rev - a.rev).slice(0, 10)
+    .map((p, i) => `${i + 1}.${p.name}:${p.qty}sold,${p.rev.toFixed(0)}DZD`).join("\n");
 }
 
 async function getLowStockContext(): Promise<string> {
   const products = await storage.getProducts();
-  const lowStock = products.filter(p => p.stockQuantity <= p.lowStockThreshold && p.stockQuantity > 0);
-  const outOfStock = products.filter(p => p.stockQuantity === 0);
+  const low = products.filter(p => p.stockQuantity <= p.lowStockThreshold && p.stockQuantity > 0);
+  const out = products.filter(p => p.stockQuantity === 0);
   const lines: string[] = [];
-  if (lowStock.length > 0) {
-    lines.push("LOW STOCK items:");
-    lowStock.forEach(p => lines.push(`  - ${p.name}: ${p.stockQuantity} left (threshold: ${p.lowStockThreshold})`));
-  }
-  if (outOfStock.length > 0) {
-    lines.push("OUT OF STOCK items:");
-    outOfStock.forEach(p => lines.push(`  - ${p.name}`));
-  }
-  return lines.length > 0 ? lines.join("\n") : "All products are well-stocked.";
+  if (low.length > 0) lines.push("LOW:" + low.map(p => `${p.name}(${p.stockQuantity}left)`).join(","));
+  if (out.length > 0) lines.push("OUT:" + out.map(p => p.name).join(","));
+  return lines.length > 0 ? lines.join("\n") : "All stocked.";
 }
 
-const CUSTOMER_SYSTEM_PROMPT = `You are LEMJIBA, an intelligent and friendly e-commerce sales assistant for the LEMJIBA premium store.
+const CUSTOMER_PROMPT = `LEMJIBA store assistant. Help customers find products, check stock/prices, suggest alternatives. Rules: only recommend in-stock items, prices in DZD, suggest same-category alternatives for out-of-stock, be concise, respond in customer's language (AR/FR/EN), redirect off-topic questions to store.
+Catalog:\n{PRODUCTS}`;
 
-Your responsibilities:
-- Answer customer questions about products, availability, pricing, and stock
-- Suggest products and recommend alternatives
-- Promote best-selling items and encourage purchases
-- Be professional, helpful, and enthusiastic about the products
-- Greet customers warmly
-
-Rules:
-- ONLY recommend products that are IN STOCK (stockQuantity > 0)
-- Always mention prices in DZD
-- If a product is out of stock, suggest alternatives from the same category
-- Keep responses concise but informative
-- You speak Arabic, French, and English fluently - respond in the same language the customer uses
-- If the customer asks about something unrelated to the store, politely redirect them
-
-Current product catalog:
-{PRODUCTS}`;
-
-const ADMIN_SYSTEM_PROMPT = `You are LEMJIBA, an AI business assistant for the admin/owner of the LEMJIBA premium store.
-
-Your capabilities:
-- Analyze sales data and identify best-selling products
-- Recommend which products need restocking based on current stock levels
-- Suggest promo codes with safe discount values based on product margins
-- Provide business insights and suggestions
-- Help with inventory management decisions
-
-When suggesting promo codes:
-- Calculate safe discounts: ensure profit margin stays above 15%
-- Format: PROMO-XXXXX (random 5 chars)
-- Suggest expiry of 1-3 days for urgency
-- Consider product cost price and selling price
-
-Current inventory status:
-{PRODUCTS}
-
-Sales performance (top sellers):
-{SALES}
-
-Stock alerts:
-{STOCK_ALERTS}`;
+const ADMIN_PROMPT = `LEMJIBA business assistant. Analyze sales, suggest restocking, generate promo codes (PROMO-XXXXX format, keep margin>15%, 1-3day expiry), provide insights.
+Inventory:\n{PRODUCTS}\nTop sellers:\n{SALES}\nAlerts:\n{STOCK_ALERTS}`;
 
 export async function handleCustomerChat(
   message: string,
   conversationHistory: { role: string; content: string }[] = []
 ): Promise<string> {
+  const trimmed = trimHistory(conversationHistory);
   const productContext = await getProductContext();
-  const systemPrompt = CUSTOMER_SYSTEM_PROMPT.replace("{PRODUCTS}", productContext);
+  const ctxFp = fingerprint(productContext);
+  const allMsgs = [...trimmed, { role: "user", content: message }];
+  const cacheKey = getCacheKey("customer", ctxFp, allMsgs);
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
+  const systemPrompt = CUSTOMER_PROMPT.replace("{PRODUCTS}", productContext);
 
   const messages: OpenAI.ChatCompletionMessageParam[] = [
     { role: "system", content: systemPrompt },
-    ...conversationHistory.map(m => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    })),
+    ...trimmed.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
     { role: "user", content: message },
   ];
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages,
-    max_tokens: 500,
+    max_tokens: 400,
     temperature: 0.7,
   });
 
-  return response.choices[0]?.message?.content || "I apologize, I'm having trouble responding right now. Please try again.";
+  const result = response.choices[0]?.message?.content || "Sorry, please try again.";
+  setCache(cacheKey, result);
+  return result;
 }
 
 export async function handleAdminChat(
   message: string,
   conversationHistory: { role: string; content: string }[] = []
 ): Promise<string> {
+  const trimmed = trimHistory(conversationHistory);
+
   const [productContext, salesContext, stockContext] = await Promise.all([
     getProductContext(),
     getSalesContext(),
     getLowStockContext(),
   ]);
 
-  const systemPrompt = ADMIN_SYSTEM_PROMPT
+  const ctxFp = fingerprint(productContext + salesContext + stockContext);
+  const allMsgs = [...trimmed, { role: "user", content: message }];
+  const cacheKey = getCacheKey("admin", ctxFp, allMsgs);
+  const cached = getCached(cacheKey);
+  if (cached) return cached;
+
+  const systemPrompt = ADMIN_PROMPT
     .replace("{PRODUCTS}", productContext)
     .replace("{SALES}", salesContext)
     .replace("{STOCK_ALERTS}", stockContext);
 
   const messages: OpenAI.ChatCompletionMessageParam[] = [
     { role: "system", content: systemPrompt },
-    ...conversationHistory.map(m => ({
-      role: m.role as "user" | "assistant",
-      content: m.content,
-    })),
+    ...trimmed.map(m => ({ role: m.role as "user" | "assistant", content: m.content })),
     { role: "user", content: message },
   ];
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages,
-    max_tokens: 800,
+    max_tokens: 600,
     temperature: 0.7,
   });
 
-  return response.choices[0]?.message?.content || "I apologize, I'm having trouble responding right now. Please try again.";
+  const result = response.choices[0]?.message?.content || "Sorry, please try again.";
+  setCache(cacheKey, result);
+  return result;
 }
 
 export async function generatePromoCode(margin?: number): Promise<{
@@ -184,26 +204,21 @@ export async function generatePromoCode(margin?: number): Promise<{
 
   const safeDiscount = Math.max(3, Math.min(Math.floor((avgMargin - 15) / 2), 25));
 
-  const code = `PROMO-${Math.random().toString(36).substring(2, 7).toUpperCase()}`;
-  const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString();
-
   return {
-    code,
+    code: `PROMO-${Math.random().toString(36).substring(2, 7).toUpperCase()}`,
     discountType: "percentage",
     discountValue: safeDiscount,
-    expiresAt,
+    expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
   };
 }
 
 export async function getCustomerGreeting(language: string = "en"): Promise<string> {
   const products = await storage.getStoreProducts();
-  const categories = [...new Set(products.map(p => p.category))];
-
+  const cats = [...new Set(products.map(p => p.category))].length;
   const greetings: Record<string, string> = {
-    en: `Welcome to our store! 👋 We have ${products.length} products available across ${categories.length} categories. How can I help you today?`,
-    fr: `Bienvenue dans notre boutique ! 👋 Nous avons ${products.length} produits disponibles dans ${categories.length} catégories. Comment puis-je vous aider ?`,
-    ar: `مرحباً بكم في متجرنا! 👋 لدينا ${products.length} منتج متاح في ${categories.length} فئات. كيف يمكنني مساعدتك اليوم؟`,
+    en: `Welcome! We have ${products.length} products in ${cats} categories. How can I help?`,
+    fr: `Bienvenue! ${products.length} produits dans ${cats} catégories. Comment puis-je vous aider?`,
+    ar: `مرحباً! لدينا ${products.length} منتج في ${cats} فئات. كيف أساعدك؟`,
   };
-
   return greetings[language] || greetings.en;
 }
