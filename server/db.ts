@@ -627,6 +627,62 @@ async function runMigrations(): Promise<void> {
     } catch (e: any) {
       // Ignore if already nullable
     }
+
+    // ===================== E-COMMERCE UPGRADE MIGRATIONS =====================
+
+    // Purchase orders - shipping cost fields
+    const poCols2 = await client.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'purchase_orders' AND table_schema = 'public'
+    `);
+    const poColNames = poCols2.rows.map((r: any) => r.column_name);
+    
+    if (!poColNames.includes('shipping_cost')) {
+      await client.query(`ALTER TABLE purchase_orders ADD COLUMN shipping_cost REAL DEFAULT 0`);
+      console.log('[DB] Added shipping_cost column to purchase_orders');
+    }
+    if (!poColNames.includes('shipping_distribution_method')) {
+      await client.query(`ALTER TABLE purchase_orders ADD COLUMN shipping_distribution_method TEXT`);
+      console.log('[DB] Added shipping_distribution_method column to purchase_orders');
+    }
+    if (!poColNames.includes('shipping_added_at')) {
+      await client.query(`ALTER TABLE purchase_orders ADD COLUMN shipping_added_at TEXT`);
+      console.log('[DB] Added shipping_added_at column to purchase_orders');
+    }
+
+    // Purchase order items - shipping distribution fields
+    const poItemCols2 = await client.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'purchase_order_items' AND table_schema = 'public'
+    `);
+    const poItemColNames = poItemCols2.rows.map((r: any) => r.column_name);
+    
+    if (!poItemColNames.includes('shipping_cost_share')) {
+      await client.query(`ALTER TABLE purchase_order_items ADD COLUMN shipping_cost_share REAL DEFAULT 0`);
+      console.log('[DB] Added shipping_cost_share column to purchase_order_items');
+    }
+    if (!poItemColNames.includes('adjusted_unit_cost')) {
+      await client.query(`ALTER TABLE purchase_order_items ADD COLUMN adjusted_unit_cost REAL DEFAULT 0`);
+      console.log('[DB] Added adjusted_unit_cost column to purchase_order_items');
+    }
+
+    // Sales - delivery cost field
+    if (!existingCols.includes('delivery_cost')) {
+      await client.query(`ALTER TABLE sales ADD COLUMN delivery_cost REAL DEFAULT 0`);
+      console.log('[DB] Added delivery_cost column to sales');
+    }
+
+    // Sale items - purchase order reference
+    if (!saleItemsCols.includes('purchase_order_id')) {
+      await client.query(`ALTER TABLE sale_items ADD COLUMN purchase_order_id VARCHAR`);
+      console.log('[DB] Added purchase_order_id column to sale_items');
+    }
+
+    // Invoices - delivery cost field
+    if (!invoiceCols.includes('delivery_cost')) {
+      await client.query(`ALTER TABLE invoices ADD COLUMN delivery_cost REAL DEFAULT 0`);
+      console.log('[DB] Added delivery_cost column to invoices');
+    }
     
     console.log('[DB] Schema migrations complete');
   } catch (error) {

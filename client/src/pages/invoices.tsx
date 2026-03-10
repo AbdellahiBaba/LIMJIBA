@@ -167,6 +167,7 @@ export default function Invoices() {
         { header: t("common.date"), accessor: (i) => i.date },
         { header: t("invoices.clientName"), accessor: (i) => i.clientName },
         { header: "Type", accessor: (i) => i.type || "standard" },
+        { header: t("transportation.deliveryCost"), accessor: (i) => i.deliveryCost || 0 },
         { header: t("invoices.totalTTC"), accessor: (i) => i.totalTTC },
         { header: t("common.status"), accessor: (i) => i.status },
       ],

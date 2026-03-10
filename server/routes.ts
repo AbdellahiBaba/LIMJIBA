@@ -567,6 +567,71 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/purchase-orders/:id/shipping", requireAuth, async (req, res) => {
+    try {
+      const { shippingCost, distributionMethod } = req.body;
+      if (!shippingCost || shippingCost <= 0) {
+        return res.status(400).json({ error: "Shipping cost must be a positive number" });
+      }
+      if (!['by_quantity', 'by_value'].includes(distributionMethod)) {
+        return res.status(400).json({ error: "Distribution method must be 'by_quantity' or 'by_value'" });
+      }
+      const po = await storage.addShippingToPurchaseOrder(req.params.id, shippingCost, distributionMethod);
+      if (!po) return res.status(404).json({ error: "Purchase order not found or not received" });
+      try {
+        await storage.createAuditLog({
+          userId: req.session.userId,
+          username: req.session.username || "system",
+          action: "update",
+          entity: "purchase_order",
+          entityId: po.id,
+          details: JSON.stringify({ action: "shipping_added", shippingCost, distributionMethod, orderNumber: po.orderNumber }),
+          ipAddress: req.ip || null,
+          createdAt: new Date().toISOString(),
+        });
+      } catch {}
+      res.json(po);
+    } catch (error) {
+      handleError(res, "addShippingToPurchaseOrder", error);
+    }
+  });
+
+  app.get("/api/purchase-orders/:id/profitability", requireAuth, async (req, res) => {
+    try {
+      const result = await storage.getBatchProfitability(req.params.id);
+      if (!result) return res.status(404).json({ error: "Purchase order not found" });
+      res.json(result);
+    } catch (error) {
+      handleError(res, "getBatchProfitability", error);
+    }
+  });
+
+  app.get("/api/products/:id/profitability", requireAuth, async (req, res) => {
+    try {
+      const result = await storage.getProductProfitability(req.params.id);
+      if (!result) return res.status(404).json({ error: "Product not found" });
+      res.json(result);
+    } catch (error) {
+      handleError(res, "getProductProfitability", error);
+    }
+  });
+
+  app.get("/api/reports/profitability", requireAuth, async (req, res) => {
+    try {
+      const allProducts = await storage.getProducts();
+      const profitabilities = [];
+      for (const product of allProducts) {
+        const profitability = await storage.getProductProfitability(product.id);
+        if (profitability) {
+          profitabilities.push(profitability);
+        }
+      }
+      res.json(profitabilities);
+    } catch (error) {
+      handleError(res, "getReportsProfitability", error);
+    }
+  });
+
   // ===================== TRANSPORTATION INVOICE ROUTES =====================
 
   app.get("/api/transportation-invoices/next-number", requireAuth, async (req, res) => {
@@ -1842,7 +1907,7 @@ export async function registerRoutes(
 
   app.put("/api/sales/:id/edit", async (req, res) => {
     try {
-      const { items, discount, customerName, customerPhone } = req.body;
+      const { items, discount, deliveryCost, customerName, customerPhone } = req.body;
       if (!items || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ error: "Sale must have at least one item" });
       }
@@ -1853,7 +1918,8 @@ export async function registerRoutes(
       }
 
       const newTotal = Math.round(items.reduce((sum: number, item: any) => sum + (item.quantity * item.unitPrice), 0) * 100) / 100;
-      const finalTotal = Math.round((newTotal - (discount || 0)) * 100) / 100;
+      const dc = deliveryCost || existingSale.deliveryCost || 0;
+      const finalTotal = Math.round((newTotal - (discount || 0) + dc) * 100) / 100;
 
       const amountPaid = existingSale.amountPaid || 0;
       let newStatus = existingSale.status;
@@ -1868,6 +1934,7 @@ export async function registerRoutes(
       const saleData: any = {
         total: finalTotal,
         discount: discount || 0,
+        deliveryCost: dc,
         status: newStatus,
       };
       if (customerName !== undefined) saleData.customerName = customerName;

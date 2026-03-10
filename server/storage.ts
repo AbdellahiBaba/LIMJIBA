@@ -63,6 +63,9 @@ import {
   type TransportationItem,
   type InsertTransportationItem,
   type TransportationInvoiceWithItems,
+  type BatchProfitability,
+  type BatchItemProfitability,
+  type ProductProfitability,
   users,
   products,
   invoices,
@@ -235,6 +238,10 @@ export interface IStorage {
   updateTransportationInvoiceStatus(id: string, status: string): Promise<TransportationInvoice | undefined>;
   deleteTransportationInvoice(id: string): Promise<boolean>;
   getNextTransportationNumber(): Promise<string>;
+
+  addShippingToPurchaseOrder(poId: string, shippingCost: number, distributionMethod: 'by_quantity' | 'by_value'): Promise<PurchaseOrderWithItems | undefined>;
+  getBatchProfitability(purchaseOrderId: string): Promise<BatchProfitability | undefined>;
+  getProductProfitability(productId: string): Promise<ProductProfitability | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -555,12 +562,31 @@ export class DatabaseStorage implements IStorage {
         const createdItems: SaleItem[] = [];
         
         for (const { product, item, costPrice } of productValidations) {
+          // FIFO batch attribution: find the most recent received PO with this product
+          let batchPoId: string | null = null;
+          try {
+            const poItemRows = await tx.select({
+              purchaseOrderId: purchaseOrderItems.purchaseOrderId,
+            }).from(purchaseOrderItems)
+              .innerJoin(purchaseOrders, eq(purchaseOrders.id, purchaseOrderItems.purchaseOrderId))
+              .where(and(
+                eq(purchaseOrderItems.productId, item.productId),
+                eq(purchaseOrders.status, 'received')
+              ))
+              .orderBy(sql`${purchaseOrders.receivedAt} ASC NULLS LAST`)
+              .limit(1);
+            if (poItemRows.length > 0) {
+              batchPoId = poItemRows[0].purchaseOrderId;
+            }
+          } catch {}
+
           // ACCOUNTING: Store costPrice with sale item for accurate COGS tracking
           // This captures the cost at time of sale (prevents retroactive COGS changes)
           const itemWithCost = {
             ...item,
             saleId: created.id,
-            costPrice: Math.round(costPrice * 100) / 100, // Round to 2 decimals
+            costPrice: Math.round(costPrice * 100) / 100,
+            purchaseOrderId: batchPoId,
           };
           
           const [createdItem] = await tx.insert(saleItems).values(itemWithCost).returning();
@@ -1108,7 +1134,7 @@ export class DatabaseStorage implements IStorage {
         and(gte(sales.date, startDate), lte(sales.date, endDate))
       );
       const totalSalesRevenue = Math.round(
-        allSales.reduce((sum, s) => sum + s.total - (s.discount || 0), 0) * 100
+        allSales.reduce((sum, s) => sum + s.total, 0) * 100
       ) / 100;
 
       // ACCOUNTING: Get all invoices in date range
@@ -1221,11 +1247,27 @@ export class DatabaseStorage implements IStorage {
         ? Math.round((netProfit / totalRevenue) * 10000) / 100 
         : 0;
 
+      // Calculate total shipping costs from purchase orders in date range
+      const allPOs = await db.select().from(purchaseOrders).where(
+        and(gte(purchaseOrders.date, startDate), lte(purchaseOrders.date, endDate))
+      );
+      const totalShippingCosts = Math.round(
+        allPOs.reduce((sum, po) => sum + (po.shippingCost || 0), 0) * 100
+      ) / 100;
+
+      // Calculate total delivery costs from sales and invoices
+      const totalDeliveryCosts = Math.round(
+        (allSales.reduce((sum, s) => sum + (s.deliveryCost || 0), 0) +
+        salesInvoices.reduce((sum, inv) => sum + (inv.deliveryCost || 0), 0)) * 100
+      ) / 100;
+
       return {
         totalSalesRevenue,
         totalInvoiceRevenue,
         totalRevenue,
         totalProductCosts,
+        totalShippingCosts,
+        totalDeliveryCosts,
         totalFabricationCosts,
         totalSalaries,
         totalExpenses,
@@ -2199,6 +2241,188 @@ export class DatabaseStorage implements IStorage {
       }
       const nextNum = String(maxNum + 1).padStart(4, "0");
       return `${prefix}${nextNum}/${year}`;
+    });
+  }
+
+  async addShippingToPurchaseOrder(poId: string, shippingCost: number, distributionMethod: 'by_quantity' | 'by_value'): Promise<PurchaseOrderWithItems | undefined> {
+    return await withRetry(async () => {
+      const po = await this.getPurchaseOrder(poId);
+      if (!po || po.status !== 'received') return undefined;
+
+      const items = po.items;
+      if (items.length === 0) return undefined;
+
+      const now = new Date().toISOString();
+
+      const updateItems = async (getShare: (item: typeof items[0]) => number) => {
+        for (const item of items) {
+          const share = getShare(item);
+          const adjustedUnitCost = Math.round((item.unitCost + (share / item.quantity)) * 100) / 100;
+          await db.update(purchaseOrderItems).set({
+            shippingCostShare: share,
+            adjustedUnitCost,
+          }).where(eq(purchaseOrderItems.id, item.id));
+
+          if (item.productId) {
+            const newerPO = await db.select({ id: purchaseOrderItems.id })
+              .from(purchaseOrderItems)
+              .innerJoin(purchaseOrders, eq(purchaseOrders.id, purchaseOrderItems.purchaseOrderId))
+              .where(and(
+                eq(purchaseOrderItems.productId, item.productId),
+                eq(purchaseOrders.status, 'received'),
+                sql`${purchaseOrders.receivedAt} > ${po.receivedAt || po.date}`
+              ))
+              .limit(1);
+            if (newerPO.length === 0) {
+              await db.update(products).set({
+                costPrice: adjustedUnitCost,
+              }).where(eq(products.id, item.productId));
+            }
+          }
+        }
+      };
+
+      if (distributionMethod === 'by_quantity') {
+        const totalQuantity = items.reduce((sum, item) => sum + item.quantity, 0);
+        await updateItems((item) => Math.round((shippingCost * (item.quantity / totalQuantity)) * 100) / 100);
+      } else {
+        const totalValue = items.reduce((sum, item) => sum + item.total, 0);
+        await updateItems((item) => Math.round((shippingCost * (item.total / totalValue)) * 100) / 100);
+      }
+
+      await db.update(purchaseOrders).set({
+        shippingCost,
+        shippingDistributionMethod: distributionMethod,
+        shippingAddedAt: now,
+      }).where(eq(purchaseOrders.id, poId));
+
+      cache.delete(CACHE_KEYS.PRODUCTS);
+      cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+      return await this.getPurchaseOrder(poId);
+    });
+  }
+
+  async getBatchProfitability(purchaseOrderId: string): Promise<BatchProfitability | undefined> {
+    return await withRetry(async () => {
+      const po = await this.getPurchaseOrder(purchaseOrderId);
+      if (!po) return undefined;
+
+      const supplier = po.supplier;
+      const itemProfits: BatchItemProfitability[] = [];
+      let totalRevenue = 0;
+      let totalCost = 0;
+      let remainingStock = 0;
+      let remainingValue = 0;
+
+      for (const item of po.items) {
+        const soldItems = await db.select().from(saleItems).where(
+          eq(saleItems.purchaseOrderId, purchaseOrderId)
+        );
+        const soldForProduct = soldItems.filter(si => si.productId === item.productId);
+        const quantitySold = soldForProduct.reduce((sum, si) => sum + si.quantity, 0);
+        const itemRevenue = soldForProduct.reduce((sum, si) => sum + si.total, 0);
+        const adjustedCost = item.adjustedUnitCost || item.unitCost;
+        const itemCost = adjustedCost * quantitySold;
+        const quantityRemaining = item.quantity - quantitySold;
+
+        totalRevenue += itemRevenue;
+        totalCost += itemCost;
+        remainingStock += quantityRemaining;
+        remainingValue += adjustedCost * quantityRemaining;
+
+        itemProfits.push({
+          productId: item.productId || '',
+          productName: item.productName,
+          quantityPurchased: item.quantity,
+          unitCost: item.unitCost,
+          shippingShare: item.shippingCostShare || 0,
+          adjustedUnitCost: adjustedCost,
+          quantitySold,
+          quantityRemaining,
+          totalRevenue: Math.round(itemRevenue * 100) / 100,
+          totalCost: Math.round(itemCost * 100) / 100,
+          profit: Math.round((itemRevenue - itemCost) * 100) / 100,
+          profitMargin: itemRevenue > 0 ? Math.round(((itemRevenue - itemCost) / itemRevenue) * 10000) / 100 : 0,
+        });
+      }
+
+      const totalProfit = Math.round((totalRevenue - totalCost) * 100) / 100;
+
+      return {
+        purchaseOrderId,
+        orderNumber: po.orderNumber,
+        supplierName: supplier?.name || 'Unknown',
+        date: po.date,
+        items: itemProfits,
+        totalPurchaseCost: Math.round(po.totalAmount * 100) / 100,
+        totalShippingCost: po.shippingCost || 0,
+        totalTrueCost: Math.round((po.totalAmount + (po.shippingCost || 0)) * 100) / 100,
+        totalRevenue: Math.round(totalRevenue * 100) / 100,
+        totalProfit,
+        profitMargin: totalRevenue > 0 ? Math.round((totalProfit / totalRevenue) * 10000) / 100 : 0,
+        remainingStock,
+        remainingValue: Math.round(remainingValue * 100) / 100,
+      };
+    });
+  }
+
+  async getProductProfitability(productId: string): Promise<ProductProfitability | undefined> {
+    return await withRetry(async () => {
+      const [product] = await db.select().from(products).where(eq(products.id, productId));
+      if (!product) return undefined;
+
+      const poItems = await db.select().from(purchaseOrderItems).where(eq(purchaseOrderItems.productId, productId));
+      const batches: ProductProfitability['batches'] = [];
+      let totalRevenue = 0;
+      let totalCost = 0;
+
+      for (const poItem of poItems) {
+        const [po] = await db.select().from(purchaseOrders).where(eq(purchaseOrders.id, poItem.purchaseOrderId));
+        if (!po || po.status !== 'received') continue;
+
+        const soldItems = await db.select().from(saleItems).where(
+          and(
+            eq(saleItems.productId, productId),
+            eq(saleItems.purchaseOrderId, poItem.purchaseOrderId)
+          )
+        );
+        const quantitySold = soldItems.reduce((sum, si) => sum + si.quantity, 0);
+        const revenue = soldItems.reduce((sum, si) => sum + si.total, 0);
+        const adjustedCost = poItem.adjustedUnitCost || poItem.unitCost;
+        const cost = adjustedCost * quantitySold;
+
+        totalRevenue += revenue;
+        totalCost += cost;
+
+        batches.push({
+          purchaseOrderId: poItem.purchaseOrderId,
+          orderNumber: po.orderNumber,
+          unitCost: poItem.unitCost,
+          adjustedUnitCost: adjustedCost,
+          quantityPurchased: poItem.quantity,
+          quantitySold,
+          quantityRemaining: poItem.quantity - quantitySold,
+          revenue: Math.round(revenue * 100) / 100,
+          cost: Math.round(cost * 100) / 100,
+          profit: Math.round((revenue - cost) * 100) / 100,
+        });
+      }
+
+      const totalProfit = Math.round((totalRevenue - totalCost) * 100) / 100;
+
+      return {
+        productId,
+        productName: product.name,
+        category: product.category,
+        currentStock: product.stockQuantity,
+        currentCostPrice: product.costPrice,
+        batches,
+        totalRevenue: Math.round(totalRevenue * 100) / 100,
+        totalCost: Math.round(totalCost * 100) / 100,
+        totalProfit,
+        profitMargin: totalRevenue > 0 ? Math.round((totalProfit / totalRevenue) * 10000) / 100 : 0,
+        inventoryValue: Math.round(product.stockQuantity * product.costPrice * 100) / 100,
+      };
     });
   }
 }

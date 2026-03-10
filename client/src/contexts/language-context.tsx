@@ -44,17 +44,17 @@ interface LanguageContextType {
 }
 
 const defaultCompanyInfo: CompanyInfo = {
-  name: "POLY FLECTA PLASTICA",
-  nameAr: "بولي فليكتا بلاستيكا",
-  tagline: "FABRICATION D'EMBALLAGE EN PLASTIQUE",
-  taglineAr: "تصنيع عبوات بلاستيكية",
-  address: "Village Zaitout, Hammam Dalaa - M'sila",
-  artisanNumber: "28/00 - 2896688A24",
+  name: "E-Commerce Manager",
+  nameAr: "مدير التجارة الإلكترونية",
+  tagline: "Complete E-Commerce Management System",
+  taglineAr: "نظام إدارة التجارة الإلكترونية المتكامل",
+  address: "",
+  artisanNumber: "",
   articleNumber: "",
   fiscalNumber: "",
-  phone: "+213 6 70 04 91 24 / +213 6 70 04 91 36",
-  email: "contact@polyflectaplastica.com",
-  website: "www.polyflectaplastica.com",
+  phone: "",
+  email: "contact@ecommerce-manager.com",
+  website: "www.ecommerce-manager.com",
 };
 
 const defaultBranding: BrandingSettings = {

@@ -285,7 +285,7 @@ export default function FabricationInvoice() {
     const companyInfo = branding.companyInfo || {};
     const logoHtml = branding.logo 
       ? `<img src="${branding.logo}" alt="Logo" style="max-height: 60px; max-width: 150px; object-fit: contain;" />`
-      : `<div style="width: 60px; height: 60px; background: ${branding.primaryColor}; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px;">PFP</div>`;
+      : `<div style="width: 60px; height: 60px; background: ${branding.primaryColor}; border-radius: 8px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 18px;">ECM</div>`;
 
     const watermarkHtml = branding.enableWatermark && branding.watermark 
       ? `<div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: -1; opacity: ${branding.watermarkOpacity};">
@@ -382,11 +382,11 @@ export default function FabricationInvoice() {
   <div class="header">
     <div class="company">
       ${logoHtml}
-      <h1>${companyInfo.name || "POLY FLECTA PLASTICA"}</h1>
+      <h1>${companyInfo.name || "E-Commerce Manager"}</h1>
       ${isRTL && companyInfo.nameAr ? `<h2 style="font-size: 16px; margin-top: 4px;">${companyInfo.nameAr}</h2>` : ""}
-      <p>${getLabel("FABRICATION D'EMBALLAGE EN PLASTIQUE", "تصنيع عبوات بلاستيكية")}</p>
-      <p>${companyInfo.address || "Village Zaitout, Local N°01, Commune Hammam Dalaa - W M'sila"}</p>
-      ${companyInfo.artisanNumber ? `<p>CARTE ARTISAN N° : ${companyInfo.artisanNumber}</p>` : ""}
+      <p>${companyInfo.tagline || getLabel("Complete E-Commerce Management", "نظام إدارة التجارة الإلكترونية")}</p>
+      <p>${companyInfo.address || ""}</p>
+      ${companyInfo.artisanNumber ? `<p>${companyInfo.artisanNumber}</p>` : ""}
       ${companyInfo.articleNumber ? `<p>N° ARTICLE : ${companyInfo.articleNumber}</p>` : ""}
       ${companyInfo.fiscalNumber ? `<p>N° FISCAL : ${companyInfo.fiscalNumber}</p>` : ""}
     </div>
@@ -453,7 +453,7 @@ export default function FabricationInvoice() {
   </div>
 
   <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid ${branding.primaryColor}; font-size: 11px; color: #666;">
-    <p>${companyInfo.website || "www.polyflectaplastica.com"} | ${companyInfo.email || "contact@polyflectaplastica.com"} | ${companyInfo.phone || "+213 6 70 04 91 24 / +213 6 70 04 91 36"}</p>
+    <p>${companyInfo.website || "www.ecommerce-manager.com"} | ${companyInfo.email || "contact@ecommerce-manager.com"} | ${companyInfo.phone || ""}</p>
   </div>
 </body>
 </html>
@@ -528,7 +528,7 @@ export default function FabricationInvoice() {
                 className="w-16 h-16 rounded-md flex items-center justify-center text-white font-bold text-lg"
                 style={{ backgroundColor: branding.primaryColor }}
               >
-                PFP
+                ECM
               </div>
             )}
             <div>
@@ -546,7 +546,7 @@ export default function FabricationInvoice() {
               </p>
               {branding.companyInfo.artisanNumber && (
                 <p className="text-xs text-gray-500">
-                  CARTE ARTISAN N°: {branding.companyInfo.artisanNumber}
+                  {branding.companyInfo.artisanNumber}
                 </p>
               )}
               {branding.companyInfo.fiscalNumber && (
@@ -727,7 +727,7 @@ export default function FabricationInvoice() {
             {t("invoices.newInvoice")} - {t("nav.stock")}
           </h1>
           <p className="text-xs sm:text-sm text-muted-foreground hidden sm:block">
-            {getLabel("Facture de fabrication avec détails de poids", "فاتورة تصنيع مع تفاصيل الوزن")}
+            {getLabel("Manufacturing invoice with weight details", "فاتورة إنتاج مع تفاصيل الوزن")}
           </p>
         </div>
       </div>
@@ -747,15 +747,15 @@ export default function FabricationInvoice() {
                   className="w-12 h-12 rounded-md flex items-center justify-center text-white font-bold"
                   style={{ backgroundColor: branding.primaryColor }}
                 >
-                  PFP
+                  ECM
                 </div>
               )}
               <div>
                 <h2 className="text-lg font-bold" style={{ color: branding.primaryColor }}>
-                  {branding.companyInfo.name || "POLY FLECTA PLASTICA"}
+                  {branding.companyInfo.name || "E-Commerce Manager"}
                 </h2>
                 <p className="text-sm text-muted-foreground">
-                  {branding.companyInfo.tagline || getLabel("FABRICATION D'EMBALLAGE EN PLASTIQUE", "تصنيع عبوات بلاستيكية")}
+                  {branding.companyInfo.tagline || getLabel("Complete E-Commerce Management", "نظام إدارة التجارة الإلكترونية")}
                 </p>
               </div>
             </div>

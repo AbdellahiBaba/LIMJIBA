@@ -23,11 +23,11 @@ const typeIcons: Record<string, typeof Package> = {
 };
 
 const typeLabels: Record<string, string> = {
-  product: "Produits",
-  customer: "Clients",
-  reseller: "Revendeurs",
-  invoice: "Factures",
-  sale: "Ventes",
+  product: "Products",
+  customer: "Customers",
+  reseller: "Resellers",
+  invoice: "Invoices",
+  sale: "Sales",
 };
 
 export function CommandBar({ open, onOpenChange }: { open: boolean; onOpenChange: (open: boolean) => void }) {

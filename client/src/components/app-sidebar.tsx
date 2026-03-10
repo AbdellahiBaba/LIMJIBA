@@ -190,14 +190,14 @@ export function AppSidebar() {
               className="w-10 h-10 rounded-md flex items-center justify-center"
               style={{ backgroundColor: branding.primaryColor }}
             >
-              <span className="text-white font-bold text-lg">PFP</span>
+              <span className="text-white font-bold text-lg">ECM</span>
             </div>
           )}
           <div className="flex flex-col">
             <span className="font-semibold text-sm text-sidebar-foreground">
-              POLY FLECTA
+              E-Commerce
             </span>
-            <span className="text-xs text-muted-foreground">PLASTICA</span>
+            <span className="text-xs text-muted-foreground">Manager</span>
           </div>
         </div>
       </SidebarHeader>

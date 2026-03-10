@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import {
   Dialog,
@@ -26,7 +27,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, ClipboardList, Trash2, CheckCircle, Download, Package } from "lucide-react";
+import { Plus, Search, ClipboardList, Trash2, CheckCircle, Download, Package, Truck, Eye } from "lucide-react";
 import type { PurchaseOrderWithItems, Supplier, Product } from "@shared/schema";
 
 interface POItemForm {
@@ -48,6 +49,14 @@ export default function PurchaseOrders() {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<POItemForm[]>([{ productId: "", productName: "", quantity: 1, unitCost: 0, total: 0 }]);
+
+  const [shippingDialogOpen, setShippingDialogOpen] = useState(false);
+  const [shippingPO, setShippingPO] = useState<PurchaseOrderWithItems | null>(null);
+  const [shippingCostInput, setShippingCostInput] = useState("");
+  const [distributionMethod, setDistributionMethod] = useState("by_quantity");
+
+  const [detailDialogOpen, setDetailDialogOpen] = useState(false);
+  const [detailPO, setDetailPO] = useState<PurchaseOrderWithItems | null>(null);
 
   const { data: pos = [], isLoading } = useQuery<PurchaseOrderWithItems[]>({
     queryKey: ["/api/purchase-orders"],
@@ -101,6 +110,21 @@ export default function PurchaseOrders() {
     onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
   });
 
+  const shippingMutation = useMutation({
+    mutationFn: (data: { id: string; shippingCost: number; distributionMethod: string }) =>
+      apiRequest("POST", `/api/purchase-orders/${data.id}/shipping`, {
+        shippingCost: data.shippingCost,
+        distributionMethod: data.distributionMethod,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/purchase-orders"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      toast({ title: t("purchaseOrders.shippingAddedSuccess") });
+      closeShippingDialog();
+    },
+    onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
+  });
+
   function closeDialog() {
     setDialogOpen(false);
     setOrderNumber(nextNumber?.nextNumber || "");
@@ -108,6 +132,38 @@ export default function PurchaseOrders() {
     setDate(new Date().toISOString().split("T")[0]);
     setNotes("");
     setItems([{ productId: "", productName: "", quantity: 1, unitCost: 0, total: 0 }]);
+  }
+
+  function openShippingDialog(po: PurchaseOrderWithItems) {
+    setShippingPO(po);
+    setShippingCostInput("");
+    setDistributionMethod("by_quantity");
+    setShippingDialogOpen(true);
+  }
+
+  function closeShippingDialog() {
+    setShippingDialogOpen(false);
+    setShippingPO(null);
+    setShippingCostInput("");
+    setDistributionMethod("by_quantity");
+  }
+
+  function handleShippingSubmit() {
+    if (!shippingPO) return;
+    const cost = parseFloat(shippingCostInput);
+    if (!cost || cost <= 0) {
+      return toast({ title: t("purchaseOrders.shippingCostAmount"), variant: "destructive" });
+    }
+    shippingMutation.mutate({
+      id: shippingPO.id,
+      shippingCost: cost,
+      distributionMethod,
+    });
+  }
+
+  function openDetailDialog(po: PurchaseOrderWithItems) {
+    setDetailPO(po);
+    setDetailDialogOpen(true);
   }
 
   function updateItem(index: number, field: string, value: any) {
@@ -262,13 +318,14 @@ export default function PurchaseOrders() {
                 <TableHead>{t("common.date")}</TableHead>
                 <TableHead>{t("common.status")}</TableHead>
                 <TableHead className="text-right">{t("common.total")}</TableHead>
+                <TableHead className="text-right">{t("purchaseOrders.shippingCost")}</TableHead>
                 <TableHead className="text-right">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={6} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
                     {t("purchaseOrders.noPurchaseOrders")}
                   </TableCell>
                 </TableRow>
@@ -279,13 +336,46 @@ export default function PurchaseOrders() {
                     <TableCell>{po.supplier?.name || "-"}</TableCell>
                     <TableCell>{po.date}</TableCell>
                     <TableCell>
-                      <Badge className={statusColors[po.status] || ""} variant="secondary">
-                        {statusLabel(po.status)}
-                      </Badge>
+                      <div className="flex items-center gap-1 flex-wrap">
+                        <Badge className={statusColors[po.status] || ""} variant="secondary">
+                          {statusLabel(po.status)}
+                        </Badge>
+                        {po.shippingCost && po.shippingCost > 0 && (
+                          <Badge variant="outline" className="text-xs" data-testid={`badge-shipping-${po.id}`}>
+                            <Truck className="h-3 w-3 mr-1" />
+                            {t("purchaseOrders.shippingAdded")}
+                          </Badge>
+                        )}
+                      </div>
                     </TableCell>
                     <TableCell className="text-right font-mono">{po.totalAmount.toFixed(2)} DZD</TableCell>
+                    <TableCell className="text-right font-mono">
+                      {po.shippingCost && po.shippingCost > 0
+                        ? `${po.shippingCost.toFixed(2)} DZD`
+                        : <span className="text-muted-foreground">-</span>
+                      }
+                    </TableCell>
                     <TableCell className="text-right">
                       <div className="flex justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => openDetailDialog(po)}
+                          data-testid={`button-view-${po.id}`}
+                        >
+                          <Eye className="h-4 w-4" />
+                        </Button>
+                        {po.status === "received" && (!po.shippingCost || po.shippingCost === 0) && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => openShippingDialog(po)}
+                            data-testid={`button-shipping-${po.id}`}
+                          >
+                            <Truck className="h-4 w-4 mr-1" />
+                            {t("purchaseOrders.addShipping")}
+                          </Button>
+                        )}
                         {(po.status === "draft" || po.status === "ordered") && (
                           <Button
                             variant="outline"
@@ -421,6 +511,250 @@ export default function PurchaseOrders() {
               {t("purchaseOrders.createPO")}
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={shippingDialogOpen} onOpenChange={(open) => { if (!open) closeShippingDialog(); }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5" />
+              {t("purchaseOrders.addShipping")}
+            </DialogTitle>
+            <DialogDescription>
+              {shippingPO && `${shippingPO.orderNumber} - ${shippingPO.supplier?.name || ""}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>{t("purchaseOrders.shippingCostAmount")}</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={shippingCostInput}
+                onChange={e => setShippingCostInput(e.target.value)}
+                placeholder="0.00"
+                data-testid="input-shipping-cost"
+              />
+            </div>
+            <div>
+              <Label>{t("purchaseOrders.distributionMethod")}</Label>
+              <Select value={distributionMethod} onValueChange={setDistributionMethod}>
+                <SelectTrigger data-testid="select-distribution-method">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="by_quantity">{t("purchaseOrders.byQuantity")}</SelectItem>
+                  <SelectItem value="by_value">{t("purchaseOrders.byValue")}</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="text-xs text-muted-foreground mt-1">
+                {distributionMethod === "by_quantity"
+                  ? t("purchaseOrders.byQuantityDesc")
+                  : t("purchaseOrders.byValueDesc")
+                }
+              </p>
+            </div>
+
+            {shippingPO && shippingCostInput && parseFloat(shippingCostInput) > 0 && (
+              <div>
+                <Label className="text-sm font-semibold">{t("purchaseOrders.shippingBreakdown")}</Label>
+                <div className="mt-2 rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t("purchaseOrders.product")}</TableHead>
+                        <TableHead className="text-right">{t("purchaseOrders.qty")}</TableHead>
+                        <TableHead className="text-right">{t("purchaseOrders.originalCost")}</TableHead>
+                        <TableHead className="text-right">{t("purchaseOrders.shippingShare")}</TableHead>
+                        <TableHead className="text-right">{t("purchaseOrders.adjustedUnitCost")}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {shippingPO.items.map((item) => {
+                        const shippingCost = parseFloat(shippingCostInput);
+                        let itemShippingShare = 0;
+                        if (distributionMethod === "by_quantity") {
+                          const totalQty = shippingPO.items.reduce((sum, i) => sum + i.quantity, 0);
+                          itemShippingShare = totalQty > 0 ? (shippingCost * item.quantity) / totalQty : 0;
+                        } else {
+                          const totalValue = shippingPO.items.reduce((sum, i) => sum + i.total, 0);
+                          itemShippingShare = totalValue > 0 ? (shippingCost * item.total) / totalValue : 0;
+                        }
+                        const perUnitShipping = item.quantity > 0 ? itemShippingShare / item.quantity : 0;
+                        const adjustedCost = item.unitCost + perUnitShipping;
+                        return (
+                          <TableRow key={item.id} data-testid={`row-shipping-preview-${item.id}`}>
+                            <TableCell className="text-sm">{item.productName}</TableCell>
+                            <TableCell className="text-right font-mono text-sm">{item.quantity}</TableCell>
+                            <TableCell className="text-right font-mono text-sm">{item.unitCost.toFixed(2)}</TableCell>
+                            <TableCell className="text-right font-mono text-sm">{itemShippingShare.toFixed(2)}</TableCell>
+                            <TableCell className="text-right font-mono text-sm font-semibold">{adjustedCost.toFixed(2)}</TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeShippingDialog}>{t("common.cancel")}</Button>
+            <Button
+              onClick={handleShippingSubmit}
+              disabled={shippingMutation.isPending}
+              data-testid="button-submit-shipping"
+            >
+              <Truck className="h-4 w-4 mr-1" />
+              {t("purchaseOrders.addShipping")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={detailDialogOpen} onOpenChange={(open) => { if (!open) { setDetailDialogOpen(false); setDetailPO(null); } }}>
+        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Package className="h-5 w-5" />
+              {t("purchaseOrders.poDetails")}
+            </DialogTitle>
+            <DialogDescription>
+              {detailPO && `${detailPO.orderNumber} - ${detailPO.supplier?.name || ""}`}
+            </DialogDescription>
+          </DialogHeader>
+          {detailPO && (
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                <div>
+                  <Label className="text-xs text-muted-foreground">{t("purchaseOrders.orderNumber")}</Label>
+                  <p className="font-mono font-medium" data-testid="text-detail-order-number">{detailPO.orderNumber}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">{t("purchaseOrders.supplier")}</Label>
+                  <p className="font-medium" data-testid="text-detail-supplier">{detailPO.supplier?.name || "-"}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">{t("common.date")}</Label>
+                  <p className="font-medium" data-testid="text-detail-date">{detailPO.date}</p>
+                </div>
+                <div>
+                  <Label className="text-xs text-muted-foreground">{t("common.status")}</Label>
+                  <div className="mt-0.5">
+                    <Badge className={statusColors[detailPO.status] || ""} variant="secondary" data-testid="badge-detail-status">
+                      {statusLabel(detailPO.status)}
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+
+              <Separator />
+
+              <div>
+                <Label className="text-sm font-semibold">{t("purchaseOrders.itemBreakdown")}</Label>
+                <div className="mt-2 rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>{t("purchaseOrders.product")}</TableHead>
+                        <TableHead className="text-right">{t("purchaseOrders.qty")}</TableHead>
+                        <TableHead className="text-right">{t("purchaseOrders.unitCostLabel")}</TableHead>
+                        {detailPO.shippingCost && detailPO.shippingCost > 0 && (
+                          <>
+                            <TableHead className="text-right">{t("purchaseOrders.shippingShare")}</TableHead>
+                            <TableHead className="text-right">{t("purchaseOrders.adjustedUnitCost")}</TableHead>
+                          </>
+                        )}
+                        <TableHead className="text-right">{t("common.total")}</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {detailPO.items.map((item) => (
+                        <TableRow key={item.id} data-testid={`row-detail-item-${item.id}`}>
+                          <TableCell className="text-sm">{item.productName}</TableCell>
+                          <TableCell className="text-right font-mono text-sm">{item.quantity}</TableCell>
+                          <TableCell className="text-right font-mono text-sm">{item.unitCost.toFixed(2)}</TableCell>
+                          {detailPO.shippingCost && detailPO.shippingCost > 0 && (
+                            <>
+                              <TableCell className="text-right font-mono text-sm">
+                                {(item.shippingCostShare || 0).toFixed(2)}
+                              </TableCell>
+                              <TableCell className="text-right font-mono text-sm font-semibold">
+                                {(item.adjustedUnitCost || item.unitCost).toFixed(2)}
+                              </TableCell>
+                            </>
+                          )}
+                          <TableCell className="text-right font-mono text-sm">{item.total.toFixed(2)}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </div>
+
+              <div className="flex flex-col items-end gap-1 text-sm">
+                <div className="flex gap-4">
+                  <span className="text-muted-foreground">{t("common.total")}:</span>
+                  <span className="font-mono font-semibold" data-testid="text-detail-total">{detailPO.totalAmount.toFixed(2)} DZD</span>
+                </div>
+                {detailPO.shippingCost && detailPO.shippingCost > 0 && (
+                  <>
+                    <div className="flex gap-4">
+                      <span className="text-muted-foreground">{t("purchaseOrders.shippingCost")}:</span>
+                      <span className="font-mono font-semibold" data-testid="text-detail-shipping">{detailPO.shippingCost.toFixed(2)} DZD</span>
+                    </div>
+                    <Separator className="w-32" />
+                    <div className="flex gap-4">
+                      <span className="text-muted-foreground font-semibold">{t("common.total")} + {t("purchaseOrders.shippingCost")}:</span>
+                      <span className="font-mono font-bold" data-testid="text-detail-grand-total">
+                        {(detailPO.totalAmount + detailPO.shippingCost).toFixed(2)} DZD
+                      </span>
+                    </div>
+                  </>
+                )}
+              </div>
+
+              {detailPO.shippingCost && detailPO.shippingCost > 0 && (
+                <>
+                  <Separator />
+                  <div>
+                    <Label className="text-sm font-semibold">{t("purchaseOrders.shippingInfo")}</Label>
+                    <div className="mt-2 grid grid-cols-3 gap-4">
+                      <div>
+                        <Label className="text-xs text-muted-foreground">{t("purchaseOrders.totalShipping")}</Label>
+                        <p className="font-mono font-medium" data-testid="text-detail-shipping-total">{detailPO.shippingCost.toFixed(2)} DZD</p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">{t("purchaseOrders.shippingMethod")}</Label>
+                        <p className="font-medium" data-testid="text-detail-shipping-method">
+                          {detailPO.shippingDistributionMethod === "by_quantity"
+                            ? t("purchaseOrders.byQuantity")
+                            : t("purchaseOrders.byValue")
+                          }
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-xs text-muted-foreground">{t("purchaseOrders.addedOn")}</Label>
+                        <p className="font-medium" data-testid="text-detail-shipping-date">{detailPO.shippingAddedAt || "-"}</p>
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {detailPO.notes && (
+                <>
+                  <Separator />
+                  <div>
+                    <Label className="text-xs text-muted-foreground">{t("common.notes")}</Label>
+                    <p className="text-sm" data-testid="text-detail-notes">{detailPO.notes}</p>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

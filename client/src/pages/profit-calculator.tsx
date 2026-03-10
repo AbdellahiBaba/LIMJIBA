@@ -331,6 +331,21 @@ export default function ProfitCalculator() {
                     </span>
                   </div>
 
+                  {(stats.totalDeliveryCosts || 0) > 0 && (
+                    <div className="flex items-center justify-between p-3 bg-green-50 dark:bg-green-900/20 rounded-md border border-dashed border-green-300">
+                      <div className="flex items-center gap-3">
+                        <Package className="h-5 w-5 text-green-600" />
+                        <div>
+                          <p className="font-medium text-green-700 dark:text-green-300">Delivery Charges</p>
+                          <p className="text-xs text-muted-foreground">Included in sale totals above</p>
+                        </div>
+                      </div>
+                      <span className="font-bold text-green-600 dark:text-green-400">
+                        {formatCurrency(stats.totalDeliveryCosts || 0)}
+                      </span>
+                    </div>
+                  )}
+
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-md border-t-2 border-green-600">
                     <span className="font-semibold">{t("profit.totalRevenue")}</span>
                     <span className="font-bold text-lg text-green-600 dark:text-green-400">
@@ -371,6 +386,21 @@ export default function ProfitCalculator() {
                       <p className="text-xs text-muted-foreground">{t("profit.expense")}</p>
                     </div>
                   </div>
+
+                  {(stats.totalShippingCosts || 0) > 0 && (
+                    <div className="flex items-center justify-between p-3 bg-orange-50 dark:bg-orange-900/20 rounded-md">
+                      <div className="flex items-center gap-3">
+                        <Package className="h-5 w-5 text-orange-600" />
+                        <div>
+                          <p className="font-medium">Shipping Costs</p>
+                          <p className="text-xs text-muted-foreground">Purchase order shipping</p>
+                        </div>
+                      </div>
+                      <span className="font-bold text-orange-600 dark:text-orange-400">
+                        -{formatCurrency(stats.totalShippingCosts || 0)}
+                      </span>
+                    </div>
+                  )}
 
                   <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-md border border-dashed border-blue-300 dark:border-blue-600">
                     <div className="flex items-center gap-3">

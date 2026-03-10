@@ -155,7 +155,7 @@ export default function Login() {
             transition={{ delay: 0.4 }}
           >
             <span className="bg-clip-text text-transparent bg-gradient-to-r from-white via-blue-100 to-white">
-              POLY FLECTA PLASTICA
+              E-Commerce Manager
             </span>
           </motion.h1>
           
@@ -165,11 +165,11 @@ export default function Login() {
             transition={{ delay: 0.6 }}
           >
             <p className="text-blue-100 text-lg font-light">
-              {isRTL ? "نظام إدارة الأعمال المتكامل" : "Système de Gestion Intégré"}
+              {isRTL ? "نظام إدارة التجارة الإلكترونية المتكامل" : "Integrated E-Commerce Management System"}
             </p>
             <div className="flex items-center justify-center gap-2 mt-2 text-blue-200/70 text-sm">
               <Boxes className="w-4 h-4" />
-              <span>{isRTL ? "صناعة التغليف البلاستيكي" : "Emballages Plastiques Industriels"}</span>
+              <span>{isRTL ? "إدارة المتجر والمبيعات" : "Store & Sales Management"}</span>
             </div>
           </motion.div>
         </motion.div>
@@ -305,7 +305,7 @@ export default function Login() {
             </div>
           </div>
           <p className="text-blue-200/50 text-xs">
-            © {new Date().getFullYear()} POLY FLECTA PLASTICA - {isRTL ? "جميع الحقوق محفوظة" : "Tous droits réservés"}
+            © {new Date().getFullYear()} E-Commerce Manager - {isRTL ? "جميع الحقوق محفوظة" : "All rights reserved"}
           </p>
         </motion.div>
       </div>

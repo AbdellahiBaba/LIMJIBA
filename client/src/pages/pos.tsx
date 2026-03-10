@@ -68,6 +68,7 @@ export default function POS() {
   const [cart, setCart] = useState<CartItem[]>([]);
   const [discountPercent, setDiscountPercent] = useState(0);
   const [discountAmount, setDiscountAmount] = useState(0);
+  const [deliveryCost, setDeliveryCost] = useState(0);
   const [paymentMode, setPaymentMode] = useState("CASH");
   const [selectedReseller, setSelectedReseller] = useState<string>("none");
   const [checkoutDialogOpen, setCheckoutDialogOpen] = useState(false);
@@ -123,6 +124,7 @@ export default function POS() {
       setCart([]);
       setDiscountPercent(0);
       setDiscountAmount(0);
+      setDeliveryCost(0);
       setSelectedReseller("none");
       setCustomerName("");
     },
@@ -374,6 +376,7 @@ export default function POS() {
     setCart([]);
     setDiscountPercent(0);
     setDiscountAmount(0);
+    setDeliveryCost(0);
     setSelectedReseller("none");
     setCustomerName("");
   };
@@ -381,7 +384,7 @@ export default function POS() {
   const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
   const percentDiscount = (subtotal * discountPercent) / 100;
   const totalDiscount = percentDiscount + discountAmount;
-  const total = Math.max(0, subtotal - totalDiscount);
+  const total = Math.max(0, subtotal - totalDiscount + deliveryCost);
 
   const handleCheckout = () => {
     if (cart.length === 0) {
@@ -423,6 +426,7 @@ export default function POS() {
         paymentMode,
         total,
         discount: totalDiscount,
+        deliveryCost: deliveryCost || 0,
         amountPaid: Math.round(amountPaid * 100) / 100,
         resellerId: selectedReseller !== "none" ? selectedReseller : null,
         status,
@@ -773,6 +777,12 @@ export default function POS() {
                     <span className="font-mono font-medium text-green-600 dark:text-green-400">-{totalDiscount.toLocaleString()} DZD</span>
                   </div>
                 )}
+                {deliveryCost > 0 && (
+                  <div className="flex justify-between text-sm">
+                    <span className="text-muted-foreground">{t("transportation.deliveryCost")}</span>
+                    <span className="font-mono font-medium">+{deliveryCost.toLocaleString()} DZD</span>
+                  </div>
+                )}
                 <Separator />
                 <div className="flex justify-between items-center">
                   <span className="text-lg font-bold">{t("pos.total")}</span>
@@ -782,7 +792,7 @@ export default function POS() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">{t("pos.discountPercent")}</Label>
                   <Input
@@ -806,6 +816,18 @@ export default function POS() {
                     placeholder="DZD"
                     className="h-9"
                     data-testid="input-discount-amount"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">{t("transportation.deliveryCost")}</Label>
+                  <Input
+                    type="number"
+                    min="0"
+                    value={deliveryCost || ""}
+                    onChange={(e) => setDeliveryCost(parseFloat(e.target.value) || 0)}
+                    placeholder="DZD"
+                    className="h-9"
+                    data-testid="input-delivery-cost"
                   />
                 </div>
                 <div className="space-y-1.5">

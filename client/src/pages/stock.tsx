@@ -56,11 +56,11 @@ import { exportToCsv } from "@/lib/csv-export";
 import type { Product, InsertProduct, StockMovementWithProduct, InventoryValuation } from "@shared/schema";
 
 const categoryKeys = [
-  { value: "Sacs en plastique", key: "stock.categories.plasticBags" },
-  { value: "Emballage alimentaire", key: "stock.categories.foodPackaging" },
-  { value: "Emballage industriel", key: "stock.categories.industrialPackaging" },
-  { value: "Accessoires", key: "stock.categories.accessories" },
-  { value: "Autres", key: "stock.categories.other" },
+  { value: "General Products", key: "stock.categories.plasticBags" },
+  { value: "Food & Beverages", key: "stock.categories.foodPackaging" },
+  { value: "Industrial Supplies", key: "stock.categories.industrialPackaging" },
+  { value: "Accessories", key: "stock.categories.accessories" },
+  { value: "Other", key: "stock.categories.other" },
 ];
 
 const categories = categoryKeys.map(c => c.value);
@@ -158,7 +158,7 @@ function ProductFormDialog({
   const generateBarcode = () => {
     const timestamp = Date.now().toString(36).toUpperCase();
     const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-    setFormData({ ...formData, barcode: `PFP-${timestamp}-${random}` });
+    setFormData({ ...formData, barcode: `ECM-${timestamp}-${random}` });
   };
 
   const isPending = createMutation.isPending || updateMutation.isPending;

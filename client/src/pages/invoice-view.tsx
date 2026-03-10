@@ -393,6 +393,14 @@ export default function InvoiceView() {
                   </span>
                 </div>
               )}
+              {(invoice.deliveryCost || 0) > 0 && (
+                <div className="flex gap-8 text-sm">
+                  <span className="text-muted-foreground">{t("transportation.deliveryCost")}:</span>
+                  <span className="font-mono font-medium" data-testid="text-delivery-cost">
+                    {(invoice.deliveryCost || 0).toLocaleString()} DZD
+                  </span>
+                </div>
+              )}
               <div className="flex gap-8 text-lg font-semibold">
                 <span>{t("invoices.totalTTC")}:</span>
                 <span className="font-mono">

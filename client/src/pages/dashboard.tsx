@@ -743,7 +743,7 @@ export default function Dashboard() {
               <CardContent className="p-3 sm:p-4 pt-0 space-y-2 sm:space-y-3 text-xs sm:text-sm">
                 <div className="flex justify-between gap-2">
                   <span className="text-muted-foreground">{t("common.name")}</span>
-                  <span className="font-medium text-right">POLY FLECTA PLASTICA</span>
+                  <span className="font-medium text-right">{t("company.name")}</span>
                 </div>
                 <div className="flex justify-between gap-2">
                   <span className="text-muted-foreground">{t("common.description")}</span>
@@ -751,19 +751,11 @@ export default function Dashboard() {
                 </div>
                 <div className="flex justify-between gap-2">
                   <span className="text-muted-foreground">{t("common.address")}</span>
-                  <span className="font-medium text-right text-[10px] sm:text-sm">Village Zaitout, Hammam Dalaa - W M'sila</span>
+                  <span className="font-medium text-right text-[10px] sm:text-sm">{t("company.address")}</span>
                 </div>
                 <div className="flex justify-between gap-2">
-                  <span className="text-muted-foreground">{t("invoices.artisanCard")}</span>
-                  <span className="font-medium">28/ 00 - 2896688A24</span>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <span className="text-muted-foreground">{t("invoices.articleNumber")}</span>
-                  <span className="font-medium">101082709</span>
-                </div>
-                <div className="flex justify-between gap-2">
-                  <span className="text-muted-foreground">{t("common.phone")}</span>
-                  <span className="font-medium">+213 6 70 04 91 24</span>
+                  <span className="text-muted-foreground">{t("common.email")}</span>
+                  <span className="font-medium">{t("company.email")}</span>
                 </div>
               </CardContent>
             </Card>

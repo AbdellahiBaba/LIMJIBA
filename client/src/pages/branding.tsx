@@ -472,7 +472,7 @@ export default function Branding() {
                 id="artisan-number"
                 value={branding.companyInfo.artisanNumber}
                 onChange={(e) => updateBranding({ companyInfo: { ...branding.companyInfo, artisanNumber: e.target.value } })}
-                placeholder="28/00 - 2896688A24"
+                placeholder=""
                 data-testid="input-artisan-number"
               />
             </div>
@@ -581,7 +581,7 @@ export default function Branding() {
                       className="w-14 h-14 rounded-md flex items-center justify-center text-white font-bold"
                       style={{ backgroundColor: branding.primaryColor }}
                     >
-                      PFP
+                      ECM
                     </div>
                   )}
                   {branding.logoPosition !== "center" && (
@@ -602,7 +602,7 @@ export default function Branding() {
                       </p>
                       {branding.companyInfo.artisanNumber && (
                         <p className="text-xs text-gray-500">
-                          CARTE ARTISAN N°: {branding.companyInfo.artisanNumber}
+                          {t("branding.artisanNumber")}: {branding.companyInfo.artisanNumber}
                         </p>
                       )}
                       {branding.companyInfo.articleNumber && (
@@ -655,13 +655,13 @@ export default function Branding() {
                 <tbody className="text-gray-700">
                   <tr className="border-b">
                     <td className="p-2">100</td>
-                    <td className="p-2">Sac en plastique 5KG</td>
+                    <td className="p-2">Product A - Standard</td>
                     <td className="p-2 text-right">250 DZD</td>
                     <td className="p-2 text-right">25,000 DZD</td>
                   </tr>
                   <tr className="border-b bg-gray-50">
                     <td className="p-2">50</td>
-                    <td className="p-2">Sac en plastique 10KG</td>
+                    <td className="p-2">Product B - Premium</td>
                     <td className="p-2 text-right">450 DZD</td>
                     <td className="p-2 text-right">22,500 DZD</td>
                   </tr>

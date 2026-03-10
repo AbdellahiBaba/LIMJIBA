@@ -126,7 +126,7 @@ function AuthenticatedApp() {
                 variant="ghost"
                 size="icon"
                 onClick={() => setCommandBarOpen(true)}
-                title="Recherche (Ctrl+K)"
+                title="Search (Ctrl+K)"
                 data-testid="button-search"
               >
                 <Search className="h-4 w-4" />
@@ -138,7 +138,7 @@ function AuthenticatedApp() {
                 variant="ghost"
                 size="icon"
                 onClick={() => logout()}
-                title="Déconnexion"
+                title="Logout"
                 data-testid="button-logout"
               >
                 <LogOut className="h-4 w-4" />

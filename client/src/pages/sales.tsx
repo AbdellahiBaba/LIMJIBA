@@ -336,6 +336,7 @@ export default function Sales() {
         { header: t("sales.number"), accessor: (s) => s.saleNumber },
         { header: t("common.date"), accessor: (s) => s.date },
         { header: t("sales.client"), accessor: (s) => getClientName(s) },
+        { header: t("transportation.deliveryCost"), accessor: (s) => s.deliveryCost || 0 },
         { header: t("common.total"), accessor: (s) => s.total },
         { header: t("sales.paid"), accessor: (s) => s.amountPaid ?? 0 },
         { header: t("sales.status"), accessor: (s) => s.status },
@@ -607,6 +608,12 @@ export default function Sales() {
                 <div className="flex justify-between text-sm text-muted-foreground border-t pt-2">
                   <span>{t("sales.discount")}</span>
                   <span>-{viewSale.discount.toLocaleString("fr-FR")} {t("common.currency")}</span>
+                </div>
+              )}
+              {viewSale.deliveryCost && viewSale.deliveryCost > 0 && (
+                <div className="flex justify-between text-sm text-muted-foreground border-t pt-2">
+                  <span>{t("transportation.deliveryCost")}</span>
+                  <span data-testid="text-detail-delivery-cost">+{viewSale.deliveryCost.toLocaleString("fr-FR")} {t("common.currency")}</span>
                 </div>
               )}
             </div>

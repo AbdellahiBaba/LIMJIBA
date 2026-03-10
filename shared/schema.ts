@@ -89,6 +89,7 @@ export const invoices = pgTable("invoices", {
   amountPaid: real("amount_paid").default(0),
   status: text("status").notNull().default("pending"), // 'pending' | 'partial' | 'paid'
   clientName: text("client_name"),
+  deliveryCost: real("delivery_cost").default(0),
   deliveryStatus: text("delivery_status").notNull().default("none"), // 'none' | 'prepared' | 'shipped' | 'delivered'
 });
 
@@ -135,6 +136,7 @@ export const sales = pgTable("sales", {
   paymentMode: text("payment_mode").notNull(),
   total: real("total").notNull(),
   discount: real("discount").default(0),
+  deliveryCost: real("delivery_cost").default(0),
   amountPaid: real("amount_paid").default(0),
   resellerId: varchar("reseller_id"),
   status: text("status").notNull().default("completed"), // 'completed' | 'partial' | 'credit'
@@ -154,6 +156,7 @@ export const saleItems = pgTable("sale_items", {
   quantity: integer("quantity").notNull(),
   unitPrice: real("unit_price").notNull(),
   costPrice: real("cost_price").notNull().default(0),
+  purchaseOrderId: varchar("purchase_order_id"),
   total: real("total").notNull(),
 });
 
@@ -362,6 +365,8 @@ export interface ProfitStats {
   totalInvoiceRevenue: number;
   totalRevenue: number;
   totalProductCosts: number;       // COGS - Cost of Goods Sold
+  totalShippingCosts: number;      // Total shipping costs from purchase orders
+  totalDeliveryCosts: number;      // Total delivery costs from sales/invoices
   totalFabricationCosts: number;   // Manufacturing costs (informational, already in COGS via costPrice)
   totalSalaries: number;
   totalExpenses: number;
@@ -371,6 +376,62 @@ export interface ProfitStats {
   profitMargin: number;
   periodStart: string;
   periodEnd: string;
+}
+
+export interface BatchProfitability {
+  purchaseOrderId: string;
+  orderNumber: string;
+  supplierName: string;
+  date: string;
+  items: BatchItemProfitability[];
+  totalPurchaseCost: number;
+  totalShippingCost: number;
+  totalTrueCost: number;
+  totalRevenue: number;
+  totalProfit: number;
+  profitMargin: number;
+  remainingStock: number;
+  remainingValue: number;
+}
+
+export interface BatchItemProfitability {
+  productId: string;
+  productName: string;
+  quantityPurchased: number;
+  unitCost: number;
+  shippingShare: number;
+  adjustedUnitCost: number;
+  quantitySold: number;
+  quantityRemaining: number;
+  totalRevenue: number;
+  totalCost: number;
+  profit: number;
+  profitMargin: number;
+}
+
+export interface ProductProfitability {
+  productId: string;
+  productName: string;
+  category: string;
+  currentStock: number;
+  currentCostPrice: number;
+  batches: {
+    purchaseOrderId: string;
+    orderNumber: string;
+    unitCost: number;
+    adjustedUnitCost: number;
+    quantityPurchased: number;
+    quantitySold: number;
+    quantityRemaining: number;
+    revenue: number;
+    cost: number;
+    profit: number;
+  }[];
+  totalRevenue: number;
+  totalCost: number;
+  totalProfit: number;
+  profitMargin: number;
+  inventoryValue: number;
 }
 
 /**
@@ -433,6 +494,9 @@ export const purchaseOrders = pgTable("purchase_orders", {
   date: text("date").notNull(),
   status: text("status").notNull().default("draft"), // 'draft' | 'ordered' | 'received' | 'cancelled'
   totalAmount: real("total_amount").notNull().default(0),
+  shippingCost: real("shipping_cost").default(0),
+  shippingDistributionMethod: text("shipping_distribution_method"), // 'by_quantity' | 'by_value'
+  shippingAddedAt: text("shipping_added_at"),
   notes: text("notes"),
   createdAt: text("created_at").notNull(),
   receivedAt: text("received_at"),
@@ -450,6 +514,8 @@ export const purchaseOrderItems = pgTable("purchase_order_items", {
   productName: text("product_name").notNull(),
   quantity: integer("quantity").notNull(),
   unitCost: real("unit_cost").notNull(),
+  shippingCostShare: real("shipping_cost_share").default(0),
+  adjustedUnitCost: real("adjusted_unit_cost").default(0),
   total: real("total").notNull(),
 });
 

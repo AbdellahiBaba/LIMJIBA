@@ -104,6 +104,7 @@ export default function InvoiceForm() {
     clientName: "",
     applyTva: false,
     tvaRate: 0.19,
+    deliveryCost: 0,
   });
 
   const [items, setItems] = useState<InvoiceLineItem[]>([
@@ -142,6 +143,7 @@ export default function InvoiceForm() {
         clientName: existingInvoice.clientName || "",
         applyTva: existingInvoice.applyTva || false,
         tvaRate: existingInvoice.tvaRate || 0.19,
+        deliveryCost: existingInvoice.deliveryCost || 0,
       });
       if (existingInvoice.items.length > 0) {
         setItems(
@@ -268,7 +270,7 @@ export default function InvoiceForm() {
 
   const totalHT = items.reduce((sum, item) => sum + item.total, 0);
   const tvaAmount = formData.applyTva ? Math.round(totalHT * formData.tvaRate * 100) / 100 : 0;
-  const totalTTC = totalHT + tvaAmount;
+  const totalTTC = totalHT + tvaAmount + (formData.deliveryCost || 0);
   const totalWeight = items.reduce((sum, item) => sum + item.totalWeight, 0);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -287,7 +289,7 @@ export default function InvoiceForm() {
       }));
 
     createMutation.mutate({
-      invoice: { ...formData, totalHT, tvaAmount, totalTTC, totalWeight },
+      invoice: { ...formData, totalHT, tvaAmount, totalTTC, totalWeight, deliveryCost: formData.deliveryCost || 0 },
       items: invoiceItems,
     });
   };
@@ -409,7 +411,7 @@ export default function InvoiceForm() {
                 />
               </div>
             </div>
-            <div className="flex items-center gap-4 pt-4 border-t">
+            <div className="flex items-center gap-4 pt-4 border-t flex-wrap">
               <div className="flex items-center gap-2">
                 <Switch
                   id="applyTva"
@@ -444,6 +446,25 @@ export default function InvoiceForm() {
                   <span className="text-sm text-muted-foreground">({(formData.tvaRate * 100).toFixed(0)}%)</span>
                 </div>
               )}
+              <div className="flex items-center gap-2">
+                <Label htmlFor="deliveryCost" className="text-sm text-muted-foreground">
+                  {t("transportation.deliveryCost")}:
+                </Label>
+                <Input
+                  id="deliveryCost"
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  value={formData.deliveryCost || ""}
+                  onChange={(e) =>
+                    setFormData({ ...formData, deliveryCost: parseFloat(e.target.value) || 0 })
+                  }
+                  className="w-28"
+                  placeholder="0"
+                  data-testid="input-delivery-cost"
+                />
+                <span className="text-sm text-muted-foreground">DZD</span>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -587,6 +608,14 @@ export default function InvoiceForm() {
                   </span>
                 </div>
               )}
+              {(formData.deliveryCost || 0) > 0 && (
+                <div className="flex gap-8 text-sm">
+                  <span className="text-muted-foreground">{t("transportation.deliveryCost")}:</span>
+                  <span className="font-mono font-medium" data-testid="text-delivery-cost">
+                    {(formData.deliveryCost || 0).toLocaleString()} DZD
+                  </span>
+                </div>
+              )}
               <div className="flex gap-8 text-lg font-semibold">
                 <span>{t("invoices.totalTTC")}:</span>
                 <span className="font-mono" data-testid="text-total-ttc">
@@ -664,7 +693,7 @@ export default function InvoiceForm() {
                       className="w-16 h-16 rounded-md flex items-center justify-center text-white font-bold text-lg"
                       style={{ backgroundColor: branding.primaryColor }}
                     >
-                      PFP
+                      ECM
                     </div>
                   )}
                   <div>
@@ -672,13 +701,13 @@ export default function InvoiceForm() {
                       className="text-xl font-bold"
                       style={{ color: branding.primaryColor }}
                     >
-                      {branding.companyInfo?.name || "POLY FLECTA PLASTICA"}
+                      {branding.companyInfo?.name || "E-Commerce Manager"}
                     </h2>
                     <p className="text-sm text-gray-600">
-                      {branding.companyInfo?.tagline || "FABRICATION D'EMBALLAGE EN PLASTIQUE"}
+                      {branding.companyInfo?.tagline || "Complete E-Commerce Management System"}
                     </p>
                     <p className="text-xs text-gray-500 mt-1">
-                      {branding.companyInfo?.address || "Village Zaitout, Local N°01, Commune Hammam Dalaa - W M'sila"}
+                      {branding.companyInfo?.address || ""}
                     </p>
                   </div>
                 </div>
@@ -762,6 +791,14 @@ export default function InvoiceForm() {
                       <td colSpan={6} className="p-3 border text-right">TVA ({(formData.tvaRate * 100).toFixed(0)}%)</td>
                       <td className="p-3 text-right border font-medium">
                         {tvaAmount.toLocaleString()} DZD
+                      </td>
+                    </tr>
+                  )}
+                  {(formData.deliveryCost || 0) > 0 && (
+                    <tr className="bg-gray-50">
+                      <td colSpan={6} className="p-3 border text-right">{t("transportation.deliveryCost")}</td>
+                      <td className="p-3 text-right border font-medium">
+                        {(formData.deliveryCost || 0).toLocaleString()} DZD
                       </td>
                     </tr>
                   )}

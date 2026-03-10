@@ -835,8 +835,8 @@ function ViewTransportDialog({
       return div.innerHTML;
     };
 
-    const companyName = branding?.companyInfo?.name || branding?.companyName || "POLY FLECTA PLASTICA";
-    const tagline = branding?.companyInfo?.tagline || "FABRICATION D'EMBALLAGE EN PLASTIQUE";
+    const companyName = branding?.companyInfo?.name || branding?.companyName || "E-Commerce Manager";
+    const tagline = branding?.companyInfo?.tagline || "Complete E-Commerce Management System";
     const address = branding?.companyInfo?.address || "";
     const phone = branding?.companyInfo?.phone || "";
     const primaryColor = branding?.primaryColor || "#1976D2";
@@ -859,7 +859,7 @@ function ViewTransportDialog({
     `).join("");
 
     const html = `<!DOCTYPE html>
-<html><head><title>Bon de Transport ${esc(invoice.invoiceNumber)}</title>
+<html><head><title>Shipment ${esc(invoice.invoiceNumber)}</title>
 <style>
   @media print { body { margin: 0; } @page { margin: 15mm; } }
   body { font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
@@ -867,7 +867,7 @@ function ViewTransportDialog({
 </head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:15px;border-bottom:3px solid ${primaryColor};margin-bottom:20px;">
     <div>
-      ${branding?.logo ? `<img src="${branding.logo}" alt="Logo" style="height:60px;margin-bottom:8px;" />` : `<div style="width:60px;height:60px;background:${primaryColor};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;border-radius:6px;margin-bottom:8px;">PFP</div>`}
+      ${branding?.logo ? `<img src="${branding.logo}" alt="Logo" style="height:60px;margin-bottom:8px;" />` : `<div style="width:60px;height:60px;background:${primaryColor};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;border-radius:6px;margin-bottom:8px;">ECM</div>`}
       <h2 style="margin:0;color:${primaryColor};font-size:18px;">${esc(companyName)}</h2>
       <p style="margin:2px 0;font-size:12px;color:#666;">${esc(tagline)}</p>
       ${address ? `<p style="margin:2px 0;font-size:11px;color:#999;">${esc(address)}</p>` : ''}

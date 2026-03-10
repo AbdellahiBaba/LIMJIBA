@@ -276,8 +276,8 @@ export default function QuickInvoice() {
   const hasWeight = items.some(item => item.weightPerUnit > 0);
 
   const handlePrint = () => {
-    const companyName = branding?.companyInfo?.name || branding?.companyName || "POLY FLECTA PLASTICA";
-    const tagline = branding?.companyInfo?.tagline || "FABRICATION D'EMBALLAGE EN PLASTIQUE";
+    const companyName = branding?.companyInfo?.name || branding?.companyName || "E-Commerce Manager";
+    const tagline = branding?.companyInfo?.tagline || "Complete E-Commerce Management System";
     const address = branding?.companyInfo?.address || "";
     const phone = branding?.companyInfo?.phone || "";
     const primaryColor = branding?.primaryColor || "#1976D2";
@@ -315,7 +315,7 @@ export default function QuickInvoice() {
       </div>`;
 
     const html = `<!DOCTYPE html>
-<html><head><title>Facture ${formData.invoiceNumber}</title>
+<html><head><title>Invoice ${formData.invoiceNumber}</title>
 <style>
   @media print { body { margin: 0; } @page { margin: 15mm; } }
   body { font-family: Arial, sans-serif; color: #333; max-width: 800px; margin: 0 auto; padding: 20px; }
@@ -323,7 +323,7 @@ export default function QuickInvoice() {
 </head><body>
   <div style="display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:15px;border-bottom:3px solid ${primaryColor};margin-bottom:20px;">
     <div>
-      ${branding?.logo ? `<img src="${branding.logo}" alt="Logo" style="height:60px;margin-bottom:8px;" />` : `<div style="width:60px;height:60px;background:${primaryColor};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;border-radius:6px;margin-bottom:8px;">PFP</div>`}
+      ${branding?.logo ? `<img src="${branding.logo}" alt="Logo" style="height:60px;margin-bottom:8px;" />` : `<div style="width:60px;height:60px;background:${primaryColor};color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;border-radius:6px;margin-bottom:8px;">ECM</div>`}
       <h2 style="margin:0;color:${primaryColor};font-size:18px;">${companyName}</h2>
       <p style="margin:2px 0;font-size:12px;color:#666;">${tagline}</p>
       ${address ? `<p style="margin:2px 0;font-size:11px;color:#999;">${address}</p>` : ''}
@@ -813,19 +813,19 @@ export default function QuickInvoice() {
                       className="w-16 h-16 rounded-md flex items-center justify-center text-white font-bold text-lg"
                       style={{ backgroundColor: branding.primaryColor }}
                     >
-                      PFP
+                      ECM
                     </div>
                   )}
                   <div>
                     <h2 className="text-xl font-bold" style={{ color: branding.primaryColor }}>
-                      {branding.companyInfo?.name || "POLY FLECTA PLASTICA"}
+                      {branding.companyInfo?.name || "E-Commerce Manager"}
                     </h2>
-                    <p className="text-sm text-gray-600">{branding.companyInfo?.tagline || "FABRICATION D'EMBALLAGE EN PLASTIQUE"}</p>
+                    <p className="text-sm text-gray-600">{branding.companyInfo?.tagline || "Complete E-Commerce Management System"}</p>
                     {branding.companyInfo?.address && <p className="text-xs text-gray-500 mt-1">{branding.companyInfo.address}</p>}
                   </div>
                 </div>
                 <div className="text-right">
-                  <h3 className="text-2xl font-bold" style={{ color: branding.primaryColor }}>FACTURE</h3>
+                  <h3 className="text-2xl font-bold" style={{ color: branding.primaryColor }}>INVOICE</h3>
                   <p className="text-sm text-gray-600 mt-1">N°: {formData.invoiceNumber}</p>
                   <p className="text-sm text-gray-600">Date: {formatDateDMY(formData.date)}</p>
                   {formData.dueDate && <p className="text-xs text-gray-500">Échéance: {formatDateDMY(formData.dueDate)}</p>}
