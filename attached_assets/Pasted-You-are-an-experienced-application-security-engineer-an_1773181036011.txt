@@ -1,0 +1,38 @@
+You are an experienced application security engineer and penetration tester.
+
+I want you to perform a thorough, defense-focused security review of my web application and infrastructure for limjiba.com and its related endpoints (including limjiba.com, limjiba.replit.app, and any exposed APIs or portals).
+
+Goals:
+1. Identify security weaknesses, misconfigurations, and bad practices in:
+   - Backend code (authentication, authorization, input validation, file handling, business logic)
+   - Frontend code (exposed secrets, unsafe client-side logic, insecure storage)
+   - API endpoints and routes
+   - Database access patterns and queries
+   - Session management and cookies
+   - Error handling and logging
+   - Third-party libraries and dependencies
+   - Deployment and environment configuration (env vars, secrets, HTTPS, CORS, headers, etc.)
+
+2. Evaluate the app against major categories such as:
+   - OWASP Top 10 (injection, broken auth, sensitive data exposure, XXE, access control, misconfig, XSS, insecure deserialization, etc.)
+   - Common API security issues
+   - Basic infrastructure and configuration security (rate limiting, brute-force protection, CSRF, clickjacking, security headers)
+
+3. For each issue you find:
+   - Clearly describe the vulnerability in simple terms
+   - Explain the potential impact and risk level (low/medium/high)
+   - Show where in the code or configuration it appears (file names, functions, routes)
+   - Propose concrete, secure fixes or refactors (with example code where helpful)
+   - Suggest any relevant best practices or standards (e.g., OWASP, secure password storage, JWT best practices)
+
+4. Also:
+   - Check that no secrets (API keys, tokens, passwords) are hard-coded or exposed
+   - Suggest improvements for secure deployment (HTTPS, HSTS, security headers, environment separation)
+   - Recommend monitoring and logging practices that help detect attacks
+
+Important:
+- Focus only on defensive security and hardening the application.
+- Do NOT provide exploit code or instructions to attack other systems.
+- Prioritize practical, actionable recommendations I can implement directly in this Replit project.
+
+Start by summarizing the overall security posture of the project
