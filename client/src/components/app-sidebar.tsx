@@ -1,7 +1,7 @@
 import { useLocation, Link } from "wouter";
 import { useLanguage, useBranding } from "@/contexts/language-context";
 import { useAuth, hasPermission } from "@/contexts/auth-context";
-import defaultLogoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
+import defaultLogoImg from "@assets/limjiba_logo_branded.png";
 import {
   Sidebar,
   SidebarContent,

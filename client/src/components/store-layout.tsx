@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import type { StoreSettings, StoreNotification } from "@shared/schema";
 import { type StoreLanguage, getStoreTranslation } from "@/locales/store";
 import PwaInstallPrompt from "@/components/pwa-install-prompt";
-import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
+import logoImg from "@assets/limjiba_logo_branded.png";
 
 interface StoreLanguageContextType {
   lang: StoreLanguage;

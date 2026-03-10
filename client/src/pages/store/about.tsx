@@ -3,7 +3,7 @@ import { useStoreLanguage } from "@/components/store-layout";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Shield, Award, Truck, Globe } from "lucide-react";
 import type { CmsPage, StoreSettings } from "@shared/schema";
-import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
+import logoImg from "@assets/limjiba_logo_branded.png";
 
 export default function StoreAbout() {
   const { t, lang } = useStoreLanguage();
