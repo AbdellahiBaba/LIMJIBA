@@ -27,7 +27,7 @@ import {
   insertStoreCustomerSchema,
 } from "@shared/schema";
 import { z } from "zod";
-import { handleCustomerChat, handleAdminChat, generatePromoCode, getCustomerGreeting } from "./limjiba";
+import { handleCustomerChat, handleAdminChat, generatePromoCode, getCustomerGreeting, generateProductDescriptions } from "./limjiba";
 import { sendOrderStatusEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail } from "./email";
 
 const loginSchema = z.object({
@@ -3656,6 +3656,24 @@ export async function registerRoutes(
       res.json(created);
     } catch (error) {
       handleError(res, "batchReplaceVariants", error);
+    }
+  });
+
+  app.post("/api/ai/generate-descriptions", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { productName, category, variants } = req.body;
+      if (!productName || typeof productName !== "string") {
+        return res.status(400).json({ error: "Product name is required" });
+      }
+      const variantLabels = Array.isArray(variants) ? variants.map((v: any) => String(v).substring(0, 100)).slice(0, 50) : [];
+      const result = await generateProductDescriptions(
+        productName.substring(0, 200),
+        String(category || "General").substring(0, 100),
+        variantLabels,
+      );
+      res.json(result);
+    } catch (error) {
+      handleError(res, "generateProductDescriptions", error);
     }
   });
 

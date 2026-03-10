@@ -319,6 +319,72 @@ export async function generatePromoCode(margin?: number): Promise<{
   };
 }
 
+export async function generateProductDescriptions(
+  productName: string,
+  category: string,
+  variants: string[] = [],
+): Promise<{
+  descriptionEn: string;
+  descriptionFr: string;
+  descriptionAr: string;
+  variantDescriptions?: { label: string; en: string; fr: string; ar: string }[];
+}> {
+  const variantInfo = variants.length > 0
+    ? `\nThis product has variants: ${variants.join(", ")}.`
+    : "";
+
+  const prompt = `You are a product copywriter for LIMJIBA (لمجيبة), a premium import & e-commerce business in Mauritania.
+
+Write compelling product descriptions for the following product:
+- Product Name: ${productName}
+- Category: ${category}${variantInfo}
+
+Return a JSON object with these exact fields:
+{
+  "descriptionEn": "English description (2-3 sentences, professional, highlighting quality and value)",
+  "descriptionFr": "French description (2-3 sentences, professional, equivalent quality)",
+  "descriptionAr": "Arabic description (2-3 sentences, professional, equivalent quality, RTL-ready)"${variants.length > 0 ? `,
+  "variantDescriptions": [${variants.map(v => `{"label": "${v}", "en": "...", "fr": "...", "ar": "..."}`).join(", ")}]` : ""}
+}
+
+Rules:
+- Keep descriptions concise but persuasive (2-3 sentences each)
+- Mention LIMJIBA brand quality and premium import standards
+- Make each language version natural, not a direct translation
+- For Arabic, use modern standard Arabic suitable for e-commerce
+${variants.length > 0 ? "- Variant descriptions should be 1 sentence each, describing what makes that specific variant unique" : ""}
+- Return ONLY valid JSON, no markdown or code blocks`;
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    max_tokens: 1000,
+    temperature: 0.7,
+    response_format: { type: "json_object" },
+  });
+
+  const text = response.choices[0]?.message?.content || "{}";
+  const cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+  try {
+    const parsed = JSON.parse(cleaned);
+    return {
+      descriptionEn: String(parsed.descriptionEn || ""),
+      descriptionFr: String(parsed.descriptionFr || ""),
+      descriptionAr: String(parsed.descriptionAr || ""),
+      variantDescriptions: Array.isArray(parsed.variantDescriptions)
+        ? parsed.variantDescriptions.map((v: any) => ({
+            label: String(v.label || ""),
+            en: String(v.en || ""),
+            fr: String(v.fr || ""),
+            ar: String(v.ar || ""),
+          }))
+        : undefined,
+    };
+  } catch {
+    return { descriptionEn: "", descriptionFr: "", descriptionAr: "" };
+  }
+}
+
 export async function getCustomerGreeting(language: string = "en"): Promise<string> {
   let promoLine = "";
   try {

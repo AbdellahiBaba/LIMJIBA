@@ -59,6 +59,8 @@ import {
   GripVertical,
   ChevronDown,
   ChevronUp,
+  Sparkles,
+  Loader2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv-export";
@@ -390,24 +392,56 @@ function OptionsAndVariantsSection({
               </div>
 
               {variants.length > 0 && (
-                <div className="space-y-2">
-                  <Label className="text-sm font-semibold">{variants.length} Variants</Label>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <Label className="text-sm font-semibold">{variants.length} Variants</Label>
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium" style={{ background: "rgba(201,168,76,0.1)", color: "#C9A84C", border: "1px solid rgba(201,168,76,0.3)" }} data-testid="text-total-variant-stock">
+                        <Package className="h-3 w-3" />
+                        Total Stock: {variants.reduce((sum, v) => sum + (v.stockQuantity || 0), 0)}
+                      </div>
+                    </div>
+                  </div>
                   <div className="rounded-md border overflow-x-auto">
                     <Table>
                       <TableHeader>
                         <TableRow>
-                          <TableHead className="min-w-[160px]">Variant</TableHead>
+                          <TableHead className="w-[50px]">Image</TableHead>
+                          <TableHead className="min-w-[140px]">Variant</TableHead>
                           <TableHead className="w-[100px]">Price</TableHead>
                           <TableHead className="w-[100px]">Cost</TableHead>
-                          <TableHead className="w-[80px]">Stock</TableHead>
+                          <TableHead className="w-[90px]">Stock</TableHead>
                           <TableHead className="w-[120px]">SKU</TableHead>
-                          <TableHead className="w-[60px]">Image</TableHead>
                           <TableHead className="w-[40px]"></TableHead>
                         </TableRow>
                       </TableHeader>
                       <TableBody>
                         {variants.map((v, idx) => (
                           <TableRow key={idx} data-testid={`variant-row-${idx}`}>
+                            <TableCell>
+                              {v.imageUrl ? (
+                                <div className="relative w-10 h-10 group">
+                                  <img src={v.imageUrl} alt="" className="w-10 h-10 rounded object-cover border" />
+                                  <button
+                                    type="button"
+                                    onClick={() => updateVariant(idx, "imageUrl", null)}
+                                    className="absolute -top-1.5 -right-1.5 h-4 w-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                                  >
+                                    <X className="h-2.5 w-2.5" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <label className="w-10 h-10 border-2 border-dashed rounded flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors" data-testid={`button-variant-image-${idx}`}>
+                                  <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleVariantImageUpload(idx, e)}
+                                    className="hidden"
+                                  />
+                                </label>
+                              )}
+                            </TableCell>
                             <TableCell>
                               <span className="text-sm font-medium">{v.variantLabel}</span>
                             </TableCell>
@@ -453,30 +487,6 @@ function OptionsAndVariantsSection({
                               />
                             </TableCell>
                             <TableCell>
-                              {v.imageUrl ? (
-                                <div className="relative w-8 h-8">
-                                  <img src={v.imageUrl} alt="" className="w-8 h-8 rounded object-cover border" />
-                                  <button
-                                    type="button"
-                                    onClick={() => updateVariant(idx, "imageUrl", null)}
-                                    className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-[8px]"
-                                  >
-                                    <X className="h-2 w-2" />
-                                  </button>
-                                </div>
-                              ) : (
-                                <label className="w-8 h-8 border-2 border-dashed rounded flex items-center justify-center cursor-pointer">
-                                  <ImagePlus className="h-3 w-3 text-muted-foreground" />
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => handleVariantImageUpload(idx, e)}
-                                    className="hidden"
-                                  />
-                                </label>
-                              )}
-                            </TableCell>
-                            <TableCell>
                               <Button
                                 type="button"
                                 variant="ghost"
@@ -489,6 +499,15 @@ function OptionsAndVariantsSection({
                             </TableCell>
                           </TableRow>
                         ))}
+                        <TableRow className="font-medium" style={{ background: "rgba(201,168,76,0.05)" }}>
+                          <TableCell colSpan={4} className="text-right text-sm" style={{ color: "#C9A84C" }}>
+                            Total Available Stock
+                          </TableCell>
+                          <TableCell className="text-sm font-bold" style={{ color: "#C9A84C" }} data-testid="text-variants-total-stock">
+                            {variants.reduce((sum, v) => sum + (v.stockQuantity || 0), 0)}
+                          </TableCell>
+                          <TableCell colSpan={2}></TableCell>
+                        </TableRow>
                       </TableBody>
                     </Table>
                   </div>
@@ -559,6 +578,7 @@ export function ProductFormPage() {
   const [options, setOptions] = useState<OptionRow[]>([]);
   const [variants, setVariants] = useState<VariantRow[]>([]);
   const [initialized, setInitialized] = useState(false);
+  const [aiGenerating, setAiGenerating] = useState(false);
 
   useEffect(() => {
     if (isEditing && existingProduct && !initialized) {
@@ -715,6 +735,36 @@ export function ProductFormPage() {
     setFormData(prev => ({ ...prev, barcode: `ECM-${timestamp}-${random}` }));
   };
 
+  const generateAiDescriptions = async () => {
+    if (!formData.name?.trim()) {
+      toast({ title: "Enter a product name first", variant: "destructive" });
+      return;
+    }
+    setAiGenerating(true);
+    try {
+      const variantLabels = hasOptions && variants.length > 0
+        ? variants.map(v => v.variantLabel)
+        : [];
+      const res = await apiRequest("POST", "/api/ai/generate-descriptions", {
+        productName: formData.name,
+        category: formData.category || "General",
+        variants: variantLabels,
+      });
+      const data = await res.json();
+      setFormData(prev => ({
+        ...prev,
+        descriptionEn: data.descriptionEn || prev.descriptionEn,
+        descriptionFr: data.descriptionFr || prev.descriptionFr,
+        descriptionAr: data.descriptionAr || prev.descriptionAr,
+      }));
+      toast({ title: "Descriptions generated successfully" });
+    } catch (error: any) {
+      toast({ title: error.message || "Failed to generate descriptions", variant: "destructive" });
+    } finally {
+      setAiGenerating(false);
+    }
+  };
+
   const isPending = createMutation.isPending || updateMutation.isPending;
 
   if (isEditing && loadingProduct) {
@@ -781,7 +831,26 @@ export function ProductFormPage() {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Title & Description</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base">Title & Description</CardTitle>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={generateAiDescriptions}
+                  disabled={aiGenerating || !formData.name?.trim()}
+                  className="gap-1.5 text-xs"
+                  style={{ borderColor: "rgba(201,168,76,0.5)", color: "#C9A84C" }}
+                  data-testid="button-ai-generate-descriptions"
+                >
+                  {aiGenerating ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-3.5 w-3.5" />
+                  )}
+                  {aiGenerating ? "Generating..." : "AI Generate"}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
