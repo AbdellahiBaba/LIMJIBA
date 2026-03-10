@@ -13,6 +13,7 @@ import {
   SidebarMenuItem,
   SidebarHeader,
   SidebarFooter,
+  useSidebar,
 } from "@/components/ui/sidebar";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -48,6 +49,7 @@ export function AppSidebar() {
   const { t } = useLanguage();
   const { branding } = useBranding();
   const { user } = useAuth();
+  const { setOpenMobile } = useSidebar();
 
   const menuItems = [
     { title: t("nav.dashboard"), url: "/emanager-portal", icon: LayoutDashboard, testId: "nav-dashboard", permission: "dashboard" },
@@ -125,7 +127,7 @@ export function AppSidebar() {
                       className={isActive ? "font-medium" : ""}
                       style={isActive ? { borderRight: "2px solid #C9A84C" } : {}}
                     >
-                      <Link href={item.url}>
+                      <Link href={item.url} onClick={() => setOpenMobile(false)}>
                         <item.icon className="h-4 w-4" style={isActive ? { color: "#C9A84C" } : {}} />
                         <span>{item.title}</span>
                       </Link>
@@ -156,7 +158,7 @@ export function AppSidebar() {
                         className={isActive ? "font-medium" : ""}
                         style={isActive ? { borderRight: "2px solid #C9A84C" } : {}}
                       >
-                        <Link href={item.url}>
+                        <Link href={item.url} onClick={() => setOpenMobile(false)}>
                           <item.icon className="h-4 w-4" style={isActive ? { color: "#C9A84C" } : {}} />
                           <span>{item.title}</span>
                         </Link>

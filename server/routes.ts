@@ -2771,7 +2771,7 @@ export async function registerRoutes(
           (p.barcode && p.barcode.toLowerCase().includes(q)) ||
           p.category.toLowerCase().includes(q)
         ) {
-          results.push({ type: "product", id: p.id, title: p.name, subtitle: `${p.category} · ${p.stockQuantity} en stock`, url: "/stock" });
+          results.push({ type: "product", id: p.id, title: p.name, subtitle: `${p.category} · ${p.stockQuantity} en stock`, url: "/emanager-portal/stock" });
         }
         if (results.length >= 20) break;
       }
@@ -2845,7 +2845,7 @@ export async function registerRoutes(
             title: p.stockQuantity === 0 ? "Rupture de stock" : "Stock bas",
             message: `${p.name}: ${p.stockQuantity} restant(s) (seuil: ${p.lowStockThreshold})`,
             date: now,
-            link: "/stock",
+            link: "/emanager-portal/stock",
           });
         }
       }

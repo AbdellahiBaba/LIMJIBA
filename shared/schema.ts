@@ -724,6 +724,7 @@ export const paymentWallets = pgTable("payment_wallets", {
   iconUrl: text("icon_url"),
   isActive: boolean("is_active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
+  balance: real("balance").notNull().default(0),
 });
 
 export const insertPaymentWalletSchema = createInsertSchema(paymentWallets).omit({ id: true });
@@ -783,6 +784,8 @@ export const storeCustomers = pgTable("store_customers", {
   language: text("language").notNull().default("en"),
   isActive: boolean("is_active").notNull().default(true),
   loyaltyPoints: integer("loyalty_points").notNull().default(0),
+  resetToken: text("reset_token"),
+  resetTokenExpiry: text("reset_token_expiry"),
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
@@ -807,6 +810,7 @@ export const storeSettings = pgTable("store_settings", {
   categorySectionTitle: text("category_section_title"),
   ctaText: text("cta_text"),
   footerDescription: text("footer_description"),
+  openingBalance: real("opening_balance").notNull().default(0),
   updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 

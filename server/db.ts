@@ -1016,6 +1016,10 @@ async function runMigrations(): Promise<void> {
       console.log('[DB] Added icon_url column to payment_wallets');
     } catch {}
     try {
+      await client.query(`ALTER TABLE payment_wallets ADD COLUMN balance REAL NOT NULL DEFAULT 0`);
+      console.log('[DB] Added balance column to payment_wallets');
+    } catch {}
+    try {
       await client.query(`ALTER TABLE store_settings ADD COLUMN trust_badges TEXT`);
       console.log('[DB] Added trust_badges column to store_settings');
     } catch {}
@@ -1087,6 +1091,19 @@ async function runMigrations(): Promise<void> {
         created_at TEXT DEFAULT CURRENT_TIMESTAMP
       )`);
       console.log('[DB] Created store_reviews table');
+    } catch {}
+
+    try {
+      await client.query(`ALTER TABLE store_settings ADD COLUMN opening_balance REAL NOT NULL DEFAULT 0`);
+      console.log('[DB] Added opening_balance column to store_settings');
+    } catch {}
+    try {
+      await client.query(`ALTER TABLE store_customers ADD COLUMN reset_token TEXT`);
+      console.log('[DB] Added reset_token column to store_customers');
+    } catch {}
+    try {
+      await client.query(`ALTER TABLE store_customers ADD COLUMN reset_token_expiry TEXT`);
+      console.log('[DB] Added reset_token_expiry column to store_customers');
     } catch {}
 
     console.log('[DB] Schema migrations complete');
