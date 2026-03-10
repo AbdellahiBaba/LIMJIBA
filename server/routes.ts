@@ -534,16 +534,31 @@ export async function registerRoutes(
 
   app.post("/api/purchase-orders/:id/receive", requireAuth, async (req, res) => {
     try {
+      const existing = await storage.getPurchaseOrder(req.params.id);
+      if (!existing) return res.status(404).json({ error: "Purchase order not found" });
+      if (existing.status === "received") return res.status(409).json({ error: "Purchase order already received" });
+
       const receivedBy = req.session.username || "unknown";
       const po = await storage.receivePurchaseOrder(req.params.id, receivedBy);
-      if (!po) return res.status(404).json({ error: "Purchase order not found" });
+      if (!po) return res.status(500).json({ error: "Failed to receive purchase order" });
+
+      let walletDebited = false;
+      if (po.paymentWalletId && po.totalAmount) {
+        const balance = await storage.getWalletBalance(po.paymentWalletId);
+        if (balance < po.totalAmount) {
+          console.warn(`[PO Receive] Wallet ${po.paymentWalletId} has insufficient balance (${balance}) for PO ${po.orderNumber} (${po.totalAmount})`);
+        }
+        await storage.debitWalletBalance(po.paymentWalletId, po.totalAmount);
+        walletDebited = true;
+      }
+
       await storage.createAuditLog({
         userId: req.session.userId,
         username: req.session.username || "system",
         action: "update",
         entity: "purchase_order",
         entityId: po.id,
-        details: JSON.stringify({ action: "received", orderNumber: po.orderNumber }),
+        details: JSON.stringify({ action: "received", orderNumber: po.orderNumber, walletDebited: walletDebited ? po.paymentWalletId : null, amount: walletDebited ? po.totalAmount : 0 }),
         ipAddress: req.ip || null,
         createdAt: new Date().toISOString(),
       });
@@ -3935,6 +3950,63 @@ export async function registerRoutes(
       res.json({ success: true });
     } catch (error) {
       handleError(res, "deletePaymentWallet", error);
+    }
+  });
+
+  app.post("/api/wallets/transfer", requirePermission("suppliers"), async (req: Request, res: Response) => {
+    try {
+      const { fromWalletId, toWalletId, amount } = req.body;
+      if (!fromWalletId || !toWalletId || fromWalletId === toWalletId) {
+        return res.status(400).json({ error: "Invalid wallet selection" });
+      }
+      const parsedAmount = typeof amount === "number" ? amount : parseFloat(amount);
+      if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+        return res.status(400).json({ error: "Amount must be a positive number" });
+      }
+      await storage.transferWalletBalance(fromWalletId, toWalletId, parsedAmount);
+      await storage.createAuditLog({
+        userId: req.session.userId,
+        username: req.session.username || "system",
+        action: "update",
+        entity: "payment_wallet",
+        entityId: fromWalletId,
+        details: JSON.stringify({ action: "wallet_transfer", fromWalletId, toWalletId, amount: parsedAmount }),
+        ipAddress: req.ip || null,
+        createdAt: new Date().toISOString(),
+      });
+      res.json({ success: true });
+    } catch (error: any) {
+      if (error?.message?.includes("Insufficient") || error?.message?.includes("not found")) {
+        return res.status(400).json({ error: error.message });
+      }
+      handleError(res, "walletTransfer", error);
+    }
+  });
+
+  app.post("/api/wallets/:id/credit", requirePermission("suppliers"), async (req: Request, res: Response) => {
+    try {
+      const { amount, note } = req.body;
+      const parsedAmount = typeof amount === "number" ? amount : parseFloat(amount);
+      if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
+        return res.status(400).json({ error: "Amount must be a positive number" });
+      }
+      const wallets = await storage.getPaymentWallets();
+      const wallet = wallets.find(w => w.id === req.params.id);
+      if (!wallet) return res.status(404).json({ error: "Wallet not found" });
+      await storage.creditWalletBalance(req.params.id, parsedAmount);
+      await storage.createAuditLog({
+        userId: req.session.userId,
+        username: req.session.username || "system",
+        action: "update",
+        entity: "payment_wallet",
+        entityId: req.params.id,
+        details: JSON.stringify({ action: "cash_credit", amount: parsedAmount, note: note || "", walletName: wallet.name }),
+        ipAddress: req.ip || null,
+        createdAt: new Date().toISOString(),
+      });
+      res.json({ success: true });
+    } catch (error) {
+      handleError(res, "walletCashCredit", error);
     }
   });
 

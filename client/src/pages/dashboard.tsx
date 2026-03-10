@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useLanguage } from "@/contexts/language-context";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -46,8 +46,17 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Input } from "@/components/ui/input";
-import { ShoppingBag, PiggyBank, Landmark, Edit3, Check } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { ShoppingBag, PiggyBank, Landmark, Edit3, Check, ArrowLeftRight, PlusCircle } from "lucide-react";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import type { DashboardStats, RecentActivity, StoreSettings } from "@shared/schema";
 
 type SalesTrend = { month: string; sales: number; revenue: number };
@@ -321,9 +330,48 @@ export default function Dashboard() {
     staleTime: 30000,
   });
 
+  const { toast } = useToast();
+
   const [editingBalance, setEditingBalance] = useState(false);
   const [openingBalanceInput, setOpeningBalanceInput] = useState("");
   const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
+
+  const [transferDialogOpen, setTransferDialogOpen] = useState(false);
+  const [transferFrom, setTransferFrom] = useState("");
+  const [transferTo, setTransferTo] = useState("");
+  const [transferAmount, setTransferAmount] = useState("");
+
+  const [creditDialogOpen, setCreditDialogOpen] = useState(false);
+  const [creditWalletId, setCreditWalletId] = useState("");
+  const [creditWalletName, setCreditWalletName] = useState("");
+  const [creditAmount, setCreditAmount] = useState("");
+  const [creditNote, setCreditNote] = useState("");
+
+  const transferMutation = useMutation({
+    mutationFn: (data: { fromWalletId: string; toWalletId: string; amount: number }) =>
+      apiRequest("POST", "/api/wallets/transfer", data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/balance-sheet"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/payment-wallets"] });
+      toast({ title: "Transfer completed successfully" });
+      setTransferDialogOpen(false);
+      setTransferFrom(""); setTransferTo(""); setTransferAmount("");
+    },
+    onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
+  });
+
+  const creditMutation = useMutation({
+    mutationFn: (data: { walletId: string; amount: number; note: string }) =>
+      apiRequest("POST", `/api/wallets/${data.walletId}/credit`, { amount: data.amount, note: data.note }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/balance-sheet"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/payment-wallets"] });
+      toast({ title: "Wallet credited successfully" });
+      setCreditDialogOpen(false);
+      setCreditAmount(""); setCreditNote("");
+    },
+    onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
+  });
 
   const navigateToStockLowFilter = () => {
     window.location.href = "/emanager-portal/stock?filter=low";
@@ -978,12 +1026,22 @@ export default function Dashboard() {
 
             {balanceSheet.walletBalances.length > 0 && (
               <div>
-                <div className="text-xs font-medium text-muted-foreground mb-2">Wallet Balances</div>
+                <div className="flex items-center justify-between mb-2">
+                  <div className="text-xs font-medium text-muted-foreground">Wallet Balances</div>
+                  <Button variant="outline" size="sm" className="h-7 text-xs gap-1" data-testid="button-wallet-transfer"
+                    onClick={() => setTransferDialogOpen(true)}>
+                    <ArrowLeftRight className="h-3 w-3" /> Transfer
+                  </Button>
+                </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {balanceSheet.walletBalances.map(w => (
-                    <div key={w.id} className="p-2 rounded-lg bg-muted/50 text-center" data-testid={`wallet-balance-${w.id}`}>
+                    <div key={w.id} className="p-2 rounded-lg bg-muted/50 text-center relative group" data-testid={`wallet-balance-${w.id}`}>
                       <div className="text-xs text-muted-foreground truncate">{w.name}</div>
                       <div className="text-sm font-bold">{w.balance.toLocaleString()} MRU</div>
+                      <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" data-testid={`button-credit-wallet-${w.id}`}
+                        onClick={() => { setCreditWalletId(w.id); setCreditWalletName(w.name); setCreditAmount(""); setCreditNote(""); setCreditDialogOpen(true); }}>
+                        <PlusCircle className="h-3 w-3 text-green-600" />
+                      </Button>
                     </div>
                   ))}
                 </div>
@@ -992,6 +1050,78 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={transferDialogOpen} onOpenChange={setTransferDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><ArrowLeftRight className="h-4 w-4" /> Wallet Transfer</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm">From Wallet</Label>
+              <Select value={transferFrom} onValueChange={setTransferFrom}>
+                <SelectTrigger data-testid="select-transfer-from">
+                  <SelectValue placeholder="Select source wallet" />
+                </SelectTrigger>
+                <SelectContent>
+                  {balanceSheet?.walletBalances.map(w => (
+                    <SelectItem key={w.id} value={w.id}>{w.name} ({w.balance.toLocaleString()} MRU)</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">To Wallet</Label>
+              <Select value={transferTo} onValueChange={setTransferTo}>
+                <SelectTrigger data-testid="select-transfer-to">
+                  <SelectValue placeholder="Select destination wallet" />
+                </SelectTrigger>
+                <SelectContent>
+                  {balanceSheet?.walletBalances.filter(w => w.id !== transferFrom).map(w => (
+                    <SelectItem key={w.id} value={w.id}>{w.name} ({w.balance.toLocaleString()} MRU)</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Amount (MRU)</Label>
+              <Input type="number" min="0" step="0.01" value={transferAmount} onChange={e => setTransferAmount(e.target.value)} placeholder="0.00" data-testid="input-transfer-amount" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setTransferDialogOpen(false)}>Cancel</Button>
+            <Button disabled={!transferFrom || !transferTo || !transferAmount || transferMutation.isPending} data-testid="button-confirm-transfer"
+              onClick={() => transferMutation.mutate({ fromWalletId: transferFrom, toWalletId: transferTo, amount: parseFloat(transferAmount) || 0 })}>
+              {transferMutation.isPending ? "Transferring..." : "Transfer"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={creditDialogOpen} onOpenChange={setCreditDialogOpen}>
+        <DialogContent className="max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2"><PlusCircle className="h-4 w-4 text-green-600" /> Credit {creditWalletName}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm">Amount (MRU)</Label>
+              <Input type="number" min="0" step="0.01" value={creditAmount} onChange={e => setCreditAmount(e.target.value)} placeholder="0.00" data-testid="input-credit-amount" />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Note (optional)</Label>
+              <Input value={creditNote} onChange={e => setCreditNote(e.target.value)} placeholder="e.g. Cash deposit" data-testid="input-credit-note" />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setCreditDialogOpen(false)}>Cancel</Button>
+            <Button disabled={!creditAmount || creditMutation.isPending} data-testid="button-confirm-credit"
+              onClick={() => creditMutation.mutate({ walletId: creditWalletId, amount: parseFloat(creditAmount) || 0, note: creditNote })}>
+              {creditMutation.isPending ? "Crediting..." : "Credit Wallet"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {storeOrdersSummary && (
         <Card data-testid="card-store-orders-summary">

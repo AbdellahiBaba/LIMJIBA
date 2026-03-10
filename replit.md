@@ -43,7 +43,7 @@ Preferred communication style: Simple, everyday language.
 - **Profit Calculator:** Net profit analysis from sales, salaries, and expenses. Includes shipping cost and delivery cost in calculations.
 - **Customer Portal:** Public token-secured customer statement page at `/portal/:customerId?token=...` showing balance, credit limit, and transaction history. Link generated from Customers page.
 - **Supplier Management:** Full CRUD for suppliers (name, phone, email, address, notes). CSV export. Page: `/suppliers`.
-- **Purchase Orders:** Create/manage POs with auto-numbering (PO-XXXX/YYYY), supplier selection, product line items, status tracking (draft/ordered/received/cancelled), receive action that auto-updates stock + costPrice + creates stock movements. Shipping cost distribution (by quantity or by value) with adjusted unit costs. Page: `/purchase-orders`.
+- **Purchase Orders:** Create/manage POs with auto-numbering (PO-XXXX/YYYY), supplier selection, product line items, status tracking (draft/ordered/received/cancelled), receive action that auto-updates stock + costPrice + creates stock movements. Shipping cost distribution (by quantity or by value) with adjusted unit costs. Optional payment wallet selection — chosen wallet is debited on PO receive. Page: `/purchase-orders`.
 - **Audit Trail:** Comprehensive activity logging for login, user management, supplier/PO operations, sales, invoices, products, expenses. Filterable admin page at `/audit-log` with user/action/entity/date filters.
 - **Advanced Reporting:** P&L Statement, Sales Analysis, Product Performance, Product Profitability, Batch Profitability tabs with date ranges and CSV export. Page: `/reports`.
 - **User Management:** Admin settings page with user CRUD (username, password, display name, role, permissions checkboxes), activate/deactivate users, granular module-level permissions.
@@ -121,7 +121,8 @@ Preferred communication style: Simple, everyday language.
 - **API:** GET `/api/store/wallets` (public, active only), CRUD at `/api/payment-wallets` (admin).
 - **Seeded Wallets:** Bankily, Masrvi, Sedad with placeholder numbers.
 - **Store Orders:** Now include `paymentMethod` and `paymentProof` fields. Server enforces payment proof before order creation.
-- **Wallet Balance Tracking:** When admin confirms payment on a store order, the matching wallet's balance is auto-incremented by order total. Wallet balances displayed on dashboard balance sheet.
+- **Wallet Balance Tracking:** When admin confirms payment on a store order, the matching wallet's balance is auto-incremented by order total. Wallet balances displayed on dashboard balance sheet. When a PO is received, the selected wallet is debited by the PO total.
+- **Wallet Operations:** Dashboard supports wallet-to-wallet transfers (`POST /api/wallets/transfer`) and cash credit to wallet (`POST /api/wallets/:id/credit`). Transfer validates sufficient balance. Both operations audit-logged.
 
 ### Promo Codes
 - Full CRUD management at `/promo-codes`. Supports percentage/fixed discounts, min order amounts, max uses, expiry dates. AI-generated promo codes with safe margin calculation.

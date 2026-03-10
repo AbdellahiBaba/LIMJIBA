@@ -1106,6 +1106,11 @@ async function runMigrations(): Promise<void> {
       console.log('[DB] Added reset_token_expiry column to store_customers');
     } catch {}
 
+    try {
+      await client.query(`ALTER TABLE purchase_orders ADD COLUMN payment_wallet_id VARCHAR`);
+      console.log('[DB] Added payment_wallet_id column to purchase_orders');
+    } catch {}
+
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);

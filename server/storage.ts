@@ -305,6 +305,9 @@ export interface IStorage {
   updatePaymentWallet(id: string, data: Partial<InsertPaymentWallet>): Promise<PaymentWallet | undefined>;
   deletePaymentWallet(id: string): Promise<boolean>;
   creditWalletBalance(id: string, amount: number): Promise<void>;
+  debitWalletBalance(id: string, amount: number): Promise<void>;
+  getWalletBalance(id: string): Promise<number>;
+  transferWalletBalance(fromId: string, toId: string, amount: number): Promise<void>;
 
   getAllStoreCustomers(): Promise<StoreCustomer[]>;
   updateStoreCustomerResetToken(id: string, token: string | null, expiry: string | null): Promise<void>;
@@ -2708,6 +2711,34 @@ export class DatabaseStorage implements IStorage {
   async creditWalletBalance(id: string, amount: number): Promise<void> {
     return await withRetry(async () => {
       await db.update(paymentWallets).set({ balance: sql`COALESCE(balance, 0) + ${amount}` }).where(eq(paymentWallets.id, id));
+    });
+  }
+
+  async debitWalletBalance(id: string, amount: number): Promise<void> {
+    return await withRetry(async () => {
+      await db.update(paymentWallets).set({ balance: sql`COALESCE(balance, 0) - ${amount}` }).where(eq(paymentWallets.id, id));
+    });
+  }
+
+  async getWalletBalance(id: string): Promise<number> {
+    return await withRetry(async () => {
+      const [wallet] = await db.select().from(paymentWallets).where(eq(paymentWallets.id, id));
+      return (wallet as any)?.balance || 0;
+    });
+  }
+
+  async transferWalletBalance(fromId: string, toId: string, amount: number): Promise<void> {
+    return await withRetry(async () => {
+      await db.transaction(async (tx) => {
+        const [fromWallet] = await tx.select().from(paymentWallets).where(eq(paymentWallets.id, fromId));
+        if (!fromWallet) throw new Error("Source wallet not found");
+        const [toWallet] = await tx.select().from(paymentWallets).where(eq(paymentWallets.id, toId));
+        if (!toWallet) throw new Error("Destination wallet not found");
+        const currentBalance = (fromWallet as any)?.balance || 0;
+        if (currentBalance < amount) throw new Error("Insufficient wallet balance");
+        await tx.update(paymentWallets).set({ balance: sql`COALESCE(balance, 0) - ${amount}` }).where(eq(paymentWallets.id, fromId));
+        await tx.update(paymentWallets).set({ balance: sql`COALESCE(balance, 0) + ${amount}` }).where(eq(paymentWallets.id, toId));
+      });
     });
   }
 

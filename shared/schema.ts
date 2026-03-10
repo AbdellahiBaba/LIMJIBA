@@ -525,6 +525,7 @@ export const purchaseOrders = pgTable("purchase_orders", {
   shippingCost: real("shipping_cost").default(0),
   shippingDistributionMethod: text("shipping_distribution_method"), // 'by_quantity' | 'by_value'
   shippingAddedAt: text("shipping_added_at"),
+  paymentWalletId: varchar("payment_wallet_id"),
   notes: text("notes"),
   createdAt: text("created_at").notNull(),
   receivedAt: text("received_at"),

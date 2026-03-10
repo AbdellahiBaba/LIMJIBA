@@ -27,8 +27,8 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, ClipboardList, Trash2, CheckCircle, Download, Package, Truck, Eye } from "lucide-react";
-import type { PurchaseOrderWithItems, Supplier, Product } from "@shared/schema";
+import { Plus, Search, ClipboardList, Trash2, CheckCircle, Download, Package, Truck, Eye, Wallet } from "lucide-react";
+import type { PurchaseOrderWithItems, Supplier, Product, PaymentWallet } from "@shared/schema";
 
 interface POItemForm {
   productId: string;
@@ -49,6 +49,7 @@ export default function PurchaseOrders() {
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<POItemForm[]>([{ productId: "", productName: "", quantity: 1, unitCost: 0, total: 0 }]);
+  const [paymentWalletId, setPaymentWalletId] = useState("");
 
   const [shippingDialogOpen, setShippingDialogOpen] = useState(false);
   const [shippingPO, setShippingPO] = useState<PurchaseOrderWithItems | null>(null);
@@ -68,6 +69,10 @@ export default function PurchaseOrders() {
 
   const { data: productsList = [] } = useQuery<Product[]>({
     queryKey: ["/api/products"],
+  });
+
+  const { data: walletsList = [] } = useQuery<PaymentWallet[]>({
+    queryKey: ["/api/payment-wallets"],
   });
 
   const { data: nextNumber } = useQuery<{ nextNumber: string }>({
@@ -96,6 +101,8 @@ export default function PurchaseOrders() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/purchase-orders"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/payment-wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/balance-sheet"] });
       toast({ title: t("purchaseOrders.poReceived"), description: t("purchaseOrders.stockUpdated") });
     },
     onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
@@ -129,6 +136,7 @@ export default function PurchaseOrders() {
     setDialogOpen(false);
     setOrderNumber(nextNumber?.nextNumber || "");
     setSupplierId("");
+    setPaymentWalletId("");
     setDate(new Date().toISOString().split("T")[0]);
     setNotes("");
     setItems([{ productId: "", productName: "", quantity: 1, unitCost: 0, total: 0 }]);
@@ -200,6 +208,7 @@ export default function PurchaseOrders() {
       date,
       status: "draft",
       totalAmount,
+      paymentWalletId: paymentWalletId && paymentWalletId !== "none" ? paymentWalletId : null,
       notes,
       items: items.map(i => ({
         productId: i.productId || null,
@@ -445,6 +454,22 @@ export default function PurchaseOrders() {
                 <Label>{t("common.date")}</Label>
                 <Input type="date" value={date} onChange={e => setDate(e.target.value)} data-testid="input-date" />
               </div>
+            </div>
+            <div>
+              <Label className="flex items-center gap-1"><Wallet className="h-3.5 w-3.5" /> Payment Wallet</Label>
+              <Select value={paymentWalletId} onValueChange={setPaymentWalletId}>
+                <SelectTrigger data-testid="select-payment-wallet">
+                  <SelectValue placeholder="Select wallet to debit (optional)" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="none">No wallet</SelectItem>
+                  {walletsList.filter(w => w.isActive).map(w => (
+                    <SelectItem key={w.id} value={w.id}>
+                      {w.name} ({((w as any).balance || 0).toLocaleString()} MRU)
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div>
