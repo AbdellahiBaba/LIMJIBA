@@ -257,9 +257,15 @@ html[dir="rtl"] .right-0 {
 }
 
 .brand-name-ar {
-  font-family: 'Cairo', 'Tajawal', sans-serif;
-  font-weight: 600;
+  font-family: 'Amiri', 'Cairo', 'Tajawal', serif;
+  font-weight: 700;
   letter-spacing: 0.05em;
+}
+
+.store-heading-ar {
+  font-family: 'Amiri', 'Cairo', serif;
+  font-weight: 700;
+  line-height: 1.6;
 }
 
 .font-serif-brand {

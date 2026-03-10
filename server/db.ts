@@ -843,8 +843,8 @@ async function runMigrations(): Promise<void> {
         primary_color TEXT NOT NULL DEFAULT '#0A1628',
         accent_color TEXT NOT NULL DEFAULT '#C9A84C',
         logo_url TEXT,
-        hero_title TEXT DEFAULT 'Welcome to Our Store',
-        hero_subtitle TEXT DEFAULT 'Discover premium products at the best prices',
+        hero_title TEXT DEFAULT '',
+        hero_subtitle TEXT DEFAULT '',
         contact_email TEXT,
         contact_phone TEXT,
         contact_address TEXT,
@@ -867,6 +867,13 @@ async function runMigrations(): Promise<void> {
           accent_color = '#C9A84C' 
       WHERE id = 'default' 
         AND (primary_color = '#4A0E4E' OR store_name = 'Limjiba Store')
+    `);
+
+    await client.query(`
+      UPDATE store_settings 
+      SET hero_title = '', hero_subtitle = '' 
+      WHERE id = 'default' 
+        AND (hero_title = 'Welcome to Our Store' OR hero_subtitle = 'Discover premium products at the best prices')
     `);
 
     // ===================== CATEGORIES TABLE =====================

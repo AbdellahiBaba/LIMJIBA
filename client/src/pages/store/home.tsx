@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShoppingCart, ArrowRight, Star, Sparkles, Package, Shield, Truck, Award, ChevronRight } from "lucide-react";
 import type { Product, CmsBanner, StoreSettings, Category } from "@shared/schema";
-import logoImg from "@assets/limjiba_logo_branded.png";
+import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
 
 export default function StoreHome() {
   const { addItem } = useCart();
@@ -74,7 +74,7 @@ export default function StoreHome() {
           </h1>
 
           <p className="animate-fade-in-up-delay-2 text-lg md:text-xl lg:text-2xl mb-4 max-w-3xl mx-auto font-serif-brand" style={{ color: accentColor }}>
-            {lang === "en" ? "Import Excellence" : lang === "fr" ? "L'Excellence Importée" : "التميز المستورد"}
+            {t("home.badge")}
           </p>
 
           <p className="animate-fade-in-up-delay-2 text-base md:text-lg text-gray-400 mb-10 max-w-2xl mx-auto">
