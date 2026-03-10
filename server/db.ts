@@ -840,8 +840,8 @@ async function runMigrations(): Promise<void> {
         id VARCHAR PRIMARY KEY DEFAULT 'default',
         store_name TEXT NOT NULL DEFAULT 'LIMJIBA',
         store_description TEXT DEFAULT '',
-        primary_color TEXT NOT NULL DEFAULT '#1B2D4A',
-        accent_color TEXT NOT NULL DEFAULT '#96823A',
+        primary_color TEXT NOT NULL DEFAULT '#0A1628',
+        accent_color TEXT NOT NULL DEFAULT '#C9A84C',
         logo_url TEXT,
         hero_title TEXT DEFAULT 'Welcome to Our Store',
         hero_subtitle TEXT DEFAULT 'Discover premium products at the best prices',
@@ -863,8 +863,8 @@ async function runMigrations(): Promise<void> {
     await client.query(`
       UPDATE store_settings 
       SET store_name = 'LIMJIBA', 
-          primary_color = '#1B2D4A', 
-          accent_color = '#96823A' 
+          primary_color = '#0A1628', 
+          accent_color = '#C9A84C' 
       WHERE id = 'default' 
         AND (primary_color = '#4A0E4E' OR store_name = 'Limjiba Store')
     `);

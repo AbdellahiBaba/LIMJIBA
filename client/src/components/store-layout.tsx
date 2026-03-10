@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useCart } from "@/contexts/cart-context";
 import { useStoreAuth } from "@/contexts/store-auth-context";
-import { ShoppingCart, Menu, X, Home, Package, Phone, Info, FileText, Globe, User, LogOut, Search, Bell } from "lucide-react";
+import { ShoppingCart, Menu, X, Home, Package, Phone, Info, FileText, Globe, User, LogOut, Search, Bell, ChevronRight } from "lucide-react";
 import { SiWhatsapp, SiInstagram, SiFacebook, SiSnapchat, SiTiktok } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -120,29 +120,32 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const unreadCount = notifications?.filter(n => !n.isRead).length || 0;
 
   const storeName = settings?.storeName || "LIMJIBA";
-  const primaryColor = settings?.primaryColor || "#1B2D4A";
-  const accentColor = settings?.accentColor || "#96823A";
+  const primaryColor = settings?.primaryColor || "#0A1628";
+  const accentColor = settings?.accentColor || "#C9A84C";
 
   return (
     <div className="min-h-screen flex flex-col store-theme" dir={lang === "ar" ? "rtl" : "ltr"} style={{ "--store-primary": primaryColor, "--store-accent": accentColor } as React.CSSProperties}>
-      <header className="store-header sticky top-0 z-50 border-b border-black/20" style={{ background: `linear-gradient(135deg, ${primaryColor}, #0D1520)` }}>
+      <header className="store-header sticky top-0 z-50" style={{ background: `linear-gradient(135deg, rgba(10,22,40,0.97), rgba(6,11,20,0.98))`, borderBottom: "1px solid rgba(201,168,76,0.15)" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <Link href="/store" className="flex items-center gap-3 text-white no-underline" data-testid="link-store-home">
-              <img src={logoImg} alt={storeName} className="h-10 w-10 rounded-md object-contain bg-white/10 p-0.5" />
+          <div className="flex items-center justify-between h-16 md:h-18">
+            <Link href="/store" className="flex items-center gap-3 text-white no-underline group" data-testid="link-store-home">
+              <div className="relative">
+                <img src={logoImg} alt={storeName} className="h-10 w-10 md:h-11 md:w-11 rounded-lg object-contain bg-white/5 p-0.5 transition-transform group-hover:scale-105" style={{ boxShadow: "0 0 20px rgba(201,168,76,0.15)" }} />
+              </div>
               <div className="flex flex-col leading-tight">
-                <span className="text-xl font-extrabold tracking-widest uppercase brand-name">{storeName}</span>
-                <span className="text-[10px] font-medium tracking-wide opacity-70 brand-name-ar">لمجيبة</span>
+                <span className="text-lg md:text-xl font-extrabold tracking-[0.2em] uppercase brand-name" style={{ color: "#C9A84C" }}>{storeName}</span>
+                <span className="text-[10px] font-medium tracking-wide brand-name-ar" style={{ color: "rgba(201,168,76,0.6)" }}>لمجيبة</span>
               </div>
             </Link>
 
-            <nav className="hidden md:flex items-center gap-1" data-testid="nav-store-desktop">
+            <nav className="hidden lg:flex items-center gap-0.5" data-testid="nav-store-desktop">
               {NAV_KEYS.map(item => (
                 <Link key={item.path} href={item.path}>
                   <Button
                     variant="ghost"
                     size="sm"
-                    className={`text-white/80 hover:text-white hover:bg-white/10 ${location === item.path ? "bg-white/15 text-white" : ""}`}
+                    className={`text-sm font-medium transition-all duration-200 ${location === item.path ? "text-white" : "text-white/60 hover:text-white"}`}
+                    style={location === item.path ? { background: "rgba(201,168,76,0.12)", color: "#C9A84C" } : {}}
                     data-testid={`link-store-${item.key}`}
                   >
                     {t(item.key)}
@@ -152,12 +155,13 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             </nav>
 
             <div className="flex items-center gap-1">
-              <div className="hidden sm:flex items-center gap-0.5 bg-white/10 rounded-md p-0.5" data-testid="store-language-switcher">
+              <div className="hidden sm:flex items-center gap-0.5 rounded-lg p-0.5" style={{ background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.12)" }} data-testid="store-language-switcher">
                 {LANG_OPTIONS.map(opt => (
                   <button
                     key={opt.code}
                     onClick={() => setLang(opt.code)}
-                    className={`px-2 py-1 text-xs rounded font-medium transition-colors ${lang === opt.code ? "bg-white text-gray-900" : "text-white/70 hover:text-white"}`}
+                    className={`px-2.5 py-1 text-xs rounded-md font-medium transition-all duration-200 ${lang === opt.code ? "text-gray-900 shadow-sm" : "text-white/50 hover:text-white/80"}`}
+                    style={lang === opt.code ? { background: "#C9A84C" } : {}}
                     data-testid={`lang-${opt.code}`}
                   >
                     {opt.label}
@@ -166,26 +170,26 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               </div>
 
               {isAuthenticated ? (
-                <div className="hidden sm:flex items-center gap-1">
+                <div className="hidden sm:flex items-center gap-0.5">
                   <Link href="/store/profile">
-                    <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10" data-testid="link-store-profile">
+                    <Button variant="ghost" size="sm" className="text-white/60 hover:text-white hover:bg-white/5" data-testid="link-store-profile">
                       <User className="h-4 w-4 mr-1" />
                       <span className="max-w-[80px] truncate text-xs">{customer?.fullName?.split(" ")[0]}</span>
                     </Button>
                   </Link>
-                  <Button variant="ghost" size="sm" className="text-white/60 hover:text-white hover:bg-white/10" onClick={logout} data-testid="button-store-logout">
+                  <Button variant="ghost" size="sm" className="text-white/40 hover:text-white hover:bg-white/5" onClick={logout} data-testid="button-store-logout">
                     <LogOut className="h-4 w-4" />
                   </Button>
                 </div>
               ) : (
                 <div className="hidden sm:flex items-center gap-1">
                   <Link href="/store/login">
-                    <Button variant="ghost" size="sm" className="text-white/80 hover:text-white hover:bg-white/10" data-testid="link-store-login">
+                    <Button variant="ghost" size="sm" className="text-white/60 hover:text-white hover:bg-white/5 text-xs" data-testid="link-store-login">
                       {t("nav.login")}
                     </Button>
                   </Link>
                   <Link href="/store/signup">
-                    <Button size="sm" className="text-xs font-semibold" style={{ backgroundColor: accentColor, color: primaryColor }} data-testid="link-store-signup">
+                    <Button size="sm" className="text-xs font-semibold rounded-lg store-btn-gold" style={{ color: "#0A1628" }} data-testid="link-store-signup">
                       {t("nav.signup")}
                     </Button>
                   </Link>
@@ -197,38 +201,39 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="text-white hover:bg-white/10 relative"
+                    className="text-white/60 hover:text-white hover:bg-white/5 relative"
                     onClick={() => setNotifOpen(!notifOpen)}
                     data-testid="button-store-notifications"
                   >
                     <Bell className="h-5 w-5" />
                     {unreadCount > 0 && (
-                      <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs" style={{ backgroundColor: "#ef4444", color: "#fff" }}>
+                      <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs border-0 animate-bounce-once" style={{ background: "linear-gradient(135deg, #C9A84C, #B8963F)", color: "#0A1628" }}>
                         {unreadCount}
                       </Badge>
                     )}
                   </Button>
                   {notifOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-900 rounded-lg shadow-xl border z-50 max-h-96 overflow-auto" data-testid="dropdown-notifications">
-                      <div className="p-3 border-b font-semibold text-sm text-gray-900 dark:text-gray-100">{t("notifications.title")}</div>
+                    <div className="absolute right-0 top-full mt-2 w-80 rounded-xl shadow-2xl border z-50 max-h-96 overflow-auto" style={{ background: "#0A1628", borderColor: "rgba(201,168,76,0.2)" }} data-testid="dropdown-notifications">
+                      <div className="p-3 border-b font-semibold text-sm" style={{ color: "#C9A84C", borderColor: "rgba(201,168,76,0.15)" }}>{t("notifications.title")}</div>
                       {(!notifications || notifications.length === 0) ? (
-                        <div className="p-4 text-center text-sm text-muted-foreground">{t("notifications.empty")}</div>
+                        <div className="p-4 text-center text-sm text-gray-400">{t("notifications.empty")}</div>
                       ) : (
                         notifications.slice(0, 10).map(n => (
                           <div
                             key={n.id}
-                            className={`p-3 border-b last:border-b-0 text-sm cursor-pointer hover:bg-muted/50 transition-colors ${!n.isRead ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                            className={`p-3 border-b last:border-b-0 text-sm cursor-pointer transition-colors ${!n.isRead ? "bg-[#C9A84C]/5" : "hover:bg-white/5"}`}
+                            style={{ borderColor: "rgba(201,168,76,0.08)" }}
                             onClick={() => { if (!n.isRead) markRead.mutate(n.id); }}
                             data-testid={`notification-${n.id}`}
                           >
-                            <p className="font-medium text-gray-900 dark:text-gray-100">
+                            <p className="font-medium text-white">
                               {lang === "ar" ? (n.titleAr || n.title) : lang === "fr" ? (n.titleFr || n.title) : n.title}
                             </p>
-                            <p className="text-xs text-muted-foreground mt-1">
+                            <p className="text-xs text-gray-400 mt-1">
                               {lang === "ar" ? (n.messageAr || n.message) : lang === "fr" ? (n.messageFr || n.message) : n.message}
                             </p>
                             {!n.isRead && (
-                              <span className="text-xs text-blue-600 dark:text-blue-400 mt-1 inline-block">{t("notifications.markRead")}</span>
+                              <span className="text-xs mt-1 inline-block" style={{ color: "#C9A84C" }}>{t("notifications.markRead")}</span>
                             )}
                           </div>
                         ))
@@ -239,10 +244,10 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               )}
 
               <Link href="/store/cart">
-                <Button variant="ghost" size="sm" className="text-white hover:bg-white/10 relative" data-testid="link-store-cart">
+                <Button variant="ghost" size="sm" className="text-white/60 hover:text-white hover:bg-white/5 relative" data-testid="link-store-cart">
                   <ShoppingCart className="h-5 w-5" />
                   {itemCount > 0 && (
-                    <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs animate-bounce-once" style={{ backgroundColor: accentColor, color: primaryColor }}>
+                    <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs border-0 animate-bounce-once" style={{ background: "linear-gradient(135deg, #C9A84C, #B8963F)", color: "#0A1628" }}>
                       {itemCount}
                     </Badge>
                   )}
@@ -251,7 +256,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               <Button
                 variant="ghost"
                 size="sm"
-                className="md:hidden text-white hover:bg-white/10"
+                className="lg:hidden text-white/60 hover:text-white hover:bg-white/5"
                 onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
                 data-testid="button-store-mobile-menu"
               >
@@ -262,52 +267,55 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         </div>
 
         {mobileMenuOpen && (
-          <div className="md:hidden border-t border-white/10" data-testid="nav-store-mobile">
+          <div className="lg:hidden" style={{ background: "rgba(6,11,20,0.98)", borderTop: "1px solid rgba(201,168,76,0.1)" }} data-testid="nav-store-mobile">
             <div className="px-4 py-3 space-y-1">
               {NAV_KEYS.map(item => (
                 <Link key={item.path} href={item.path} onClick={() => setMobileMenuOpen(false)}>
                   <Button
                     variant="ghost"
-                    className={`w-full justify-start text-white/80 hover:text-white hover:bg-white/10 ${location === item.path ? "bg-white/15 text-white" : ""}`}
+                    className={`w-full justify-start ${location === item.path ? "text-white" : "text-white/60 hover:text-white"}`}
+                    style={location === item.path ? { background: "rgba(201,168,76,0.1)", color: "#C9A84C" } : {}}
                   >
-                    <item.icon className="h-4 w-4 mr-2" />
+                    <item.icon className="h-4 w-4 mr-2" style={{ color: location === item.path ? "#C9A84C" : undefined }} />
                     {t(item.key)}
+                    <ChevronRight className="h-4 w-4 ml-auto opacity-30" />
                   </Button>
                 </Link>
               ))}
-              <div className="flex items-center gap-1 pt-2 border-t border-white/10">
+              <div className="flex items-center gap-1 pt-3" style={{ borderTop: "1px solid rgba(201,168,76,0.1)" }}>
                 {LANG_OPTIONS.map(opt => (
                   <button
                     key={opt.code}
                     onClick={() => { setLang(opt.code); setMobileMenuOpen(false); }}
-                    className={`px-3 py-1.5 text-sm rounded font-medium transition-colors ${lang === opt.code ? "bg-white text-gray-900" : "text-white/70 hover:text-white"}`}
+                    className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all ${lang === opt.code ? "text-gray-900" : "text-white/50 hover:text-white"}`}
+                    style={lang === opt.code ? { background: "#C9A84C" } : {}}
                   >
                     {opt.label}
                   </button>
                 ))}
               </div>
               {isAuthenticated ? (
-                <div className="pt-2 border-t border-white/10 space-y-1">
+                <div className="pt-3 space-y-1" style={{ borderTop: "1px solid rgba(201,168,76,0.1)" }}>
                   <Link href="/store/profile" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start text-white/80 hover:text-white hover:bg-white/10">
+                    <Button variant="ghost" className="w-full justify-start text-white/60 hover:text-white">
                       <User className="h-4 w-4 mr-2" />
                       {t("nav.profile")}
                     </Button>
                   </Link>
-                  <Button variant="ghost" className="w-full justify-start text-white/60 hover:text-white hover:bg-white/10" onClick={() => { logout(); setMobileMenuOpen(false); }}>
+                  <Button variant="ghost" className="w-full justify-start text-white/40 hover:text-white" onClick={() => { logout(); setMobileMenuOpen(false); }}>
                     <LogOut className="h-4 w-4 mr-2" />
                     {t("nav.logout")}
                   </Button>
                 </div>
               ) : (
-                <div className="pt-2 border-t border-white/10 space-y-1">
+                <div className="pt-3 space-y-1" style={{ borderTop: "1px solid rgba(201,168,76,0.1)" }}>
                   <Link href="/store/login" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start text-white/80 hover:text-white hover:bg-white/10">
+                    <Button variant="ghost" className="w-full justify-start text-white/60 hover:text-white">
                       {t("nav.login")}
                     </Button>
                   </Link>
                   <Link href="/store/signup" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start text-white/80 hover:text-white hover:bg-white/10">
+                    <Button className="w-full store-btn-gold font-semibold" style={{ color: "#0A1628" }}>
                       {t("nav.signup")}
                     </Button>
                   </Link>
@@ -318,38 +326,41 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         )}
       </header>
 
-      <main className="flex-1">
+      <main className="flex-1" style={{ background: "#FAF6EE" }}>
         {children}
       </main>
       <PwaInstallPrompt />
 
-      <footer className="border-t text-gray-300" style={{ background: "#0D1520" }}>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+      <footer style={{ background: "#060B14" }}>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             <div>
-              <div className="flex items-center gap-2 mb-3">
-                <img src={logoImg} alt={storeName} className="h-8 w-8 rounded object-contain" />
-                <h3 className="text-lg font-extrabold tracking-widest uppercase brand-name" style={{ color: accentColor }}>{storeName}</h3>
+              <div className="flex items-center gap-3 mb-4">
+                <img src={logoImg} alt={storeName} className="h-10 w-10 rounded-lg object-contain" style={{ boxShadow: "0 0 20px rgba(201,168,76,0.1)" }} />
+                <div>
+                  <h3 className="text-lg font-extrabold tracking-[0.2em] uppercase brand-name" style={{ color: "#C9A84C" }}>{storeName}</h3>
+                  <p className="text-xs brand-name-ar" style={{ color: "rgba(201,168,76,0.5)" }}>لمجيبة</p>
+                </div>
               </div>
-              <p className="text-xs tracking-wide opacity-60 brand-name-ar mb-2">لمجيبة</p>
-              <p className="text-sm text-gray-400">{settings?.storeDescription || "Your premium e-commerce destination."}</p>
+              <p className="text-sm text-gray-500 leading-relaxed">{settings?.storeDescription || "Your premium e-commerce destination."}</p>
+              <div className="gold-divider w-16 mt-4" />
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-white mb-3">{t("footer.quickLinks")}</h4>
-              <div className="space-y-2">
+              <h4 className="text-sm font-semibold mb-4 uppercase tracking-wider" style={{ color: "#C9A84C" }}>{t("footer.quickLinks")}</h4>
+              <div className="space-y-2.5">
                 {NAV_KEYS.map(item => (
-                  <Link key={item.path} href={item.path} className="block text-sm text-gray-400 hover:text-white no-underline">
+                  <Link key={item.path} href={item.path} className="block text-sm text-gray-500 hover:text-white no-underline transition-colors">
                     {t(item.key)}
                   </Link>
                 ))}
-                <Link href="/store/orders" className="block text-sm text-gray-400 hover:text-white no-underline">{t("footer.trackOrder")}</Link>
+                <Link href="/store/orders" className="block text-sm text-gray-500 hover:text-white no-underline transition-colors">{t("footer.trackOrder")}</Link>
               </div>
             </div>
             <div>
-              <h4 className="text-sm font-semibold text-white mb-3">{t("footer.contact")}</h4>
-              {settings?.contactEmail && <p className="text-sm text-gray-400">{settings.contactEmail}</p>}
-              {settings?.contactPhone && <p className="text-sm text-gray-400">{settings.contactPhone}</p>}
-              {settings?.contactAddress && <p className="text-sm text-gray-400">{settings.contactAddress}</p>}
+              <h4 className="text-sm font-semibold mb-4 uppercase tracking-wider" style={{ color: "#C9A84C" }}>{t("footer.contact")}</h4>
+              {settings?.contactEmail && <p className="text-sm text-gray-500 mb-1">{settings.contactEmail}</p>}
+              {settings?.contactPhone && <p className="text-sm text-gray-500 mb-1">{settings.contactPhone}</p>}
+              {settings?.contactAddress && <p className="text-sm text-gray-500 mb-1">{settings.contactAddress}</p>}
               {(() => {
                 let socialLinks: Record<string, string> = {};
                 try { socialLinks = JSON.parse(settings?.socialLinks || "{}"); } catch { socialLinks = {}; }
@@ -365,14 +376,15 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                 });
                 if (socialItems.length === 0) return null;
                 return (
-                  <div className="flex items-center gap-3 mt-4" data-testid="footer-social-links">
+                  <div className="flex items-center gap-4 mt-5" data-testid="footer-social-links">
                     {socialItems.map(item => (
                       <a
                         key={item.key}
                         href={socialLinks[item.key]}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-gray-400 hover:text-white transition-colors"
+                        className="text-gray-500 hover:text-white transition-all duration-200 hover:scale-110"
+                        style={{ color: undefined }}
                         aria-label={item.label}
                         data-testid={`link-social-${item.key}`}
                       >
@@ -384,7 +396,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               })()}
             </div>
           </div>
-          <div className="mt-8 pt-8 border-t border-gray-700/50 text-center text-sm text-gray-500">
+          <div className="mt-10 pt-8 text-center text-sm text-gray-600" style={{ borderTop: "1px solid rgba(201,168,76,0.1)" }}>
             &copy; {new Date().getFullYear()} {storeName} / لمجيبة. {t("footer.rights")}.
           </div>
         </div>

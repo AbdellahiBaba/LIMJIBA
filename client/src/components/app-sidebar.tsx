@@ -50,163 +50,31 @@ export function AppSidebar() {
   const { user } = useAuth();
 
   const menuItems = [
-    {
-      title: t("nav.dashboard"),
-      url: "/",
-      icon: LayoutDashboard,
-      testId: "nav-dashboard",
-      permission: "dashboard",
-    },
-    {
-      title: t("nav.invoices"),
-      url: "/invoices",
-      icon: FileText,
-      testId: "nav-invoices",
-      permission: "invoices",
-    },
-    {
-      title: t("nav.quickInvoice"),
-      url: "/quick-invoice",
-      icon: FilePen,
-      testId: "nav-quick-invoice",
-      permission: "invoices",
-    },
-    {
-      title: t("nav.stock"),
-      url: "/stock",
-      icon: Package,
-      testId: "nav-stock",
-      permission: "stock",
-    },
-    {
-      title: t("nav.pos"),
-      url: "/pos",
-      icon: ShoppingCart,
-      testId: "nav-pos",
-      permission: "pos",
-    },
-    {
-      title: t("nav.sales"),
-      url: "/sales",
-      icon: History,
-      testId: "nav-sales",
-      permission: "sales",
-    },
-    {
-      title: t("nav.resellers"),
-      url: "/resellers",
-      icon: Gift,
-      testId: "nav-resellers",
-      permission: "resellers",
-    },
-    {
-      title: t("nav.customers"),
-      url: "/customers",
-      icon: UserCircle,
-      testId: "nav-customers",
-      permission: "customers",
-    },
-    {
-      title: t("nav.suppliers"),
-      url: "/suppliers",
-      icon: Truck,
-      testId: "nav-suppliers",
-      permission: "suppliers",
-    },
-    {
-      title: t("nav.purchaseOrders"),
-      url: "/purchase-orders",
-      icon: ClipboardList,
-      testId: "nav-purchase-orders",
-      permission: "purchase_orders",
-    },
-    {
-      title: t("nav.transportation"),
-      url: "/transportation",
-      icon: PackageCheck,
-      testId: "nav-transportation",
-      permission: "transportation",
-    },
-    {
-      title: t("nav.salaries"),
-      url: "/salaries",
-      icon: Users,
-      testId: "nav-salaries",
-      permission: "salaries",
-    },
-    {
-      title: t("nav.expenses"),
-      url: "/expenses",
-      icon: Receipt,
-      testId: "nav-expenses",
-      permission: "expenses",
-    },
-    {
-      title: t("nav.reports"),
-      url: "/reports",
-      icon: BarChart3,
-      testId: "nav-reports",
-      permission: "reports",
-    },
-    {
-      title: t("nav.branding"),
-      url: "/branding",
-      icon: Palette,
-      testId: "nav-branding",
-      permission: "branding",
-    },
-    {
-      title: t("nav.profit"),
-      url: "/profit",
-      icon: Calculator,
-      testId: "nav-profit",
-      permission: "reports",
-    },
-    {
-      title: t("nav.auditLog"),
-      url: "/audit-log",
-      icon: ScrollText,
-      testId: "nav-audit-log",
-      permission: "audit_log",
-    },
-    {
-      title: t("nav.settings"),
-      url: "/settings",
-      icon: Settings,
-      testId: "nav-settings",
-      permission: "settings",
-    },
+    { title: t("nav.dashboard"), url: "/", icon: LayoutDashboard, testId: "nav-dashboard", permission: "dashboard" },
+    { title: t("nav.invoices"), url: "/invoices", icon: FileText, testId: "nav-invoices", permission: "invoices" },
+    { title: t("nav.quickInvoice"), url: "/quick-invoice", icon: FilePen, testId: "nav-quick-invoice", permission: "invoices" },
+    { title: t("nav.stock"), url: "/stock", icon: Package, testId: "nav-stock", permission: "stock" },
+    { title: t("nav.pos"), url: "/pos", icon: ShoppingCart, testId: "nav-pos", permission: "pos" },
+    { title: t("nav.sales"), url: "/sales", icon: History, testId: "nav-sales", permission: "sales" },
+    { title: t("nav.resellers"), url: "/resellers", icon: Gift, testId: "nav-resellers", permission: "resellers" },
+    { title: t("nav.customers"), url: "/customers", icon: UserCircle, testId: "nav-customers", permission: "customers" },
+    { title: t("nav.suppliers"), url: "/suppliers", icon: Truck, testId: "nav-suppliers", permission: "suppliers" },
+    { title: t("nav.purchaseOrders"), url: "/purchase-orders", icon: ClipboardList, testId: "nav-purchase-orders", permission: "purchase_orders" },
+    { title: t("nav.transportation"), url: "/transportation", icon: PackageCheck, testId: "nav-transportation", permission: "transportation" },
+    { title: t("nav.salaries"), url: "/salaries", icon: Users, testId: "nav-salaries", permission: "salaries" },
+    { title: t("nav.expenses"), url: "/expenses", icon: Receipt, testId: "nav-expenses", permission: "expenses" },
+    { title: t("nav.reports"), url: "/reports", icon: BarChart3, testId: "nav-reports", permission: "reports" },
+    { title: t("nav.branding"), url: "/branding", icon: Palette, testId: "nav-branding", permission: "branding" },
+    { title: t("nav.profit"), url: "/profit", icon: Calculator, testId: "nav-profit", permission: "reports" },
+    { title: t("nav.auditLog"), url: "/audit-log", icon: ScrollText, testId: "nav-audit-log", permission: "audit_log" },
+    { title: t("nav.settings"), url: "/settings", icon: Settings, testId: "nav-settings", permission: "settings" },
   ];
 
   const storeMenuItems = [
-    {
-      title: "Store Orders",
-      url: "/store-orders",
-      icon: ShoppingBag,
-      testId: "nav-store-orders",
-      permission: "dashboard",
-    },
-    {
-      title: "Promo Codes",
-      url: "/promo-codes",
-      icon: Tag,
-      testId: "nav-promo-codes",
-      permission: "dashboard",
-    },
-    {
-      title: "CMS",
-      url: "/cms",
-      icon: PanelTop,
-      testId: "nav-cms",
-      permission: "dashboard",
-    },
-    {
-      title: "LIMJIBA Agent",
-      url: "/limjiba",
-      icon: Bot,
-      testId: "nav-limjiba",
-      permission: "dashboard",
-    },
+    { title: "Store Orders", url: "/store-orders", icon: ShoppingBag, testId: "nav-store-orders", permission: "dashboard" },
+    { title: "Promo Codes", url: "/promo-codes", icon: Tag, testId: "nav-promo-codes", permission: "dashboard" },
+    { title: "CMS", url: "/cms", icon: PanelTop, testId: "nav-cms", permission: "dashboard" },
+    { title: "LIMJIBA Agent", url: "/limjiba", icon: Bot, testId: "nav-limjiba", permission: "dashboard" },
   ];
 
   const visibleStoreItems = storeMenuItems.filter(
@@ -219,18 +87,21 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-4 border-b border-sidebar-border">
+      <SidebarHeader className="p-4" style={{ background: "linear-gradient(180deg, #0A1628, #0D1520)", borderBottom: "1px solid rgba(201,168,76,0.15)" }}>
         <div className="flex items-center gap-3">
-          <img
-            src={branding.logo || defaultLogoImg}
-            alt={t("company.name")}
-            className="w-10 h-10 rounded-md object-contain"
-          />
+          <div className="relative">
+            <img
+              src={branding.logo || defaultLogoImg}
+              alt={t("company.name")}
+              className="w-11 h-11 rounded-lg object-contain p-0.5"
+              style={{ background: "rgba(201,168,76,0.08)", boxShadow: "0 0 15px rgba(201,168,76,0.1)" }}
+            />
+          </div>
           <div className="flex flex-col">
-            <span className="font-semibold text-sm text-sidebar-foreground">
+            <span className="font-extrabold text-sm tracking-[0.15em] uppercase" style={{ color: "#C9A84C" }}>
               LIMJIBA
             </span>
-            <span className="text-xs text-muted-foreground">لمجيبة</span>
+            <span className="text-[10px]" style={{ color: "rgba(201,168,76,0.5)" }}>لمجيبة</span>
           </div>
         </div>
       </SidebarHeader>
@@ -251,9 +122,11 @@ export function AppSidebar() {
                       asChild
                       isActive={isActive}
                       data-testid={item.testId}
+                      className={isActive ? "font-medium" : ""}
+                      style={isActive ? { borderRight: "2px solid #C9A84C" } : {}}
                     >
                       <Link href={item.url}>
-                        <item.icon className="h-4 w-4" />
+                        <item.icon className="h-4 w-4" style={isActive ? { color: "#C9A84C" } : {}} />
                         <span>{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
@@ -265,7 +138,7 @@ export function AppSidebar() {
         </SidebarGroup>
         {visibleStoreItems.length > 0 && (
           <SidebarGroup>
-            <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground px-4">
+            <SidebarGroupLabel className="text-xs uppercase tracking-wider px-4" style={{ color: "#C9A84C" }}>
               Online Store
             </SidebarGroupLabel>
             <SidebarGroupContent>
@@ -280,9 +153,11 @@ export function AppSidebar() {
                         asChild
                         isActive={isActive}
                         data-testid={item.testId}
+                        className={isActive ? "font-medium" : ""}
+                        style={isActive ? { borderRight: "2px solid #C9A84C" } : {}}
                       >
                         <Link href={item.url}>
-                          <item.icon className="h-4 w-4" />
+                          <item.icon className="h-4 w-4" style={isActive ? { color: "#C9A84C" } : {}} />
                           <span>{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
@@ -303,12 +178,12 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
       </SidebarContent>
-      <SidebarFooter className="p-4 border-t border-sidebar-border">
+      <SidebarFooter className="p-4" style={{ borderTop: "1px solid rgba(201,168,76,0.1)" }}>
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
             <Shield className="h-3 w-3 text-muted-foreground" />
             <span className="text-xs text-muted-foreground">{user?.username}</span>
-            <Badge variant={user?.isAdmin ? "default" : "secondary"} className="text-[10px] px-1.5 py-0">
+            <Badge variant={user?.isAdmin ? "default" : "secondary"} className="text-[10px] px-1.5 py-0" style={user?.isAdmin ? { background: "linear-gradient(135deg, #C9A84C, #B8963F)", color: "#0A1628" } : {}}>
               {user?.isAdmin ? t("settings.admin") : t("settings.staff")}
             </Badge>
           </div>

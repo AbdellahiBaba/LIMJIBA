@@ -13,12 +13,12 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
     "nav.logout": "Sign Out",
     "nav.cart": "Cart",
 
-    "home.badge": "Premium Quality Products",
+    "home.badge": "Imported Excellence",
     "home.heroTitle": "Welcome to LIMJIBA",
-    "home.heroSubtitle": "Discover premium products at the best prices",
+    "home.heroSubtitle": "Premium imported products, unmatched quality — delivered to your door",
     "home.shopNow": "Shop Now",
     "home.featured": "Featured Products",
-    "home.featuredSub": "Discover our best offerings",
+    "home.featuredSub": "Discover our most exclusive offerings",
     "home.viewAll": "View All Products",
 
     "products.title": "Our Products",
@@ -29,6 +29,9 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
     "products.lowStock": "Low Stock",
     "products.add": "Add",
     "products.outOfStock": "Out of Stock",
+    "products.onlyXLeft": "Only {x} left",
+    "products.maxReached": "Maximum available quantity reached",
+    "cart.maxAvailable": "Max available",
 
     "detail.back": "Back to Products",
     "detail.notFound": "Product Not Found",
@@ -171,12 +174,12 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
     "nav.logout": "Déconnexion",
     "nav.cart": "Panier",
 
-    "home.badge": "Produits de Qualité Premium",
+    "home.badge": "L'Excellence Importée",
     "home.heroTitle": "Bienvenue chez LIMJIBA",
-    "home.heroSubtitle": "Découvrez des produits premium aux meilleurs prix",
+    "home.heroSubtitle": "Produits importés premium, qualité inégalée — livrés chez vous",
     "home.shopNow": "Acheter Maintenant",
     "home.featured": "Produits Vedettes",
-    "home.featuredSub": "Découvrez nos meilleures offres",
+    "home.featuredSub": "Découvrez nos offres les plus exclusives",
     "home.viewAll": "Voir Tous les Produits",
 
     "products.title": "Nos Produits",
@@ -187,6 +190,9 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
     "products.lowStock": "Stock Faible",
     "products.add": "Ajouter",
     "products.outOfStock": "Rupture de Stock",
+    "products.onlyXLeft": "Plus que {x}",
+    "products.maxReached": "Quantité maximale disponible atteinte",
+    "cart.maxAvailable": "Maximum disponible",
 
     "detail.back": "Retour aux Produits",
     "detail.notFound": "Produit Non Trouvé",
@@ -329,12 +335,12 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
     "nav.logout": "تسجيل الخروج",
     "nav.cart": "السلة",
 
-    "home.badge": "منتجات عالية الجودة",
+    "home.badge": "التميز المستورد",
     "home.heroTitle": "مرحباً بكم في لمجيبة",
-    "home.heroSubtitle": "اكتشف منتجات متميزة بأفضل الأسعار",
+    "home.heroSubtitle": "منتجات مستوردة فاخرة، جودة لا تُضاهى — توصيل حتى باب منزلك",
     "home.shopNow": "تسوق الآن",
     "home.featured": "منتجات مميزة",
-    "home.featuredSub": "اكتشف أفضل عروضنا",
+    "home.featuredSub": "اكتشف أرقى عروضنا الحصرية",
     "home.viewAll": "عرض جميع المنتجات",
 
     "products.title": "منتجاتنا",
@@ -345,6 +351,9 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
     "products.lowStock": "مخزون منخفض",
     "products.add": "أضف",
     "products.outOfStock": "نفذ من المخزون",
+    "products.onlyXLeft": "متبقي {x} فقط",
+    "products.maxReached": "تم الوصول إلى الحد الأقصى المتاح",
+    "cart.maxAvailable": "الحد الأقصى المتاح",
 
     "detail.back": "العودة للمنتجات",
     "detail.notFound": "المنتج غير موجود",

@@ -111,7 +111,7 @@ export default function PwaInstallPrompt() {
           <div className="flex items-start justify-between mb-3">
             <div className="flex items-center gap-3">
               <img src={logoImg} alt="LIMJIBA" className="h-10 w-10 rounded-lg object-contain" />
-              <h3 className="font-bold text-[#1B2D4A]">{t.iosTitle}</h3>
+              <h3 className="font-bold text-[#0A1628]">{t.iosTitle}</h3>
             </div>
             <button onClick={handleDismiss} className="text-gray-400 hover:text-gray-600" data-testid="button-dismiss-pwa">
               <X className="h-5 w-5" />
@@ -119,15 +119,15 @@ export default function PwaInstallPrompt() {
           </div>
           <div className="space-y-2 text-sm text-gray-600 mb-4">
             <p className="flex items-center gap-2">
-              <Share className="h-4 w-4 text-[#96823A]" />
+              <Share className="h-4 w-4 text-[#C9A84C]" />
               1. {t.iosStep1}
             </p>
             <p className="flex items-center gap-2">
-              <Download className="h-4 w-4 text-[#96823A]" />
+              <Download className="h-4 w-4 text-[#C9A84C]" />
               2. {t.iosStep2}
             </p>
           </div>
-          <Button onClick={handleDismiss} className="w-full rounded-full" style={{ backgroundColor: "#96823A", color: "#1B2D4A" }} data-testid="button-ios-close">
+          <Button onClick={handleDismiss} className="w-full rounded-full" style={{ backgroundColor: "#C9A84C", color: "#0A1628" }} data-testid="button-ios-close">
             {t.iosClose}
           </Button>
         </div>
@@ -144,7 +144,7 @@ export default function PwaInstallPrompt() {
           <div className="flex items-center gap-3">
             <img src={logoImg} alt="LIMJIBA" className="h-12 w-12 rounded-lg object-contain" />
             <div>
-              <h3 className="font-bold text-[#1B2D4A]">{t.title}</h3>
+              <h3 className="font-bold text-[#0A1628]">{t.title}</h3>
               <p className="text-xs text-gray-500 mt-0.5">{t.subtitle}</p>
             </div>
           </div>
@@ -156,7 +156,7 @@ export default function PwaInstallPrompt() {
           <Button variant="outline" onClick={handleDismiss} className="flex-1 rounded-full text-sm" data-testid="button-pwa-not-now">
             {t.notNow}
           </Button>
-          <Button onClick={handleInstall} className="flex-1 rounded-full text-sm font-semibold" style={{ backgroundColor: "#96823A", color: "#1B2D4A" }} data-testid="button-pwa-install">
+          <Button onClick={handleInstall} className="flex-1 rounded-full text-sm font-semibold" style={{ backgroundColor: "#C9A84C", color: "#0A1628" }} data-testid="button-pwa-install">
             <Download className="h-4 w-4 mr-1" />
             {t.install}
           </Button>

@@ -30,8 +30,8 @@ export default function StoreOrders() {
   };
 
   const { data: settings } = useQuery<StoreSettings>({ queryKey: ["/api/store/settings"] });
-  const primaryColor = settings?.primaryColor || "#1B2D4A";
-  const accentColor = settings?.accentColor || "#96823A";
+  const primaryColor = settings?.primaryColor || "#0A1628";
+  const accentColor = settings?.accentColor || "#C9A84C";
   const currency = t("currency");
 
   const { data: orders, isLoading, refetch } = useQuery<StoreOrder[]>({

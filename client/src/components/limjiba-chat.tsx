@@ -83,18 +83,18 @@ export default function LimjibaChat() {
         <button
           onClick={() => setOpen(true)}
           className="h-14 w-14 rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition-transform animate-bounce-slow"
-          style={{ background: "linear-gradient(135deg, #1B2D4A, #0D1520)" }}
+          style={{ background: "linear-gradient(135deg, #0A1628, #0D1520)" }}
           data-testid="button-open-chat"
         >
           <MessageCircle className="h-6 w-6 text-white" />
-          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#96823A] animate-ping" />
-          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#96823A]" />
+          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#C9A84C] animate-ping" />
+          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#C9A84C]" />
         </button>
       </div>
 
       <div className={`fixed bottom-6 right-6 z-50 transition-all duration-300 origin-bottom-right ${open ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none"}`}>
         <div className="w-[360px] max-w-[calc(100vw-3rem)] h-[500px] max-h-[calc(100vh-6rem)] rounded-2xl shadow-2xl flex flex-col overflow-hidden border" style={{ background: "white" }}>
-          <div className="px-4 py-3 flex items-center justify-between" style={{ background: "linear-gradient(135deg, #1B2D4A, #0D1520)" }}>
+          <div className="px-4 py-3 flex items-center justify-between" style={{ background: "linear-gradient(135deg, #0A1628, #0D1520)" }}>
             <div className="flex items-center gap-2">
               <img src={logoImg} alt="LIMJIBA" className="h-8 w-8 rounded-full object-contain bg-white/10 p-0.5" />
               <div>
@@ -111,8 +111,8 @@ export default function LimjibaChat() {
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                 {msg.role === "assistant" && (
-                  <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-1" style={{ backgroundColor: "#1B2D4A15" }}>
-                    <Bot className="h-3.5 w-3.5" style={{ color: "#1B2D4A" }} />
+                  <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-1" style={{ backgroundColor: "#0A162815" }}>
+                    <Bot className="h-3.5 w-3.5" style={{ color: "#0A1628" }} />
                   </div>
                 )}
                 <div
@@ -121,14 +121,14 @@ export default function LimjibaChat() {
                       ? "rounded-br-sm text-white"
                       : "rounded-bl-sm text-gray-800 bg-white border shadow-sm"
                   }`}
-                  style={msg.role === "user" ? { background: "linear-gradient(135deg, #1B2D4A, #0D1520)" } : {}}
+                  style={msg.role === "user" ? { background: "linear-gradient(135deg, #0A1628, #0D1520)" } : {}}
                   data-testid={`chat-msg-${i}`}
                 >
                   {msg.content}
                 </div>
                 {msg.role === "user" && (
-                  <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-1" style={{ backgroundColor: "#96823A20" }}>
-                    <User className="h-3.5 w-3.5" style={{ color: "#96823A" }} />
+                  <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-1" style={{ backgroundColor: "#C9A84C20" }}>
+                    <User className="h-3.5 w-3.5" style={{ color: "#C9A84C" }} />
                   </div>
                 )}
               </div>
@@ -140,7 +140,7 @@ export default function LimjibaChat() {
                   <button
                     key={i}
                     onClick={() => sendMessage(chipLabel(chip))}
-                    className="px-3 py-1.5 rounded-full text-xs font-medium border border-[#1B2D4A]/20 bg-white hover:bg-[#1B2D4A]/5 text-[#1B2D4A] transition-colors shadow-sm whitespace-nowrap"
+                    className="px-3 py-1.5 rounded-full text-xs font-medium border border-[#0A1628]/20 bg-white hover:bg-[#0A1628]/5 text-[#0A1628] transition-colors shadow-sm whitespace-nowrap"
                     data-testid={`chip-action-${i}`}
                   >
                     {chipLabel(chip)}
@@ -151,8 +151,8 @@ export default function LimjibaChat() {
 
             {loading && (
               <div className="flex gap-2">
-                <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#1B2D4A15" }}>
-                  <Bot className="h-3.5 w-3.5" style={{ color: "#1B2D4A" }} />
+                <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#0A162815" }}>
+                  <Bot className="h-3.5 w-3.5" style={{ color: "#0A1628" }} />
                 </div>
                 <div className="bg-white border shadow-sm rounded-2xl rounded-bl-sm px-4 py-3">
                   <div className="flex gap-1">
@@ -179,7 +179,7 @@ export default function LimjibaChat() {
               <Button
                 size="sm"
                 className="rounded-full h-9 w-9 p-0 shrink-0"
-                style={{ backgroundColor: "#1B2D4A" }}
+                style={{ backgroundColor: "#0A1628" }}
                 onClick={() => sendMessage()}
                 disabled={!input.trim() || loading}
                 data-testid="button-send-chat"

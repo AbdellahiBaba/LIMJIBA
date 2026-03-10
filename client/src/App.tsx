@@ -216,7 +216,7 @@ function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
   const [location] = useLocation();
 
-  if (location.startsWith("/store")) {
+  if (location === "/store" || location.startsWith("/store/")) {
     return <StoreRouter />;
   }
 

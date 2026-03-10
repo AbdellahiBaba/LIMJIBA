@@ -4,7 +4,7 @@
 
 A comprehensive e-commerce management system branded as **LIMJIBA / لمجيبة** (Mauritanian premium import & e-commerce). Provides modules for Invoice Generation (standard and manufacturing), Stock/Inventory Management, Point-of-Sale (POS), Reseller Rewards Program, Salaries Management, Business Expenses Tracking, Profit Analytics, Supplier Management, Purchase Orders, Shipments, Audit Trail, Advanced Reporting, and a trilingual public storefront with customer authentication.
 
-**Brand Identity:** Deep Navy (#1B2D4A) + Muted Gold (#96823A) + Dark (#0D1520) + Cream (#F5ECD7), Montserrat typography. Logo: camel + plane + world map with Arabic "لمجيبة" + "IMPORTING" text.
+**Brand Identity:** Royal Navy (#0A1628) + Royal Gold (#C9A84C) + Deep Black (#060B14) + Ivory (#FAF6EE), Montserrat typography. Gold gradient: linear-gradient(135deg, #C9A84C, #B8963F, #D4B55A). Logo: camel + plane + world map with Arabic "لمجيبة" + "IMPORTING" text.
 **Currency:** MRU (Mauritanian Ouguiya / أوقية)
 **Languages:** Arabic, French, English (trilingual with RTL support)
 
@@ -19,7 +19,7 @@ Preferred communication style: Simple, everyday language.
 - **Routing:** Wouter
 - **State Management:** TanStack React Query
 - **UI Components:** shadcn/ui on Radix UI
-- **Styling:** Tailwind CSS with LIMJIBA theme and Montserrat font.
+- **Styling:** Tailwind CSS with LIMJIBA premium theme, Montserrat font, gold accent system
 - **Build Tool:** Vite
 - **Localization:** French, Arabic, and English (trilingual) with RTL support. Admin uses `t()` from `useLanguage()` context with locale JSON files (`client/src/locales/en.json`, `fr.json`, `ar.json`). Store uses separate `useStoreLanguage()` context with `client/src/locales/store.ts`. Currency uses MRU everywhere.
 
@@ -55,19 +55,29 @@ Preferred communication style: Simple, everyday language.
 
 ### Public Storefront (LIMJIBA / لمجيبة)
 - **Path:** `/store/*` (public, no auth required for browsing)
-- **Features:** Trilingual (AR/FR/EN) with language switcher, product browsing (in-stock only) with product images, search/filter by dynamic categories, product detail pages, cart with localStorage persistence, promo code validation, checkout with wallet payment selection and payment proof upload, order tracking with visual timeline by email/order number.
+- **Design:** Premium royal luxury brand identity with Royal Navy (#0A1628) + Royal Gold (#C9A84C) + Deep Black (#060B14) + Ivory (#FAF6EE). Gold gradient accents, glassmorphism header, animated hero with glow effects, premium card system with hover zoom, trust badges.
+- **Features:** Trilingual (AR/FR/EN) with language switcher, product browsing (in-stock only) with product images, search/filter by dynamic categories with pill selectors, product detail pages with premium layout, cart with localStorage persistence, promo code validation, checkout with wallet payment selection and payment proof upload, order tracking with visual timeline by email/order number.
+- **Stock Enforcement:** Out-of-stock products hidden from store. Cart context enforces max quantity per product via `addItem(item, qty, maxStock)` and `updateQuantity(id, qty, maxStock)`. `getItemQuantity(productId)` helper checks current cart quantity. "Only X left" badges when stock ≤ 5. Buttons disabled at max. Toast notifications when limits reached.
 - **Customer Auth:** Separate from admin login. Customers can register, login, view profile, and auto-fill checkout. Session stored in `req.session.storeCustomer`.
 - **Notifications:** In-store notification bell in header with unread count badge. Shows trilingual notifications for payment confirmations and order updates. Mark as read functionality.
-- **Theme:** Deep Navy (#1B2D4A) + Muted Gold (#96823A) + Dark (#0D1520) + Cream (#F5ECD7) with Montserrat typography. LIMJIBA logo integrated across all pages.
-- **Pages:** home, products, product detail, cart, checkout (with payment step), orders (with visual timeline), about, contact, terms, login, signup, profile.
+- **Pages:** home (premium hero + trust badges + categories + featured), products (premium cards + category pills), product detail (premium layout + secure/delivery badges), cart (premium summary + gold accents), checkout (with payment step), orders (with visual timeline), about (brand story + values), contact (premium cards + WhatsApp), terms, login, signup, profile.
 - **Payment System:** 3 mobile wallet options (Bankily, Masrvi, Sedad) stored in `payment_wallets` table. Checkout requires selecting a wallet, viewing its number, and uploading payment proof screenshot before order submission. Server-side enforcement of payment proof.
 - **Order Tracking:** Visual 4-step timeline (Placed → Confirmed → Shipped → Delivered) with color-coded progress. Search by order number or email.
-- **Translation System:** `client/src/locales/store.ts` with full AR/FR/EN translations including payment, wallet, order tracking, and checkout account prompt strings. `StoreLanguageProvider` + `useStoreLanguage()` hook. Language switcher in store header (EN/FR/عر buttons).
+- **Translation System:** `client/src/locales/store.ts` with full AR/FR/EN translations including payment, wallet, order tracking, checkout, and stock enforcement strings. `StoreLanguageProvider` + `useStoreLanguage()` hook. Language switcher in store header (EN/FR/عر buttons).
 - **Auto Language Detection:** First-time visitors automatically see the store in their browser's language (navigator.language → ar/fr/en). Stored in localStorage after first detection; subsequent visits respect manual selection.
 - **RTL Support:** When Arabic selected, `dir="rtl"` set on store container.
 - **Guest vs Account Checkout:** Non-authenticated users see a prompt at checkout offering to create an account (with benefits: order tracking, faster checkout, notifications) or continue as guest. Login/signup pages support `?redirect=checkout` to return users to checkout after authentication.
 - **PWA Support:** Installable as a Progressive Web App. Manifest at `/manifest.json`, service worker at `/sw.js` with network-first caching strategy. Install prompt component (`pwa-install-prompt.tsx`) shows install banner on supported browsers and iOS Safari instructions. Dismissible with 7-day re-prompt.
 - **CMS Pages:** About/Contact/Terms render HTML content via `dangerouslySetInnerHTML`.
+
+### Premium CSS System
+- **CSS Variables:** `--royal-navy`, `--royal-gold`, `--royal-gold-light`, `--royal-gold-dark`, `--deep-black`, `--ivory`, `--gold-gradient` defined in `.store-theme`.
+- **Animations:** `animate-fade-in-up` (with delay variants -1 through -3), `animate-float`, `gold-pulse`, `shimmer-slide`.
+- **Premium Classes:** `store-card-premium` (hover zoom + gold border), `store-btn-gold` (gradient + shimmer + scale), `gold-text` (gradient text), `gold-divider` (subtle gold line), `hero-glow` (animated orbs), `glass-card`, `premium-badge`, `trust-badge`, `card-image` (zoom transition).
+
+### Admin Portal
+- **Sidebar:** Premium header with LIMJIBA branding + gold accents. Active items marked with gold border. Separate "Online Store" section with Store Orders, Promo Codes, CMS, LIMJIBA Agent, and View Store link.
+- **Store Orders Admin:** Expandable order cards with payment proof viewer dialog, status management dropdown, payment confirmation button, multi-channel notification (email/WhatsApp/in-store).
 
 ### Category Management
 - **Table:** `categories` in schema.ts with id, name, nameAr, nameFr, icon, sortOrder, isActive, createdAt.
@@ -117,6 +127,7 @@ Preferred communication style: Simple, everyday language.
 - **Currency:** MRU (Mauritanian Ouguiya) throughout the entire application.
 - **Multilingual Support:** French/Arabic/English with RTL for Arabic. Admin and store have separate translation systems.
 - **Stock Deduction:** POS sales automatically update product stock and reseller purchase totals.
+- **Stock Enforcement (Store):** Cart context tracks max stock per item. `addItem()` and `updateQuantity()` accept `maxStock` param. Out-of-stock hidden by backend filter. Cart validates against live product stock.
 - **PostgreSQL Database Architecture:**
     - Production: Requires Neon database (`NEON_DATABASE_URL`) with safety guards.
     - Development: Prefers Neon, falls back to Replit DB (`DATABASE_URL`).
@@ -124,7 +135,7 @@ Preferred communication style: Simple, everyday language.
     - Migrations via runtime migration in `server/db.ts` `runMigrations()`.
 - **Cold-Start Optimization:** In-memory caching (`server/cache.ts`) for frequently accessed data with 30-second TTL.
 - **Session Separation:** Admin uses `req.session.userId`, store customers use `req.session.storeCustomer`.
-- **Route Ordering:** Specific routes (e.g., `/api/promo-codes/generate`) MUST come before generic `/:id` param routes.
+- **Route Ordering:** Specific routes (e.g., `/api/promo-codes/generate`) MUST come before generic `/:id` param routes. Store route detection: `location === "/store" || location.startsWith("/store/")` (not `.startsWith("/store")` to avoid matching `/store-orders`).
 - **Granular Permissions:** `ALL_PERMISSIONS` exported from `shared/schema.ts`.
 - **Audit Logging:** `storage.createAuditLog(...)` called in login, user CRUD, supplier CRUD, PO operations, etc. Wrapped in try/catch.
 - **serverReady guard:** In `server/index.ts` — critical for startup, do not remove.
@@ -136,6 +147,7 @@ Preferred communication style: Simple, everyday language.
 - @tanstack/react-query
 - Radix UI
 - Lucide React
+- react-icons (SiWhatsapp, SiInstagram, SiFacebook, SiSnapchat, SiTiktok)
 - date-fns
 - recharts
 

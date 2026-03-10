@@ -20,8 +20,8 @@ export default function StoreProfile() {
   const [saved, setSaved] = useState(false);
 
   const { data: settings } = useQuery<StoreSettings>({ queryKey: ["/api/store/settings"] });
-  const primaryColor = settings?.primaryColor || "#1B2D4A";
-  const accentColor = settings?.accentColor || "#96823A";
+  const primaryColor = settings?.primaryColor || "#0A1628";
+  const accentColor = settings?.accentColor || "#C9A84C";
 
   useEffect(() => {
     if (!authLoading && !isAuthenticated) {
