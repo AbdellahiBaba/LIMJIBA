@@ -102,6 +102,70 @@ app.use(helmet({
   crossOriginResourcePolicy: { policy: "cross-origin" },
 }));
 
+app.use((_req, res, next) => {
+  res.setHeader("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), interest-cohort=(), magnetometer=(), gyroscope=(), accelerometer=()");
+  next();
+});
+
+const blockedPathPatterns = [
+  /^\/\.env/i,
+  /^\/\.git/i,
+  /^\/\.svn/i,
+  /^\/\.hg/i,
+  /^\/\.aws/i,
+  /^\/\.htpasswd/i,
+  /^\/\.htaccess/i,
+  /^\/\.DS_Store/i,
+  /^\/wp-admin/i,
+  /^\/wp-login\.php/i,
+  /^\/wp-content/i,
+  /^\/wp-includes/i,
+  /^\/wp-json/i,
+  /^\/wp-config/i,
+  /^\/xmlrpc\.php/i,
+  /^\/phpmyadmin/i,
+  /^\/server-status/i,
+  /^\/server-info/i,
+  /^\/elmah\.axd/i,
+  /^\/trace\.axd/i,
+  /^\/package\.json/i,
+  /^\/package-lock\.json/i,
+  /^\/composer\.(json|lock)/i,
+  /^\/docker-compose\.yml/i,
+  /^\/Dockerfile/i,
+  /^\/web\.config/i,
+  /^\/config\.php/i,
+  /^\/debug\//i,
+  /^\/backup\//i,
+  /^\/install\.php/i,
+  /^\/setup\.php/i,
+  /^\/phpinfo\.php/i,
+  /^\/info\.php/i,
+  /^\/console$/i,
+  /^\/solr\//i,
+  /^\/cgi-bin\//i,
+  /^\/api\/swagger/i,
+  /^\/api\/docs$/i,
+  /^\/crossdomain\.xml/i,
+  /^\/graphql$/i,
+  /^\/actuator/i,
+  /^\/admin\/?$/i,
+  /^\/administrator/i,
+  /^\/_profiler/i,
+  /^\/\.well-known\/(?!acme-challenge)/i,
+  /\.(bak|old|orig|save|swp|temp|sql|tar|gz|zip|rar)$/i,
+];
+
+app.use((req, res, next) => {
+  const p = req.path;
+  for (const pattern of blockedPathPatterns) {
+    if (pattern.test(p)) {
+      return res.status(404).end();
+    }
+  }
+  next();
+});
+
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 5,
