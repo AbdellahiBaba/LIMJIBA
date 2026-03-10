@@ -3924,6 +3924,215 @@ export async function registerRoutes(
     }
   });
 
+  // ==================== SUPPORT CHAT (Customer-facing) ====================
+
+  app.post("/api/store/support/conversations", async (req: Request, res: Response) => {
+    try {
+      const { subject, message, customerEmail, customerName } = req.body;
+      if (!subject?.trim() || subject.trim().length > 200) return res.status(400).json({ error: "Subject required (max 200 chars)" });
+      if (!message?.trim() || message.trim().length > 5000) return res.status(400).json({ error: "Message required (max 5000 chars)" });
+
+      const session = (req as any).session?.storeCustomer;
+      const email = session?.email || customerEmail;
+      const name = session?.fullName || customerName;
+      if (!email || !name) return res.status(400).json({ error: "Email and name required" });
+      if (typeof email === "string" && !email.includes("@")) return res.status(400).json({ error: "Valid email required" });
+
+      const conv = await storage.createSupportConversation({
+        customerEmail: email,
+        customerName: name,
+        subject,
+        status: "open",
+      });
+
+      await storage.createSupportMessage({
+        conversationId: conv.id,
+        senderType: "customer",
+        senderName: name,
+        content: message,
+      });
+
+      res.status(201).json(conv);
+    } catch (error) {
+      handleError(res, "createSupportConversation", error);
+    }
+  });
+
+  app.get("/api/store/support/conversations", async (req: Request, res: Response) => {
+    try {
+      const session = (req as any).session?.storeCustomer;
+      if (!session?.email) return res.status(401).json({ error: "Login required" });
+
+      const conversations = await storage.getSupportConversations({ customerEmail: session.email });
+      res.json(conversations);
+    } catch (error) {
+      handleError(res, "getCustomerSupportConversations", error);
+    }
+  });
+
+  app.get("/api/store/support/conversations/:id/messages", async (req: Request, res: Response) => {
+    try {
+      const session = (req as any).session?.storeCustomer;
+      if (!session?.email) return res.status(401).json({ error: "Login required" });
+
+      const conv = await storage.getSupportConversation(parseInt(req.params.id));
+      if (!conv) return res.status(404).json({ error: "Conversation not found" });
+      if (conv.customerEmail !== session.email) return res.status(403).json({ error: "Access denied" });
+
+      await storage.markSupportMessagesRead(conv.id, "admin");
+      const messages = await storage.getSupportMessages(conv.id);
+      res.json(messages);
+    } catch (error) {
+      handleError(res, "getCustomerSupportMessages", error);
+    }
+  });
+
+  app.post("/api/store/support/conversations/:id/messages", async (req: Request, res: Response) => {
+    try {
+      const session = (req as any).session?.storeCustomer;
+      if (!session?.email) return res.status(401).json({ error: "Login required" });
+
+      const { content } = req.body;
+      if (!content?.trim() || content.trim().length > 5000) return res.status(400).json({ error: "Message content required (max 5000 chars)" });
+
+      const conv = await storage.getSupportConversation(parseInt(req.params.id));
+      if (!conv) return res.status(404).json({ error: "Conversation not found" });
+      if (conv.customerEmail !== session.email) return res.status(403).json({ error: "Access denied" });
+
+      const msg = await storage.createSupportMessage({
+        conversationId: conv.id,
+        senderType: "customer",
+        senderName: session.fullName || conv.customerName,
+        content: content.trim(),
+      });
+
+      if (conv.status === "resolved") {
+        await storage.updateSupportConversationStatus(conv.id, "open");
+      }
+
+      res.status(201).json(msg);
+    } catch (error) {
+      handleError(res, "createCustomerSupportMessage", error);
+    }
+  });
+
+  app.get("/api/store/support/conversations/:id/poll", async (req: Request, res: Response) => {
+    try {
+      const session = (req as any).session?.storeCustomer;
+      if (!session?.email) return res.status(401).json({ error: "Login required" });
+
+      const conv = await storage.getSupportConversation(parseInt(req.params.id));
+      if (!conv) return res.status(404).json({ error: "Conversation not found" });
+      if (conv.customerEmail !== session.email) return res.status(403).json({ error: "Access denied" });
+
+      const afterId = parseInt(req.query.after as string) || 0;
+      const messages = await storage.getSupportMessagesSince(conv.id, afterId);
+      res.json(messages);
+    } catch (error) {
+      handleError(res, "pollSupportMessages", error);
+    }
+  });
+
+  // ==================== SUPPORT CHAT (Admin-facing) ====================
+
+  app.get("/api/support/conversations", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const status = req.query.status as string | undefined;
+      const conversations = await storage.getSupportConversations(status ? { status } : undefined);
+      res.json(conversations);
+    } catch (error) {
+      handleError(res, "getAdminSupportConversations", error);
+    }
+  });
+
+  app.get("/api/support/conversations/:id/messages", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const conv = await storage.getSupportConversation(parseInt(req.params.id));
+      if (!conv) return res.status(404).json({ error: "Conversation not found" });
+
+      await storage.markSupportMessagesRead(conv.id, "customer");
+      const messages = await storage.getSupportMessages(conv.id);
+      res.json(messages);
+    } catch (error) {
+      handleError(res, "getAdminSupportMessages", error);
+    }
+  });
+
+  app.post("/api/support/conversations/:id/messages", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { content } = req.body;
+      if (!content?.trim() || content.trim().length > 5000) return res.status(400).json({ error: "Message content required (max 5000 chars)" });
+
+      const conv = await storage.getSupportConversation(parseInt(req.params.id));
+      if (!conv) return res.status(404).json({ error: "Conversation not found" });
+
+      const user = await storage.getUser((req as any).session.userId);
+      const senderName = user?.displayName || user?.username || "Support";
+
+      const msg = await storage.createSupportMessage({
+        conversationId: conv.id,
+        senderType: "admin",
+        senderName,
+        content: content.trim(),
+      });
+
+      try {
+        const customer = await storage.getStoreCustomerByEmail(conv.customerEmail);
+        if (customer) {
+          await storage.createStoreNotification({
+            customerId: customer.id,
+            customerEmail: conv.customerEmail,
+            type: "support_reply",
+            title: "New Support Reply",
+            titleAr: "رد جديد من الدعم",
+            titleFr: "Nouvelle réponse du support",
+            message: content.trim().substring(0, 200),
+            messageAr: content.trim().substring(0, 200),
+            messageFr: content.trim().substring(0, 200),
+            channel: "in_store",
+          });
+        }
+      } catch {}
+
+      res.status(201).json(msg);
+    } catch (error) {
+      handleError(res, "createAdminSupportMessage", error);
+    }
+  });
+
+  app.patch("/api/support/conversations/:id/status", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { status } = req.body;
+      if (!["open", "resolved", "closed"].includes(status)) {
+        return res.status(400).json({ error: "Invalid status" });
+      }
+      const conv = await storage.updateSupportConversationStatus(parseInt(req.params.id), status);
+      if (!conv) return res.status(404).json({ error: "Conversation not found" });
+      res.json(conv);
+    } catch (error) {
+      handleError(res, "updateSupportConversationStatus", error);
+    }
+  });
+
+  app.get("/api/support/unread-count", requireAuth, async (_req: Request, res: Response) => {
+    try {
+      const count = await storage.getUnreadSupportCount();
+      res.json({ count });
+    } catch (error) {
+      handleError(res, "getUnreadSupportCount", error);
+    }
+  });
+
+  app.get("/api/support/conversations/:id/poll", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const afterId = parseInt(req.query.after as string) || 0;
+      const messages = await storage.getSupportMessagesSince(parseInt(req.params.id), afterId);
+      res.json(messages);
+    } catch (error) {
+      handleError(res, "pollAdminSupportMessages", error);
+    }
+  });
+
   app.post("/api/store/notifications", requireAuth, async (req: Request, res: Response) => {
     try {
       const data = { ...req.body };

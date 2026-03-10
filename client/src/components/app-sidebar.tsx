@@ -1,4 +1,5 @@
 import { useLocation, Link } from "wouter";
+import { useQuery } from "@tanstack/react-query";
 import { useLanguage, useBranding } from "@/contexts/language-context";
 import { useAuth, hasPermission } from "@/contexts/auth-context";
 import defaultLogoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
@@ -43,6 +44,7 @@ import {
   Bot,
   ExternalLink,
   UsersRound,
+  Headset,
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -77,9 +79,15 @@ export function AppSidebar() {
     { title: "Store Orders", url: "/emanager-portal/store-orders", icon: ShoppingBag, testId: "nav-store-orders", permission: "dashboard" },
     { title: "Promo Codes", url: "/emanager-portal/promo-codes", icon: Tag, testId: "nav-promo-codes", permission: "dashboard" },
     { title: "CMS", url: "/emanager-portal/cms", icon: PanelTop, testId: "nav-cms", permission: "dashboard" },
+    { title: "Support Chat", url: "/emanager-portal/support-chat", icon: Headset, testId: "nav-support-chat", permission: "dashboard" },
     { title: "LIMJIBA Agent", url: "/emanager-portal/limjiba", icon: Bot, testId: "nav-limjiba", permission: "dashboard" },
     { title: "Store Customers", url: "/emanager-portal/store-customers", icon: UsersRound, testId: "nav-store-customers", permission: "dashboard" },
   ];
+
+  const { data: supportUnread } = useQuery<{ count: number }>({
+    queryKey: ["/api/support/unread-count"],
+    refetchInterval: 10000,
+  });
 
   const visibleStoreItems = storeMenuItems.filter(
     (item) => hasPermission(user, item.permission)
@@ -153,6 +161,7 @@ export function AppSidebar() {
                     location === item.url ||
                     (item.url !== "/" && location.startsWith(item.url + "/")) ||
                     (item.url !== "/" && location === item.url);
+                  const unreadBadge = item.testId === "nav-support-chat" && (supportUnread?.count ?? 0) > 0;
                   return (
                     <SidebarMenuItem key={item.url}>
                       <SidebarMenuButton
@@ -165,6 +174,11 @@ export function AppSidebar() {
                         <Link href={item.url} onClick={() => setOpenMobile(false)}>
                           <item.icon className="h-4 w-4 shrink-0" style={isActive ? { color: "#C9A84C" } : {}} />
                           <span className="text-sm">{item.title}</span>
+                          {unreadBadge && (
+                            <Badge className="ml-auto text-[10px] h-5 px-1.5" style={{ backgroundColor: "#C9A84C", color: "#0A1628" }} data-testid="badge-support-unread">
+                              {supportUnread!.count}
+                            </Badge>
+                          )}
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

@@ -3,7 +3,12 @@ import { pgTable, text, varchar, integer, real, timestamp, boolean, serial } fro
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
-export { conversations, messages } from "./models/chat";
+export {
+  conversations, messages, supportConversations, supportMessages,
+  insertSupportConversationSchema, insertSupportMessageSchema,
+  type SupportConversation, type InsertSupportConversation,
+  type SupportMessage, type InsertSupportMessage,
+} from "./models/chat";
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),

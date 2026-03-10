@@ -44,6 +44,7 @@ import PromoCodesPage from "@/pages/promo-codes";
 import StoreOrdersAdmin from "@/pages/store-orders";
 import StoreCustomers from "@/pages/store-customers";
 import LimjibaAdmin from "@/components/limjiba-admin";
+import SupportChat from "@/pages/support-chat";
 import StoreLayout, { StoreLanguageProvider } from "@/components/store-layout";
 import { StoreAuthProvider } from "@/contexts/store-auth-context";
 import LimjibaChat from "@/components/limjiba-chat";
@@ -95,6 +96,7 @@ function Router() {
       <Route path="/emanager-portal/promo-codes" component={PromoCodesPage} />
       <Route path="/emanager-portal/store-orders" component={StoreOrdersAdmin} />
       <Route path="/emanager-portal/store-customers" component={StoreCustomers} />
+      <Route path="/emanager-portal/support-chat" component={SupportChat} />
       <Route path="/emanager-portal/limjiba" component={LimjibaAdmin} />
       <Route component={NotFound} />
     </Switch>

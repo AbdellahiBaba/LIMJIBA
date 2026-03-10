@@ -1132,6 +1132,31 @@ async function runMigrations(): Promise<void> {
       console.log('[DB] Added option columns and cost_price to product_variants');
     } catch {}
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS support_conversations (
+        id SERIAL PRIMARY KEY,
+        customer_email TEXT NOT NULL,
+        customer_name TEXT NOT NULL,
+        subject TEXT NOT NULL,
+        status TEXT NOT NULL DEFAULT 'open',
+        assigned_to VARCHAR,
+        last_message_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )
+    `);
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS support_messages (
+        id SERIAL PRIMARY KEY,
+        conversation_id INTEGER NOT NULL REFERENCES support_conversations(id) ON DELETE CASCADE,
+        sender_type TEXT NOT NULL,
+        sender_name TEXT NOT NULL,
+        content TEXT NOT NULL,
+        is_read BOOLEAN NOT NULL DEFAULT false,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )
+    `);
+
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);

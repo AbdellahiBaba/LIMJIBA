@@ -90,6 +90,10 @@ import {
   type InsertProductReview,
   type StoreReview,
   type InsertStoreReview,
+  type SupportConversation,
+  type InsertSupportConversation,
+  type SupportMessage,
+  type InsertSupportMessage,
   users,
   products,
   invoices,
@@ -129,6 +133,8 @@ import {
   productVariants,
   productReviews,
   storeReviews,
+  supportConversations,
+  supportMessages,
 } from "@shared/schema";
 import { db, withRetry } from "./db";
 import { eq, desc, sql, and, gte, lte, or } from "drizzle-orm";
@@ -346,6 +352,16 @@ export interface IStorage {
   getStoreCustomerById(id: string): Promise<StoreCustomer | undefined>;
   createStoreCustomer(customer: InsertStoreCustomer): Promise<StoreCustomer>;
   updateStoreCustomer(id: string, data: Partial<InsertStoreCustomer>): Promise<StoreCustomer | undefined>;
+
+  createSupportConversation(conv: InsertSupportConversation): Promise<SupportConversation>;
+  getSupportConversations(filters?: { status?: string; customerEmail?: string }): Promise<SupportConversation[]>;
+  getSupportConversation(id: number): Promise<SupportConversation | undefined>;
+  updateSupportConversationStatus(id: number, status: string): Promise<SupportConversation | undefined>;
+  createSupportMessage(msg: InsertSupportMessage): Promise<SupportMessage>;
+  getSupportMessages(conversationId: number): Promise<SupportMessage[]>;
+  markSupportMessagesRead(conversationId: number, senderType: string): Promise<void>;
+  getUnreadSupportCount(): Promise<number>;
+  getSupportMessagesSince(conversationId: number, afterId: number): Promise<SupportMessage[]>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2950,6 +2966,93 @@ export class DatabaseStorage implements IStorage {
     return await withRetry(async () => {
       const [created] = await db.insert(storeReviews).values(review).returning();
       return created;
+    });
+  }
+
+  async createSupportConversation(conv: InsertSupportConversation): Promise<SupportConversation> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(supportConversations).values(conv).returning();
+      return created;
+    });
+  }
+
+  async getSupportConversations(filters?: { status?: string; customerEmail?: string }): Promise<SupportConversation[]> {
+    return await withRetry(async () => {
+      const conditions = [];
+      if (filters?.status) conditions.push(eq(supportConversations.status, filters.status));
+      if (filters?.customerEmail) conditions.push(eq(supportConversations.customerEmail, filters.customerEmail));
+      if (conditions.length > 0) {
+        return await db.select().from(supportConversations).where(and(...conditions)).orderBy(desc(supportConversations.lastMessageAt));
+      }
+      return await db.select().from(supportConversations).orderBy(desc(supportConversations.lastMessageAt));
+    });
+  }
+
+  async getSupportConversation(id: number): Promise<SupportConversation | undefined> {
+    return await withRetry(async () => {
+      const [conv] = await db.select().from(supportConversations).where(eq(supportConversations.id, id));
+      return conv || undefined;
+    });
+  }
+
+  async updateSupportConversationStatus(id: number, status: string): Promise<SupportConversation | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(supportConversations).set({ status }).where(eq(supportConversations.id, id)).returning();
+      return updated || undefined;
+    });
+  }
+
+  async createSupportMessage(msg: InsertSupportMessage): Promise<SupportMessage> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(supportMessages).values(msg).returning();
+      await db.update(supportConversations)
+        .set({ lastMessageAt: new Date() })
+        .where(eq(supportConversations.id, msg.conversationId));
+      return created;
+    });
+  }
+
+  async getSupportMessages(conversationId: number): Promise<SupportMessage[]> {
+    return await withRetry(async () => {
+      return await db.select().from(supportMessages)
+        .where(eq(supportMessages.conversationId, conversationId))
+        .orderBy(supportMessages.createdAt);
+    });
+  }
+
+  async markSupportMessagesRead(conversationId: number, senderType: string): Promise<void> {
+    await withRetry(async () => {
+      await db.update(supportMessages)
+        .set({ isRead: true })
+        .where(and(
+          eq(supportMessages.conversationId, conversationId),
+          eq(supportMessages.senderType, senderType),
+          eq(supportMessages.isRead, false)
+        ));
+    });
+  }
+
+  async getUnreadSupportCount(): Promise<number> {
+    return await withRetry(async () => {
+      const result = await db.select({ count: sql<number>`count(*)::int` })
+        .from(supportMessages)
+        .where(and(
+          eq(supportMessages.senderType, "customer"),
+          eq(supportMessages.isRead, false)
+        ));
+      return result[0]?.count || 0;
+    });
+  }
+
+  async getSupportMessagesSince(conversationId: number, afterId: number): Promise<SupportMessage[]> {
+    return await withRetry(async () => {
+      const { gt } = await import("drizzle-orm");
+      return await db.select().from(supportMessages)
+        .where(and(
+          eq(supportMessages.conversationId, conversationId),
+          gt(supportMessages.id, afterId)
+        ))
+        .orderBy(supportMessages.createdAt);
     });
   }
 }
