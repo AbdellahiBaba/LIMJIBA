@@ -1,11 +1,12 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useRoute, Link, useLocation } from "wouter";
 import { useCart } from "@/contexts/cart-context";
 import { useStoreLanguage } from "@/components/store-layout";
+import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShoppingCart, ArrowLeft, Minus, Plus, Check, Package, AlertCircle, Shield, Truck, CreditCard } from "lucide-react";
+import { ShoppingCart, ArrowLeft, Minus, Plus, Check, Package, AlertCircle, Shield, Truck, CreditCard, Eye, Flame } from "lucide-react";
 import type { Product, StoreSettings } from "@shared/schema";
 
 export default function StoreProductDetail() {
@@ -16,6 +17,7 @@ export default function StoreProductDetail() {
   const [, setLocation] = useLocation();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
+  const { recentlyViewed, addViewed } = useRecentlyViewed();
 
   const { data: product, isLoading } = useQuery<Product>({
     queryKey: ["/api/store/products", productId],
@@ -38,7 +40,30 @@ export default function StoreProductDetail() {
   const primaryColor = settings?.primaryColor || "#0A1628";
   const accentColor = settings?.accentColor || "#C9A84C";
 
+  useEffect(() => {
+    if (product) {
+      addViewed({
+        productId: product.id,
+        productName: product.name,
+        unitPrice: product.unitPrice,
+        category: product.category,
+        imageUrl: product.imageUrl,
+      });
+    }
+  }, [product?.id]);
+
   const related = allProducts?.filter(p => p.id !== productId && p.category === product?.category).slice(0, 4) || [];
+
+  const recentProducts = allProducts?.filter(p =>
+    p.id !== productId && recentlyViewed.some(rv => rv.productId === p.id)
+  ).sort((a, b) => {
+    const aIdx = recentlyViewed.findIndex(rv => rv.productId === a.id);
+    const bIdx = recentlyViewed.findIndex(rv => rv.productId === b.id);
+    return aIdx - bIdx;
+  }).slice(0, 4) || [];
+
+  const isDeal = product ? (product.isDealOfDay && product.dealDiscount && product.dealDiscount > 0) : false;
+  const effectivePrice = product ? (isDeal ? Math.round(product.unitPrice * (1 - (product.dealDiscount || 0) / 100) * 100) / 100 : product.unitPrice) : 0;
 
   const cartQty = product ? getItemQuantity(product.id) : 0;
   const remainingStock = product ? product.stockQuantity - cartQty : 0;
@@ -47,7 +72,7 @@ export default function StoreProductDetail() {
 
   const handleAddToCart = () => {
     if (!product || !canAdd) return;
-    addItem({ productId: product.id, productName: product.name, unitPrice: product.unitPrice, category: product.category, imageUrl: product.imageUrl }, quantity, product.stockQuantity);
+    addItem({ productId: product.id, productName: product.name, unitPrice: effectivePrice, category: product.category, imageUrl: product.imageUrl }, quantity, product.stockQuantity);
     setAdded(true);
     setQuantity(1);
     setTimeout(() => setAdded(false), 2000);
@@ -55,7 +80,7 @@ export default function StoreProductDetail() {
 
   const handleBuyNow = () => {
     if (!product || !canAdd) return;
-    addItem({ productId: product.id, productName: product.name, unitPrice: product.unitPrice, category: product.category, imageUrl: product.imageUrl }, quantity, product.stockQuantity);
+    addItem({ productId: product.id, productName: product.name, unitPrice: effectivePrice, category: product.category, imageUrl: product.imageUrl }, quantity, product.stockQuantity);
     setLocation("/store/checkout");
   };
 
@@ -119,8 +144,18 @@ export default function StoreProductDetail() {
           </div>
 
           <div data-testid="text-product-price">
-            <span className="text-4xl md:text-5xl font-bold gold-text">{product.unitPrice.toFixed(2)}</span>
+            {isDeal && (
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-xs font-bold px-3 py-1 rounded-full text-white" style={{ background: "linear-gradient(135deg, #ef4444, #dc2626)" }}>
+                  <Flame className="h-3 w-3 inline mr-1" />-{product.dealDiscount}% {t("deals.off")}
+                </span>
+              </div>
+            )}
+            <span className="text-4xl md:text-5xl font-bold gold-text">{effectivePrice.toFixed(2)}</span>
             <span className="text-lg text-gray-400 ml-2">{t("currency")}</span>
+            {isDeal && (
+              <div className="text-sm text-gray-400 line-through mt-1">{t("deals.was")} {product.unitPrice.toFixed(2)} {t("currency")}</div>
+            )}
           </div>
 
           <div className="gold-divider" />
@@ -214,6 +249,35 @@ export default function StoreProductDetail() {
                   <div className="h-36 md:h-44 overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}05, ${accentColor}08)` }}>
                     {p.imageUrl ? (
                       <img src={p.imageUrl} alt={p.name} className="h-full w-full object-cover card-image" data-testid={`img-product-${p.id}`} />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100"><Package className="h-12 w-12 text-gray-200" /></div>
+                    )}
+                  </div>
+                  <div className="p-3">
+                    <p className="font-semibold text-sm line-clamp-1" style={{ color: primaryColor }}>{p.name}</p>
+                    <p className="font-bold mt-1 gold-text">{p.unitPrice.toFixed(2)} <span className="text-xs text-gray-400">{t("currency")}</span></p>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {recentProducts.length > 0 && (
+        <section className="mt-16 md:mt-20">
+          <div className="flex items-center gap-2 mb-2">
+            <Eye className="h-5 w-5" style={{ color: accentColor }} />
+            <h2 className="text-2xl font-bold" style={{ color: primaryColor }}>{t("recentlyViewed.title")}</h2>
+          </div>
+          <div className="gold-divider w-16 mb-8" />
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6">
+            {recentProducts.map(p => (
+              <Link key={p.id} href={`/store/products/${p.id}`}>
+                <div className="store-card-premium rounded-2xl overflow-hidden cursor-pointer" data-testid={`card-recent-${p.id}`}>
+                  <div className="h-36 md:h-44 overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}05, ${accentColor}08)` }}>
+                    {p.imageUrl ? (
+                      <img src={p.imageUrl} alt={p.name} className="h-full w-full object-cover card-image" />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100"><Package className="h-12 w-12 text-gray-200" /></div>
                     )}

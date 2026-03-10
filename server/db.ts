@@ -998,6 +998,19 @@ async function runMigrations(): Promise<void> {
       console.log('[DB] Seeded default payment wallets');
     }
 
+    try {
+      await client.query(`ALTER TABLE products ADD COLUMN is_deal_of_day BOOLEAN NOT NULL DEFAULT false`);
+      console.log('[DB] Added is_deal_of_day column to products');
+    } catch {}
+    try {
+      await client.query(`ALTER TABLE products ADD COLUMN deal_discount REAL NOT NULL DEFAULT 0`);
+      console.log('[DB] Added deal_discount column to products');
+    } catch {}
+    try {
+      await client.query(`ALTER TABLE store_customers ADD COLUMN loyalty_points INTEGER NOT NULL DEFAULT 0`);
+      console.log('[DB] Added loyalty_points column to store_customers');
+    } catch {}
+
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);

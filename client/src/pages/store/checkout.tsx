@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { ShoppingBag, Check, ArrowLeft, Loader2, Package, Upload, Copy, CheckCircle2, Wallet, ImageIcon, UserPlus, ShieldCheck, Bell, Zap, ArrowRight } from "lucide-react";
+import { ShoppingBag, Check, ArrowLeft, Loader2, Package, Upload, Copy, CheckCircle2, Wallet, ImageIcon, UserPlus, ShieldCheck, Bell, Zap, ArrowRight, Award } from "lucide-react";
 import type { StoreSettings, PaymentWallet } from "@shared/schema";
 
 export default function StoreCheckout() {
@@ -360,6 +360,15 @@ export default function StoreCheckout() {
                 </div>
               )}
             </div>
+
+            {isAuthenticated && (
+              <div className="p-3 rounded-lg text-sm flex items-center gap-2" style={{ background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.15)" }} data-testid="text-loyalty-earn">
+                <Award className="h-4 w-4 flex-shrink-0" style={{ color: accentColor }} />
+                <span className="text-gray-600">
+                  {t("loyalty.earnOnOrder").replace("{points}", String(Math.max(0, Math.floor(subtotal / 10))))}
+                </span>
+              </div>
+            )}
 
             {placeOrder.isError && (
               <div className="mb-4 p-3 rounded-lg bg-red-50 text-red-600 text-sm" data-testid="text-checkout-error">

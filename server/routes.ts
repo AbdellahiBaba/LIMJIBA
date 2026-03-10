@@ -2995,6 +2995,16 @@ export async function registerRoutes(
   // PUBLIC STORE API ROUTES (no auth required)
   // ==========================================
 
+  app.get("/api/store/deals", async (req: Request, res: Response) => {
+    try {
+      const products = await storage.getStoreProducts();
+      const deals = products.filter((p: any) => p.isDealOfDay && p.dealDiscount > 0);
+      res.json(deals);
+    } catch (error) {
+      handleError(res, "getStoreDeals", error);
+    }
+  });
+
   app.get("/api/store/products", async (req: Request, res: Response) => {
     try {
       const products = await storage.getStoreProducts();
@@ -3066,8 +3076,12 @@ export async function registerRoutes(
         if (!product || product.stockQuantity < item.quantity) {
           return res.status(400).json({ error: `Product ${product?.name || item.productId} is out of stock or insufficient quantity` });
         }
-        validatedItems.push({ productId: product.id, productName: product.name, quantity: item.quantity, unitPrice: product.unitPrice });
-        subtotal += item.quantity * product.unitPrice;
+        let effectivePrice = product.unitPrice;
+        if (product.isDealOfDay && product.dealDiscount && product.dealDiscount > 0) {
+          effectivePrice = Math.round(product.unitPrice * (1 - product.dealDiscount / 100) * 100) / 100;
+        }
+        validatedItems.push({ productId: product.id, productName: product.name, quantity: item.quantity, unitPrice: effectivePrice });
+        subtotal += item.quantity * effectivePrice;
       }
 
       let discount = 0;
@@ -3325,7 +3339,7 @@ export async function registerRoutes(
       if (sc) {
         const customer = await storage.getStoreCustomerById(sc.id);
         if (customer && customer.isActive) {
-          return res.json({ isAuthenticated: true, customer: { id: customer.id, email: customer.email, fullName: customer.fullName, phone: customer.phone, address: customer.address } });
+          return res.json({ isAuthenticated: true, customer: { id: customer.id, email: customer.email, fullName: customer.fullName, phone: customer.phone, address: customer.address, loyaltyPoints: (customer as any).loyaltyPoints || 0 } });
         }
       }
       res.json({ isAuthenticated: false });
@@ -3340,7 +3354,7 @@ export async function registerRoutes(
       if (!sc) return res.status(401).json({ error: "Not authenticated" });
       const customer = await storage.getStoreCustomerById(sc.id);
       if (!customer) return res.status(404).json({ error: "Customer not found" });
-      res.json({ id: customer.id, email: customer.email, fullName: customer.fullName, phone: customer.phone, address: customer.address, language: customer.language });
+      res.json({ id: customer.id, email: customer.email, fullName: customer.fullName, phone: customer.phone, address: customer.address, language: customer.language, loyaltyPoints: (customer as any).loyaltyPoints || 0 });
     } catch (error) {
       handleError(res, "storeProfile", error);
     }
@@ -3484,6 +3498,21 @@ export async function registerRoutes(
             } catch {}
           }
         }
+      }
+
+      if (status === "delivered" && previousStatus !== "delivered") {
+        try {
+          if (order.customerEmail) {
+            const customer = await storage.getStoreCustomerByEmail(order.customerEmail);
+            if (customer) {
+              const pointsToAdd = Math.floor((order.total || 0) / 10);
+              if (pointsToAdd > 0) {
+                const currentPoints = (customer as any).loyaltyPoints || 0;
+                await storage.updateStoreCustomer(customer.id, { loyaltyPoints: currentPoints + pointsToAdd } as any);
+              }
+            }
+          }
+        } catch {}
       }
 
       const updated = await storage.updateStoreOrderStatus(req.params.id, status);

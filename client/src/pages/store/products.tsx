@@ -1,18 +1,21 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 import { useCart } from "@/contexts/cart-context";
+import { useComparison } from "@/contexts/comparison-context";
 import { useStoreLanguage } from "@/components/store-layout";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ShoppingCart, Search, Package, SlidersHorizontal } from "lucide-react";
+import { ShoppingCart, Search, Package, SlidersHorizontal, GitCompareArrows, X, ArrowRight } from "lucide-react";
 import type { Product, StoreSettings, Category } from "@shared/schema";
 
 export default function StoreProducts() {
   const { addItem, getItemQuantity } = useCart();
+  const { compareItems, addToCompare, removeFromCompare, isInCompare } = useComparison();
   const { t, lang } = useStoreLanguage();
+  const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState("all");
 
@@ -117,9 +120,12 @@ export default function StoreProducts() {
           {filtered.map(product => {
             const cartQty = getItemQuantity(product.id);
             const atMax = cartQty >= product.stockQuantity;
+            const inCompare = isInCompare(product.id);
+            const hasDeal = product.isDealOfDay && product.dealDiscount && product.dealDiscount > 0;
+            const effectivePrice = hasDeal ? Math.round(product.unitPrice * (1 - (product.dealDiscount || 0) / 100) * 100) / 100 : product.unitPrice;
 
             return (
-              <div key={product.id} className="store-card-premium group rounded-2xl overflow-hidden" data-testid={`card-product-${product.id}`}>
+              <div key={product.id} className="store-card-premium group rounded-2xl overflow-hidden relative" data-testid={`card-product-${product.id}`}>
                 <Link href={`/store/products/${product.id}`}>
                   <div className="h-48 md:h-56 overflow-hidden relative cursor-pointer" style={{ background: `linear-gradient(135deg, ${primaryColor}05, ${accentColor}08)` }}>
                     {product.imageUrl ? (
@@ -140,20 +146,33 @@ export default function StoreProducts() {
                   </div>
                 </Link>
                 <div className="p-4">
-                  <Link href={`/store/products/${product.id}`}>
-                    <h3 className="font-semibold text-sm mb-1 hover:underline cursor-pointer line-clamp-2" style={{ color: primaryColor }} data-testid={`link-product-${product.id}`}>{product.name}</h3>
-                  </Link>
+                  <div className="flex items-start justify-between gap-1 mb-1">
+                    <Link href={`/store/products/${product.id}`}>
+                      <h3 className="font-semibold text-sm hover:underline cursor-pointer line-clamp-2" style={{ color: primaryColor }} data-testid={`link-product-${product.id}`}>{product.name}</h3>
+                    </Link>
+                    <button
+                      onClick={() => inCompare ? removeFromCompare(product.id) : addToCompare(product)}
+                      className={`flex-shrink-0 p-1 rounded-full transition-all ${inCompare ? "bg-green-100 text-green-600" : "opacity-0 group-hover:opacity-100 hover:bg-gray-100 text-gray-400"}`}
+                      title={inCompare ? t("compare.remove") : t("compare.add")}
+                      data-testid={`button-compare-${product.id}`}
+                    >
+                      <GitCompareArrows className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
                   <p className="text-xs text-gray-400 mb-3">{product.stockQuantity} {t("detail.available")}</p>
                   <div className="flex items-center justify-between gap-2">
                     <div>
-                      <span className="text-lg md:text-xl font-bold gold-text">{product.unitPrice.toFixed(2)}</span>
+                      <span className="text-lg md:text-xl font-bold gold-text">{effectivePrice.toFixed(2)}</span>
                       <span className="text-xs text-gray-400 ml-1">{t("currency")}</span>
+                      {hasDeal && (
+                        <div className="text-[10px] text-gray-400 line-through">{product.unitPrice.toFixed(2)}</div>
+                      )}
                     </div>
                     <Button
                       size="sm"
                       className={`rounded-full text-xs px-3 ${atMax ? "" : "store-btn-gold"}`}
                       style={atMax ? { backgroundColor: "#9ca3af", color: "#fff" } : { color: primaryColor }}
-                      onClick={() => addItem({ productId: product.id, productName: product.name, unitPrice: product.unitPrice, category: product.category, imageUrl: product.imageUrl }, 1, product.stockQuantity)}
+                      onClick={() => addItem({ productId: product.id, productName: product.name, unitPrice: effectivePrice, category: product.category, imageUrl: product.imageUrl }, 1, product.stockQuantity)}
                       disabled={atMax}
                       data-testid={`button-add-cart-${product.id}`}
                     >
@@ -165,6 +184,34 @@ export default function StoreProducts() {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {compareItems.length > 0 && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 animate-fade-in-up" data-testid="compare-floating-bar">
+          <div className="flex items-center gap-3 px-6 py-3 rounded-full shadow-2xl" style={{ background: primaryColor, border: `2px solid ${accentColor}` }}>
+            <GitCompareArrows className="h-5 w-5" style={{ color: accentColor }} />
+            <span className="text-white text-sm font-medium">
+              {compareItems.length} {t("compare.selected")}
+            </span>
+            <Button
+              size="sm"
+              className="rounded-full store-btn-gold text-xs px-4"
+              style={{ color: primaryColor }}
+              onClick={() => setLocation("/store/compare")}
+              disabled={compareItems.length < 2}
+              data-testid="button-compare-now"
+            >
+              {t("compare.compare")} <ArrowRight className="h-3 w-3 ml-1" />
+            </Button>
+            <button
+              onClick={() => { compareItems.forEach(p => removeFromCompare(p.id)); }}
+              className="text-gray-400 hover:text-white p-1"
+              data-testid="button-clear-compare-bar"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
         </div>
       )}
     </div>

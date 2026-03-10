@@ -52,6 +52,7 @@ import {
   Star,
   ImagePlus,
   X,
+  Flame,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv-export";
@@ -99,6 +100,8 @@ function ProductFormDialog({
     unit: product?.unit ?? "pcs",
     barcode: product?.barcode ?? "",
     imageUrl: product?.imageUrl ?? null,
+    isDealOfDay: product?.isDealOfDay ?? false,
+    dealDiscount: product?.dealDiscount ?? 0,
   });
 
   useEffect(() => {
@@ -117,6 +120,8 @@ function ProductFormDialog({
         unit: product?.unit ?? "pcs",
         barcode: product?.barcode ?? "",
         imageUrl: product?.imageUrl ?? null,
+        isDealOfDay: product?.isDealOfDay ?? false,
+        dealDiscount: product?.dealDiscount ?? 0,
       });
     }
   }, [open, product]);
@@ -387,6 +392,42 @@ function ProductFormDialog({
                 <Barcode className="h-4 w-4" />
               </Button>
             </div>
+          </div>
+          <div className="rounded-lg border p-4 space-y-3" style={{ borderColor: "rgba(201,168,76,0.3)", background: "rgba(201,168,76,0.03)" }}>
+            <Label className="font-semibold text-sm flex items-center gap-2">
+              <Flame className="h-4 w-4 text-red-500" />
+              {t("stock.dealOfDay")}
+            </Label>
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.isDealOfDay || false}
+                  onChange={(e) => setFormData({ ...formData, isDealOfDay: e.target.checked })}
+                  className="rounded"
+                  data-testid="checkbox-deal-of-day"
+                />
+                <span className="text-sm">{t("stock.markAsDeal")}</span>
+              </label>
+            </div>
+            {formData.isDealOfDay && (
+              <div className="space-y-2">
+                <Label htmlFor="dealDiscount">{t("stock.dealDiscount")}</Label>
+                <div className="flex items-center gap-2">
+                  <Input
+                    id="dealDiscount"
+                    type="number"
+                    min="1"
+                    max="99"
+                    value={formData.dealDiscount || 0}
+                    onChange={(e) => setFormData({ ...formData, dealDiscount: parseFloat(e.target.value) || 0 })}
+                    className="w-24"
+                    data-testid="input-deal-discount"
+                  />
+                  <span className="text-sm text-muted-foreground">%</span>
+                </div>
+              </div>
+            )}
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>

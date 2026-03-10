@@ -10,6 +10,7 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageProvider, useLanguage } from "@/contexts/language-context";
 import { AuthProvider, useAuth } from "@/contexts/auth-context";
 import { CartProvider } from "@/contexts/cart-context";
+import { ComparisonProvider } from "@/contexts/comparison-context";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { CommandBar } from "@/components/command-bar";
 import { NotificationCenter } from "@/components/notification-center";
@@ -57,6 +58,7 @@ import StoreTerms from "@/pages/store/terms";
 import StoreLogin from "@/pages/store/login";
 import StoreSignup from "@/pages/store/signup";
 import StoreProfile from "@/pages/store/profile";
+import StoreCompare from "@/pages/store/compare";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
@@ -98,10 +100,12 @@ function StoreRouter() {
     <StoreLanguageProvider>
       <StoreAuthProvider>
         <CartProvider>
+          <ComparisonProvider>
           <StoreLayout>
             <Switch>
               <Route path="/" component={StoreHome} />
               <Route path="/store" component={StoreHome} />
+              <Route path="/store/compare" component={StoreCompare} />
               <Route path="/store/products/:id" component={StoreProductDetail} />
               <Route path="/store/products" component={StoreProducts} />
               <Route path="/store/cart" component={StoreCart} />
@@ -113,6 +117,7 @@ function StoreRouter() {
               <Route path="/store/login" component={StoreLogin} />
               <Route path="/store/signup" component={StoreSignup} />
               <Route path="/store/profile" component={StoreProfile} />
+              <Route path="/compare" component={StoreCompare} />
               <Route path="/products/:id" component={StoreProductDetail} />
               <Route path="/products" component={StoreProducts} />
               <Route path="/cart" component={StoreCart} />
@@ -132,6 +137,7 @@ function StoreRouter() {
             </Switch>
           </StoreLayout>
           <LimjibaChat />
+          </ComparisonProvider>
         </CartProvider>
       </StoreAuthProvider>
     </StoreLanguageProvider>

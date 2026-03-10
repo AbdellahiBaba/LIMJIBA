@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { User, Save, Loader2 } from "lucide-react";
+import { User, Save, Loader2, Award } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import type { StoreSettings } from "@shared/schema";
@@ -60,6 +60,21 @@ export default function StoreProfile() {
         <User className="inline h-8 w-8 mr-2" style={{ color: accentColor }} />
         {t("profile.title")}
       </h1>
+
+      {(customer?.loyaltyPoints ?? 0) > 0 && (
+        <div className="rounded-xl border bg-white shadow-sm p-6 mb-6" style={{ borderColor: "rgba(201,168,76,0.2)" }} data-testid="section-loyalty-points">
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05))" }}>
+              <Award className="h-7 w-7" style={{ color: accentColor }} />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500">{t("loyalty.yourPoints")}</p>
+              <p className="text-3xl font-bold" style={{ color: accentColor }}>{customer?.loyaltyPoints}</p>
+              <p className="text-xs text-gray-400">{t("loyalty.earnInfo")}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="rounded-xl border bg-white shadow-sm p-6 space-y-6">
         <h3 className="text-lg font-bold" style={{ color: primaryColor }}>{t("profile.editProfile")}</h3>

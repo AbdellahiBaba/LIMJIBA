@@ -52,6 +52,8 @@ export const products = pgTable("products", {
   barcode: text("barcode"),
   imageUrl: text("image_url"),
   isFavorite: boolean("is_favorite").notNull().default(false),
+  isDealOfDay: boolean("is_deal_of_day").notNull().default(false),
+  dealDiscount: real("deal_discount").notNull().default(0),
 });
 
 export const insertProductSchema = createInsertSchema(products).omit({ id: true });
@@ -759,6 +761,7 @@ export const storeCustomers = pgTable("store_customers", {
   address: text("address"),
   language: text("language").notNull().default("en"),
   isActive: boolean("is_active").notNull().default(true),
+  loyaltyPoints: integer("loyalty_points").notNull().default(0),
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 

@@ -4,7 +4,7 @@ import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useCart } from "@/contexts/cart-context";
 import { useStoreAuth } from "@/contexts/store-auth-context";
-import { ShoppingCart, Menu, X, Home, Package, Phone, Info, FileText, Globe, User, LogOut, Search, Bell, ChevronRight } from "lucide-react";
+import { ShoppingCart, Menu, X, Home, Package, Phone, Info, FileText, Globe, User, LogOut, Search, Bell, ChevronRight, Award } from "lucide-react";
 import { SiWhatsapp, SiInstagram, SiFacebook, SiSnapchat, SiTiktok } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -171,6 +171,14 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
               {isAuthenticated ? (
                 <div className="hidden sm:flex items-center gap-0.5">
+                  {(customer?.loyaltyPoints ?? 0) > 0 && (
+                    <Link href="/store/profile">
+                      <div className="flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold cursor-pointer" style={{ background: "rgba(201,168,76,0.15)", color: "#C9A84C" }} data-testid="badge-loyalty-points">
+                        <Award className="h-3.5 w-3.5" />
+                        <span>{customer?.loyaltyPoints}</span>
+                      </div>
+                    </Link>
+                  )}
                   <Link href="/store/profile">
                     <Button variant="ghost" size="sm" className="text-white/60 hover:text-white hover:bg-white/5" data-testid="link-store-profile">
                       <User className="h-4 w-4 mr-1" />

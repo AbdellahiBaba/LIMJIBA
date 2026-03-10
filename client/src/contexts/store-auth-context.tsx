@@ -7,6 +7,7 @@ interface StoreCustomer {
   fullName: string;
   phone?: string;
   address?: string;
+  loyaltyPoints?: number;
 }
 
 interface StoreAuthContextType {
