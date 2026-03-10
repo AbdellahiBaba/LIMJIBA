@@ -167,6 +167,9 @@ const blockedPathPatterns = [
   /^\/invoke(?:\/|$)/i,
   /^\/jbossws(?:\/|$)/i,
   /^\/host-manager(?:\/|$)/i,
+  /^\/robots\.txt$/i,
+  /^\/sitemap\.xml$/i,
+  /^\/api\/v\d+(?:\/|$)/i,
 ];
 
 app.use((req, res, next) => {
