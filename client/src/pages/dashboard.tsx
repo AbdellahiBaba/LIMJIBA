@@ -65,8 +65,9 @@ type LowStockProduct = { id: string; name: string; stockQuantity: number; lowSto
 
 interface BalanceSheet {
   openingBalance: number;
-  walletBalances: { id: string; name: string; balance: number }[];
+  walletBalances: { id: string; name: string; balance: number; openingBalance: number }[];
   totalWalletBalance: number;
+  totalWalletOpeningBalance: number;
   income: { invoices: number; sales: number; storeOrders: number; quickInvoices: number; total: number };
   outgoing: { expenses: number; salaries: number; total: number };
   netProfit: number;
@@ -340,6 +341,9 @@ export default function Dashboard() {
   const [transferFrom, setTransferFrom] = useState("");
   const [transferTo, setTransferTo] = useState("");
   const [transferAmount, setTransferAmount] = useState("");
+
+  const [editingWalletOB, setEditingWalletOB] = useState<string | null>(null);
+  const [walletOBInput, setWalletOBInput] = useState("");
 
   const [creditDialogOpen, setCreditDialogOpen] = useState(false);
   const [creditWalletId, setCreditWalletId] = useState("");
@@ -1038,6 +1042,27 @@ export default function Dashboard() {
                     <div key={w.id} className="p-2 rounded-lg bg-muted/50 text-center relative group" data-testid={`wallet-balance-${w.id}`}>
                       <div className="text-xs text-muted-foreground truncate">{w.name}</div>
                       <div className="text-sm font-bold">{w.balance.toLocaleString()} MRU</div>
+                      {editingWalletOB === w.id ? (
+                        <div className="flex items-center gap-1 mt-1">
+                          <Input type="number" step="0.01" className="h-6 text-xs px-1" value={walletOBInput} onChange={e => setWalletOBInput(e.target.value)} data-testid={`input-wallet-ob-${w.id}`} />
+                          <Button size="icon" variant="ghost" className="h-5 w-5 shrink-0" data-testid={`button-save-wallet-ob-${w.id}`}
+                            onClick={async () => {
+                              await apiRequest("POST", `/api/wallets/${w.id}/opening-balance`, { openingBalance: parseFloat(walletOBInput) || 0 });
+                              queryClient.invalidateQueries({ queryKey: ["/api/dashboard/balance-sheet"] });
+                              setEditingWalletOB(null);
+                            }}>
+                            <Check className="h-3 w-3" />
+                          </Button>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-center gap-1 mt-0.5">
+                          <span className="text-[10px] text-muted-foreground">OB: {w.openingBalance.toLocaleString()}</span>
+                          <Button size="icon" variant="ghost" className="h-4 w-4 opacity-0 group-hover:opacity-100" data-testid={`button-edit-wallet-ob-${w.id}`}
+                            onClick={() => { setWalletOBInput(String(w.openingBalance)); setEditingWalletOB(w.id); }}>
+                            <Edit3 className="h-2.5 w-2.5" />
+                          </Button>
+                        </div>
+                      )}
                       <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" data-testid={`button-credit-wallet-${w.id}`}
                         onClick={() => { setCreditWalletId(w.id); setCreditWalletName(w.name); setCreditAmount(""); setCreditNote(""); setCreditDialogOpen(true); }}>
                         <PlusCircle className="h-3 w-3 text-green-600" />

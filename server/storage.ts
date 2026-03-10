@@ -308,6 +308,7 @@ export interface IStorage {
   debitWalletBalance(id: string, amount: number): Promise<void>;
   getWalletBalance(id: string): Promise<number>;
   transferWalletBalance(fromId: string, toId: string, amount: number): Promise<void>;
+  batchReplaceVariants(productId: string, variants: InsertProductVariant[]): Promise<ProductVariant[]>;
 
   getAllStoreCustomers(): Promise<StoreCustomer[]>;
   updateStoreCustomerResetToken(id: string, token: string | null, expiry: string | null): Promise<void>;
@@ -2738,6 +2739,20 @@ export class DatabaseStorage implements IStorage {
         if (currentBalance < amount) throw new Error("Insufficient wallet balance");
         await tx.update(paymentWallets).set({ balance: sql`COALESCE(balance, 0) - ${amount}` }).where(eq(paymentWallets.id, fromId));
         await tx.update(paymentWallets).set({ balance: sql`COALESCE(balance, 0) + ${amount}` }).where(eq(paymentWallets.id, toId));
+      });
+    });
+  }
+
+  async batchReplaceVariants(productId: string, newVariants: InsertProductVariant[]): Promise<ProductVariant[]> {
+    return await withRetry(async () => {
+      return await db.transaction(async (tx) => {
+        await tx.delete(productVariants).where(eq(productVariants.productId, productId));
+        const created: ProductVariant[] = [];
+        for (const v of newVariants) {
+          const [variant] = await tx.insert(productVariants).values({ ...v, productId }).returning();
+          created.push(variant);
+        }
+        return created;
       });
     });
   }

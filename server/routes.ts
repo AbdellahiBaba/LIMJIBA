@@ -3625,6 +3625,40 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/products/:id/variants/batch", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const productId = req.params.id;
+      const product = await storage.getProduct(productId);
+      if (!product) return res.status(404).json({ error: "Product not found" });
+
+      const variants: any[] = req.body.variants || [];
+      if (variants.length > 100) return res.status(400).json({ error: "Too many variants (max 100)" });
+
+      const validatedVariants = variants.map((v: any, i: number) => ({
+        productId,
+        variantLabel: String(v.variantLabel || "").substring(0, 200),
+        sku: v.sku ? String(v.sku).substring(0, 100) : null,
+        unitPrice: Math.max(0, Number(v.unitPrice) || product.unitPrice),
+        costPrice: Math.max(0, Number(v.costPrice) || 0),
+        stockQuantity: Math.max(0, Math.floor(Number(v.stockQuantity) || 0)),
+        imageUrl: v.imageUrl || null,
+        option1Name: v.option1Name || null,
+        option1Value: v.option1Value || null,
+        option2Name: v.option2Name || null,
+        option2Value: v.option2Value || null,
+        option3Name: v.option3Name || null,
+        option3Value: v.option3Value || null,
+        sortOrder: i,
+        isActive: v.isActive !== false,
+      }));
+
+      const created = await storage.batchReplaceVariants(productId, validatedVariants);
+      res.json(created);
+    } catch (error) {
+      handleError(res, "batchReplaceVariants", error);
+    }
+  });
+
   // ==========================================
   // ADMIN: Promo Codes
   // ==========================================
@@ -4010,6 +4044,20 @@ export async function registerRoutes(
     }
   });
 
+  app.post("/api/admin/clear-test-data", requirePermission("suppliers"), async (req: Request, res: Response) => {
+    try {
+      const db = (await import("./db")).db;
+      const { sql } = await import("drizzle-orm");
+      await db.execute(sql`DELETE FROM invoice_items WHERE invoice_id IN (SELECT id FROM invoices WHERE client_name ILIKE '%BERRA%' OR invoice_number LIKE 'FR-0001%')`);
+      await db.execute(sql`DELETE FROM invoices WHERE client_name ILIKE '%BERRA%' OR invoice_number LIKE 'FR-0001%'`);
+      await db.execute(sql`DELETE FROM quick_invoices WHERE client_name ILIKE '%BERRA%' OR invoice_number LIKE 'FR-0001%'`);
+      await db.execute(sql`DELETE FROM audit_logs WHERE details ILIKE '%BERRA%' OR details ILIKE '%FR-0001%'`);
+      res.json({ success: true, message: "Test data cleared" });
+    } catch (error) {
+      handleError(res, "clearTestData", error);
+    }
+  });
+
   // ==========================================
   // ADMIN: Store Customers
   // ==========================================
@@ -4080,8 +4128,9 @@ export async function registerRoutes(
       const settings = await storage.getStoreSettings();
       const openingBalance = (settings as any)?.openingBalance || 0;
       const wallets = await storage.getPaymentWallets();
-      const walletBalances = wallets.map(w => ({ id: w.id, name: w.name, balance: (w as any).balance || 0 }));
+      const walletBalances = wallets.map(w => ({ id: w.id, name: w.name, balance: (w as any).balance || 0, openingBalance: (w as any).openingBalance || 0 }));
       const totalWalletBalance = walletBalances.reduce((s, w) => s + w.balance, 0);
+      const totalWalletOpeningBalance = walletBalances.reduce((s, w) => s + w.openingBalance, 0);
 
       const allInvoices = await storage.getInvoices();
       const invoiceIncome = allInvoices.filter(i => i.status === "paid").reduce((s, i) => s + (i.totalTTC || 0), 0);
@@ -4110,6 +4159,7 @@ export async function registerRoutes(
         openingBalance,
         walletBalances,
         totalWalletBalance,
+        totalWalletOpeningBalance,
         income: { invoices: invoiceIncome, sales: salesIncome, storeOrders: storeIncome, quickInvoices: quickInvoiceIncome, total: totalIncome },
         outgoing: { expenses: totalExpenses, salaries: totalSalaries, total: totalOutgoing },
         netProfit,
@@ -4117,6 +4167,29 @@ export async function registerRoutes(
       });
     } catch (error) {
       handleError(res, "getBalanceSheet", error);
+    }
+  });
+
+  app.post("/api/wallets/:id/opening-balance", requirePermission("suppliers"), async (req: Request, res: Response) => {
+    try {
+      const { openingBalance } = req.body;
+      const parsedBalance = typeof openingBalance === "number" ? openingBalance : parseFloat(openingBalance);
+      if (!Number.isFinite(parsedBalance)) return res.status(400).json({ error: "Opening balance must be a number" });
+      const wallet = await storage.updatePaymentWallet(req.params.id, { openingBalance: parsedBalance } as any);
+      if (!wallet) return res.status(404).json({ error: "Wallet not found" });
+      await storage.createAuditLog({
+        userId: req.session.userId,
+        username: req.session.username || "system",
+        action: "update",
+        entity: "payment_wallet",
+        entityId: req.params.id,
+        details: JSON.stringify({ action: "set_opening_balance", openingBalance: parsedBalance, walletName: wallet.name }),
+        ipAddress: req.ip || null,
+        createdAt: new Date().toISOString(),
+      });
+      res.json({ success: true });
+    } catch (error) {
+      handleError(res, "setWalletOpeningBalance", error);
     }
   });
 

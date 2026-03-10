@@ -1111,6 +1111,27 @@ async function runMigrations(): Promise<void> {
       console.log('[DB] Added payment_wallet_id column to purchase_orders');
     } catch {}
 
+    try {
+      await client.query(`ALTER TABLE payment_wallets ADD COLUMN opening_balance REAL NOT NULL DEFAULT 0`);
+      console.log('[DB] Added opening_balance column to payment_wallets');
+    } catch {}
+
+    try {
+      await client.query(`ALTER TABLE products ADD COLUMN images TEXT[]`);
+      console.log('[DB] Added images array column to products');
+    } catch {}
+
+    try {
+      await client.query(`ALTER TABLE product_variants ADD COLUMN cost_price REAL NOT NULL DEFAULT 0`);
+      await client.query(`ALTER TABLE product_variants ADD COLUMN option1_name TEXT`);
+      await client.query(`ALTER TABLE product_variants ADD COLUMN option1_value TEXT`);
+      await client.query(`ALTER TABLE product_variants ADD COLUMN option2_name TEXT`);
+      await client.query(`ALTER TABLE product_variants ADD COLUMN option2_value TEXT`);
+      await client.query(`ALTER TABLE product_variants ADD COLUMN option3_name TEXT`);
+      await client.query(`ALTER TABLE product_variants ADD COLUMN option3_value TEXT`);
+      console.log('[DB] Added option columns and cost_price to product_variants');
+    } catch {}
+
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);

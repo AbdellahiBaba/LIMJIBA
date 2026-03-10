@@ -51,6 +51,7 @@ export const products = pgTable("products", {
   unit: text("unit").notNull().default("pcs"),
   barcode: text("barcode"),
   imageUrl: text("image_url"),
+  images: text("images").array(),
   isFavorite: boolean("is_favorite").notNull().default(false),
   isDealOfDay: boolean("is_deal_of_day").notNull().default(false),
   dealDiscount: real("deal_discount").notNull().default(0),
@@ -70,8 +71,15 @@ export const productVariants = pgTable("product_variants", {
   variantLabel: text("variant_label").notNull(),
   sku: text("sku"),
   unitPrice: real("unit_price").notNull(),
+  costPrice: real("cost_price").notNull().default(0),
   stockQuantity: integer("stock_quantity").notNull().default(0),
   imageUrl: text("image_url"),
+  option1Name: text("option1_name"),
+  option1Value: text("option1_value"),
+  option2Name: text("option2_name"),
+  option2Value: text("option2_value"),
+  option3Name: text("option3_name"),
+  option3Value: text("option3_value"),
   sortOrder: integer("sort_order").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
 });
@@ -726,6 +734,7 @@ export const paymentWallets = pgTable("payment_wallets", {
   isActive: boolean("is_active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
   balance: real("balance").notNull().default(0),
+  openingBalance: real("opening_balance").notNull().default(0),
 });
 
 export const insertPaymentWalletSchema = createInsertSchema(paymentWallets).omit({ id: true });

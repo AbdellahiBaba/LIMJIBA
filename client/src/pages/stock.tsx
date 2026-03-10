@@ -1,13 +1,15 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "@/contexts/language-context";
+import { useLocation, useRoute } from "wouter";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Textarea } from "@/components/ui/textarea";
+import { Switch } from "@/components/ui/switch";
 import {
   Dialog,
   DialogContent,
@@ -53,6 +55,10 @@ import {
   ImagePlus,
   X,
   Flame,
+  ArrowLeft,
+  GripVertical,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv-export";
@@ -68,6 +74,1014 @@ const stockReasonKeys = [
   { value: "transfer", key: "stock.reasons.transfer" },
   { value: "other", key: "stock.reasons.other" },
 ];
+
+interface OptionRow {
+  name: string;
+  values: string;
+}
+
+interface VariantRow {
+  variantLabel: string;
+  unitPrice: number;
+  costPrice: number;
+  stockQuantity: number;
+  sku: string;
+  imageUrl: string | null;
+  option1Name: string | null;
+  option1Value: string | null;
+  option2Name: string | null;
+  option2Value: string | null;
+  option3Name: string | null;
+  option3Value: string | null;
+  isActive: boolean;
+}
+
+function generateVariantCombinations(options: OptionRow[], parentPrice: number): VariantRow[] {
+  const validOptions = options.filter(o => o.name.trim() && o.values.trim());
+  if (validOptions.length === 0) return [];
+
+  const optionArrays = validOptions.map(o => ({
+    name: o.name.trim(),
+    values: o.values.split(",").map(v => v.trim()).filter(Boolean),
+  }));
+
+  if (optionArrays.some(o => o.values.length === 0)) return [];
+
+  let combinations: { label: string; opts: { name: string; value: string }[] }[] = [{ label: "", opts: [] }];
+
+  for (const opt of optionArrays) {
+    const newCombos: typeof combinations = [];
+    for (const combo of combinations) {
+      for (const val of opt.values) {
+        const newLabel = combo.label ? `${combo.label} / ${val}` : val;
+        newCombos.push({
+          label: newLabel,
+          opts: [...combo.opts, { name: opt.name, value: val }],
+        });
+      }
+    }
+    combinations = newCombos;
+  }
+
+  return combinations.map(combo => ({
+    variantLabel: combo.label,
+    unitPrice: parentPrice,
+    costPrice: 0,
+    stockQuantity: 0,
+    sku: "",
+    imageUrl: null,
+    option1Name: combo.opts[0]?.name || null,
+    option1Value: combo.opts[0]?.value || null,
+    option2Name: combo.opts[1]?.name || null,
+    option2Value: combo.opts[1]?.value || null,
+    option3Name: combo.opts[2]?.name || null,
+    option3Value: combo.opts[2]?.value || null,
+    isActive: true,
+  }));
+}
+
+function MediaGallerySection({
+  images,
+  onImagesChange,
+}: {
+  images: string[];
+  onImagesChange: (imgs: string[]) => void;
+}) {
+  const { toast } = useToast();
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const handleFiles = (files: FileList | null) => {
+    if (!files) return;
+    const remaining = 6 - images.length;
+    if (remaining <= 0) {
+      toast({ title: "Maximum 6 images allowed", variant: "destructive" });
+      return;
+    }
+    const filesToProcess = Array.from(files).slice(0, remaining);
+    const validFiles = filesToProcess.filter(file => {
+      if (file.size > 2 * 1024 * 1024) {
+        toast({ title: `${file.name} exceeds 2MB limit`, variant: "destructive" });
+        return false;
+      }
+      return true;
+    });
+    if (validFiles.length === 0) return;
+    const readPromises = validFiles.map(file => new Promise<string>((resolve) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.readAsDataURL(file);
+    }));
+    Promise.all(readPromises).then(newImages => {
+      onImagesChange([...images, ...newImages].slice(0, 6));
+    });
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    handleFiles(e.dataTransfer.files);
+  };
+
+  const removeImage = (index: number) => {
+    onImagesChange(images.filter((_, i) => i !== index));
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Media</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {images.length > 0 && (
+          <div className="grid grid-cols-3 gap-3">
+            {images.map((img, idx) => (
+              <div key={idx} className="relative group aspect-square rounded-md border overflow-visible" data-testid={`img-gallery-${idx}`}>
+                <img src={img} alt={`Product ${idx + 1}`} className="w-full h-full object-cover rounded-md" />
+                {idx === 0 && (
+                  <Badge variant="secondary" className="absolute top-1 left-1 text-[10px]">Primary</Badge>
+                )}
+                <button
+                  type="button"
+                  onClick={() => removeImage(idx)}
+                  className="absolute -top-2 -right-2 h-5 w-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                  style={{ visibility: "visible" }}
+                  data-testid={`button-remove-image-${idx}`}
+                >
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+        {images.length < 6 && (
+          <div
+            onDrop={handleDrop}
+            onDragOver={(e) => e.preventDefault()}
+            onClick={() => fileInputRef.current?.click()}
+            className="border-2 border-dashed rounded-md p-8 text-center cursor-pointer hover-elevate transition-colors"
+            data-testid="dropzone-images"
+          >
+            <ImagePlus className="h-8 w-8 mx-auto text-muted-foreground mb-2" />
+            <p className="text-sm text-muted-foreground">
+              Drop images here or click to upload
+            </p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Max 2MB per image, {6 - images.length} remaining
+            </p>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              onChange={(e) => handleFiles(e.target.files)}
+              className="hidden"
+            />
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function OptionsAndVariantsSection({
+  hasOptions,
+  onHasOptionsChange,
+  options,
+  onOptionsChange,
+  variants,
+  onVariantsChange,
+  parentPrice,
+}: {
+  hasOptions: boolean;
+  onHasOptionsChange: (v: boolean) => void;
+  options: OptionRow[];
+  onOptionsChange: (opts: OptionRow[]) => void;
+  variants: VariantRow[];
+  onVariantsChange: (vars: VariantRow[]) => void;
+  parentPrice: number;
+}) {
+  const { toast } = useToast();
+  const [expanded, setExpanded] = useState(true);
+
+  const regenerateVariants = useCallback((newOptions: OptionRow[]) => {
+    const newVariants = generateVariantCombinations(newOptions, parentPrice);
+    const merged = newVariants.map(nv => {
+      const existing = variants.find(ev => ev.variantLabel === nv.variantLabel);
+      if (existing) {
+        return { ...nv, unitPrice: existing.unitPrice, costPrice: existing.costPrice, stockQuantity: existing.stockQuantity, sku: existing.sku, imageUrl: existing.imageUrl, isActive: existing.isActive };
+      }
+      return nv;
+    });
+    onVariantsChange(merged);
+  }, [variants, parentPrice, onVariantsChange]);
+
+  const handleOptionChange = (index: number, field: "name" | "values", value: string) => {
+    const newOptions = [...options];
+    newOptions[index] = { ...newOptions[index], [field]: value };
+    onOptionsChange(newOptions);
+    regenerateVariants(newOptions);
+  };
+
+  const addOption = () => {
+    if (options.length >= 3) {
+      toast({ title: "Maximum 3 options allowed", variant: "destructive" });
+      return;
+    }
+    const newOptions = [...options, { name: "", values: "" }];
+    onOptionsChange(newOptions);
+  };
+
+  const removeOption = (index: number) => {
+    const newOptions = options.filter((_, i) => i !== index);
+    onOptionsChange(newOptions);
+    regenerateVariants(newOptions);
+  };
+
+  const updateVariant = (index: number, field: keyof VariantRow, value: any) => {
+    const updated = [...variants];
+    updated[index] = { ...updated[index], [field]: value };
+    onVariantsChange(updated);
+  };
+
+  const removeVariant = (index: number) => {
+    onVariantsChange(variants.filter((_, i) => i !== index));
+  };
+
+  const handleVariantImageUpload = (index: number, e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Image must be under 2MB", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      updateVariant(index, "imageUrl", reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-base">Options & Variants</CardTitle>
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => setExpanded(!expanded)}
+          >
+            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+        </div>
+      </CardHeader>
+      {expanded && (
+        <CardContent className="space-y-4">
+          <div className="flex items-center gap-3">
+            <Switch
+              checked={hasOptions}
+              onCheckedChange={onHasOptionsChange}
+              data-testid="switch-has-options"
+            />
+            <Label className="text-sm">This product has options</Label>
+          </div>
+
+          {hasOptions && (
+            <>
+              <div className="space-y-3">
+                {options.map((opt, idx) => (
+                  <div key={idx} className="flex items-start gap-3 p-3 border rounded-md bg-muted/20" data-testid={`option-row-${idx}`}>
+                    <div className="flex-1 space-y-2">
+                      <Input
+                        placeholder="Option name (e.g. Size, Color)"
+                        value={opt.name}
+                        onChange={(e) => handleOptionChange(idx, "name", e.target.value)}
+                        data-testid={`input-option-name-${idx}`}
+                      />
+                      <Input
+                        placeholder="Comma-separated values (e.g. S, M, L, XL)"
+                        value={opt.values}
+                        onChange={(e) => handleOptionChange(idx, "values", e.target.value)}
+                        data-testid={`input-option-values-${idx}`}
+                      />
+                    </div>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => removeOption(idx)}
+                      data-testid={`button-remove-option-${idx}`}
+                    >
+                      <Trash2 className="h-4 w-4 text-destructive" />
+                    </Button>
+                  </div>
+                ))}
+                {options.length < 3 && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={addOption}
+                    data-testid="button-add-option"
+                  >
+                    <Plus className="h-4 w-4 mr-2" />
+                    Add option
+                  </Button>
+                )}
+              </div>
+
+              {variants.length > 0 && (
+                <div className="space-y-2">
+                  <Label className="text-sm font-semibold">{variants.length} Variants</Label>
+                  <div className="rounded-md border overflow-x-auto">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="min-w-[160px]">Variant</TableHead>
+                          <TableHead className="w-[100px]">Price</TableHead>
+                          <TableHead className="w-[100px]">Cost</TableHead>
+                          <TableHead className="w-[80px]">Stock</TableHead>
+                          <TableHead className="w-[120px]">SKU</TableHead>
+                          <TableHead className="w-[60px]">Image</TableHead>
+                          <TableHead className="w-[40px]"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {variants.map((v, idx) => (
+                          <TableRow key={idx} data-testid={`variant-row-${idx}`}>
+                            <TableCell>
+                              <span className="text-sm font-medium">{v.variantLabel}</span>
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={v.unitPrice}
+                                onChange={(e) => updateVariant(idx, "unitPrice", e.target.value === "" ? 0 : parseFloat(e.target.value))}
+                                className="h-8 text-sm"
+                                data-testid={`input-variant-price-${idx}`}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={v.costPrice}
+                                onChange={(e) => updateVariant(idx, "costPrice", e.target.value === "" ? 0 : parseFloat(e.target.value))}
+                                className="h-8 text-sm"
+                                data-testid={`input-variant-cost-${idx}`}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                type="number"
+                                min="0"
+                                value={v.stockQuantity}
+                                onChange={(e) => updateVariant(idx, "stockQuantity", e.target.value === "" ? 0 : parseInt(e.target.value))}
+                                className="h-8 text-sm"
+                                data-testid={`input-variant-stock-${idx}`}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                value={v.sku}
+                                onChange={(e) => updateVariant(idx, "sku", e.target.value)}
+                                placeholder="SKU"
+                                className="h-8 text-sm"
+                                data-testid={`input-variant-sku-${idx}`}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              {v.imageUrl ? (
+                                <div className="relative w-8 h-8">
+                                  <img src={v.imageUrl} alt="" className="w-8 h-8 rounded object-cover border" />
+                                  <button
+                                    type="button"
+                                    onClick={() => updateVariant(idx, "imageUrl", null)}
+                                    className="absolute -top-1 -right-1 h-4 w-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center text-[8px]"
+                                  >
+                                    <X className="h-2 w-2" />
+                                  </button>
+                                </div>
+                              ) : (
+                                <label className="w-8 h-8 border-2 border-dashed rounded flex items-center justify-center cursor-pointer">
+                                  <ImagePlus className="h-3 w-3 text-muted-foreground" />
+                                  <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => handleVariantImageUpload(idx, e)}
+                                    className="hidden"
+                                  />
+                                </label>
+                              )}
+                            </TableCell>
+                            <TableCell>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => removeVariant(idx)}
+                                data-testid={`button-delete-variant-${idx}`}
+                              >
+                                <Trash2 className="h-3 w-3 text-destructive" />
+                              </Button>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
+export function ProductFormPage() {
+  const { t } = useLanguage();
+  const { toast } = useToast();
+  const [, navigate] = useLocation();
+  const [, editParams] = useRoute("/emanager-portal/stock/:id/edit");
+  const productId = editParams?.id;
+  const isEditing = !!productId;
+
+  const { data: existingProduct, isLoading: loadingProduct } = useQuery<Product>({
+    queryKey: ["/api/products", productId],
+    enabled: isEditing,
+  });
+
+  const { data: existingVariants } = useQuery<ProductVariant[]>({
+    queryKey: ["/api/products", productId, "variants"],
+    queryFn: async () => {
+      const res = await fetch(`/api/products/${productId}/variants`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch variants");
+      return res.json();
+    },
+    enabled: isEditing,
+  });
+
+  const { data: dynamicCategories = [] } = useQuery<Category[]>({
+    queryKey: ["/api/categories"],
+  });
+
+  const catNames = dynamicCategories.length > 0 ? dynamicCategories.map(c => c.name) : fallbackCategories;
+
+  const [formData, setFormData] = useState<Partial<InsertProduct>>({
+    name: "",
+    category: "",
+    unitPrice: 0,
+    costPrice: 0,
+    purchasePrice: 0,
+    shippingCost: 0,
+    additionalCost: 0,
+    weightPerUnit: 0,
+    stockQuantity: 0,
+    lowStockThreshold: 10,
+    unit: "pcs",
+    barcode: "",
+    imageUrl: null,
+    images: [],
+    isDealOfDay: false,
+    dealDiscount: 0,
+    descriptionEn: "",
+    descriptionFr: "",
+    descriptionAr: "",
+    hasVariants: false,
+  });
+
+  const [productImages, setProductImages] = useState<string[]>([]);
+  const [hasOptions, setHasOptions] = useState(false);
+  const [options, setOptions] = useState<OptionRow[]>([]);
+  const [variants, setVariants] = useState<VariantRow[]>([]);
+  const [initialized, setInitialized] = useState(false);
+
+  useEffect(() => {
+    if (isEditing && existingProduct && !initialized) {
+      setFormData({
+        name: existingProduct.name,
+        category: existingProduct.category,
+        unitPrice: existingProduct.unitPrice,
+        costPrice: existingProduct.costPrice,
+        purchasePrice: existingProduct.purchasePrice,
+        shippingCost: existingProduct.shippingCost,
+        additionalCost: existingProduct.additionalCost,
+        weightPerUnit: existingProduct.weightPerUnit,
+        stockQuantity: existingProduct.stockQuantity,
+        lowStockThreshold: existingProduct.lowStockThreshold,
+        unit: existingProduct.unit,
+        barcode: existingProduct.barcode || "",
+        imageUrl: existingProduct.imageUrl,
+        images: existingProduct.images || [],
+        isDealOfDay: existingProduct.isDealOfDay,
+        dealDiscount: existingProduct.dealDiscount,
+        descriptionEn: existingProduct.descriptionEn || "",
+        descriptionFr: existingProduct.descriptionFr || "",
+        descriptionAr: existingProduct.descriptionAr || "",
+        hasVariants: existingProduct.hasVariants,
+      });
+      setProductImages(existingProduct.images || []);
+      setHasOptions(existingProduct.hasVariants || false);
+      setInitialized(true);
+    }
+  }, [isEditing, existingProduct, initialized]);
+
+  useEffect(() => {
+    if (!isEditing && dynamicCategories.length > 0 && !formData.category) {
+      setFormData(prev => ({ ...prev, category: catNames[0] }));
+    }
+  }, [dynamicCategories, isEditing]);
+
+  useEffect(() => {
+    if (isEditing && existingVariants && existingVariants.length > 0 && initialized) {
+      const optionsFromVariants: OptionRow[] = [];
+      const v0 = existingVariants[0];
+      if (v0.option1Name) {
+        const vals = Array.from(new Set(existingVariants.map(v => v.option1Value).filter(Boolean)));
+        optionsFromVariants.push({ name: v0.option1Name, values: vals.join(", ") });
+      }
+      if (v0.option2Name) {
+        const vals = Array.from(new Set(existingVariants.map(v => v.option2Value).filter(Boolean)));
+        optionsFromVariants.push({ name: v0.option2Name, values: vals.join(", ") });
+      }
+      if (v0.option3Name) {
+        const vals = Array.from(new Set(existingVariants.map(v => v.option3Value).filter(Boolean)));
+        optionsFromVariants.push({ name: v0.option3Name, values: vals.join(", ") });
+      }
+      if (optionsFromVariants.length > 0) {
+        setOptions(optionsFromVariants);
+      }
+      setVariants(existingVariants.map(v => ({
+        variantLabel: v.variantLabel,
+        unitPrice: v.unitPrice,
+        costPrice: v.costPrice,
+        stockQuantity: v.stockQuantity,
+        sku: v.sku || "",
+        imageUrl: v.imageUrl,
+        option1Name: v.option1Name,
+        option1Value: v.option1Value,
+        option2Name: v.option2Name,
+        option2Value: v.option2Value,
+        option3Name: v.option3Name,
+        option3Value: v.option3Value,
+        isActive: v.isActive,
+      })));
+    }
+  }, [existingVariants, initialized, isEditing]);
+
+  useEffect(() => {
+    const pp = formData.purchasePrice || 0;
+    const sc = formData.shippingCost || 0;
+    const ac = formData.additionalCost || 0;
+    const qty = formData.stockQuantity || 1;
+    const totalCost = pp + sc + ac;
+    const cost = qty > 0 ? Math.round((totalCost / qty) * 100) / 100 : 0;
+    setFormData(prev => ({ ...prev, costPrice: cost }));
+  }, [formData.purchasePrice, formData.shippingCost, formData.additionalCost, formData.stockQuantity]);
+
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      images: productImages,
+      imageUrl: productImages.length > 0 ? productImages[0] : "",
+    }));
+  }, [productImages]);
+
+  const createMutation = useMutation({
+    mutationFn: async (data: InsertProduct) => {
+      const res = await apiRequest("POST", "/api/products", data);
+      return res.json();
+    },
+    onSuccess: async (product: Product) => {
+      if (hasOptions && variants.length > 0) {
+        await apiRequest("POST", `/api/products/${product.id}/variants/batch`, { variants });
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/valuation"] });
+      toast({ title: t("stock.productAdded") });
+      navigate("/emanager-portal/stock");
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async (data: InsertProduct) => {
+      await apiRequest("PATCH", `/api/products/${productId}`, data);
+    },
+    onSuccess: async () => {
+      if (hasOptions && variants.length > 0) {
+        await apiRequest("POST", `/api/products/${productId}/variants/batch`, { variants });
+      } else if (!hasOptions) {
+        await apiRequest("POST", `/api/products/${productId}/variants/batch`, { variants: [] });
+      }
+      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/inventory/valuation"] });
+      toast({ title: t("stock.productUpdated") });
+      navigate("/emanager-portal/stock");
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
+    },
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name?.trim()) {
+      toast({ title: "Product name is required", variant: "destructive" });
+      return;
+    }
+    const data = {
+      ...formData,
+      hasVariants: hasOptions,
+    } as InsertProduct;
+    if (isEditing) {
+      updateMutation.mutate(data);
+    } else {
+      createMutation.mutate(data);
+    }
+  };
+
+  const generateBarcode = () => {
+    const timestamp = Date.now().toString(36).toUpperCase();
+    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+    setFormData(prev => ({ ...prev, barcode: `ECM-${timestamp}-${random}` }));
+  };
+
+  const isPending = createMutation.isPending || updateMutation.isPending;
+
+  if (isEditing && loadingProduct) {
+    return (
+      <div className="p-6 space-y-4">
+        <Skeleton className="h-8 w-48" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="lg:col-span-2 space-y-4">
+            <Skeleton className="h-64 w-full" />
+            <Skeleton className="h-48 w-full" />
+          </div>
+          <div className="space-y-4">
+            <Skeleton className="h-48 w-full" />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="p-3 sm:p-6 space-y-6">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
+        <div className="flex items-center gap-3">
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            onClick={() => navigate("/emanager-portal/stock")}
+            data-testid="button-back-to-stock"
+          >
+            <ArrowLeft className="h-4 w-4" />
+          </Button>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-semibold" data-testid="text-product-form-title">
+              {isEditing ? t("stock.editProduct") : t("stock.addProduct")}
+            </h1>
+            {isEditing && existingProduct && (
+              <p className="text-sm text-muted-foreground">{existingProduct.name}</p>
+            )}
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => navigate("/emanager-portal/stock")}
+            data-testid="button-cancel-product"
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button
+            type="submit"
+            disabled={isPending}
+            style={{ backgroundColor: "#0A1628", borderColor: "#C9A84C" }}
+            className="text-white border"
+            data-testid="button-save-product"
+          >
+            {isPending ? t("common.loading") : t("common.save")}
+          </Button>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Title & Description</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="name">{t("stock.productName")} *</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  placeholder={t("stock.productName")}
+                  required
+                  data-testid="input-product-name"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Description (EN)</Label>
+                <Textarea
+                  value={formData.descriptionEn || ""}
+                  onChange={(e) => setFormData(prev => ({ ...prev, descriptionEn: e.target.value }))}
+                  placeholder="Product description in English"
+                  rows={3}
+                  data-testid="input-description-en"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Description (FR)</Label>
+                <Textarea
+                  value={formData.descriptionFr || ""}
+                  onChange={(e) => setFormData(prev => ({ ...prev, descriptionFr: e.target.value }))}
+                  placeholder="Description du produit en français"
+                  rows={3}
+                  data-testid="input-description-fr"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label className="text-sm font-medium">Description (AR)</Label>
+                <Textarea
+                  value={formData.descriptionAr || ""}
+                  onChange={(e) => setFormData(prev => ({ ...prev, descriptionAr: e.target.value }))}
+                  placeholder="وصف المنتج بالعربية"
+                  rows={3}
+                  dir="rtl"
+                  data-testid="input-description-ar"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <MediaGallerySection
+            images={productImages}
+            onImagesChange={setProductImages}
+          />
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Pricing</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="unitPrice">{t("stock.unitPrice")} (MRU) *</Label>
+                <Input
+                  id="unitPrice"
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  value={formData.unitPrice}
+                  onChange={(e) => setFormData(prev => ({ ...prev, unitPrice: e.target.value === "" ? 0 as any : parseFloat(e.target.value) }))}
+                  required
+                  data-testid="input-unit-price"
+                />
+              </div>
+              <div className="rounded-md border p-4 space-y-3" style={{ borderColor: "rgba(201,168,76,0.3)", background: "rgba(201,168,76,0.03)" }}>
+                <p className="text-sm font-semibold text-muted-foreground">{t("stock.costBreakdown")}</p>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="purchasePrice" className="text-xs">{t("stock.purchasePrice")} (MRU)</Label>
+                    <Input
+                      id="purchasePrice"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.purchasePrice}
+                      onChange={(e) => setFormData(prev => ({ ...prev, purchasePrice: e.target.value === "" ? 0 as any : parseFloat(e.target.value) }))}
+                      data-testid="input-purchase-price"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="shippingCost" className="text-xs">{t("stock.shippingCost")} (MRU)</Label>
+                    <Input
+                      id="shippingCost"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.shippingCost}
+                      onChange={(e) => setFormData(prev => ({ ...prev, shippingCost: e.target.value === "" ? 0 as any : parseFloat(e.target.value) }))}
+                      data-testid="input-shipping-cost"
+                    />
+                  </div>
+                  <div className="space-y-1">
+                    <Label htmlFor="additionalCost" className="text-xs">{t("stock.additionalCost")} (MRU)</Label>
+                    <Input
+                      id="additionalCost"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      value={formData.additionalCost}
+                      onChange={(e) => setFormData(prev => ({ ...prev, additionalCost: e.target.value === "" ? 0 as any : parseFloat(e.target.value) }))}
+                      data-testid="input-additional-cost"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center justify-between pt-2 border-t" style={{ borderColor: "rgba(201,168,76,0.2)" }}>
+                  <span className="text-xs font-medium text-muted-foreground">{t("stock.costPrice")} (MRU)</span>
+                  <span className="text-sm font-bold" style={{ color: "#C9A84C" }} data-testid="text-computed-cost">
+                    {(formData.costPrice || 0).toFixed(2)}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Inventory</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="stockQuantity">{t("stock.stockQuantity")} *</Label>
+                  <Input
+                    id="stockQuantity"
+                    type="number"
+                    min="0"
+                    value={formData.stockQuantity}
+                    onChange={(e) => setFormData(prev => ({ ...prev, stockQuantity: e.target.value === "" ? 0 as any : parseInt(e.target.value) }))}
+                    required
+                    data-testid="input-stock-quantity"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="lowStockThreshold">{t("stock.lowStock")}</Label>
+                  <Input
+                    id="lowStockThreshold"
+                    type="number"
+                    min="0"
+                    value={formData.lowStockThreshold}
+                    onChange={(e) => setFormData(prev => ({ ...prev, lowStockThreshold: e.target.value === "" ? 0 as any : parseInt(e.target.value) }))}
+                    data-testid="input-low-stock"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label htmlFor="weightPerUnit">{t("stock.weightPerUnit")} (kg)</Label>
+                  <Input
+                    id="weightPerUnit"
+                    type="number"
+                    step="0.001"
+                    min="0"
+                    value={formData.weightPerUnit}
+                    onChange={(e) => setFormData(prev => ({ ...prev, weightPerUnit: e.target.value === "" ? 0 as any : parseFloat(e.target.value) }))}
+                    data-testid="input-weight-per-unit"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="unit">{t("stock.unit")}</Label>
+                  <Select
+                    value={formData.unit}
+                    onValueChange={(value) => setFormData(prev => ({ ...prev, unit: value }))}
+                  >
+                    <SelectTrigger data-testid="select-unit">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="pcs">{t("stock.pieces")}</SelectItem>
+                      <SelectItem value="box">{t("stock.box")}</SelectItem>
+                      <SelectItem value="kg">{t("stock.kg")}</SelectItem>
+                      <SelectItem value="palette">{t("stock.palette")}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="barcode">{t("stock.barcode")}</Label>
+                <div className="flex gap-2">
+                  <Input
+                    id="barcode"
+                    value={formData.barcode || ""}
+                    onChange={(e) => setFormData(prev => ({ ...prev, barcode: e.target.value }))}
+                    placeholder={t("stock.barcode")}
+                    data-testid="input-barcode"
+                  />
+                  <Button type="button" variant="outline" size="icon" onClick={generateBarcode} data-testid="button-generate-barcode">
+                    <Barcode className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <OptionsAndVariantsSection
+            hasOptions={hasOptions}
+            onHasOptionsChange={(v) => {
+              setHasOptions(v);
+              if (v && options.length === 0) {
+                setOptions([{ name: "", values: "" }]);
+              }
+            }}
+            options={options}
+            onOptionsChange={setOptions}
+            variants={variants}
+            onVariantsChange={setVariants}
+            parentPrice={formData.unitPrice || 0}
+          />
+        </div>
+
+        <div className="space-y-6">
+          <Card style={{ borderColor: "rgba(201,168,76,0.3)" }}>
+            <CardHeader>
+              <CardTitle className="text-base">Category & Status</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="category">{t("stock.category")} *</Label>
+                <Select
+                  value={formData.category || ""}
+                  onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                >
+                  <SelectTrigger data-testid="select-category">
+                    <SelectValue placeholder="Select category" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {dynamicCategories.length > 0 ? dynamicCategories.map((cat) => (
+                      <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
+                    )) : fallbackCategories.map((cat) => (
+                      <SelectItem key={cat} value={cat}>{cat}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="rounded-md border p-4 space-y-3" style={{ borderColor: "rgba(201,168,76,0.3)", background: "rgba(201,168,76,0.03)" }}>
+                <Label className="text-sm font-semibold flex items-center gap-2">
+                  <Flame className="h-4 w-4" style={{ color: "#C9A84C" }} />
+                  {t("stock.dealOfDay")}
+                </Label>
+                <div className="flex items-center gap-3">
+                  <Switch
+                    checked={formData.isDealOfDay || false}
+                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isDealOfDay: checked }))}
+                    data-testid="switch-deal-of-day"
+                  />
+                  <span className="text-sm">{t("stock.markAsDeal")}</span>
+                </div>
+                {formData.isDealOfDay && (
+                  <div className="space-y-2">
+                    <Label htmlFor="dealDiscount" className="text-xs">{t("stock.dealDiscount")}</Label>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        id="dealDiscount"
+                        type="number"
+                        min="1"
+                        max="99"
+                        value={formData.dealDiscount || 0}
+                        onChange={(e) => setFormData(prev => ({ ...prev, dealDiscount: e.target.value === "" ? 0 as any : parseFloat(e.target.value) }))}
+                        className="w-24"
+                        data-testid="input-deal-discount"
+                      />
+                      <span className="text-sm text-muted-foreground">%</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {isEditing && existingProduct && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Product Info</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted-foreground">ID</span>
+                  <span className="font-mono text-xs truncate max-w-[150px]">{existingProduct.id}</span>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted-foreground">Current Stock</span>
+                  <span className="font-medium">{existingProduct.stockQuantity} {existingProduct.unit}</span>
+                </div>
+                <div className="flex justify-between gap-2">
+                  <span className="text-muted-foreground">Inventory Value</span>
+                  <span className="font-medium">{(existingProduct.stockQuantity * existingProduct.costPrice).toLocaleString()} MRU</span>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      </div>
+    </form>
+  );
+}
 
 function VariantManagementSection({
   productId,
@@ -280,441 +1294,6 @@ function VariantManagementSection({
         </div>
       )}
     </div>
-  );
-}
-
-function ProductFormDialog({
-  open,
-  onOpenChange,
-  product,
-  onSuccess,
-  t,
-  dynamicCategories,
-}: {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  product?: Product;
-  onSuccess: () => void;
-  t: (key: string) => string;
-  dynamicCategories: Category[];
-}) {
-  const catNames = dynamicCategories.length > 0 ? dynamicCategories.map(c => c.name) : fallbackCategories;
-  const { toast } = useToast();
-  const [formData, setFormData] = useState<Partial<InsertProduct>>({
-    name: product?.name ?? "",
-    category: product?.category ?? catNames[0],
-    unitPrice: product?.unitPrice ?? 0,
-    costPrice: product?.costPrice ?? 0,
-    purchasePrice: product?.purchasePrice ?? 0,
-    shippingCost: product?.shippingCost ?? 0,
-    additionalCost: product?.additionalCost ?? 0,
-    weightPerUnit: product?.weightPerUnit ?? 0,
-    stockQuantity: product?.stockQuantity ?? 0,
-    lowStockThreshold: product?.lowStockThreshold ?? 10,
-    unit: product?.unit ?? "pcs",
-    barcode: product?.barcode ?? "",
-    imageUrl: product?.imageUrl ?? null,
-    isDealOfDay: product?.isDealOfDay ?? false,
-    dealDiscount: product?.dealDiscount ?? 0,
-    descriptionEn: product?.descriptionEn ?? "",
-    descriptionFr: product?.descriptionFr ?? "",
-    descriptionAr: product?.descriptionAr ?? "",
-    hasVariants: product?.hasVariants ?? false,
-  });
-
-  useEffect(() => {
-    if (open) {
-      setFormData({
-        name: product?.name ?? "",
-        category: product?.category ?? catNames[0],
-        unitPrice: product?.unitPrice ?? 0,
-        costPrice: product?.costPrice ?? 0,
-        purchasePrice: product?.purchasePrice ?? 0,
-        shippingCost: product?.shippingCost ?? 0,
-        additionalCost: product?.additionalCost ?? 0,
-        weightPerUnit: product?.weightPerUnit ?? 0,
-        stockQuantity: product?.stockQuantity ?? 0,
-        lowStockThreshold: product?.lowStockThreshold ?? 10,
-        unit: product?.unit ?? "pcs",
-        barcode: product?.barcode ?? "",
-        imageUrl: product?.imageUrl ?? null,
-        isDealOfDay: product?.isDealOfDay ?? false,
-        dealDiscount: product?.dealDiscount ?? 0,
-        descriptionEn: product?.descriptionEn ?? "",
-        descriptionFr: product?.descriptionFr ?? "",
-        descriptionAr: product?.descriptionAr ?? "",
-        hasVariants: product?.hasVariants ?? false,
-      });
-    }
-  }, [open, product]);
-
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      toast({ title: "Image must be under 2MB", variant: "destructive" });
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = () => {
-      setFormData(prev => ({ ...prev, imageUrl: reader.result as string }));
-    };
-    reader.readAsDataURL(file);
-  };
-
-  const computedCostPrice = (() => {
-    const pp = formData.purchasePrice || 0;
-    const sc = formData.shippingCost || 0;
-    const ac = formData.additionalCost || 0;
-    const qty = formData.stockQuantity || 1;
-    const totalCost = pp + sc + ac;
-    return qty > 0 ? Math.round((totalCost / qty) * 100) / 100 : 0;
-  })();
-
-  useEffect(() => {
-    const pp = formData.purchasePrice || 0;
-    const sc = formData.shippingCost || 0;
-    const ac = formData.additionalCost || 0;
-    const qty = formData.stockQuantity || 1;
-    const totalCost = pp + sc + ac;
-    const cost = qty > 0 ? Math.round((totalCost / qty) * 100) / 100 : 0;
-    setFormData(prev => ({ ...prev, costPrice: cost }));
-  }, [formData.purchasePrice, formData.shippingCost, formData.additionalCost, formData.stockQuantity]);
-
-  const createMutation = useMutation({
-    mutationFn: (data: InsertProduct) => apiRequest("POST", "/api/products", data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory/valuation"] });
-      toast({ title: t("stock.productAdded") });
-      onSuccess();
-    },
-    onError: (error: Error) => {
-      toast({ title: error.message || t("common.error"), variant: "destructive" });
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: (data: InsertProduct) =>
-      apiRequest("PATCH", `/api/products/${product?.id}`, data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["/api/products"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/inventory/valuation"] });
-      toast({ title: t("stock.productUpdated") });
-      onSuccess();
-    },
-    onError: (error: Error) => {
-      toast({ title: error.message || t("common.error"), variant: "destructive" });
-    },
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const data = formData as InsertProduct;
-    if (product) {
-      updateMutation.mutate(data);
-    } else {
-      createMutation.mutate(data);
-    }
-  };
-
-  const generateBarcode = () => {
-    const timestamp = Date.now().toString(36).toUpperCase();
-    const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-    setFormData({ ...formData, barcode: `ECM-${timestamp}-${random}` });
-  };
-
-  const isPending = createMutation.isPending || updateMutation.isPending;
-
-  return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-lg max-h-[90vh] overflow-y-auto">
-        <DialogHeader>
-          <DialogTitle>
-            {product ? t("stock.editProduct") : t("stock.addProduct")}
-          </DialogTitle>
-          <DialogDescription className="sr-only">
-            {product ? t("stock.editProduct") : t("stock.addProduct")}
-          </DialogDescription>
-        </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <Label htmlFor="name">{t("stock.productName")} *</Label>
-            <Input
-              id="name"
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              placeholder={t("stock.productName")}
-              required
-              data-testid="input-product-name"
-            />
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="category">{t("stock.category")} *</Label>
-            <Select
-              value={formData.category}
-              onValueChange={(value) => setFormData({ ...formData, category: value })}
-            >
-              <SelectTrigger data-testid="select-category">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {dynamicCategories.length > 0 ? dynamicCategories.map((cat) => (
-                  <SelectItem key={cat.id} value={cat.name}>{cat.name}</SelectItem>
-                )) : fallbackCategories.map((cat) => (
-                  <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="unitPrice">{t("stock.unitPrice")} (MRU) *</Label>
-            <Input
-              id="unitPrice"
-              type="number"
-              step="0.01"
-              min="0"
-              value={formData.unitPrice}
-              onChange={(e) => setFormData({ ...formData, unitPrice: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
-              required
-              data-testid="input-unit-price"
-            />
-          </div>
-          <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
-            <p className="text-sm font-semibold text-muted-foreground">{t("stock.costBreakdown")}</p>
-            <div className="grid grid-cols-3 gap-3">
-              <div className="space-y-1">
-                <Label htmlFor="purchasePrice" className="text-xs">{t("stock.purchasePrice")} (MRU)</Label>
-                <Input
-                  id="purchasePrice"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.purchasePrice}
-                  onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
-                  data-testid="input-purchase-price"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="shippingCost" className="text-xs">{t("stock.shippingCost")} (MRU)</Label>
-                <Input
-                  id="shippingCost"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.shippingCost}
-                  onChange={(e) => setFormData({ ...formData, shippingCost: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
-                  data-testid="input-shipping-cost"
-                />
-              </div>
-              <div className="space-y-1">
-                <Label htmlFor="additionalCost" className="text-xs">{t("stock.additionalCost")} (MRU)</Label>
-                <Input
-                  id="additionalCost"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  value={formData.additionalCost}
-                  onChange={(e) => setFormData({ ...formData, additionalCost: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
-                  data-testid="input-additional-cost"
-                />
-              </div>
-            </div>
-            <div className="flex items-center justify-between pt-1 border-t">
-              <span className="text-xs font-medium text-muted-foreground">{t("stock.costPrice")} (MRU)</span>
-              <span className="text-sm font-bold" data-testid="text-computed-cost">{computedCostPrice.toFixed(2)}</span>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="weightPerUnit">{t("stock.weightPerUnit")} (kg)</Label>
-              <Input
-                id="weightPerUnit"
-                type="number"
-                step="0.001"
-                min="0"
-                value={formData.weightPerUnit}
-                onChange={(e) => setFormData({ ...formData, weightPerUnit: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
-                data-testid="input-weight-per-unit"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="unit">{t("stock.unit")}</Label>
-              <Select
-                value={formData.unit}
-                onValueChange={(value) => setFormData({ ...formData, unit: value })}
-              >
-                <SelectTrigger data-testid="select-unit">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="pcs">{t("stock.pieces")}</SelectItem>
-                  <SelectItem value="box">{t("stock.box")}</SelectItem>
-                  <SelectItem value="kg">{t("stock.kg")}</SelectItem>
-                  <SelectItem value="palette">{t("stock.palette")}</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <Label htmlFor="stockQuantity">{t("stock.stockQuantity")} *</Label>
-              <Input
-                id="stockQuantity"
-                type="number"
-                min="0"
-                value={formData.stockQuantity}
-                onChange={(e) => setFormData({ ...formData, stockQuantity: e.target.value === "" ? "" as any : parseInt(e.target.value) })}
-                required
-                data-testid="input-stock-quantity"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="lowStockThreshold">{t("stock.lowStock")}</Label>
-              <Input
-                id="lowStockThreshold"
-                type="number"
-                min="0"
-                value={formData.lowStockThreshold}
-                onChange={(e) => setFormData({ ...formData, lowStockThreshold: e.target.value === "" ? "" as any : parseInt(e.target.value) })}
-                data-testid="input-low-stock"
-              />
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Label>{t("stock.productImage")}</Label>
-            {formData.imageUrl ? (
-              <div className="relative inline-block">
-                <img src={formData.imageUrl} alt="Product" className="h-24 w-24 object-cover rounded-lg border" data-testid="img-product-preview" />
-                <button type="button" onClick={() => setFormData(prev => ({ ...prev, imageUrl: null }))} className="absolute -top-2 -right-2 h-5 w-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center" data-testid="button-remove-image">
-                  <X className="h-3 w-3" />
-                </button>
-              </div>
-            ) : (
-              <label className="flex items-center gap-2 border-2 border-dashed rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors" data-testid="input-product-image">
-                <ImagePlus className="h-5 w-5 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground">{t("stock.uploadImage")}</span>
-                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
-              </label>
-            )}
-          </div>
-          <div className="space-y-2">
-            <Label htmlFor="barcode">{t("stock.barcode")}</Label>
-            <div className="flex gap-2">
-              <Input
-                id="barcode"
-                value={formData.barcode || ""}
-                onChange={(e) => setFormData({ ...formData, barcode: e.target.value })}
-                placeholder={t("stock.barcode")}
-                data-testid="input-barcode"
-              />
-              <Button type="button" variant="outline" size="icon" onClick={generateBarcode} data-testid="button-generate-barcode">
-                <Barcode className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-          <div className="rounded-lg border p-4 space-y-3" style={{ borderColor: "rgba(201,168,76,0.3)", background: "rgba(201,168,76,0.03)" }}>
-            <Label className="font-semibold text-sm flex items-center gap-2">
-              <Flame className="h-4 w-4 text-red-500" />
-              {t("stock.dealOfDay")}
-            </Label>
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.isDealOfDay || false}
-                  onChange={(e) => setFormData({ ...formData, isDealOfDay: e.target.checked })}
-                  className="rounded"
-                  data-testid="checkbox-deal-of-day"
-                />
-                <span className="text-sm">{t("stock.markAsDeal")}</span>
-              </label>
-            </div>
-            {formData.isDealOfDay && (
-              <div className="space-y-2">
-                <Label htmlFor="dealDiscount">{t("stock.dealDiscount")}</Label>
-                <div className="flex items-center gap-2">
-                  <Input
-                    id="dealDiscount"
-                    type="number"
-                    min="1"
-                    max="99"
-                    value={formData.dealDiscount || 0}
-                    onChange={(e) => setFormData({ ...formData, dealDiscount: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
-                    className="w-24"
-                    data-testid="input-deal-discount"
-                  />
-                  <span className="text-sm text-muted-foreground">%</span>
-                </div>
-              </div>
-            )}
-          </div>
-          <div className="space-y-3">
-            <Label className="font-semibold text-sm">Description EN</Label>
-            <Textarea
-              value={formData.descriptionEn || ""}
-              onChange={(e) => setFormData({ ...formData, descriptionEn: e.target.value })}
-              placeholder="Product description in English"
-              rows={3}
-              data-testid="input-description-en"
-            />
-          </div>
-          <div className="space-y-3">
-            <Label className="font-semibold text-sm">Description FR</Label>
-            <Textarea
-              value={formData.descriptionFr || ""}
-              onChange={(e) => setFormData({ ...formData, descriptionFr: e.target.value })}
-              placeholder="Description du produit en français"
-              rows={3}
-              data-testid="input-description-fr"
-            />
-          </div>
-          <div className="space-y-3">
-            <Label className="font-semibold text-sm">Description AR</Label>
-            <Textarea
-              value={formData.descriptionAr || ""}
-              onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
-              placeholder="وصف المنتج بالعربية"
-              rows={3}
-              dir="rtl"
-              data-testid="input-description-ar"
-            />
-          </div>
-          <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
-            <div className="flex items-center gap-3">
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={formData.hasVariants || false}
-                  onChange={(e) => setFormData({ ...formData, hasVariants: e.target.checked })}
-                  className="rounded"
-                  data-testid="checkbox-has-variants"
-                />
-                <span className="text-sm font-medium">Has Variants</span>
-              </label>
-            </div>
-            {formData.hasVariants && !product && (
-              <p className="text-xs text-muted-foreground">
-                Save the product first, then edit it to manage variants.
-              </p>
-            )}
-          </div>
-          {product && formData.hasVariants && (
-            <VariantManagementSection productId={product.id} t={t} />
-          )}
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
-              {t("common.cancel")}
-            </Button>
-            <Button type="submit" disabled={isPending} data-testid="button-save-product">
-              {isPending ? t("common.loading") : product ? t("common.save") : t("common.create")}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
-    </Dialog>
   );
 }
 
@@ -1073,10 +1652,9 @@ function ImportExportSection({ t }: { t: (key: string) => string }) {
 export default function Stock() {
   const { toast } = useToast();
   const { t, language } = useLanguage();
+  const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [dialogOpen, setDialogOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<Product | undefined>();
   const [adjustDialogOpen, setAdjustDialogOpen] = useState(false);
   const [adjustingProduct, setAdjustingProduct] = useState<Product | null>(null);
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
@@ -1145,13 +1723,11 @@ export default function Stock() {
   );
 
   const handleEdit = (product: Product) => {
-    setEditingProduct(product);
-    setDialogOpen(true);
+    navigate(`/emanager-portal/stock/${product.id}/edit`);
   };
 
   const handleNew = () => {
-    setEditingProduct(undefined);
-    setDialogOpen(true);
+    navigate("/emanager-portal/stock/new");
   };
 
   const printBarcodeLabels = (productsToPrint: Product[]) => {
@@ -1244,11 +1820,6 @@ export default function Stock() {
       });
     </script></body></html>`);
     win.document.close();
-  };
-
-  const handleDialogClose = () => {
-    setDialogOpen(false);
-    setEditingProduct(undefined);
   };
 
   const handleAdjust = (product: Product) => {
@@ -1467,9 +2038,13 @@ export default function Stock() {
                       >
                         <TableCell>
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 rounded bg-muted flex items-center justify-center">
-                              <Package className="h-4 w-4 text-muted-foreground" />
-                            </div>
+                            {product.imageUrl ? (
+                              <img src={product.imageUrl} alt={product.name} className="w-8 h-8 rounded object-cover border" />
+                            ) : (
+                              <div className="w-8 h-8 rounded bg-muted flex items-center justify-center">
+                                <Package className="h-4 w-4 text-muted-foreground" />
+                              </div>
+                            )}
                             <div>
                               <span className="font-medium">{product.name}</span>
                               {product.barcode && (
@@ -1589,15 +2164,6 @@ export default function Stock() {
           )}
         </CardContent>
       </Card>
-
-      <ProductFormDialog
-        open={dialogOpen}
-        onOpenChange={handleDialogClose}
-        product={editingProduct}
-        onSuccess={handleDialogClose}
-        t={t}
-        dynamicCategories={dynamicCategories}
-      />
 
       <StockAdjustmentDialog
         open={adjustDialogOpen}

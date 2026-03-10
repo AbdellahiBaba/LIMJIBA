@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/button";
 import { LogOut, Loader2, Search } from "lucide-react";
 import { lazy, Suspense } from "react";
 import Dashboard from "@/pages/dashboard";
-import Stock from "@/pages/stock";
+import Stock, { ProductFormPage } from "@/pages/stock";
 import Invoices from "@/pages/invoices";
 import InvoiceForm from "@/pages/invoice-form";
 import InvoiceView from "@/pages/invoice-view";
@@ -70,6 +70,8 @@ function Router() {
     <Switch>
       <Route path="/emanager-portal" component={Dashboard} />
       <Route path="/emanager-portal/stock" component={Stock} />
+      <Route path="/emanager-portal/stock/new" component={ProductFormPage} />
+      <Route path="/emanager-portal/stock/:id/edit" component={ProductFormPage} />
       <Route path="/emanager-portal/invoices" component={Invoices} />
       <Route path="/emanager-portal/invoices/new" component={InvoiceForm} />
       <Route path="/emanager-portal/invoices/fabrication" component={FabricationInvoice} />
