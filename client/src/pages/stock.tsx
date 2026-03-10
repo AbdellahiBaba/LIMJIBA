@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useLanguage } from "@/contexts/language-context";
@@ -63,6 +63,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { useUnsavedChanges } from "@/hooks/use-unsaved-changes";
 import { exportToCsv } from "@/lib/csv-export";
 import type { Product, InsertProduct, StockMovementWithProduct, InventoryValuation, Category, ProductVariant } from "@shared/schema";
 
@@ -579,6 +580,9 @@ export function ProductFormPage() {
   const [variants, setVariants] = useState<VariantRow[]>([]);
   const [initialized, setInitialized] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [formDirty, setFormDirty] = useState(false);
+
+  useUnsavedChanges(formDirty);
 
   useEffect(() => {
     if (isEditing && existingProduct && !initialized) {
@@ -691,6 +695,7 @@ export function ProductFormPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/valuation"] });
       toast({ title: t("stock.productAdded") });
+      setFormDirty(false);
       navigate("/emanager-portal/stock");
     },
     onError: (error: Error) => {
@@ -712,6 +717,7 @@ export function ProductFormPage() {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/inventory/valuation"] });
       toast({ title: t("stock.productUpdated") });
+      setFormDirty(false);
       navigate("/emanager-portal/stock");
     },
     onError: (error: Error) => {
@@ -792,7 +798,7 @@ export function ProductFormPage() {
   }
 
   return (
-    <form onSubmit={handleSubmit} className="p-3 sm:p-6 space-y-6">
+    <form onSubmit={handleSubmit} onChange={() => setFormDirty(true)} className="p-3 sm:p-6 space-y-6">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div className="flex items-center gap-3">
           <Button
@@ -907,7 +913,7 @@ export function ProductFormPage() {
 
           <MediaGallerySection
             images={productImages}
-            onImagesChange={setProductImages}
+            onImagesChange={(imgs) => { setProductImages(imgs); setFormDirty(true); }}
           />
 
           <Card>
@@ -1030,7 +1036,7 @@ export function ProductFormPage() {
                   <Label htmlFor="unit">{t("stock.unit")}</Label>
                   <Select
                     value={formData.unit}
-                    onValueChange={(value) => setFormData(prev => ({ ...prev, unit: value }))}
+                    onValueChange={(value) => { setFormData(prev => ({ ...prev, unit: value })); setFormDirty(true); }}
                   >
                     <SelectTrigger data-testid="select-unit">
                       <SelectValue />
@@ -1066,14 +1072,15 @@ export function ProductFormPage() {
             hasOptions={hasOptions}
             onHasOptionsChange={(v) => {
               setHasOptions(v);
+              setFormDirty(true);
               if (v && options.length === 0) {
                 setOptions([{ name: "", values: "" }]);
               }
             }}
             options={options}
-            onOptionsChange={setOptions}
+            onOptionsChange={(opts) => { setOptions(opts); setFormDirty(true); }}
             variants={variants}
-            onVariantsChange={setVariants}
+            onVariantsChange={(vars) => { setVariants(vars); setFormDirty(true); }}
             parentPrice={formData.unitPrice || 0}
           />
         </div>
@@ -1088,7 +1095,7 @@ export function ProductFormPage() {
                 <Label htmlFor="category">{t("stock.category")} *</Label>
                 <Select
                   value={formData.category || ""}
-                  onValueChange={(value) => setFormData(prev => ({ ...prev, category: value }))}
+                  onValueChange={(value) => { setFormData(prev => ({ ...prev, category: value })); setFormDirty(true); }}
                 >
                   <SelectTrigger data-testid="select-category">
                     <SelectValue placeholder="Select category" />
@@ -1110,7 +1117,7 @@ export function ProductFormPage() {
                 <div className="flex items-center gap-3">
                   <Switch
                     checked={formData.isDealOfDay || false}
-                    onCheckedChange={(checked) => setFormData(prev => ({ ...prev, isDealOfDay: checked }))}
+                    onCheckedChange={(checked) => { setFormData(prev => ({ ...prev, isDealOfDay: checked })); setFormDirty(true); }}
                     data-testid="switch-deal-of-day"
                   />
                   <span className="text-sm">{t("stock.markAsDeal")}</span>

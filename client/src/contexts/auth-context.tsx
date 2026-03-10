@@ -1,7 +1,8 @@
-import { createContext, useContext, useState, useEffect, useRef, useCallback, type ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, useRef, useCallback, createElement, type ReactNode } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { ToastAction } from "@/components/ui/toast";
 
 interface User {
   id: string;
@@ -37,14 +38,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 const SESSION_TIMEOUT = 30 * 60 * 1000;
 const WARNING_BEFORE = 5 * 60 * 1000;
 const WARNING_AT = SESSION_TIMEOUT - WARNING_BEFORE;
+const HEARTBEAT_INTERVAL = 5 * 60 * 1000;
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [error, setError] = useState<string | null>(null);
-  const [showWarning, setShowWarning] = useState(false);
   const warningTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const expiryTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const heartbeatRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const lastActivityRef = useRef(Date.now());
   const { toast } = useToast();
-  const toastDismissRef = useRef<(() => void) | null>(null);
 
   const { data: sessionData, isLoading: isSessionLoading, refetch } = useQuery<{ isAuthenticated: boolean; user?: User }>({
     queryKey: ["/api/auth/session"],
@@ -57,60 +59,67 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearTimers = useCallback(() => {
     if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
     if (expiryTimerRef.current) clearTimeout(expiryTimerRef.current);
+    if (heartbeatRef.current) clearInterval(heartbeatRef.current);
     warningTimerRef.current = null;
     expiryTimerRef.current = null;
+    heartbeatRef.current = null;
   }, []);
 
-  const handleSessionExpired = useCallback(() => {
+  const handleSessionExpired = useCallback(async () => {
     clearTimers();
-    setShowWarning(false);
-    if (toastDismissRef.current) {
-      toastDismissRef.current();
-      toastDismissRef.current = null;
-    }
+    try {
+      await apiRequest("POST", "/api/auth/logout", {});
+    } catch {}
     queryClient.invalidateQueries({ queryKey: ["/api/auth/session"] });
     queryClient.clear();
     toast({
       title: "Session Expired",
       description: "You have been logged out due to inactivity.",
       variant: "destructive",
+      duration: 10000,
     });
   }, [clearTimers, toast]);
 
-  const extendSession = useCallback(async () => {
-    setShowWarning(false);
-    if (toastDismissRef.current) {
-      toastDismissRef.current();
-      toastDismissRef.current = null;
-    }
-    try {
-      await refetch();
-      resetTimers();
-    } catch {}
-  }, [refetch]);
+  const touchServerRef = useRef<() => Promise<void>>(async () => {});
 
   const resetTimers = useCallback(() => {
-    clearTimers();
-    if (!isAuthenticated) return;
+    if (warningTimerRef.current) clearTimeout(warningTimerRef.current);
+    if (expiryTimerRef.current) clearTimeout(expiryTimerRef.current);
 
     warningTimerRef.current = setTimeout(() => {
-      setShowWarning(true);
-      const { dismiss } = toast({
+      toast({
         title: "Session Expiring Soon",
-        description: "Your session will expire in 5 minutes due to inactivity. Click here to stay logged in.",
+        description: "Your session will expire in 5 minutes due to inactivity.",
         variant: "destructive",
         duration: WARNING_BEFORE,
-        onClick: () => {
-          extendSession();
-        },
+        action: createElement(ToastAction, {
+          altText: "Stay logged in",
+          onClick: () => {
+            lastActivityRef.current = Date.now();
+            touchServerRef.current();
+          },
+          "data-testid": "button-extend-session",
+        }, "Stay Logged In"),
       });
-      toastDismissRef.current = dismiss;
     }, WARNING_AT);
 
     expiryTimerRef.current = setTimeout(() => {
       handleSessionExpired();
     }, SESSION_TIMEOUT);
-  }, [isAuthenticated, clearTimers, handleSessionExpired, extendSession, toast]);
+  }, [handleSessionExpired, toast]);
+
+  touchServerRef.current = async () => {
+    try {
+      const res = await refetch();
+      if (res.data?.isAuthenticated) {
+        resetTimers();
+      } else {
+        handleSessionExpired();
+      }
+    } catch {
+      handleSessionExpired();
+    }
+  };
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -118,18 +127,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return;
     }
 
+    lastActivityRef.current = Date.now();
     resetTimers();
 
+    heartbeatRef.current = setInterval(() => {
+      const idleTime = Date.now() - lastActivityRef.current;
+      if (idleTime < WARNING_AT) {
+        refetch().catch(() => {});
+      }
+    }, HEARTBEAT_INTERVAL);
+
     const activityEvents = ["mousedown", "keydown", "scroll", "touchstart"];
-    let lastActivity = Date.now();
 
     const handleActivity = () => {
       const now = Date.now();
-      if (now - lastActivity > 60000) {
-        lastActivity = now;
-        if (!showWarning) {
-          resetTimers();
-        }
+      const timeSinceLast = now - lastActivityRef.current;
+      if (timeSinceLast > 30000) {
+        lastActivityRef.current = now;
+        resetTimers();
       }
     };
 
@@ -139,7 +154,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       activityEvents.forEach(event => window.removeEventListener(event, handleActivity));
       clearTimers();
     };
-  }, [isAuthenticated, resetTimers, clearTimers, showWarning]);
+  }, [isAuthenticated, resetTimers, clearTimers, refetch]);
 
   const loginMutation = useMutation({
     mutationFn: async ({ username, password }: { username: string; password: string }) => {
