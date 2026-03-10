@@ -265,8 +265,12 @@ export default function StoreCheckout() {
                   {selectedWallet?.id === w.id && (
                     <CheckCircle2 className="absolute top-2 right-2 h-4 w-4" style={{ color: accentColor }} />
                   )}
-                  <div className="h-12 w-12 mx-auto rounded-full flex items-center justify-center mb-2" style={{ backgroundColor: `${primaryColor}15` }}>
-                    <Wallet className="h-6 w-6" style={{ color: primaryColor }} />
+                  <div className="h-12 w-12 mx-auto rounded-full flex items-center justify-center mb-2 overflow-hidden" style={{ backgroundColor: `${primaryColor}15` }}>
+                    {w.iconUrl ? (
+                      <img src={w.iconUrl} alt={w.name} className="h-10 w-10 object-contain" />
+                    ) : (
+                      <Wallet className="h-6 w-6" style={{ color: primaryColor }} />
+                    )}
                   </div>
                   <p className="font-bold text-sm" style={{ color: primaryColor }}>{getWalletDisplayName(w)}</p>
                 </button>

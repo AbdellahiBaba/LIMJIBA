@@ -701,6 +701,7 @@ export const paymentWallets = pgTable("payment_wallets", {
   nameFr: text("name_fr"),
   walletNumber: text("wallet_number").notNull(),
   iconType: text("icon_type").notNull().default("wallet"),
+  iconUrl: text("icon_url"),
   isActive: boolean("is_active").notNull().default(true),
   sortOrder: integer("sort_order").notNull().default(0),
 });
@@ -782,6 +783,10 @@ export const storeSettings = pgTable("store_settings", {
   contactPhone: text("contact_phone"),
   contactAddress: text("contact_address"),
   socialLinks: text("social_links").default("{}"),
+  trustBadges: text("trust_badges"),
+  categorySectionTitle: text("category_section_title"),
+  ctaText: text("cta_text"),
+  footerDescription: text("footer_description"),
   updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 

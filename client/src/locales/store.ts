@@ -411,7 +411,7 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
 
     "home.badge": "روعة الاستيراد",
     "home.heroTitle": "أهلاً وسهلاً بكم في لمجيبة",
-    "home.heroSubtitle": "حيث تلتقي الجودة الفاخرة بعراقة الاستيراد... نوصلها إليكم أينما كنتم",
+    "home.heroSubtitle": "لمجيبة للاستيراد.. نربطك بالعالم بجودة تُلبي احتياجك، وذوق يُشبهك",
     "home.shopNow": "اكتشف الآن",
     "home.featured": "مختاراتنا الفاخرة",
     "home.featuredSub": "تشكيلة منتقاة بعناية من أرقى ما نقدّم لكم",

@@ -350,7 +350,15 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                   <p className="text-xs brand-name-ar" style={{ color: "rgba(201,168,76,0.5)" }}>لمجيبة</p>
                 </div>
               </div>
-              <p className="text-sm text-gray-500 leading-relaxed">{settings?.storeDescription || (lang === "ar" ? "وجهتكم المتميّزة للتسوّق الفاخر" : lang === "fr" ? "Votre destination premium pour le shopping en ligne" : "Your premium e-commerce destination")}</p>
+              <p className="text-sm text-gray-500 leading-relaxed">{(() => {
+                try {
+                  if (settings?.footerDescription) {
+                    const fd = JSON.parse(settings.footerDescription);
+                    if (fd[lang]) return fd[lang];
+                  }
+                } catch {}
+                return settings?.storeDescription || (lang === "ar" ? "وجهتكم المتميّزة للتسوّق الفاخر" : lang === "fr" ? "Votre destination premium pour le shopping en ligne" : "Your premium e-commerce destination");
+              })()}</p>
               <div className="gold-divider w-16 mt-4" />
             </div>
             <div>
@@ -367,7 +375,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             <div>
               <h4 className="text-sm font-semibold mb-4 uppercase tracking-wider" style={{ color: "#C9A84C" }}>{t("footer.contact")}</h4>
               <p className="text-sm text-gray-500 mb-1">
-                <a href="mailto:support@limjiba.com" className="hover:text-white transition-colors">support@limjiba.com</a>
+                <a href={`mailto:${settings?.contactEmail || "support@limjiba.com"}`} className="hover:text-white transition-colors">{settings?.contactEmail || "support@limjiba.com"}</a>
               </p>
               {settings?.contactPhone && <p className="text-sm text-gray-500 mb-1">{settings.contactPhone}</p>}
               {settings?.contactAddress && <p className="text-sm text-gray-500 mb-1">{settings.contactAddress}</p>}

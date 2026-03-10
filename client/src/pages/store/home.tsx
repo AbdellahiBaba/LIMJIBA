@@ -6,7 +6,7 @@ import { useStoreLanguage } from "@/components/store-layout";
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShoppingCart, ArrowRight, Star, Sparkles, Package, Shield, Truck, Award, ChevronRight, Clock, Flame, Eye } from "lucide-react";
+import { ShoppingCart, ArrowRight, Star, Sparkles, Package, Shield, Truck, Award, ChevronRight, Clock, Flame, Eye, Heart, Zap, CheckCircle, Globe, Crown, Gift, Lock, Diamond, ThumbsUp, Medal, Gem } from "lucide-react";
 import type { Product, CmsBanner, StoreSettings, Category } from "@shared/schema";
 import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
 
@@ -89,11 +89,37 @@ export default function StoreHome() {
     return cat.name;
   };
 
-  const trustBadges = [
-    { icon: Truck, en: "Free Delivery", fr: "Livraison Gratuite", ar: "توصيل مجاني" },
-    { icon: Shield, en: "Secure Payment", fr: "Paiement Sécurisé", ar: "دفع آمن" },
-    { icon: Award, en: "Premium Quality", fr: "Qualité Premium", ar: "جودة عالية" },
+  const defaultTrustBadges = [
+    { icon: "Truck", en: "Free Delivery", fr: "Livraison Gratuite", ar: "توصيل مجاني" },
+    { icon: "Shield", en: "Secure Payment", fr: "Paiement Sécurisé", ar: "دفع آمن" },
+    { icon: "Award", en: "Premium Quality", fr: "Qualité Premium", ar: "جودة عالية" },
   ];
+  const iconMap: Record<string, any> = { Truck, Shield, Award, Star, Heart, Zap, CheckCircle, Globe, Crown, Diamond, Gift, ThumbsUp, Lock, Medal, Gem, Package, Sparkles, Eye, Flame };
+  let parsedBadges = defaultTrustBadges;
+  try {
+    if (settings?.trustBadges) {
+      const parsed = JSON.parse(settings.trustBadges);
+      if (Array.isArray(parsed) && parsed.length > 0) parsedBadges = parsed;
+    }
+  } catch {}
+  const trustBadges = parsedBadges.map(b => ({ ...b, icon: iconMap[b.icon] || Truck }));
+
+  const getLocalizedText = (jsonStr: string | null | undefined, fallback: Record<string, string>) => {
+    try {
+      if (jsonStr) {
+        const parsed = JSON.parse(jsonStr);
+        return parsed[lang] || parsed.en || fallback[lang] || fallback.en;
+      }
+    } catch {}
+    return fallback[lang] || fallback.en;
+  };
+
+  const categorySectionTitle = getLocalizedText(settings?.categorySectionTitle, {
+    en: "Shop by Category", fr: "Acheter par Catégorie", ar: "تسوق حسب الفئة"
+  });
+  const ctaSubtitle = getLocalizedText(settings?.ctaText, {
+    en: "Unmatched quality, unparalleled service", fr: "Qualité inégalée, service incomparable", ar: "جودة لا تُضاهى، خدمة لا مثيل لها"
+  });
 
   const renderProductCard = (product: Product, testIdPrefix = "card-product") => {
     const hasDeal = product.isDealOfDay && product.dealDiscount && product.dealDiscount > 0;
@@ -283,7 +309,7 @@ export default function StoreHome() {
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-10">
               <h2 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: primaryColor }}>
-                {lang === "ar" ? "تسوق حسب الفئة" : lang === "fr" ? "Acheter par Catégorie" : "Shop by Category"}
+                {categorySectionTitle}
               </h2>
               <div className="gold-divider w-24 mx-auto mt-3" />
             </div>
@@ -386,7 +412,7 @@ export default function StoreHome() {
             {lang === "ar" ? "لمجيبة" : "LIMJIBA"}
           </h2>
           <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto font-serif-brand" style={{ color: `${accentColor}cc` }}>
-            {lang === "ar" ? "جودة لا تُضاهى، خدمة لا مثيل لها" : lang === "fr" ? "Qualité inégalée, service incomparable" : "Unmatched quality, unparalleled service"}
+            {ctaSubtitle}
           </p>
           <Link href="/store/products">
             <Button size="lg" className="rounded-full px-10 py-6 store-btn-gold font-bold text-base" style={{ color: "#0A1628" }}>

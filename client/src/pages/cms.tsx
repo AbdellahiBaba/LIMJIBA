@@ -10,9 +10,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { FileText, Image, Settings, Save, Plus, Trash2, Edit, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { FileText, Image, Settings, Save, Plus, Trash2, Edit, Loader2, Wallet, Upload, X, Palette, Truck, Shield, Award, Star, Heart, Zap, CheckCircle, Globe, Crown, Diamond, Gift, ThumbsUp, Lock, Medal, Gem, Package, Sparkles, Eye, Flame } from "lucide-react";
 import { SiWhatsapp, SiInstagram, SiFacebook, SiSnapchat, SiTiktok } from "react-icons/si";
-import type { CmsPage, CmsBanner, StoreSettings } from "@shared/schema";
+import type { CmsPage, CmsBanner, StoreSettings, PaymentWallet } from "@shared/schema";
 
 function PagesTab() {
   const { toast } = useToast();
@@ -328,6 +329,467 @@ function SettingsTab() {
   );
 }
 
+function PaymentWalletsTab() {
+  const { toast } = useToast();
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [form, setForm] = useState({ name: "", nameAr: "", nameFr: "", walletNumber: "", iconType: "wallet", iconUrl: "", sortOrder: 0, isActive: true });
+
+  const { data: wallets, isLoading } = useQuery<PaymentWallet[]>({ queryKey: ["/api/payment-wallets"] });
+
+  const resetForm = () => {
+    setForm({ name: "", nameAr: "", nameFr: "", walletNumber: "", iconType: "wallet", iconUrl: "", sortOrder: 0, isActive: true });
+    setShowForm(false);
+    setEditingId(null);
+  };
+
+  const handleIconUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      toast({ title: "File too large", description: "Max 5MB", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setForm(f => ({ ...f, iconUrl: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const createWallet = useMutation({
+    mutationFn: async () => {
+      await apiRequest("POST", "/api/payment-wallets", form);
+    },
+    onSuccess: () => {
+      toast({ title: "Wallet created" });
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ["/api/payment-wallets"] });
+    },
+  });
+
+  const updateWallet = useMutation({
+    mutationFn: async () => {
+      await apiRequest("PUT", `/api/payment-wallets/${editingId}`, form);
+    },
+    onSuccess: () => {
+      toast({ title: "Wallet updated" });
+      resetForm();
+      queryClient.invalidateQueries({ queryKey: ["/api/payment-wallets"] });
+    },
+  });
+
+  const deleteWallet = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/payment-wallets/${id}`);
+    },
+    onSuccess: () => {
+      toast({ title: "Wallet deleted" });
+      queryClient.invalidateQueries({ queryKey: ["/api/payment-wallets"] });
+    },
+  });
+
+  const toggleWallet = useMutation({
+    mutationFn: async ({ id, isActive }: { id: string; isActive: boolean }) => {
+      await apiRequest("PUT", `/api/payment-wallets/${id}`, { isActive });
+    },
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["/api/payment-wallets"] }),
+  });
+
+  const startEdit = (wallet: PaymentWallet) => {
+    setEditingId(wallet.id);
+    setForm({
+      name: wallet.name,
+      nameAr: wallet.nameAr || "",
+      nameFr: wallet.nameFr || "",
+      walletNumber: wallet.walletNumber,
+      iconType: wallet.iconType,
+      iconUrl: wallet.iconUrl || "",
+      sortOrder: wallet.sortOrder,
+      isActive: wallet.isActive,
+    });
+    setShowForm(true);
+  };
+
+  const handleSave = () => {
+    if (editingId) {
+      updateWallet.mutate();
+    } else {
+      createWallet.mutate();
+    }
+  };
+
+  const isSaving = createWallet.isPending || updateWallet.isPending;
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between">
+        <h3 className="text-lg font-semibold">Payment Wallets</h3>
+        <Button size="sm" onClick={() => { resetForm(); setShowForm(!showForm); }} data-testid="button-add-wallet">
+          <Plus className="h-4 w-4 mr-1" /> Add Wallet
+        </Button>
+      </div>
+
+      {showForm && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base">{editingId ? "Edit Wallet" : "New Wallet"}</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <Label>Name (EN) *</Label>
+                <Input value={form.name} onChange={e => setForm(f => ({ ...f, name: e.target.value }))} className="mt-1" data-testid="input-wallet-name" />
+              </div>
+              <div>
+                <Label>Name (AR)</Label>
+                <Input value={form.nameAr} onChange={e => setForm(f => ({ ...f, nameAr: e.target.value }))} className="mt-1" dir="rtl" data-testid="input-wallet-name-ar" />
+              </div>
+              <div>
+                <Label>Name (FR)</Label>
+                <Input value={form.nameFr} onChange={e => setForm(f => ({ ...f, nameFr: e.target.value }))} className="mt-1" data-testid="input-wallet-name-fr" />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div>
+                <Label>Wallet Number *</Label>
+                <Input value={form.walletNumber} onChange={e => setForm(f => ({ ...f, walletNumber: e.target.value }))} className="mt-1" data-testid="input-wallet-number" />
+              </div>
+              <div>
+                <Label>Icon Type</Label>
+                <Input value={form.iconType} onChange={e => setForm(f => ({ ...f, iconType: e.target.value }))} placeholder="wallet" className="mt-1" data-testid="input-wallet-icon-type" />
+              </div>
+              <div>
+                <Label>Sort Order</Label>
+                <Input type="number" value={form.sortOrder} onChange={e => setForm(f => ({ ...f, sortOrder: parseInt(e.target.value) || 0 }))} className="mt-1" data-testid="input-wallet-sort-order" />
+              </div>
+            </div>
+
+            <div>
+              <Label>Icon Image</Label>
+              <div className="mt-1 flex items-center gap-4">
+                {form.iconUrl ? (
+                  <div className="relative">
+                    <img src={form.iconUrl} alt="Wallet icon" className="h-16 w-16 object-contain rounded-lg border" data-testid="img-wallet-icon-preview" />
+                    <button
+                      onClick={() => setForm(f => ({ ...f, iconUrl: "" }))}
+                      className="absolute -top-2 -right-2 h-5 w-5 rounded-full bg-red-500 text-white flex items-center justify-center"
+                      data-testid="button-remove-wallet-icon"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ) : (
+                  <label className="cursor-pointer flex items-center gap-2 rounded-lg border-2 border-dashed border-gray-300 hover:border-gray-400 px-4 py-3 transition-colors" data-testid="button-upload-wallet-icon">
+                    <Upload className="h-4 w-4 text-gray-400" />
+                    <span className="text-sm text-gray-500">Upload icon</span>
+                    <input type="file" accept="image/*" onChange={handleIconUpload} className="hidden" />
+                  </label>
+                )}
+              </div>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <Switch checked={form.isActive} onCheckedChange={v => setForm(f => ({ ...f, isActive: v }))} data-testid="switch-wallet-active" />
+              <Label>Active</Label>
+            </div>
+
+            <div className="flex gap-2">
+              <Button onClick={handleSave} disabled={!form.name || !form.walletNumber || isSaving} data-testid="button-save-wallet">
+                {isSaving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Save className="h-4 w-4 mr-1" />}
+                {editingId ? "Update" : "Save"}
+              </Button>
+              <Button variant="outline" onClick={resetForm}>Cancel</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {wallets?.sort((a, b) => a.sortOrder - b.sortOrder).map(wallet => (
+        <Card key={wallet.id}>
+          <CardContent className="pt-4 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full flex items-center justify-center bg-gray-100 overflow-hidden flex-shrink-0">
+                {wallet.iconUrl ? (
+                  <img src={wallet.iconUrl} alt={wallet.name} className="h-8 w-8 object-contain" data-testid={`img-wallet-icon-${wallet.id}`} />
+                ) : (
+                  <Wallet className="h-5 w-5 text-gray-500" />
+                )}
+              </div>
+              <div>
+                <p className="font-semibold" data-testid={`text-wallet-name-${wallet.id}`}>{wallet.name}</p>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-sm text-muted-foreground font-mono" data-testid={`text-wallet-number-${wallet.id}`}>{wallet.walletNumber}</span>
+                  {wallet.nameAr && <Badge variant="secondary" className="text-xs">AR: {wallet.nameAr}</Badge>}
+                  {wallet.nameFr && <Badge variant="secondary" className="text-xs">FR: {wallet.nameFr}</Badge>}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Badge variant={wallet.isActive ? "default" : "secondary"} data-testid={`badge-wallet-status-${wallet.id}`}>
+                {wallet.isActive ? "Active" : "Inactive"}
+              </Badge>
+              <Switch
+                checked={wallet.isActive}
+                onCheckedChange={v => toggleWallet.mutate({ id: wallet.id, isActive: v })}
+                data-testid={`switch-wallet-toggle-${wallet.id}`}
+              />
+              <Button variant="ghost" size="icon" onClick={() => startEdit(wallet)} data-testid={`button-edit-wallet-${wallet.id}`}>
+                <Edit className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="text-red-500"
+                onClick={() => { if (confirm("Delete this wallet?")) deleteWallet.mutate(wallet.id); }}
+                data-testid={`button-delete-wallet-${wallet.id}`}
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      ))}
+
+      {!isLoading && (!wallets || wallets.length === 0) && (
+        <div className="text-center py-8 text-muted-foreground">No payment wallets yet</div>
+      )}
+    </div>
+  );
+}
+
+const ICON_OPTIONS = [
+  { value: "Truck", label: "Truck", icon: Truck },
+  { value: "Shield", label: "Shield", icon: Shield },
+  { value: "Award", label: "Award", icon: Award },
+  { value: "Star", label: "Star", icon: Star },
+  { value: "Heart", label: "Heart", icon: Heart },
+  { value: "Zap", label: "Zap", icon: Zap },
+  { value: "CheckCircle", label: "Check Circle", icon: CheckCircle },
+  { value: "Globe", label: "Globe", icon: Globe },
+  { value: "Crown", label: "Crown", icon: Crown },
+  { value: "Diamond", label: "Diamond", icon: Diamond },
+  { value: "Gift", label: "Gift", icon: Gift },
+  { value: "ThumbsUp", label: "Thumbs Up", icon: ThumbsUp },
+  { value: "Lock", label: "Lock", icon: Lock },
+  { value: "Medal", label: "Medal", icon: Medal },
+  { value: "Gem", label: "Gem", icon: Gem },
+  { value: "Package", label: "Package", icon: Package },
+  { value: "Sparkles", label: "Sparkles", icon: Sparkles },
+  { value: "Eye", label: "Eye", icon: Eye },
+  { value: "Flame", label: "Flame", icon: Flame },
+];
+
+function getIconComponent(iconName: string) {
+  const found = ICON_OPTIONS.find(o => o.value === iconName);
+  return found ? found.icon : Package;
+}
+
+function StoreContentTab() {
+  const { toast } = useToast();
+  const { data: settings, isLoading } = useQuery<StoreSettings>({ queryKey: ["/api/store-settings"] });
+
+  const [trustBadges, setTrustBadges] = useState<Array<{ icon: string; en: string; fr: string; ar: string }>>([
+    { icon: "Truck", en: "Free Delivery", fr: "Livraison Gratuite", ar: "توصيل مجاني" },
+    { icon: "Shield", en: "Secure Payment", fr: "Paiement Sécurisé", ar: "دفع آمن" },
+    { icon: "Award", en: "Premium Quality", fr: "Qualité Premium", ar: "جودة عالية" },
+  ]);
+  const [categorySectionTitle, setCategorySectionTitle] = useState({ en: "Shop by Category", fr: "Acheter par Catégorie", ar: "تسوق حسب الفئة" });
+  const [ctaText, setCtaText] = useState({ en: "Unmatched quality, unparalleled service", fr: "Qualité inégalée, service incomparable", ar: "جودة لا تُضاهى، خدمة لا مثيل لها" });
+  const [footerDescription, setFooterDescription] = useState({ en: "Your premium e-commerce destination", fr: "Votre destination premium pour le shopping en ligne", ar: "وجهتكم المتميّزة للتسوّق الفاخر" });
+  const [loaded, setLoaded] = useState(false);
+
+  if (!isLoading && settings && !loaded) {
+    try {
+      if (settings.trustBadges) {
+        const parsed = JSON.parse(settings.trustBadges);
+        if (Array.isArray(parsed) && parsed.length > 0) setTrustBadges(parsed);
+      }
+    } catch {}
+    try {
+      if (settings.categorySectionTitle) {
+        const parsed = JSON.parse(settings.categorySectionTitle);
+        if (parsed.en || parsed.fr || parsed.ar) setCategorySectionTitle(parsed);
+      }
+    } catch {}
+    try {
+      if (settings.ctaText) {
+        const parsed = JSON.parse(settings.ctaText);
+        if (parsed.en || parsed.fr || parsed.ar) setCtaText(parsed);
+      }
+    } catch {}
+    try {
+      if (settings.footerDescription) {
+        const parsed = JSON.parse(settings.footerDescription);
+        if (parsed.en || parsed.fr || parsed.ar) setFooterDescription(parsed);
+      }
+    } catch {}
+    setLoaded(true);
+  }
+
+  const updateSettings = useMutation({
+    mutationFn: async () => {
+      await apiRequest("PUT", "/api/store-settings", {
+        trustBadges: JSON.stringify(trustBadges),
+        categorySectionTitle: JSON.stringify(categorySectionTitle),
+        ctaText: JSON.stringify(ctaText),
+        footerDescription: JSON.stringify(footerDescription),
+      });
+    },
+    onSuccess: () => {
+      toast({ title: "Store content updated" });
+      queryClient.invalidateQueries({ queryKey: ["/api/store-settings"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/store/settings"] });
+    },
+  });
+
+  if (isLoading) return <div className="text-center py-8"><Loader2 className="h-6 w-6 animate-spin mx-auto" /></div>;
+
+  const updateBadge = (index: number, field: string, value: string) => {
+    setTrustBadges(prev => prev.map((b, i) => i === index ? { ...b, [field]: value } : b));
+  };
+
+  return (
+    <div className="space-y-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Shield className="h-5 w-5" />
+            Trust Badges
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-6">
+          {trustBadges.map((badge, index) => {
+            const IconComp = getIconComponent(badge.icon);
+            return (
+              <div key={index} className="p-4 rounded-lg border space-y-3" data-testid={`trust-badge-${index}`}>
+                <div className="flex items-center gap-3 flex-wrap">
+                  <div className="flex items-center gap-2">
+                    <IconComp className="h-5 w-5 text-muted-foreground" />
+                    <Label>Badge {index + 1} Icon</Label>
+                  </div>
+                  <Select value={badge.icon} onValueChange={(v) => updateBadge(index, "icon", v)}>
+                    <SelectTrigger className="w-[180px]" data-testid={`select-badge-icon-${index}`}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {ICON_OPTIONS.map(opt => {
+                        const OptIcon = opt.icon;
+                        return (
+                          <SelectItem key={opt.value} value={opt.value}>
+                            <span className="flex items-center gap-2">
+                              <OptIcon className="h-4 w-4" />
+                              {opt.label}
+                            </span>
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                  <div>
+                    <Label>English</Label>
+                    <Input value={badge.en} onChange={e => updateBadge(index, "en", e.target.value)} className="mt-1" data-testid={`input-badge-en-${index}`} />
+                  </div>
+                  <div>
+                    <Label>Français</Label>
+                    <Input value={badge.fr} onChange={e => updateBadge(index, "fr", e.target.value)} className="mt-1" data-testid={`input-badge-fr-${index}`} />
+                  </div>
+                  <div>
+                    <Label>العربية</Label>
+                    <Input value={badge.ar} onChange={e => updateBadge(index, "ar", e.target.value)} className="mt-1" dir="rtl" data-testid={`input-badge-ar-${index}`} />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Package className="h-5 w-5" />
+            Category Section Title
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <Label>English</Label>
+              <Input value={categorySectionTitle.en} onChange={e => setCategorySectionTitle(p => ({ ...p, en: e.target.value }))} className="mt-1" data-testid="input-category-title-en" />
+            </div>
+            <div>
+              <Label>Français</Label>
+              <Input value={categorySectionTitle.fr} onChange={e => setCategorySectionTitle(p => ({ ...p, fr: e.target.value }))} className="mt-1" data-testid="input-category-title-fr" />
+            </div>
+            <div>
+              <Label>العربية</Label>
+              <Input value={categorySectionTitle.ar} onChange={e => setCategorySectionTitle(p => ({ ...p, ar: e.target.value }))} className="mt-1" dir="rtl" data-testid="input-category-title-ar" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <Sparkles className="h-5 w-5" />
+            CTA Section Text
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <Label>English</Label>
+              <Input value={ctaText.en} onChange={e => setCtaText(p => ({ ...p, en: e.target.value }))} className="mt-1" data-testid="input-cta-text-en" />
+            </div>
+            <div>
+              <Label>Français</Label>
+              <Input value={ctaText.fr} onChange={e => setCtaText(p => ({ ...p, fr: e.target.value }))} className="mt-1" data-testid="input-cta-text-fr" />
+            </div>
+            <div>
+              <Label>العربية</Label>
+              <Input value={ctaText.ar} onChange={e => setCtaText(p => ({ ...p, ar: e.target.value }))} className="mt-1" dir="rtl" data-testid="input-cta-text-ar" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <FileText className="h-5 w-5" />
+            Footer Description
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <Label>English</Label>
+              <Input value={footerDescription.en} onChange={e => setFooterDescription(p => ({ ...p, en: e.target.value }))} className="mt-1" data-testid="input-footer-desc-en" />
+            </div>
+            <div>
+              <Label>Français</Label>
+              <Input value={footerDescription.fr} onChange={e => setFooterDescription(p => ({ ...p, fr: e.target.value }))} className="mt-1" data-testid="input-footer-desc-fr" />
+            </div>
+            <div>
+              <Label>العربية</Label>
+              <Input value={footerDescription.ar} onChange={e => setFooterDescription(p => ({ ...p, ar: e.target.value }))} className="mt-1" dir="rtl" data-testid="input-footer-desc-ar" />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Button onClick={() => updateSettings.mutate()} disabled={updateSettings.isPending} className="w-full" data-testid="button-save-store-content">
+        {updateSettings.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+        Save Store Content
+      </Button>
+    </div>
+  );
+}
+
 export default function CmsManagement() {
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto">
@@ -337,14 +799,18 @@ export default function CmsManagement() {
       </h1>
 
       <Tabs defaultValue="pages">
-        <TabsList className="mb-6">
+        <TabsList className="mb-6 flex-wrap">
           <TabsTrigger value="pages" data-testid="tab-pages"><FileText className="h-4 w-4 mr-1" /> Pages</TabsTrigger>
           <TabsTrigger value="banners" data-testid="tab-banners"><Image className="h-4 w-4 mr-1" /> Banners</TabsTrigger>
+          <TabsTrigger value="wallets" data-testid="tab-wallets"><Wallet className="h-4 w-4 mr-1" /> Payment Wallets</TabsTrigger>
           <TabsTrigger value="settings" data-testid="tab-settings"><Settings className="h-4 w-4 mr-1" /> Store Settings</TabsTrigger>
+          <TabsTrigger value="store-content" data-testid="tab-store-content"><Palette className="h-4 w-4 mr-1" /> Store Content</TabsTrigger>
         </TabsList>
         <TabsContent value="pages"><PagesTab /></TabsContent>
         <TabsContent value="banners"><BannersTab /></TabsContent>
+        <TabsContent value="wallets"><PaymentWalletsTab /></TabsContent>
         <TabsContent value="settings"><SettingsTab /></TabsContent>
+        <TabsContent value="store-content"><StoreContentTab /></TabsContent>
       </Tabs>
     </div>
   );
