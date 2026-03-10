@@ -91,21 +91,22 @@ export function AppSidebar() {
 
   return (
     <Sidebar>
-      <SidebarHeader className="p-4" style={{ background: "linear-gradient(180deg, #0A1628, #0D1520)", borderBottom: "1px solid rgba(201,168,76,0.15)" }}>
+      <SidebarHeader className="p-4" style={{ background: "linear-gradient(180deg, #0A1628, #0D1520)", borderBottom: "1px solid rgba(201,168,76,0.2)" }}>
         <div className="flex items-center gap-3">
           <div className="relative">
             <img
               src={branding.logo || defaultLogoImg}
               alt={t("company.name")}
-              className="w-11 h-11 rounded-lg object-contain p-0.5"
-              style={{ background: "rgba(201,168,76,0.08)", boxShadow: "0 0 15px rgba(201,168,76,0.1)" }}
+              className="w-12 h-12 rounded-xl object-contain p-0.5"
+              style={{ background: "rgba(201,168,76,0.1)", border: "1.5px solid rgba(201,168,76,0.25)", boxShadow: "0 0 20px rgba(201,168,76,0.15)" }}
             />
           </div>
           <div className="flex flex-col">
-            <span className="font-extrabold text-sm tracking-[0.15em] uppercase" style={{ color: "#C9A84C" }}>
+            <span className="font-extrabold text-base tracking-[0.15em] uppercase" style={{ color: "#C9A84C", textShadow: "0 0 20px rgba(201,168,76,0.2)" }}>
               LIMJIBA
             </span>
-            <span className="text-[10px]" style={{ color: "rgba(201,168,76,0.5)" }}>لمجيبة</span>
+            <span className="text-[11px] font-medium" style={{ color: "rgba(201,168,76,0.6)" }}>لمجيبة</span>
+            <span className="text-[9px] uppercase tracking-widest mt-0.5" style={{ color: "rgba(201,168,76,0.35)" }}>E-Manager</span>
           </div>
         </div>
       </SidebarHeader>
@@ -117,21 +118,21 @@ export function AppSidebar() {
           <SidebarGroupContent>
             <SidebarMenu>
               {visibleMenuItems.map((item) => {
-                const isActive =
-                  location === item.url ||
-                  (item.url !== "/" && location.startsWith(item.url));
+                const isActive = item.url === "/emanager-portal"
+                  ? location === "/emanager-portal"
+                  : location === item.url || location.startsWith(item.url + "/");
                 return (
                   <SidebarMenuItem key={item.url}>
                     <SidebarMenuButton
                       asChild
                       isActive={isActive}
                       data-testid={item.testId}
-                      className={isActive ? "font-medium" : ""}
+                      className={`min-h-[44px] ${isActive ? "font-medium" : ""}`}
                       style={isActive ? { borderRight: "2px solid #C9A84C" } : {}}
                     >
                       <Link href={item.url} onClick={() => setOpenMobile(false)}>
-                        <item.icon className="h-4 w-4" style={isActive ? { color: "#C9A84C" } : {}} />
-                        <span>{item.title}</span>
+                        <item.icon className="h-4 w-4 shrink-0" style={isActive ? { color: "#C9A84C" } : {}} />
+                        <span className="text-sm">{item.title}</span>
                       </Link>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
@@ -150,19 +151,20 @@ export function AppSidebar() {
                 {visibleStoreItems.map((item) => {
                   const isActive =
                     location === item.url ||
-                    (item.url !== "/" && location.startsWith(item.url));
+                    (item.url !== "/" && location.startsWith(item.url + "/")) ||
+                    (item.url !== "/" && location === item.url);
                   return (
                     <SidebarMenuItem key={item.url}>
                       <SidebarMenuButton
                         asChild
                         isActive={isActive}
                         data-testid={item.testId}
-                        className={isActive ? "font-medium" : ""}
+                        className={`min-h-[44px] ${isActive ? "font-medium" : ""}`}
                         style={isActive ? { borderRight: "2px solid #C9A84C" } : {}}
                       >
                         <Link href={item.url} onClick={() => setOpenMobile(false)}>
-                          <item.icon className="h-4 w-4" style={isActive ? { color: "#C9A84C" } : {}} />
-                          <span>{item.title}</span>
+                          <item.icon className="h-4 w-4 shrink-0" style={isActive ? { color: "#C9A84C" } : {}} />
+                          <span className="text-sm">{item.title}</span>
                         </Link>
                       </SidebarMenuButton>
                     </SidebarMenuItem>

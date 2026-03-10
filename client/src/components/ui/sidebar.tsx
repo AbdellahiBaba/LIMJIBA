@@ -266,14 +266,14 @@ function SidebarTrigger({
       data-slot="sidebar-trigger"
       variant="ghost"
       size="icon"
-      className={cn("h-7 w-7", className)}
+      className={cn("h-10 w-10 sm:h-8 sm:w-8 rounded-lg border border-[rgba(201,168,76,0.3)] hover:border-[rgba(201,168,76,0.6)] hover:bg-[rgba(201,168,76,0.08)] transition-all", className)}
       onClick={(event) => {
         onClick?.(event)
         toggleSidebar()
       }}
       {...props}
     >
-      <PanelLeftIcon />
+      <PanelLeftIcon className="!h-5 !w-5 sm:!h-4 sm:!w-4" style={{ color: "#C9A84C" }} />
       <span className="sr-only">Toggle Sidebar</span>
     </Button>
   )

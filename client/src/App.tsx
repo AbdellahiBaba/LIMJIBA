@@ -190,9 +190,12 @@ function AuthenticatedApp() {
       <div className="flex h-screen w-full overflow-hidden">
         <AppSidebar />
         <div className="flex flex-col flex-1 min-w-0">
-          <header className="flex items-center justify-between gap-1 sm:gap-2 p-2 border-b bg-background sticky top-0 z-50">
-            <SidebarTrigger data-testid="button-sidebar-toggle" />
-            <div className="flex items-center gap-1 sm:gap-2">
+          <header className="flex items-center justify-between gap-1.5 sm:gap-2 px-2 sm:px-3 py-1.5 sm:py-2 border-b bg-background sticky top-0 z-50" style={{ borderColor: "rgba(201,168,76,0.15)" }}>
+            <div className="flex items-center gap-2">
+              <SidebarTrigger data-testid="button-sidebar-toggle" />
+              <div className="flex items-center gap-1.5 sm:hidden">
+                <span className="font-extrabold text-xs tracking-[0.1em] uppercase" style={{ color: "#C9A84C" }}>LIMJIBA</span>
+              </div>
               {branding.logo && (
                 <img 
                   src={branding.logo} 
@@ -206,9 +209,12 @@ function AuthenticatedApp() {
               <span className="text-xs font-medium hidden lg:block">
                 {user?.username}
               </span>
+            </div>
+            <div className="flex items-center gap-0.5 sm:gap-1">
               <Button
                 variant="ghost"
                 size="icon"
+                className="h-10 w-10 sm:h-9 sm:w-9"
                 onClick={() => setCommandBarOpen(true)}
                 title="Search (Ctrl+K)"
                 data-testid="button-search"
@@ -221,6 +227,7 @@ function AuthenticatedApp() {
               <Button
                 variant="ghost"
                 size="icon"
+                className="h-10 w-10 sm:h-9 sm:w-9"
                 onClick={() => logout()}
                 title="Logout"
                 data-testid="button-logout"

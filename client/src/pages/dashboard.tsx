@@ -1037,36 +1037,40 @@ export default function Dashboard() {
                     <ArrowLeftRight className="h-3 w-3" /> Transfer
                   </Button>
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                   {balanceSheet.walletBalances.map(w => (
-                    <div key={w.id} className="p-2 rounded-lg bg-muted/50 text-center relative group" data-testid={`wallet-balance-${w.id}`}>
-                      <div className="text-xs text-muted-foreground truncate">{w.name}</div>
-                      <div className="text-sm font-bold">{w.balance.toLocaleString()} MRU</div>
+                    <div key={w.id} className="p-3 rounded-lg bg-muted/50 relative group" style={{ border: "1px solid rgba(201,168,76,0.1)" }} data-testid={`wallet-balance-${w.id}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs text-muted-foreground truncate">{w.name}</div>
+                          <div className="text-base font-bold">{w.balance.toLocaleString()} MRU</div>
+                        </div>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" style={{ color: "#22c55e" }} data-testid={`button-credit-wallet-${w.id}`}
+                          onClick={() => { setCreditWalletId(w.id); setCreditWalletName(w.name); setCreditAmount(""); setCreditNote(""); setCreditDialogOpen(true); }}>
+                          <PlusCircle className="h-4 w-4" />
+                        </Button>
+                      </div>
                       {editingWalletOB === w.id ? (
-                        <div className="flex items-center gap-1 mt-1">
-                          <Input type="number" step="0.01" className="h-6 text-xs px-1" value={walletOBInput} onChange={e => setWalletOBInput(e.target.value)} data-testid={`input-wallet-ob-${w.id}`} />
-                          <Button size="icon" variant="ghost" className="h-5 w-5 shrink-0" data-testid={`button-save-wallet-ob-${w.id}`}
+                        <div className="flex items-center gap-1.5 mt-2">
+                          <Input type="number" step="0.01" className="h-7 text-xs px-2 flex-1" value={walletOBInput} onChange={e => setWalletOBInput(e.target.value)} data-testid={`input-wallet-ob-${w.id}`} />
+                          <Button size="icon" variant="outline" className="h-7 w-7 shrink-0" style={{ borderColor: "rgba(201,168,76,0.3)" }} data-testid={`button-save-wallet-ob-${w.id}`}
                             onClick={async () => {
                               await apiRequest("POST", `/api/wallets/${w.id}/opening-balance`, { openingBalance: parseFloat(walletOBInput) || 0 });
                               queryClient.invalidateQueries({ queryKey: ["/api/dashboard/balance-sheet"] });
                               setEditingWalletOB(null);
                             }}>
-                            <Check className="h-3 w-3" />
+                            <Check className="h-3.5 w-3.5" style={{ color: "#C9A84C" }} />
                           </Button>
                         </div>
                       ) : (
-                        <div className="flex items-center justify-center gap-1 mt-0.5">
-                          <span className="text-[10px] text-muted-foreground">OB: {w.openingBalance.toLocaleString()}</span>
-                          <Button size="icon" variant="ghost" className="h-4 w-4 opacity-0 group-hover:opacity-100" data-testid={`button-edit-wallet-ob-${w.id}`}
+                        <div className="flex items-center gap-1.5 mt-1">
+                          <span className="text-xs text-muted-foreground">OB: {w.openingBalance.toLocaleString()} MRU</span>
+                          <Button size="icon" variant="ghost" className="h-6 w-6 shrink-0 sm:opacity-60 sm:group-hover:opacity-100 transition-opacity" data-testid={`button-edit-wallet-ob-${w.id}`}
                             onClick={() => { setWalletOBInput(String(w.openingBalance)); setEditingWalletOB(w.id); }}>
-                            <Edit3 className="h-2.5 w-2.5" />
+                            <Edit3 className="h-3 w-3" style={{ color: "#C9A84C" }} />
                           </Button>
                         </div>
                       )}
-                      <Button variant="ghost" size="icon" className="absolute top-1 right-1 h-5 w-5 opacity-0 group-hover:opacity-100 transition-opacity" data-testid={`button-credit-wallet-${w.id}`}
-                        onClick={() => { setCreditWalletId(w.id); setCreditWalletName(w.name); setCreditAmount(""); setCreditNote(""); setCreditDialogOpen(true); }}>
-                        <PlusCircle className="h-3 w-3 text-green-600" />
-                      </Button>
                     </div>
                   ))}
                 </div>
