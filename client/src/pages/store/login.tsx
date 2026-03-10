@@ -5,9 +5,10 @@ import { useStoreAuth } from "@/contexts/store-auth-context";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Crown, Loader2 } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { StoreSettings } from "@shared/schema";
+import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
 
 export default function StoreLogin() {
   const { t } = useStoreLanguage();
@@ -40,7 +41,7 @@ export default function StoreLogin() {
     <div className="min-h-[70vh] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <Crown className="h-12 w-12 mx-auto mb-4" style={{ color: accentColor }} />
+          <img src={logoImg} alt="LEMJIBA" className="h-20 w-auto mx-auto mb-4 rounded-lg" />
           <h1 className="text-2xl font-bold" style={{ color: primaryColor }} data-testid="text-login-title">{t("auth.loginTitle")}</h1>
         </div>
 

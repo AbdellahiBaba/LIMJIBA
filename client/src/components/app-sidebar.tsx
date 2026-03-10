@@ -1,6 +1,7 @@
 import { useLocation, Link } from "wouter";
 import { useLanguage, useBranding } from "@/contexts/language-context";
 import { useAuth, hasPermission } from "@/contexts/auth-context";
+import defaultLogoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
 import {
   Sidebar,
   SidebarContent,
@@ -220,20 +221,11 @@ export function AppSidebar() {
     <Sidebar>
       <SidebarHeader className="p-4 border-b border-sidebar-border">
         <div className="flex items-center gap-3">
-          {branding.logo ? (
-            <img
-              src={branding.logo}
-              alt={t("company.name")}
-              className="w-10 h-10 rounded-md object-contain"
-            />
-          ) : (
-            <div
-              className="w-10 h-10 rounded-md flex items-center justify-center"
-              style={{ backgroundColor: branding.primaryColor }}
-            >
-              <span className="text-white font-bold text-lg">LMJ</span>
-            </div>
-          )}
+          <img
+            src={branding.logo || defaultLogoImg}
+            alt={t("company.name")}
+            className="w-10 h-10 rounded-md object-contain"
+          />
           <div className="flex flex-col">
             <span className="font-semibold text-sm text-sidebar-foreground">
               LEMJIBA

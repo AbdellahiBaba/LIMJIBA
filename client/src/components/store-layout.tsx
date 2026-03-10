@@ -3,11 +3,12 @@ import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useCart } from "@/contexts/cart-context";
 import { useStoreAuth } from "@/contexts/store-auth-context";
-import { ShoppingCart, Menu, X, Crown, Home, Package, Phone, Info, FileText, Globe, User, LogOut } from "lucide-react";
+import { ShoppingCart, Menu, X, Home, Package, Phone, Info, FileText, Globe, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { StoreSettings } from "@shared/schema";
 import { type StoreLanguage, getStoreTranslation } from "@/locales/store";
+import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
 
 interface StoreLanguageContextType {
   lang: StoreLanguage;
@@ -90,7 +91,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/store" className="flex items-center gap-3 text-white no-underline" data-testid="link-store-home">
-              <Crown className="h-7 w-7" style={{ color: accentColor }} />
+              <img src={logoImg} alt={storeName} className="h-10 w-10 rounded-md object-contain bg-white/10 p-0.5" />
               <div className="flex flex-col leading-tight">
                 <span className="text-xl font-extrabold tracking-widest uppercase brand-name">{storeName}</span>
                 <span className="text-[10px] font-medium tracking-wide opacity-70 brand-name-ar">لمجيبه</span>
@@ -242,7 +243,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
               <div className="flex items-center gap-2 mb-3">
-                <Crown className="h-5 w-5" style={{ color: accentColor }} />
+                <img src={logoImg} alt={storeName} className="h-8 w-8 rounded object-contain" />
                 <h3 className="text-lg font-extrabold tracking-widest uppercase brand-name" style={{ color: accentColor }}>{storeName}</h3>
               </div>
               <p className="text-xs tracking-wide opacity-60 brand-name-ar mb-2">لمجيبه</p>

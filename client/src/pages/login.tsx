@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Lock, User, Package, Shield, Boxes, Factory, Truck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import defaultLogoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
 
 export default function Login() {
   const [username, setUsername] = useState("");
@@ -130,22 +131,11 @@ export default function Login() {
             transition={{ duration: 0.6, delay: 0.2, type: "spring" }}
             whileHover={{ scale: 1.05, rotate: 5 }}
           >
-            {branding.logo ? (
-              <img 
-                src={branding.logo} 
-                alt={t("company.name")} 
-                className="h-20 w-auto"
-              />
-            ) : (
-              <div className="relative">
-                <Package className="h-14 w-14 text-white" />
-                <motion.div
-                  className="absolute -top-1 -right-1 w-4 h-4 bg-green-400 rounded-full"
-                  animate={{ scale: [1, 1.3, 1] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                />
-              </div>
-            )}
+            <img 
+              src={branding.logo || defaultLogoImg} 
+              alt={t("company.name")} 
+              className="h-20 w-auto rounded-lg"
+            />
           </motion.div>
           
           <motion.h1 
