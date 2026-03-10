@@ -49,11 +49,16 @@ Preferred communication style: Simple, everyday language.
 - **DataTable Component:** Reusable table with sorting, pagination, search, selection, and bulk operations (`client/src/components/data-table.tsx`).
 - **Shipments:** Logistics documents tracking product movements. Auto-numbered (BT-XXXX/YYYY), three directions (delivery=warehouse→customer, return=customer→warehouse, client_return=client→warehouse), cost breakdown (fuel/driver/other), product line items with weight tracking and display-only unit price/total value (auto-filled from product catalog, no financial impact). Status flow: pending→in_transit→completed→cancelled. NO stock movements or financial impact — strictly logistics documentation. Branded print template with company header, colored table headers, signature areas. Page: `/transportation`.
 - **Backup & Restore:** Enhanced with last backup date tracking, restore file preview (entity counts), backup reminder warnings.
+- **Public Storefront (Limjiba Store):** Royal-themed customer-facing store at `/store/*` (public, no auth). Features: product browsing (in-stock only), search/filter by category, product detail pages, cart with localStorage persistence, promo code validation, checkout with order placement, order tracking by email/order number. Royal purple (#4A0E4E) + gold (#D4AF37) theme. Pages: home, products, product detail, cart, checkout, orders, about, contact, terms.
+- **Limjiba AI Agent:** AI-powered assistant using OpenAI (gpt-4o-mini via Replit AI Integrations). Customer-facing chat widget on all store pages (floating bubble, bottom-right) answers product queries, recommends items, speaks AR/FR/EN. Admin-side chat panel at `/limjiba` provides sales insights, restock alerts, promo code generation. Backend: `server/limjiba.ts`.
+- **Promo Codes:** Full CRUD management at `/promo-codes`. Supports percentage/fixed discounts, min order amounts, max uses, expiry dates. AI-generated promo codes with safe margin calculation. Admin page: `/promo-codes`.
+- **Store Orders:** Admin order management at `/store-orders`. View all customer orders, update status (pending→confirmed→shipped→delivered→cancelled), expand for detail view.
+- **CMS (Content Management):** Admin CMS at `/cms` with tabs for Pages (home/about/contact/terms editing), Banners (create/toggle/delete promotional banners), and Store Settings (store name, colors, hero text, contact info).
 
 ### Data Storage
 - **Type:** PostgreSQL database using Drizzle ORM.
 - **Schema:** Shared `shared/schema.ts` for type safety between frontend/backend.
-- **Key Entities:** Products (with `isFavorite`), Invoices (with `deliveryStatus`, `deliveryCost`), Manufacturing Invoices, Sales (with `deliveryCost`), Resellers, Employees, Salary Payments, Expenses, Customers, Quick Invoices, Suppliers, Purchase Orders (with `shippingCost`), Purchase Order Items (with `shippingCostShare`, `adjustedUnitCost`), Shipments, Shipment Items, Parked Sales, Audit Logs, Users (with roles/permissions).
+- **Key Entities:** Products (with `isFavorite`), Invoices (with `deliveryStatus`, `deliveryCost`), Manufacturing Invoices, Sales (with `deliveryCost`), Resellers, Employees, Salary Payments, Expenses, Customers, Quick Invoices, Suppliers, Purchase Orders (with `shippingCost`), Purchase Order Items (with `shippingCostShare`, `adjustedUnitCost`), Shipments, Shipment Items, Parked Sales, Audit Logs, Users (with roles/permissions), Promo Codes, Store Orders, CMS Pages, CMS Banners, Store Settings, Conversations, Messages.
 
 ### Key Design Decisions
 - **Shared Schema Pattern:** Centralized type definitions for consistent data structures.
@@ -105,6 +110,7 @@ Preferred communication style: Simple, everyday language.
 - pg
 - bcrypt
 - crypto (Node built-in)
+- openai (via Replit AI Integrations)
 
 ### Build Tools
 - Vite

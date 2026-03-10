@@ -9,6 +9,7 @@ import { AppSidebar } from "@/components/app-sidebar";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { LanguageProvider, useLanguage } from "@/contexts/language-context";
 import { AuthProvider, useAuth } from "@/contexts/auth-context";
+import { CartProvider } from "@/contexts/cart-context";
 import { LanguageSwitcher } from "@/components/language-switcher";
 import { CommandBar } from "@/components/command-bar";
 import { NotificationCenter } from "@/components/notification-center";
@@ -37,6 +38,21 @@ import PurchaseOrders from "@/pages/purchase-orders";
 import Reports from "@/pages/reports";
 import AuditLog from "@/pages/audit-log";
 import TransportationInvoice from "@/pages/transportation-invoice";
+import CmsManagement from "@/pages/cms";
+import PromoCodesPage from "@/pages/promo-codes";
+import StoreOrdersAdmin from "@/pages/store-orders";
+import LimjibaAdmin from "@/components/limjiba-admin";
+import StoreLayout from "@/components/store-layout";
+import LimjibaChat from "@/components/limjiba-chat";
+import StoreHome from "@/pages/store/home";
+import StoreProducts from "@/pages/store/products";
+import StoreProductDetail from "@/pages/store/product-detail";
+import StoreCart from "@/pages/store/cart";
+import StoreCheckout from "@/pages/store/checkout";
+import StoreOrders from "@/pages/store/orders";
+import StoreAbout from "@/pages/store/about";
+import StoreContact from "@/pages/store/contact";
+import StoreTerms from "@/pages/store/terms";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
@@ -65,8 +81,38 @@ function Router() {
       <Route path="/settings" component={Settings} />
       <Route path="/quick-invoice" component={QuickInvoice} />
       <Route path="/portal/:customerId" component={CustomerPortal} />
+      <Route path="/cms" component={CmsManagement} />
+      <Route path="/promo-codes" component={PromoCodesPage} />
+      <Route path="/store-orders" component={StoreOrdersAdmin} />
+      <Route path="/limjiba" component={LimjibaAdmin} />
       <Route component={NotFound} />
     </Switch>
+  );
+}
+
+function StoreRouter() {
+  return (
+    <CartProvider>
+      <StoreLayout>
+        <Switch>
+          <Route path="/store" component={StoreHome} />
+          <Route path="/store/products/:id" component={StoreProductDetail} />
+          <Route path="/store/products" component={StoreProducts} />
+          <Route path="/store/cart" component={StoreCart} />
+          <Route path="/store/checkout" component={StoreCheckout} />
+          <Route path="/store/orders" component={StoreOrders} />
+          <Route path="/store/about" component={StoreAbout} />
+          <Route path="/store/contact" component={StoreContact} />
+          <Route path="/store/terms" component={StoreTerms} />
+          <Route>
+            <div className="text-center py-20">
+              <h2 className="text-2xl font-bold text-gray-500">Page Not Found</h2>
+            </div>
+          </Route>
+        </Switch>
+      </StoreLayout>
+      <LimjibaChat />
+    </CartProvider>
   );
 }
 
@@ -158,6 +204,10 @@ function AuthenticatedApp() {
 function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
   const [location] = useLocation();
+
+  if (location.startsWith("/store")) {
+    return <StoreRouter />;
+  }
 
   if (location.startsWith("/portal/")) {
     return <CustomerPortal />;

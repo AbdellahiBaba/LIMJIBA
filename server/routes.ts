@@ -21,8 +21,11 @@ import {
   insertFabricationItemSchema,
   insertStockMovementSchema,
   insertCustomerSchema,
+  insertPromoCodeSchema,
+  insertCmsBannerSchema,
 } from "@shared/schema";
 import { z } from "zod";
+import { handleCustomerChat, handleAdminChat, generatePromoCode, getCustomerGreeting } from "./limjiba";
 
 const loginSchema = z.object({
   username: z.string().min(1),
@@ -2983,6 +2986,370 @@ export async function registerRoutes(
       });
     } catch (error) {
       handleError(res, "getDashboardStatsFiltered", error);
+    }
+  });
+
+  // ==========================================
+  // PUBLIC STORE API ROUTES (no auth required)
+  // ==========================================
+
+  app.get("/api/store/products", async (req: Request, res: Response) => {
+    try {
+      const products = await storage.getStoreProducts();
+      res.json(products);
+    } catch (error) {
+      handleError(res, "getStoreProducts", error);
+    }
+  });
+
+  app.get("/api/store/products/:id", async (req: Request, res: Response) => {
+    try {
+      const product = await storage.getProduct(req.params.id);
+      if (!product || product.stockQuantity <= 0) {
+        return res.status(404).json({ error: "Product not found or out of stock" });
+      }
+      res.json(product);
+    } catch (error) {
+      handleError(res, "getStoreProduct", error);
+    }
+  });
+
+  app.get("/api/store/settings", async (req: Request, res: Response) => {
+    try {
+      const settings = await storage.getStoreSettings();
+      res.json(settings || {});
+    } catch (error) {
+      handleError(res, "getStoreSettings", error);
+    }
+  });
+
+  app.get("/api/store/banners", async (req: Request, res: Response) => {
+    try {
+      const banners = await storage.getCmsBanners();
+      res.json(banners.filter(b => b.isActive));
+    } catch (error) {
+      handleError(res, "getStoreBanners", error);
+    }
+  });
+
+  app.get("/api/store/pages/:slug", async (req: Request, res: Response) => {
+    try {
+      const page = await storage.getCmsPage(req.params.slug);
+      if (!page || !page.isPublished) {
+        return res.status(404).json({ error: "Page not found" });
+      }
+      res.json(page);
+    } catch (error) {
+      handleError(res, "getStorePage", error);
+    }
+  });
+
+  app.post("/api/store/orders", async (req: Request, res: Response) => {
+    try {
+      const { customerName, customerEmail, customerPhone, customerAddress, items, promoCode, deliveryCost, notes } = req.body;
+      if (!customerName || !items || !Array.isArray(items) || items.length === 0) {
+        return res.status(400).json({ error: "Customer name and items are required" });
+      }
+
+      let subtotal = 0;
+      const validatedItems: { productId: string; productName: string; quantity: number; unitPrice: number }[] = [];
+      for (const item of items) {
+        if (!item.productId || typeof item.quantity !== "number" || item.quantity <= 0 || !Number.isInteger(item.quantity)) {
+          return res.status(400).json({ error: "Invalid item: each item needs a productId and positive integer quantity" });
+        }
+        const product = await storage.getProduct(item.productId);
+        if (!product || product.stockQuantity < item.quantity) {
+          return res.status(400).json({ error: `Product ${product?.name || item.productId} is out of stock or insufficient quantity` });
+        }
+        validatedItems.push({ productId: product.id, productName: product.name, quantity: item.quantity, unitPrice: product.unitPrice });
+        subtotal += item.quantity * product.unitPrice;
+      }
+
+      let discount = 0;
+      if (promoCode) {
+        const validation = await storage.validatePromoCode(promoCode, subtotal);
+        if (!validation.valid) {
+          return res.status(400).json({ error: validation.error });
+        }
+        if (validation.promo) {
+          if (validation.promo.discountType === "percentage") {
+            discount = Math.round(subtotal * (validation.promo.discountValue / 100) * 100) / 100;
+          } else {
+            discount = validation.promo.discountValue;
+          }
+          await storage.applyPromoCode(promoCode);
+        }
+      }
+
+      const total = Math.max(0, subtotal - discount + (deliveryCost || 0));
+      const orderNumber = await storage.getNextOrderNumber();
+
+      const order = await storage.createStoreOrder({
+        orderNumber,
+        customerName,
+        customerEmail: customerEmail || null,
+        customerPhone: customerPhone || null,
+        customerAddress: customerAddress || null,
+        items: JSON.stringify(validatedItems),
+        subtotal,
+        discount,
+        promoCode: promoCode || null,
+        deliveryCost: deliveryCost || 0,
+        total,
+        status: "pending",
+        notes: notes || null,
+      });
+
+      res.status(201).json(order);
+    } catch (error) {
+      handleError(res, "createStoreOrder", error);
+    }
+  });
+
+  app.get("/api/store/orders/lookup", async (req: Request, res: Response) => {
+    try {
+      const q = (req.query.q as string || "").trim();
+      if (!q) return res.json([]);
+      const allOrders = await storage.getStoreOrders();
+      const filtered = allOrders.filter(o =>
+        o.orderNumber.toLowerCase() === q.toLowerCase() ||
+        (o.customerEmail && o.customerEmail.toLowerCase() === q.toLowerCase())
+      );
+      const safe = filtered.map(o => ({
+        id: o.id,
+        orderNumber: o.orderNumber,
+        items: o.items,
+        subtotal: o.subtotal,
+        discount: o.discount,
+        total: o.total,
+        status: o.status,
+        createdAt: o.createdAt,
+      }));
+      res.json(safe);
+    } catch (error) {
+      handleError(res, "lookupStoreOrders", error);
+    }
+  });
+
+  app.post("/api/store/promo/validate", async (req: Request, res: Response) => {
+    try {
+      const { code, orderAmount } = req.body;
+      if (!code) return res.status(400).json({ error: "Promo code required" });
+      const result = await storage.validatePromoCode(code, orderAmount || 0);
+      res.json(result);
+    } catch (error) {
+      handleError(res, "validatePromoCode", error);
+    }
+  });
+
+  app.post("/api/store/chat", async (req: Request, res: Response) => {
+    try {
+      const { message, history, language } = req.body;
+      if (!message) return res.status(400).json({ error: "Message required" });
+      const response = await handleCustomerChat(message, history || []);
+      res.json({ response });
+    } catch (error) {
+      handleError(res, "storeChat", error);
+    }
+  });
+
+  app.get("/api/store/greeting", async (req: Request, res: Response) => {
+    try {
+      const language = (req.query.lang as string) || "en";
+      const greeting = await getCustomerGreeting(language);
+      res.json({ greeting });
+    } catch (error) {
+      handleError(res, "storeGreeting", error);
+    }
+  });
+
+  // ==========================================
+  // ADMIN: Promo Codes
+  // ==========================================
+
+  app.get("/api/promo-codes", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const codes = await storage.getPromoCodes();
+      res.json(codes);
+    } catch (error) {
+      handleError(res, "getPromoCodes", error);
+    }
+  });
+
+  app.post("/api/promo-codes", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const data = insertPromoCodeSchema.parse({ ...req.body, code: req.body.code?.toUpperCase() });
+      const promo = await storage.createPromoCode(data);
+      res.status(201).json(promo);
+    } catch (error) {
+      handleError(res, "createPromoCode", error);
+    }
+  });
+
+  app.patch("/api/promo-codes/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const updated = await storage.updatePromoCode(req.params.id, req.body);
+      if (!updated) return res.status(404).json({ error: "Promo code not found" });
+      res.json(updated);
+    } catch (error) {
+      handleError(res, "updatePromoCode", error);
+    }
+  });
+
+  app.delete("/api/promo-codes/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const deleted = await storage.deletePromoCode(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Promo code not found" });
+      res.json({ success: true });
+    } catch (error) {
+      handleError(res, "deletePromoCode", error);
+    }
+  });
+
+  app.post("/api/promo-codes/generate", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const suggestion = await generatePromoCode();
+      res.json(suggestion);
+    } catch (error) {
+      handleError(res, "generatePromoCode", error);
+    }
+  });
+
+  // ==========================================
+  // ADMIN: Store Orders
+  // ==========================================
+
+  app.get("/api/store-orders", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const orders = await storage.getStoreOrders();
+      res.json(orders);
+    } catch (error) {
+      handleError(res, "getStoreOrders", error);
+    }
+  });
+
+  app.get("/api/store-orders/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const order = await storage.getStoreOrder(req.params.id);
+      if (!order) return res.status(404).json({ error: "Order not found" });
+      res.json(order);
+    } catch (error) {
+      handleError(res, "getStoreOrder", error);
+    }
+  });
+
+  app.patch("/api/store-orders/:id/status", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { status } = req.body;
+      const updated = await storage.updateStoreOrderStatus(req.params.id, status);
+      if (!updated) return res.status(404).json({ error: "Order not found" });
+      res.json(updated);
+    } catch (error) {
+      handleError(res, "updateStoreOrderStatus", error);
+    }
+  });
+
+  // ==========================================
+  // ADMIN: CMS
+  // ==========================================
+
+  app.get("/api/cms/pages", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const slugs = ["home", "about", "contact", "terms"];
+      const pages = [];
+      for (const slug of slugs) {
+        const page = await storage.getCmsPage(slug);
+        if (page) pages.push(page);
+      }
+      res.json(pages);
+    } catch (error) {
+      handleError(res, "getCmsPages", error);
+    }
+  });
+
+  app.put("/api/cms/pages/:slug", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const updated = await storage.updateCmsPage(req.params.slug, req.body);
+      if (!updated) return res.status(404).json({ error: "Page not found" });
+      res.json(updated);
+    } catch (error) {
+      handleError(res, "updateCmsPage", error);
+    }
+  });
+
+  app.get("/api/cms/banners", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const banners = await storage.getCmsBanners();
+      res.json(banners);
+    } catch (error) {
+      handleError(res, "getCmsBanners", error);
+    }
+  });
+
+  app.post("/api/cms/banners", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const data = insertCmsBannerSchema.parse(req.body);
+      const banner = await storage.createCmsBanner(data);
+      res.status(201).json(banner);
+    } catch (error) {
+      handleError(res, "createCmsBanner", error);
+    }
+  });
+
+  app.patch("/api/cms/banners/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const updated = await storage.updateCmsBanner(req.params.id, req.body);
+      if (!updated) return res.status(404).json({ error: "Banner not found" });
+      res.json(updated);
+    } catch (error) {
+      handleError(res, "updateCmsBanner", error);
+    }
+  });
+
+  app.delete("/api/cms/banners/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const deleted = await storage.deleteCmsBanner(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Banner not found" });
+      res.json({ success: true });
+    } catch (error) {
+      handleError(res, "deleteCmsBanner", error);
+    }
+  });
+
+  // ==========================================
+  // ADMIN: Store Settings
+  // ==========================================
+
+  app.get("/api/store-settings", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const settings = await storage.getStoreSettings();
+      res.json(settings || {});
+    } catch (error) {
+      handleError(res, "getStoreSettings", error);
+    }
+  });
+
+  app.put("/api/store-settings", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const updated = await storage.updateStoreSettings(req.body);
+      res.json(updated);
+    } catch (error) {
+      handleError(res, "updateStoreSettings", error);
+    }
+  });
+
+  // ==========================================
+  // ADMIN: Limjiba AI Assistant
+  // ==========================================
+
+  app.post("/api/admin/chat", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { message, history } = req.body;
+      if (!message) return res.status(400).json({ error: "Message required" });
+      const response = await handleAdminChat(message, history || []);
+      res.json({ response });
+    } catch (error) {
+      handleError(res, "adminChat", error);
     }
   });
 

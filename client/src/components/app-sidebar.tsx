@@ -34,6 +34,12 @@ import {
   ClipboardList,
   ScrollText,
   PackageCheck,
+  Store,
+  Tag,
+  ShoppingBag,
+  PanelTop,
+  Bot,
+  ExternalLink,
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -171,6 +177,41 @@ export function AppSidebar() {
     },
   ];
 
+  const storeMenuItems = [
+    {
+      title: "Store Orders",
+      url: "/store-orders",
+      icon: ShoppingBag,
+      testId: "nav-store-orders",
+      permission: "dashboard",
+    },
+    {
+      title: "Promo Codes",
+      url: "/promo-codes",
+      icon: Tag,
+      testId: "nav-promo-codes",
+      permission: "dashboard",
+    },
+    {
+      title: "CMS",
+      url: "/cms",
+      icon: PanelTop,
+      testId: "nav-cms",
+      permission: "dashboard",
+    },
+    {
+      title: "Limjiba Agent",
+      url: "/limjiba",
+      icon: Bot,
+      testId: "nav-limjiba",
+      permission: "dashboard",
+    },
+  ];
+
+  const visibleStoreItems = storeMenuItems.filter(
+    (item) => hasPermission(user, item.permission)
+  );
+
   const visibleMenuItems = menuItems.filter(
     (item) => hasPermission(user, item.permission)
   );
@@ -230,6 +271,45 @@ export function AppSidebar() {
             </SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {visibleStoreItems.length > 0 && (
+          <SidebarGroup>
+            <SidebarGroupLabel className="text-xs uppercase tracking-wider text-muted-foreground px-4">
+              Online Store
+            </SidebarGroupLabel>
+            <SidebarGroupContent>
+              <SidebarMenu>
+                {visibleStoreItems.map((item) => {
+                  const isActive =
+                    location === item.url ||
+                    (item.url !== "/" && location.startsWith(item.url));
+                  return (
+                    <SidebarMenuItem key={item.url}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={isActive}
+                        data-testid={item.testId}
+                      >
+                        <Link href={item.url}>
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  );
+                })}
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild data-testid="nav-view-store">
+                    <a href="/store" target="_blank" rel="noopener noreferrer">
+                      <Store className="h-4 w-4" />
+                      <span>View Store</span>
+                      <ExternalLink className="h-3 w-3 ml-auto opacity-50" />
+                    </a>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
       </SidebarContent>
       <SidebarFooter className="p-4 border-t border-sidebar-border">
         <div className="flex flex-col gap-2">

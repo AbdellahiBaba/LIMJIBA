@@ -153,6 +153,16 @@ app.use((req, res, next) => {
       log(`Database verification error: ${err.message}`);
     });
 
+    let serverReady = false;
+
+    app.use((req: Request, res: Response, next: NextFunction) => {
+      if (!serverReady && !req.path.startsWith("/api") && req.path !== "/health") {
+        res.status(200).set({ "Content-Type": "text/html" }).end(`<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2"></head><body><div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif"><p>Loading...</p></div></body></html>`);
+        return;
+      }
+      next();
+    });
+
     // Now register routes and setup static files
     log("Registering routes...");
     await registerRoutes(httpServer, app);
@@ -177,6 +187,7 @@ app.use((req, res, next) => {
       log("Vite development server configured");
     }
 
+    serverReady = true;
     log("Server fully initialized and ready");
   } catch (error: any) {
     console.error("FATAL: Server initialization failed:", error);

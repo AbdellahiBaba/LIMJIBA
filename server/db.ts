@@ -684,6 +684,127 @@ async function runMigrations(): Promise<void> {
       console.log('[DB] Added delivery_cost column to invoices');
     }
     
+    // Create conversations and messages tables for AI chat
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS conversations (
+        id SERIAL PRIMARY KEY,
+        title TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )
+    `);
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS messages (
+        id SERIAL PRIMARY KEY,
+        conversation_id INTEGER NOT NULL REFERENCES conversations(id) ON DELETE CASCADE,
+        role TEXT NOT NULL,
+        content TEXT NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+      )
+    `);
+
+    // Create promo_codes table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS promo_codes (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        code TEXT NOT NULL UNIQUE,
+        discount_type TEXT NOT NULL DEFAULT 'percentage',
+        discount_value REAL NOT NULL,
+        min_order_amount REAL DEFAULT 0,
+        max_uses INTEGER DEFAULT 0,
+        current_uses INTEGER NOT NULL DEFAULT 0,
+        expires_at TEXT NOT NULL,
+        created_by TEXT NOT NULL DEFAULT 'admin',
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create store_orders table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS store_orders (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        order_number TEXT NOT NULL,
+        customer_name TEXT NOT NULL,
+        customer_email TEXT,
+        customer_phone TEXT,
+        customer_address TEXT,
+        items TEXT NOT NULL,
+        subtotal REAL NOT NULL,
+        discount REAL NOT NULL DEFAULT 0,
+        promo_code TEXT,
+        delivery_cost REAL NOT NULL DEFAULT 0,
+        total REAL NOT NULL,
+        status TEXT NOT NULL DEFAULT 'pending',
+        notes TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create cms_pages table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS cms_pages (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        slug TEXT NOT NULL UNIQUE,
+        title TEXT NOT NULL,
+        content TEXT NOT NULL DEFAULT '{}',
+        is_published BOOLEAN NOT NULL DEFAULT true,
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Seed default CMS pages
+    const existingPages = await client.query(`SELECT slug FROM cms_pages`);
+    if (existingPages.rows.length === 0) {
+      await client.query(`
+        INSERT INTO cms_pages (slug, title, content) VALUES
+          ('home', 'Home', '{"blocks":[{"type":"text","content":"Welcome to our store!"}]}'),
+          ('about', 'About Us', '{"blocks":[{"type":"text","content":"Learn more about our company."}]}'),
+          ('contact', 'Contact Us', '{"blocks":[{"type":"text","content":"Get in touch with us."}]}'),
+          ('terms', 'Terms & Conditions', '{"blocks":[{"type":"text","content":"Our terms and conditions."}]}')
+      `);
+      console.log('[DB] Seeded default CMS pages');
+    }
+
+    // Create cms_banners table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS cms_banners (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        title TEXT NOT NULL,
+        subtitle TEXT,
+        image_url TEXT,
+        link_url TEXT,
+        position INTEGER NOT NULL DEFAULT 0,
+        is_active BOOLEAN NOT NULL DEFAULT true,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Create store_settings table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS store_settings (
+        id VARCHAR PRIMARY KEY DEFAULT 'default',
+        store_name TEXT NOT NULL DEFAULT 'Limjiba Store',
+        store_description TEXT DEFAULT '',
+        primary_color TEXT NOT NULL DEFAULT '#4A0E4E',
+        accent_color TEXT NOT NULL DEFAULT '#D4AF37',
+        logo_url TEXT,
+        hero_title TEXT DEFAULT 'Welcome to Our Store',
+        hero_subtitle TEXT DEFAULT 'Discover premium products at the best prices',
+        contact_email TEXT,
+        contact_phone TEXT,
+        contact_address TEXT,
+        social_links TEXT DEFAULT '{}',
+        updated_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Seed default store settings
+    const existingSettings = await client.query(`SELECT id FROM store_settings`);
+    if (existingSettings.rows.length === 0) {
+      await client.query(`INSERT INTO store_settings (id) VALUES ('default')`);
+      console.log('[DB] Seeded default store settings');
+    }
+
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);

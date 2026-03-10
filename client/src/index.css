@@ -238,6 +238,55 @@ html[dir="rtl"] .right-0 {
   }
 }
 
+.store-theme {
+  font-family: 'Roboto', 'Cairo', sans-serif;
+}
+
+@keyframes bounce-once {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.3); }
+}
+
+@keyframes bounce-slow {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-bounce-once {
+  animation: bounce-once 0.4s ease-out;
+}
+
+.animate-bounce-slow {
+  animation: bounce-slow 2s ease-in-out infinite;
+}
+
+.store-page {
+  animation: fade-in 0.3s ease-out;
+}
+
+.store-header {
+  backdrop-filter: blur(12px);
+}
+
+.line-clamp-1 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+}
+
+.line-clamp-2 {
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
 /**
  * Using the elevate system.
  * Automatic contrast adjustment.

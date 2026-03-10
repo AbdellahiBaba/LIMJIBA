@@ -1,7 +1,9 @@
 import { sql } from "drizzle-orm";
-import { pgTable, text, varchar, integer, real, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, integer, real, timestamp, boolean, serial } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
+
+export { conversations, messages } from "./models/chat";
 
 export const users = pgTable("users", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -613,10 +615,98 @@ export interface ProductInventoryValue {
 
 export interface InventoryValuation {
   products: ProductInventoryValue[];
-  totalInventoryValue: number;       // Sum of all product inventory values
-  totalProducts: number;             // Total product count
-  productsWithStock: number;         // Products where stockQuantity > 0
-  productsWithWarnings: number;      // Products with costPrice = 0 and stock > 0
-  warnings: string[];                // Warning messages for data quality issues
-  valuationDate: string;             // ISO date when valuation was calculated
+  totalInventoryValue: number;
+  totalProducts: number;
+  productsWithStock: number;
+  productsWithWarnings: number;
+  warnings: string[];
+  valuationDate: string;
 }
+
+export const promoCodes = pgTable("promo_codes", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  code: text("code").notNull().unique(),
+  discountType: text("discount_type").notNull().default("percentage"),
+  discountValue: real("discount_value").notNull(),
+  minOrderAmount: real("min_order_amount").default(0),
+  maxUses: integer("max_uses").default(0),
+  currentUses: integer("current_uses").notNull().default(0),
+  expiresAt: text("expires_at").notNull(),
+  createdBy: text("created_by").notNull().default("admin"),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertPromoCodeSchema = createInsertSchema(promoCodes).omit({ id: true, currentUses: true, createdAt: true });
+export type InsertPromoCode = z.infer<typeof insertPromoCodeSchema>;
+export type PromoCode = typeof promoCodes.$inferSelect;
+
+export const storeOrders = pgTable("store_orders", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  orderNumber: text("order_number").notNull(),
+  customerName: text("customer_name").notNull(),
+  customerEmail: text("customer_email"),
+  customerPhone: text("customer_phone"),
+  customerAddress: text("customer_address"),
+  items: text("items").notNull(),
+  subtotal: real("subtotal").notNull(),
+  discount: real("discount").notNull().default(0),
+  promoCode: text("promo_code"),
+  deliveryCost: real("delivery_cost").notNull().default(0),
+  total: real("total").notNull(),
+  status: text("status").notNull().default("pending"),
+  notes: text("notes"),
+  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertStoreOrderSchema = createInsertSchema(storeOrders).omit({ id: true, createdAt: true });
+export type InsertStoreOrder = z.infer<typeof insertStoreOrderSchema>;
+export type StoreOrder = typeof storeOrders.$inferSelect;
+
+export const cmsPages = pgTable("cms_pages", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  slug: text("slug").notNull().unique(),
+  title: text("title").notNull(),
+  content: text("content").notNull().default("{}"),
+  isPublished: boolean("is_published").notNull().default(true),
+  updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertCmsPageSchema = createInsertSchema(cmsPages).omit({ id: true, updatedAt: true });
+export type InsertCmsPage = z.infer<typeof insertCmsPageSchema>;
+export type CmsPage = typeof cmsPages.$inferSelect;
+
+export const cmsBanners = pgTable("cms_banners", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  title: text("title").notNull(),
+  subtitle: text("subtitle"),
+  imageUrl: text("image_url"),
+  linkUrl: text("link_url"),
+  position: integer("position").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertCmsBannerSchema = createInsertSchema(cmsBanners).omit({ id: true, createdAt: true });
+export type InsertCmsBanner = z.infer<typeof insertCmsBannerSchema>;
+export type CmsBanner = typeof cmsBanners.$inferSelect;
+
+export const storeSettings = pgTable("store_settings", {
+  id: varchar("id").primaryKey().default(sql`'default'`),
+  storeName: text("store_name").notNull().default("Limjiba Store"),
+  storeDescription: text("store_description").default(""),
+  primaryColor: text("primary_color").notNull().default("#4A0E4E"),
+  accentColor: text("accent_color").notNull().default("#D4AF37"),
+  logoUrl: text("logo_url"),
+  heroTitle: text("hero_title").default("Welcome to Our Store"),
+  heroSubtitle: text("hero_subtitle").default("Discover premium products at the best prices"),
+  contactEmail: text("contact_email"),
+  contactPhone: text("contact_phone"),
+  contactAddress: text("contact_address"),
+  socialLinks: text("social_links").default("{}"),
+  updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertStoreSettingsSchema = createInsertSchema(storeSettings).omit({ id: true, updatedAt: true });
+export type InsertStoreSettings = z.infer<typeof insertStoreSettingsSchema>;
+export type StoreSettings = typeof storeSettings.$inferSelect;

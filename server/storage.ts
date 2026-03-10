@@ -66,6 +66,16 @@ import {
   type BatchProfitability,
   type BatchItemProfitability,
   type ProductProfitability,
+  type PromoCode,
+  type InsertPromoCode,
+  type StoreOrder,
+  type InsertStoreOrder,
+  type CmsPage,
+  type InsertCmsPage,
+  type CmsBanner,
+  type InsertCmsBanner,
+  type StoreSettings,
+  type InsertStoreSettings,
   users,
   products,
   invoices,
@@ -93,6 +103,11 @@ import {
   auditLogs,
   transportationInvoices,
   transportationItems,
+  promoCodes,
+  storeOrders,
+  cmsPages,
+  cmsBanners,
+  storeSettings,
 } from "@shared/schema";
 import { db, withRetry } from "./db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
@@ -242,6 +257,32 @@ export interface IStorage {
   addShippingToPurchaseOrder(poId: string, shippingCost: number, distributionMethod: 'by_quantity' | 'by_value'): Promise<PurchaseOrderWithItems | undefined>;
   getBatchProfitability(purchaseOrderId: string): Promise<BatchProfitability | undefined>;
   getProductProfitability(productId: string): Promise<ProductProfitability | undefined>;
+
+  getPromoCodes(): Promise<PromoCode[]>;
+  getPromoCode(id: string): Promise<PromoCode | undefined>;
+  createPromoCode(promo: InsertPromoCode): Promise<PromoCode>;
+  updatePromoCode(id: string, data: Partial<InsertPromoCode>): Promise<PromoCode | undefined>;
+  deletePromoCode(id: string): Promise<boolean>;
+  validatePromoCode(code: string, orderAmount: number): Promise<{ valid: boolean; promo?: PromoCode; error?: string }>;
+  applyPromoCode(code: string): Promise<PromoCode | undefined>;
+
+  getStoreOrders(): Promise<StoreOrder[]>;
+  getStoreOrder(id: string): Promise<StoreOrder | undefined>;
+  createStoreOrder(order: InsertStoreOrder): Promise<StoreOrder>;
+  updateStoreOrderStatus(id: string, status: string): Promise<StoreOrder | undefined>;
+  getNextOrderNumber(): Promise<string>;
+
+  getStoreProducts(): Promise<Product[]>;
+
+  getCmsPage(slug: string): Promise<CmsPage | undefined>;
+  updateCmsPage(slug: string, data: Partial<InsertCmsPage>): Promise<CmsPage | undefined>;
+  getCmsBanners(): Promise<CmsBanner[]>;
+  createCmsBanner(banner: InsertCmsBanner): Promise<CmsBanner>;
+  updateCmsBanner(id: string, data: Partial<InsertCmsBanner>): Promise<CmsBanner | undefined>;
+  deleteCmsBanner(id: string): Promise<boolean>;
+
+  getStoreSettings(): Promise<StoreSettings | undefined>;
+  updateStoreSettings(data: Partial<InsertStoreSettings>): Promise<StoreSettings | undefined>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -2423,6 +2464,175 @@ export class DatabaseStorage implements IStorage {
         profitMargin: totalRevenue > 0 ? Math.round((totalProfit / totalRevenue) * 10000) / 100 : 0,
         inventoryValue: Math.round(product.stockQuantity * product.costPrice * 100) / 100,
       };
+    });
+  }
+
+  async getPromoCodes(): Promise<PromoCode[]> {
+    return await withRetry(async () => {
+      return await db.select().from(promoCodes).orderBy(desc(promoCodes.createdAt));
+    });
+  }
+
+  async getPromoCode(id: string): Promise<PromoCode | undefined> {
+    return await withRetry(async () => {
+      const [promo] = await db.select().from(promoCodes).where(eq(promoCodes.id, id));
+      return promo || undefined;
+    });
+  }
+
+  async createPromoCode(promo: InsertPromoCode): Promise<PromoCode> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(promoCodes).values(promo).returning();
+      return created;
+    });
+  }
+
+  async updatePromoCode(id: string, data: Partial<InsertPromoCode>): Promise<PromoCode | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(promoCodes).set(data).where(eq(promoCodes.id, id)).returning();
+      return updated || undefined;
+    });
+  }
+
+  async deletePromoCode(id: string): Promise<boolean> {
+    return await withRetry(async () => {
+      const result = await db.delete(promoCodes).where(eq(promoCodes.id, id)).returning();
+      return result.length > 0;
+    });
+  }
+
+  async validatePromoCode(code: string, orderAmount: number): Promise<{ valid: boolean; promo?: PromoCode; error?: string }> {
+    return await withRetry(async () => {
+      const [promo] = await db.select().from(promoCodes).where(eq(promoCodes.code, code.toUpperCase()));
+      if (!promo) return { valid: false, error: "Promo code not found" };
+      if (!promo.isActive) return { valid: false, error: "Promo code is inactive" };
+      if (new Date(promo.expiresAt) < new Date()) return { valid: false, error: "Promo code has expired" };
+      if (promo.maxUses && promo.maxUses > 0 && promo.currentUses >= promo.maxUses) return { valid: false, error: "Promo code usage limit reached" };
+      if (promo.minOrderAmount && orderAmount < promo.minOrderAmount) return { valid: false, error: `Minimum order amount is ${promo.minOrderAmount}` };
+      return { valid: true, promo };
+    });
+  }
+
+  async applyPromoCode(code: string): Promise<PromoCode | undefined> {
+    return await withRetry(async () => {
+      const [promo] = await db.update(promoCodes)
+        .set({ currentUses: sql`${promoCodes.currentUses} + 1` })
+        .where(eq(promoCodes.code, code.toUpperCase()))
+        .returning();
+      return promo || undefined;
+    });
+  }
+
+  async getStoreOrders(): Promise<StoreOrder[]> {
+    return await withRetry(async () => {
+      return await db.select().from(storeOrders).orderBy(desc(storeOrders.createdAt));
+    });
+  }
+
+  async getStoreOrder(id: string): Promise<StoreOrder | undefined> {
+    return await withRetry(async () => {
+      const [order] = await db.select().from(storeOrders).where(eq(storeOrders.id, id));
+      return order || undefined;
+    });
+  }
+
+  async createStoreOrder(order: InsertStoreOrder): Promise<StoreOrder> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(storeOrders).values(order).returning();
+      const orderItems = JSON.parse(order.items);
+      for (const item of orderItems) {
+        if (item.productId) {
+          const [product] = await db.select().from(products).where(eq(products.id, item.productId));
+          if (product && product.stockQuantity >= item.quantity) {
+            await db.update(products).set({
+              stockQuantity: product.stockQuantity - item.quantity
+            }).where(eq(products.id, item.productId));
+          }
+        }
+      }
+      return created;
+    });
+  }
+
+  async updateStoreOrderStatus(id: string, status: string): Promise<StoreOrder | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(storeOrders).set({ status }).where(eq(storeOrders.id, id)).returning();
+      return updated || undefined;
+    });
+  }
+
+  async getNextOrderNumber(): Promise<string> {
+    return await withRetry(async () => {
+      const year = new Date().getFullYear();
+      const allOrders = await db.select({ orderNumber: storeOrders.orderNumber }).from(storeOrders);
+      const yearOrders = allOrders.filter(o => o.orderNumber.includes(`/${year}`));
+      const maxNum = yearOrders.reduce((max, o) => {
+        const match = o.orderNumber.match(/ORD-(\d+)/);
+        return match ? Math.max(max, parseInt(match[1])) : max;
+      }, 0);
+      return `ORD-${String(maxNum + 1).padStart(4, '0')}/${year}`;
+    });
+  }
+
+  async getStoreProducts(): Promise<Product[]> {
+    return await withRetry(async () => {
+      const allProducts = await db.select().from(products);
+      return allProducts.filter(p => p.stockQuantity > 0);
+    });
+  }
+
+  async getCmsPage(slug: string): Promise<CmsPage | undefined> {
+    return await withRetry(async () => {
+      const [page] = await db.select().from(cmsPages).where(eq(cmsPages.slug, slug));
+      return page || undefined;
+    });
+  }
+
+  async updateCmsPage(slug: string, data: Partial<InsertCmsPage>): Promise<CmsPage | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(cmsPages).set({ ...data, updatedAt: new Date().toISOString() }).where(eq(cmsPages.slug, slug)).returning();
+      return updated || undefined;
+    });
+  }
+
+  async getCmsBanners(): Promise<CmsBanner[]> {
+    return await withRetry(async () => {
+      return await db.select().from(cmsBanners).orderBy(cmsBanners.position);
+    });
+  }
+
+  async createCmsBanner(banner: InsertCmsBanner): Promise<CmsBanner> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(cmsBanners).values(banner).returning();
+      return created;
+    });
+  }
+
+  async updateCmsBanner(id: string, data: Partial<InsertCmsBanner>): Promise<CmsBanner | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(cmsBanners).set(data).where(eq(cmsBanners.id, id)).returning();
+      return updated || undefined;
+    });
+  }
+
+  async deleteCmsBanner(id: string): Promise<boolean> {
+    return await withRetry(async () => {
+      const result = await db.delete(cmsBanners).where(eq(cmsBanners.id, id)).returning();
+      return result.length > 0;
+    });
+  }
+
+  async getStoreSettings(): Promise<StoreSettings | undefined> {
+    return await withRetry(async () => {
+      const [settings] = await db.select().from(storeSettings).where(eq(storeSettings.id, 'default'));
+      return settings || undefined;
+    });
+  }
+
+  async updateStoreSettings(data: Partial<InsertStoreSettings>): Promise<StoreSettings | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(storeSettings).set({ ...data, updatedAt: new Date().toISOString() }).where(eq(storeSettings.id, 'default')).returning();
+      return updated || undefined;
     });
   }
 }
