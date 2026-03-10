@@ -160,12 +160,13 @@ export default function StoreHome() {
             </div>
             <Button
               size="sm"
-              className="rounded-full h-9 w-9 p-0 store-btn-gold"
+              className="rounded-full h-11 min-w-[44px] px-3 store-btn-gold"
               style={{ color: primaryColor }}
               onClick={() => addItem({ productId: product.id, productName: product.name, unitPrice: effectivePrice, category: product.category, imageUrl: product.imageUrl })}
               data-testid={`button-add-cart-${product.id}`}
             >
               <ShoppingCart className="h-4 w-4" />
+              <span className="hidden sm:inline text-xs ml-1">{t("products.add")}</span>
             </Button>
           </div>
         </div>
@@ -290,12 +291,13 @@ export default function StoreHome() {
                         </div>
                         <Button
                           size="sm"
-                          className="rounded-full h-9 w-9 p-0 store-btn-gold"
+                          className="rounded-full h-11 min-w-[44px] px-3 store-btn-gold"
                           style={{ color: primaryColor }}
                           onClick={() => addItem({ productId: product.id, productName: product.name, unitPrice: discountedPrice, category: product.category, imageUrl: product.imageUrl })}
                           data-testid={`button-add-deal-${product.id}`}
                         >
                           <ShoppingCart className="h-4 w-4" />
+                          <span className="hidden sm:inline text-xs ml-1">{t("products.add")}</span>
                         </Button>
                       </div>
                     </div>

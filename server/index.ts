@@ -52,19 +52,32 @@ if (isProduction) {
   app.set("trust proxy", 1);
 }
 
-function createSessionStore() {
+const memStore = new MemoryStoreSession({ checkPeriod: 86400000 });
+let backingStore: session.Store = memStore;
+
+function upgradeToPgSessionStore() {
   const dbUrl = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
   if (isProduction && dbUrl) {
     const pool = new pg.Pool({ connectionString: dbUrl, max: 3 });
-    return new PgSessionStore({
+    backingStore = new PgSessionStore({
       pool,
       tableName: "user_sessions",
       createTableIfMissing: false,
       pruneSessionInterval: 60 * 15,
     });
+    log("Session store upgraded to PostgreSQL");
   }
-  return new MemoryStoreSession({ checkPeriod: 86400000 });
 }
+
+const proxyStore = new Proxy(memStore, {
+  get(_target, prop, receiver) {
+    const val = (backingStore as any)[prop];
+    if (typeof val === "function") {
+      return val.bind(backingStore);
+    }
+    return val;
+  }
+});
 
 app.use(
   session({
@@ -73,7 +86,7 @@ app.use(
     rolling: true,
     resave: true,
     saveUninitialized: false,
-    store: createSessionStore(),
+    store: proxyStore,
     cookie: {
       secure: isProduction,
       httpOnly: true,
@@ -307,28 +320,16 @@ app.use((req, res, next) => {
       console.error("Server error:", err);
     });
 
-    // Start database verification in background immediately
-    verifyDatabaseConnection().then((success) => {
-      if (success) {
-        log("Database ready for requests");
-      } else {
-        log("WARNING: Database connection issues - operations will retry automatically");
-      }
-    }).catch((err) => {
-      log(`Database verification error: ${err.message}`);
-    });
-
     let serverReady = false;
 
     app.use((req: Request, res: Response, next: NextFunction) => {
-      if (!serverReady && !req.path.startsWith("/api") && req.path !== "/health") {
+      if (!serverReady && req.path !== "/health") {
         res.status(200).set({ "Content-Type": "text/html" }).end(`<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2"></head><body><div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif"><p>Loading...</p></div></body></html>`);
         return;
       }
       next();
     });
 
-    // Now register routes and setup static files
     log("Registering routes...");
     await registerRoutes(httpServer, app);
     log("Routes registered successfully");
@@ -340,7 +341,6 @@ app.use((req, res, next) => {
       res.status(status).json({ message: isProduction && status >= 500 ? "Internal Server Error" : message });
     });
 
-    // Setup vite in development or static files in production
     if (process.env.NODE_ENV === "production") {
       log("Setting up static file serving for production...");
       serveStatic(app);
@@ -350,6 +350,18 @@ app.use((req, res, next) => {
       const { setupVite } = await import("./vite");
       await setupVite(httpServer, app);
       log("Vite development server configured");
+    }
+
+    try {
+      const dbSuccess = await verifyDatabaseConnection();
+      if (dbSuccess) {
+        upgradeToPgSessionStore();
+        log("Database ready for requests");
+      } else {
+        log("WARNING: Database connection issues - sessions will use memory store");
+      }
+    } catch (err: any) {
+      log(`Database verification error: ${err.message}`);
     }
 
     serverReady = true;

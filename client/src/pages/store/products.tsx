@@ -170,13 +170,13 @@ export default function StoreProducts() {
                     </div>
                     <Button
                       size="sm"
-                      className={`rounded-full text-xs px-3 ${atMax ? "" : "store-btn-gold"}`}
+                      className={`rounded-full text-xs sm:text-sm h-11 min-w-[44px] px-3 sm:px-4 ${atMax ? "" : "store-btn-gold"}`}
                       style={atMax ? { backgroundColor: "#9ca3af", color: "#fff" } : { color: primaryColor }}
                       onClick={() => addItem({ productId: product.id, productName: product.name, unitPrice: effectivePrice, category: product.category, imageUrl: product.imageUrl }, 1, product.stockQuantity)}
                       disabled={atMax}
                       data-testid={`button-add-cart-${product.id}`}
                     >
-                      <ShoppingCart className="h-3.5 w-3.5 mr-1" />
+                      <ShoppingCart className="h-4 w-4 mr-1" />
                       {atMax ? t("cart.maxAvailable") : t("products.add")}
                     </Button>
                   </div>
