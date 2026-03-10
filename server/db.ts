@@ -266,6 +266,46 @@ async function runMigrations(): Promise<void> {
       await client.query(`ALTER TABLE products ADD COLUMN additional_cost REAL NOT NULL DEFAULT 0`);
       console.log('[DB] Added additional_cost column to products');
     }
+
+    if (!prodCols.includes('image_url')) {
+      await client.query(`ALTER TABLE products ADD COLUMN image_url TEXT`);
+      console.log('[DB] Added image_url column to products');
+    }
+
+    // Store orders: payment confirmation columns
+    const soColumns = await client.query(`
+      SELECT column_name FROM information_schema.columns 
+      WHERE table_name = 'store_orders' AND table_schema = 'public'
+    `);
+    const soCols = soColumns.rows.map((r: any) => r.column_name);
+    if (!soCols.includes('payment_confirmed')) {
+      await client.query(`ALTER TABLE store_orders ADD COLUMN payment_confirmed BOOLEAN NOT NULL DEFAULT false`);
+      console.log('[DB] Added payment_confirmed column to store_orders');
+    }
+    if (!soCols.includes('payment_confirmed_at')) {
+      await client.query(`ALTER TABLE store_orders ADD COLUMN payment_confirmed_at TEXT`);
+      console.log('[DB] Added payment_confirmed_at column to store_orders');
+    }
+
+    // Store notifications table
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS store_notifications (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        customer_id VARCHAR,
+        customer_email TEXT,
+        order_number TEXT,
+        type TEXT NOT NULL DEFAULT 'payment_confirmed',
+        title TEXT NOT NULL,
+        title_ar TEXT,
+        title_fr TEXT,
+        message TEXT NOT NULL,
+        message_ar TEXT,
+        message_fr TEXT,
+        channel TEXT NOT NULL DEFAULT 'in_store',
+        is_read BOOLEAN NOT NULL DEFAULT false,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
     
     // Check sale_items table for cost_price column (GAAP/IFRS historical COGS tracking)
     const saleItemsColumns = await client.query(`
@@ -798,10 +838,10 @@ async function runMigrations(): Promise<void> {
     await client.query(`
       CREATE TABLE IF NOT EXISTS store_settings (
         id VARCHAR PRIMARY KEY DEFAULT 'default',
-        store_name TEXT NOT NULL DEFAULT 'LEMJIBA',
+        store_name TEXT NOT NULL DEFAULT 'LIMJIBA',
         store_description TEXT DEFAULT '',
-        primary_color TEXT NOT NULL DEFAULT '#1B3A6B',
-        accent_color TEXT NOT NULL DEFAULT '#C9A84C',
+        primary_color TEXT NOT NULL DEFAULT '#1B2D4A',
+        accent_color TEXT NOT NULL DEFAULT '#96823A',
         logo_url TEXT,
         hero_title TEXT DEFAULT 'Welcome to Our Store',
         hero_subtitle TEXT DEFAULT 'Discover premium products at the best prices',
@@ -822,9 +862,9 @@ async function runMigrations(): Promise<void> {
 
     await client.query(`
       UPDATE store_settings 
-      SET store_name = 'LEMJIBA', 
-          primary_color = '#1B3A6B', 
-          accent_color = '#C9A84C' 
+      SET store_name = 'LIMJIBA', 
+          primary_color = '#1B2D4A', 
+          accent_color = '#96823A' 
       WHERE id = 'default' 
         AND (primary_color = '#4A0E4E' OR store_name = 'Limjiba Store')
     `);
@@ -884,7 +924,7 @@ async function runMigrations(): Promise<void> {
 
     // Update CMS pages with rich trilingual content
     await client.query(`
-      UPDATE cms_pages SET content = '{"body":"<h2>About LEMJIBA</h2><p>LEMJIBA (لمجيبه) is a premium e-commerce platform born in Mauritania, dedicated to bringing you the finest products with exceptional service.</p><h3>Our Mission</h3><p>We strive to provide a seamless shopping experience with curated products, competitive prices in MRU, and reliable delivery across Mauritania and beyond.</p><h3>Our Values</h3><ul><li><strong>Quality First</strong> — Every product is carefully selected</li><li><strong>Customer Trust</strong> — Your satisfaction is our priority</li><li><strong>Local Pride</strong> — Proudly Mauritanian, globally inspired</li></ul><h3>عن لمجيبه</h3><p>لمجيبه هي منصة تجارة إلكترونية متميزة من موريتانيا، مكرسة لتقديم أفضل المنتجات بخدمة استثنائية.</p><h3>À propos de LEMJIBA</h3><p>LEMJIBA est une plateforme e-commerce premium née en Mauritanie, dédiée à vous offrir les meilleurs produits avec un service exceptionnel.</p>"}'
+      UPDATE cms_pages SET content = '{"body":"<h2>About LIMJIBA</h2><p>LIMJIBA (لمجيبة) is a premium e-commerce and importing platform born in Mauritania, dedicated to bringing you the finest products with exceptional service.</p><h3>Our Mission</h3><p>We strive to provide a seamless shopping experience with curated products, competitive prices in MRU, and reliable delivery across Mauritania and beyond.</p><h3>Our Values</h3><ul><li><strong>Quality First</strong> — Every product is carefully selected</li><li><strong>Customer Trust</strong> — Your satisfaction is our priority</li><li><strong>Local Pride</strong> — Proudly Mauritanian, globally inspired</li></ul><h3>عن لمجيبة</h3><p>لمجيبة هي منصة تجارة إلكترونية واستيراد متميزة من موريتانيا، مكرسة لتقديم أفضل المنتجات بخدمة استثنائية.</p><h3>À propos de LIMJIBA</h3><p>LIMJIBA est une plateforme e-commerce et d''importation premium née en Mauritanie, dédiée à vous offrir les meilleurs produits avec un service exceptionnel.</p>"}'
       WHERE slug = 'about'
     `);
     await client.query(`
@@ -892,7 +932,7 @@ async function runMigrations(): Promise<void> {
       WHERE slug = 'contact'
     `);
     await client.query(`
-      UPDATE cms_pages SET content = '{"body":"<h2>Terms & Conditions</h2><h3>1. General</h3><p>By using LEMJIBA, you agree to these terms. All prices are in MRU (Mauritanian Ouguiya).</p><h3>2. Orders & Payments</h3><p>Orders are confirmed upon receipt. Payment is required before shipping. We accept cash on delivery and bank transfer.</p><h3>3. Shipping & Delivery</h3><p>We deliver across Mauritania. Delivery times vary by location. Shipping costs are calculated at checkout.</p><h3>4. Returns & Refunds</h3><p>Returns are accepted within 7 days of delivery for unused items in original packaging. Refunds are processed within 5 business days.</p><h3>5. Privacy</h3><p>We protect your personal information. Your data is never shared with third parties without consent.</p>"}'
+      UPDATE cms_pages SET content = '{"body":"<h2>Terms & Conditions</h2><h3>1. General</h3><p>By using LIMJIBA, you agree to these terms. All prices are in MRU (Mauritanian Ouguiya).</p><h3>2. Orders & Payments</h3><p>Orders are confirmed upon receipt. Payment is required before shipping. We accept cash on delivery and bank transfer.</p><h3>3. Shipping & Delivery</h3><p>We deliver across Mauritania. Delivery times vary by location. Shipping costs are calculated at checkout.</p><h3>4. Returns & Refunds</h3><p>Returns are accepted within 7 days of delivery for unused items in original packaging. Refunds are processed within 5 business days.</p><h3>5. Privacy</h3><p>We protect your personal information. Your data is never shared with third parties without consent.</p>"}'
       WHERE slug = 'terms'
     `);
     console.log('[DB] Updated CMS pages with rich content');

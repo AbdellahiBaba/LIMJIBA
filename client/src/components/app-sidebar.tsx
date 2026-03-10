@@ -201,7 +201,7 @@ export function AppSidebar() {
       permission: "dashboard",
     },
     {
-      title: "LEMJIBA Agent",
+      title: "LIMJIBA Agent",
       url: "/limjiba",
       icon: Bot,
       testId: "nav-limjiba",
@@ -228,9 +228,9 @@ export function AppSidebar() {
           />
           <div className="flex flex-col">
             <span className="font-semibold text-sm text-sidebar-foreground">
-              LEMJIBA
+              LIMJIBA
             </span>
-            <span className="text-xs text-muted-foreground">لمجيبه</span>
+            <span className="text-xs text-muted-foreground">لمجيبة</span>
           </div>
         </div>
       </SidebarHeader>

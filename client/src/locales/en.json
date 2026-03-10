@@ -229,7 +229,9 @@
     "csvCostPrice": "Cost Price",
     "csvStock": "Stock",
     "csvUnit": "Unit",
-    "csvBarcode": "Barcode"
+    "csvBarcode": "Barcode",
+    "productImage": "Product Image",
+    "uploadImage": "Upload Image"
   },
   "invoices": {
     "title": "Invoices",
@@ -1166,5 +1168,61 @@
     "responsibleName": "Responsible name",
     "close": "Close",
     "invoiceLoadedDesc": "Invoice {num} loaded into the form."
+  },
+  "storeOrders": {
+    "confirmPayment": "Confirm Payment",
+    "paymentConfirmed": "Payment Confirmed",
+    "sendNotification": "Send Notification",
+    "notificationSent": "Notification Sent",
+    "paymentProof": "Payment Proof",
+    "paymentMethod": "Payment Method",
+    "items": "Items",
+    "subtotal": "Subtotal",
+    "total": "Total",
+    "discount": "Discount",
+    "deliveryCost": "Delivery Cost",
+    "notes": "Notes",
+    "updateStatus": "Update Status",
+    "orderDetails": "Order Details",
+    "customerInfo": "Customer Info",
+    "viewPaymentProof": "View Payment Proof",
+    "email": "Email",
+    "whatsapp": "WhatsApp",
+    "inStore": "In-Store",
+    "notifyCustomer": "Notify Customer",
+    "selectChannel": "Select Channel",
+    "noOrders": "No orders yet",
+    "phone": "Phone",
+    "address": "Address",
+    "promoCode": "Promo Code"
+  },
+  "sidebar": {
+    "viewStore": "View Store",
+    "storeOrders": "Store Orders",
+    "promoCodes": "Promo Codes",
+    "limjibaAgent": "LIMJIBA Agent"
+  },
+  "cms": {
+    "storeName": "Store Name",
+    "storeDescription": "Store Description",
+    "heroTitle": "Hero Title",
+    "heroSubtitle": "Hero Subtitle",
+    "primaryColor": "Primary Color",
+    "accentColor": "Accent Color",
+    "contactEmail": "Contact Email",
+    "contactPhone": "Contact Phone",
+    "contactAddress": "Contact Address",
+    "socialLinks": "Social Links"
+  },
+  "promoCodes": {
+    "code": "Code",
+    "discount": "Discount",
+    "type": "Type",
+    "minOrder": "Min. Order",
+    "maxUses": "Max Uses",
+    "usedCount": "Used",
+    "expiresAt": "Expires",
+    "active": "Active",
+    "addPromo": "Add Promo Code"
   }
 }

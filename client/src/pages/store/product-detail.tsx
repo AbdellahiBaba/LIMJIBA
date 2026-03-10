@@ -35,14 +35,14 @@ export default function StoreProductDetail() {
     queryKey: ["/api/store/settings"],
   });
 
-  const primaryColor = settings?.primaryColor || "#1B3A6B";
-  const accentColor = settings?.accentColor || "#C9A84C";
+  const primaryColor = settings?.primaryColor || "#1B2D4A";
+  const accentColor = settings?.accentColor || "#96823A";
 
   const related = allProducts?.filter(p => p.id !== productId && p.category === product?.category).slice(0, 4) || [];
 
   const handleAddToCart = () => {
     if (!product) return;
-    addItem({ productId: product.id, productName: product.name, unitPrice: product.unitPrice, category: product.category }, quantity);
+    addItem({ productId: product.id, productName: product.name, unitPrice: product.unitPrice, category: product.category, imageUrl: product.imageUrl }, quantity);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   };
@@ -89,7 +89,11 @@ export default function StoreProductDetail() {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12" data-testid={`detail-product-${product.id}`}>
         <div className="rounded-2xl overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}08, ${accentColor}08)` }}>
           <div className="h-96 flex items-center justify-center">
-            <span className="text-9xl">📦</span>
+            {product.imageUrl ? (
+              <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" data-testid={`img-product-${product.id}`} />
+            ) : (
+              <div className="h-full w-full flex items-center justify-center bg-muted"><Package className="h-12 w-12 text-muted-foreground/40" /></div>
+            )}
           </div>
         </div>
 
@@ -147,7 +151,11 @@ export default function StoreProductDetail() {
               <Link key={p.id} href={`/store/products/${p.id}`}>
                 <div className="rounded-2xl border bg-white shadow-sm hover:shadow-lg transition-all duration-300 hover:-translate-y-1 overflow-hidden cursor-pointer" data-testid={`card-related-${p.id}`}>
                   <div className="h-32 flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${primaryColor}08, ${accentColor}08)` }}>
-                    <span className="text-4xl">📦</span>
+                    {p.imageUrl ? (
+                      <img src={p.imageUrl} alt={p.name} className="h-full w-full object-cover" data-testid={`img-product-${p.id}`} />
+                    ) : (
+                      <div className="h-full w-full flex items-center justify-center bg-muted"><Package className="h-12 w-12 text-muted-foreground/40" /></div>
+                    )}
                   </div>
                   <div className="p-3">
                     <p className="font-semibold text-sm line-clamp-1">{p.name}</p>

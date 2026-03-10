@@ -8,8 +8,8 @@ export default function StoreTerms() {
   const { t } = useStoreLanguage();
   const { data: page, isLoading } = useQuery<CmsPage>({ queryKey: ["/api/store/pages/terms"] });
   const { data: settings } = useQuery<StoreSettings>({ queryKey: ["/api/store/settings"] });
-  const primaryColor = settings?.primaryColor || "#1B3A6B";
-  const accentColor = settings?.accentColor || "#C9A84C";
+  const primaryColor = settings?.primaryColor || "#1B2D4A";
+  const accentColor = settings?.accentColor || "#96823A";
 
   if (isLoading) {
     return (

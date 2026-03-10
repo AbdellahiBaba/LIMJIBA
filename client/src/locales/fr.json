@@ -229,7 +229,9 @@
     "csvCostPrice": "Prix de Revient",
     "csvStock": "Stock",
     "csvUnit": "Unité",
-    "csvBarcode": "Code-barres"
+    "csvBarcode": "Code-barres",
+    "productImage": "Image du Produit",
+    "uploadImage": "Télécharger une Image"
   },
   "invoices": {
     "title": "Factures",
@@ -1166,5 +1168,61 @@
     "responsibleName": "Nom du responsable",
     "close": "Fermer",
     "invoiceLoadedDesc": "Facture {num} chargée dans le formulaire."
+  },
+  "storeOrders": {
+    "confirmPayment": "Confirmer le Paiement",
+    "paymentConfirmed": "Paiement Confirmé",
+    "sendNotification": "Envoyer Notification",
+    "notificationSent": "Notification Envoyée",
+    "paymentProof": "Preuve de Paiement",
+    "paymentMethod": "Méthode de Paiement",
+    "items": "Articles",
+    "subtotal": "Sous-total",
+    "total": "Total",
+    "discount": "Remise",
+    "deliveryCost": "Frais de Livraison",
+    "notes": "Notes",
+    "updateStatus": "Mettre à jour le Statut",
+    "orderDetails": "Détails de la Commande",
+    "customerInfo": "Info Client",
+    "viewPaymentProof": "Voir la Preuve de Paiement",
+    "email": "E-mail",
+    "whatsapp": "WhatsApp",
+    "inStore": "En Magasin",
+    "notifyCustomer": "Notifier le Client",
+    "selectChannel": "Sélectionner le Canal",
+    "noOrders": "Aucune commande",
+    "phone": "Téléphone",
+    "address": "Adresse",
+    "promoCode": "Code Promo"
+  },
+  "sidebar": {
+    "viewStore": "Voir la Boutique",
+    "storeOrders": "Commandes Boutique",
+    "promoCodes": "Codes Promo",
+    "limjibaAgent": "Agent LIMJIBA"
+  },
+  "cms": {
+    "storeName": "Nom de la Boutique",
+    "storeDescription": "Description de la Boutique",
+    "heroTitle": "Titre Principal",
+    "heroSubtitle": "Sous-titre Principal",
+    "primaryColor": "Couleur Principale",
+    "accentColor": "Couleur d'Accent",
+    "contactEmail": "E-mail de Contact",
+    "contactPhone": "Téléphone de Contact",
+    "contactAddress": "Adresse de Contact",
+    "socialLinks": "Liens Sociaux"
+  },
+  "promoCodes": {
+    "code": "Code",
+    "discount": "Remise",
+    "type": "Type",
+    "minOrder": "Commande Min.",
+    "maxUses": "Utilisations Max",
+    "usedCount": "Utilisé",
+    "expiresAt": "Expire",
+    "active": "Actif",
+    "addPromo": "Ajouter Code Promo"
   }
 }

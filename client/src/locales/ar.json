@@ -60,7 +60,7 @@
     "copyPortalLink": "نسخ رابط البوابة",
     "supplier": "مورد(ون)",
     "purchaseOrder": "طلب(ات) شراء",
-    "currency": "د.ج",
+    "currency": "أوقية",
     "previous": "السابق",
     "next": "التالي",
     "type": "النوع",
@@ -229,7 +229,9 @@
     "csvCostPrice": "سعر التكلفة",
     "csvStock": "المخزون",
     "csvUnit": "الوحدة",
-    "csvBarcode": "الباركود"
+    "csvBarcode": "الباركود",
+    "productImage": "صورة المنتج",
+    "uploadImage": "رفع صورة"
   },
   "invoices": {
     "title": "الفواتير",
@@ -1166,5 +1168,61 @@
     "responsibleName": "اسم المسؤول",
     "close": "إغلاق",
     "invoiceLoadedDesc": "تم تحميل الفاتورة {num} في النموذج."
+  },
+  "storeOrders": {
+    "confirmPayment": "تأكيد الدفع",
+    "paymentConfirmed": "تم تأكيد الدفع",
+    "sendNotification": "إرسال إشعار",
+    "notificationSent": "تم إرسال الإشعار",
+    "paymentProof": "إثبات الدفع",
+    "paymentMethod": "طريقة الدفع",
+    "items": "العناصر",
+    "subtotal": "المجموع الفرعي",
+    "total": "المجموع",
+    "discount": "الخصم",
+    "deliveryCost": "تكلفة التوصيل",
+    "notes": "ملاحظات",
+    "updateStatus": "تحديث الحالة",
+    "orderDetails": "تفاصيل الطلب",
+    "customerInfo": "معلومات العميل",
+    "viewPaymentProof": "عرض إثبات الدفع",
+    "email": "البريد الإلكتروني",
+    "whatsapp": "واتساب",
+    "inStore": "في المتجر",
+    "notifyCustomer": "إشعار العميل",
+    "selectChannel": "اختر القناة",
+    "noOrders": "لا توجد طلبات بعد",
+    "phone": "الهاتف",
+    "address": "العنوان",
+    "promoCode": "رمز الخصم"
+  },
+  "sidebar": {
+    "viewStore": "عرض المتجر",
+    "storeOrders": "طلبات المتجر",
+    "promoCodes": "رموز الترويج",
+    "limjibaAgent": "وكيل لمجيبة"
+  },
+  "cms": {
+    "storeName": "اسم المتجر",
+    "storeDescription": "وصف المتجر",
+    "heroTitle": "العنوان الرئيسي",
+    "heroSubtitle": "العنوان الفرعي",
+    "primaryColor": "اللون الأساسي",
+    "accentColor": "لون التمييز",
+    "contactEmail": "البريد الإلكتروني للتواصل",
+    "contactPhone": "هاتف التواصل",
+    "contactAddress": "عنوان التواصل",
+    "socialLinks": "روابط التواصل الاجتماعي"
+  },
+  "promoCodes": {
+    "code": "الرمز",
+    "discount": "الخصم",
+    "type": "النوع",
+    "minOrder": "الحد الأدنى للطلب",
+    "maxUses": "الحد الأقصى للاستخدام",
+    "usedCount": "مستخدم",
+    "expiresAt": "ينتهي في",
+    "active": "نشط",
+    "addPromo": "إضافة رمز ترويجي"
   }
 }

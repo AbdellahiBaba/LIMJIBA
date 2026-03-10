@@ -100,7 +100,7 @@ async function getLowStockContext(): Promise<string> {
   return lines.length > 0 ? lines.join("\n") : "All stocked.";
 }
 
-const CUSTOMER_PROMPT = `You are LEMJIBA (لمجيبه) store assistant — a premium import company in Mauritania. Help customers find products, check stock/prices, suggest alternatives, and track orders.
+const CUSTOMER_PROMPT = `You are LIMJIBA (لمجيبة) store assistant — a premium import company in Mauritania. Help customers find products, check stock/prices, suggest alternatives, and track orders.
 
 Rules:
 - Only recommend in-stock items. Prices in MRU (Mauritanian Ouguiya).
@@ -116,7 +116,7 @@ Catalog:
 {PRODUCTS}
 {ORDER_DATA}`;
 
-const ADMIN_PROMPT = `LEMJIBA business assistant (Mauritania). Analyze sales in MRU (Mauritanian Ouguiya), suggest restocking, generate promo codes (PROMO-XXXXX format, keep margin>15%, 1-3day expiry), provide insights.
+const ADMIN_PROMPT = `LIMJIBA business assistant (Mauritania). Analyze sales in MRU (Mauritanian Ouguiya), suggest restocking, generate promo codes (PROMO-XXXXX format, keep margin>15%, 1-3day expiry), provide insights.
 Inventory:\n{PRODUCTS}\nTop sellers:\n{SALES}\nAlerts:\n{STOCK_ALERTS}`;
 
 function extractOrderNumbers(text: string): string[] {

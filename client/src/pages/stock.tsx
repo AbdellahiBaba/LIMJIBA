@@ -50,6 +50,8 @@ import {
   RefreshCw,
   Printer,
   Star,
+  ImagePlus,
+  X,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv-export";
@@ -96,6 +98,7 @@ function ProductFormDialog({
     lowStockThreshold: product?.lowStockThreshold ?? 10,
     unit: product?.unit ?? "pcs",
     barcode: product?.barcode ?? "",
+    imageUrl: product?.imageUrl ?? null,
   });
 
   useEffect(() => {
@@ -113,9 +116,24 @@ function ProductFormDialog({
         lowStockThreshold: product?.lowStockThreshold ?? 10,
         unit: product?.unit ?? "pcs",
         barcode: product?.barcode ?? "",
+        imageUrl: product?.imageUrl ?? null,
       });
     }
   }, [open, product]);
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Image must be under 2MB", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setFormData(prev => ({ ...prev, imageUrl: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
 
   const computedCostPrice = (() => {
     const pp = formData.purchasePrice || 0;
@@ -337,6 +355,23 @@ function ProductFormDialog({
                 data-testid="input-low-stock"
               />
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label>{t("stock.productImage")}</Label>
+            {formData.imageUrl ? (
+              <div className="relative inline-block">
+                <img src={formData.imageUrl} alt="Product" className="h-24 w-24 object-cover rounded-lg border" data-testid="img-product-preview" />
+                <button type="button" onClick={() => setFormData(prev => ({ ...prev, imageUrl: null }))} className="absolute -top-2 -right-2 h-5 w-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center" data-testid="button-remove-image">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex items-center gap-2 border-2 border-dashed rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors" data-testid="input-product-image">
+                <ImagePlus className="h-5 w-5 text-muted-foreground" />
+                <span className="text-sm text-muted-foreground">{t("stock.uploadImage")}</span>
+                <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
+              </label>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="barcode">{t("stock.barcode")}</Label>

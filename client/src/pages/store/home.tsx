@@ -4,7 +4,7 @@ import { useCart } from "@/contexts/cart-context";
 import { useStoreLanguage } from "@/components/store-layout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShoppingCart, ArrowRight, Star, Sparkles } from "lucide-react";
+import { ShoppingCart, ArrowRight, Star, Sparkles, Package } from "lucide-react";
 import type { Product, CmsBanner, StoreSettings } from "@shared/schema";
 
 export default function StoreHome() {
@@ -23,13 +23,13 @@ export default function StoreHome() {
     queryKey: ["/api/store/settings"],
   });
 
-  const accentColor = settings?.accentColor || "#C9A84C";
-  const primaryColor = settings?.primaryColor || "#1B3A6B";
+  const accentColor = settings?.accentColor || "#96823A";
+  const primaryColor = settings?.primaryColor || "#1B2D4A";
   const featured = products?.slice(0, 8) || [];
 
   return (
     <div className="store-page">
-      <section className="relative overflow-hidden py-20 md:py-32" style={{ background: `linear-gradient(135deg, ${primaryColor}, #0A1628)` }} data-testid="section-hero">
+      <section className="relative overflow-hidden py-20 md:py-32" style={{ background: `linear-gradient(135deg, ${primaryColor}, #0D1520)` }} data-testid="section-hero">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle at 25% 50%, rgba(201,168,76,0.3) 0%, transparent 50%), radial-gradient(circle at 75% 50%, rgba(201,168,76,0.2) 0%, transparent 50%)" }} />
         </div>
@@ -45,7 +45,7 @@ export default function StoreHome() {
             {settings?.heroSubtitle || t("home.heroSubtitle")}
           </p>
           <Link href="/store/products">
-            <Button size="lg" className="text-lg px-8 py-6 rounded-full font-semibold shadow-xl store-btn-gold" style={{ backgroundColor: accentColor, color: "#0A1628" }} data-testid="button-shop-now">
+            <Button size="lg" className="text-lg px-8 py-6 rounded-full font-semibold shadow-xl store-btn-gold" style={{ backgroundColor: accentColor, color: "#0D1520" }} data-testid="button-shop-now">
               {t("home.shopNow")} <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>
@@ -87,7 +87,11 @@ export default function StoreHome() {
             {featured.map(product => (
               <div key={product.id} className="group rounded-2xl border bg-white shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden" data-testid={`card-product-${product.id}`}>
                 <div className="h-40 flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${primaryColor}08, ${accentColor}08)` }}>
-                  <span className="text-5xl">📦</span>
+                  {product.imageUrl ? (
+                    <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover" data-testid={`img-product-${product.id}`} />
+                  ) : (
+                    <div className="h-full w-full flex items-center justify-center bg-muted"><Package className="h-12 w-12 text-muted-foreground/40" /></div>
+                  )}
                 </div>
                 <div className="p-4">
                   <p className="text-xs font-medium mb-1" style={{ color: accentColor }}>{product.category}</p>
@@ -100,7 +104,7 @@ export default function StoreHome() {
                       size="sm"
                       className="rounded-full h-8 w-8 p-0"
                       style={{ backgroundColor: accentColor, color: primaryColor }}
-                      onClick={() => addItem({ productId: product.id, productName: product.name, unitPrice: product.unitPrice, category: product.category })}
+                      onClick={() => addItem({ productId: product.id, productName: product.name, unitPrice: product.unitPrice, category: product.category, imageUrl: product.imageUrl })}
                       data-testid={`button-add-cart-${product.id}`}
                     >
                       <ShoppingCart className="h-4 w-4" />

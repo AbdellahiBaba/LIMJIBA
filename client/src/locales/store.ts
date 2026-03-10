@@ -14,7 +14,7 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
     "nav.cart": "Cart",
 
     "home.badge": "Premium Quality Products",
-    "home.heroTitle": "Welcome to LEMJIBA",
+    "home.heroTitle": "Welcome to LIMJIBA",
     "home.heroSubtitle": "Discover premium products at the best prices",
     "home.shopNow": "Shop Now",
     "home.featured": "Featured Products",
@@ -97,7 +97,7 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
 
     "chat.greeting": "Welcome! How can I help you today?",
     "chat.placeholder": "Type your message...",
-    "chat.assistant": "LEMJIBA Assistant",
+    "chat.assistant": "LIMJIBA Assistant",
 
     "currency": "MRU",
 
@@ -142,6 +142,13 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
     "orders.orderDate": "Order Date",
 
     "nav.trackOrder": "Track Order",
+
+    "notifications.title": "Notifications",
+    "notifications.markRead": "Mark as read",
+    "notifications.empty": "No notifications",
+    "notifications.paymentConfirmed": "Payment Confirmed",
+    "stock.productImage": "Product Image",
+    "stock.uploadImage": "Upload Image",
   },
   fr: {
     "nav.home": "Accueil",
@@ -156,7 +163,7 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
     "nav.cart": "Panier",
 
     "home.badge": "Produits de Qualité Premium",
-    "home.heroTitle": "Bienvenue chez LEMJIBA",
+    "home.heroTitle": "Bienvenue chez LIMJIBA",
     "home.heroSubtitle": "Découvrez des produits premium aux meilleurs prix",
     "home.shopNow": "Acheter Maintenant",
     "home.featured": "Produits Vedettes",
@@ -239,7 +246,7 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
 
     "chat.greeting": "Bienvenue! Comment puis-je vous aider?",
     "chat.placeholder": "Tapez votre message...",
-    "chat.assistant": "Assistant LEMJIBA",
+    "chat.assistant": "Assistant LIMJIBA",
 
     "currency": "MRU",
 
@@ -284,6 +291,13 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
     "orders.orderDate": "Date de Commande",
 
     "nav.trackOrder": "Suivi de Commande",
+
+    "notifications.title": "Notifications",
+    "notifications.markRead": "Marquer comme lu",
+    "notifications.empty": "Aucune notification",
+    "notifications.paymentConfirmed": "Paiement Confirmé",
+    "stock.productImage": "Image du Produit",
+    "stock.uploadImage": "Télécharger une Image",
   },
   ar: {
     "nav.home": "الرئيسية",
@@ -298,7 +312,7 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
     "nav.cart": "السلة",
 
     "home.badge": "منتجات عالية الجودة",
-    "home.heroTitle": "مرحباً بكم في لمجيبه",
+    "home.heroTitle": "مرحباً بكم في لمجيبة",
     "home.heroSubtitle": "اكتشف منتجات متميزة بأفضل الأسعار",
     "home.shopNow": "تسوق الآن",
     "home.featured": "منتجات مميزة",
@@ -381,7 +395,7 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
 
     "chat.greeting": "مرحباً! كيف يمكنني مساعدتك اليوم؟",
     "chat.placeholder": "اكتب رسالتك...",
-    "chat.assistant": "مساعد لمجيبه",
+    "chat.assistant": "مساعد لمجيبة",
 
     "currency": "أوقية",
 
@@ -426,6 +440,13 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
     "orders.orderDate": "تاريخ الطلب",
 
     "nav.trackOrder": "تتبع الطلب",
+
+    "notifications.title": "الإشعارات",
+    "notifications.markRead": "تعليم كمقروء",
+    "notifications.empty": "لا توجد إشعارات",
+    "notifications.paymentConfirmed": "تم تأكيد الدفع",
+    "stock.productImage": "صورة المنتج",
+    "stock.uploadImage": "رفع صورة",
   },
 };
 

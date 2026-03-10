@@ -3506,6 +3506,69 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/store-orders/:id/confirm-payment", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const order = await storage.getStoreOrder(req.params.id);
+      if (!order) return res.status(404).json({ error: "Order not found" });
+      const result = await storage.confirmStoreOrderPayment(req.params.id);
+      if (!result) return res.status(404).json({ error: "Order not found" });
+      try {
+        await storage.createAuditLog({
+          userId: req.session.userId,
+          username: req.session.username || "system",
+          action: "update",
+          entity: "store_order",
+          entityId: req.params.id,
+          details: JSON.stringify({ action: "payment_confirmed", orderNumber: order.orderNumber }),
+          ipAddress: req.ip || null,
+          createdAt: new Date().toISOString(),
+        });
+      } catch {}
+      res.json(result);
+    } catch (error) {
+      handleError(res, "confirmStoreOrderPayment", error);
+    }
+  });
+
+  app.post("/api/store/notifications", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const data = { ...req.body };
+      if (!data.customerId && data.customerEmail) {
+        const customer = await storage.getStoreCustomerByEmail(data.customerEmail);
+        if (customer) {
+          data.customerId = customer.id;
+        }
+      }
+      const notification = await storage.createStoreNotification(data);
+      res.status(201).json(notification);
+    } catch (error) {
+      handleError(res, "createStoreNotification", error);
+    }
+  });
+
+  app.get("/api/store/notifications", async (req: Request, res: Response) => {
+    try {
+      const sc = (req.session as any)?.storeCustomer;
+      if (!sc?.id) return res.status(401).json({ error: "Not authenticated" });
+      const notifications = await storage.getStoreNotifications(sc.id);
+      res.json(notifications);
+    } catch (error) {
+      handleError(res, "getStoreNotifications", error);
+    }
+  });
+
+  app.patch("/api/store/notifications/:id/read", async (req: Request, res: Response) => {
+    try {
+      const sc = (req.session as any)?.storeCustomer;
+      if (!sc?.id) return res.status(401).json({ error: "Not authenticated" });
+      const result = await storage.markStoreNotificationRead(req.params.id, sc.id);
+      if (!result) return res.status(404).json({ error: "Notification not found" });
+      res.json(result);
+    } catch (error) {
+      handleError(res, "markStoreNotificationRead", error);
+    }
+  });
+
   // ==========================================
   // ADMIN: Payment Wallets
   // ==========================================

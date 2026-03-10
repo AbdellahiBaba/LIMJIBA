@@ -5,7 +5,7 @@ import { useStoreLanguage } from "@/components/store-layout";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ShoppingCart, Trash2, Minus, Plus, ArrowLeft, ArrowRight, Tag, Check, X } from "lucide-react";
+import { ShoppingCart, Trash2, Minus, Plus, ArrowLeft, ArrowRight, Tag, Check, X, Package } from "lucide-react";
 import type { StoreSettings } from "@shared/schema";
 
 export default function StoreCart() {
@@ -18,8 +18,8 @@ export default function StoreCart() {
     queryKey: ["/api/store/settings"],
   });
 
-  const primaryColor = settings?.primaryColor || "#1B3A6B";
-  const accentColor = settings?.accentColor || "#C9A84C";
+  const primaryColor = settings?.primaryColor || "#1B2D4A";
+  const accentColor = settings?.accentColor || "#96823A";
 
   const validatePromo = useMutation({
     mutationFn: async () => {
@@ -77,8 +77,12 @@ export default function StoreCart() {
         <div className="lg:col-span-2 space-y-4">
           {items.map(item => (
             <div key={item.productId} className="flex items-center gap-4 p-4 rounded-xl border bg-white shadow-sm" data-testid={`cart-item-${item.productId}`}>
-              <div className="h-16 w-16 rounded-lg flex items-center justify-center shrink-0" style={{ background: `linear-gradient(135deg, ${primaryColor}08, ${accentColor}08)` }}>
-                <span className="text-2xl">📦</span>
+              <div className="h-16 w-16 rounded-lg flex items-center justify-center shrink-0 overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}08, ${accentColor}08)` }}>
+                {item.imageUrl ? (
+                  <img src={item.imageUrl} alt={item.productName} className="h-full w-full object-cover" data-testid={`img-product-${item.productId}`} />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center bg-muted"><Package className="h-6 w-6 text-muted-foreground/40" /></div>
+                )}
               </div>
               <div className="flex-1 min-w-0">
                 <Link href={`/store/products/${item.productId}`}>

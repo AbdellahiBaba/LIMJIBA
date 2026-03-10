@@ -18,7 +18,7 @@ const QUICK_ACTIONS = [
 
 export default function LimjibaAdmin() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "Hello! I'm LEMJIBA, your business assistant. I can help you with:\n\n• Sales analysis & best sellers\n• Stock alerts & restock suggestions\n• Promo code generation\n• Business insights\n\nWhat would you like to know?" }
+    { role: "assistant", content: "Hello! I'm LIMJIBA, your business assistant. I can help you with:\n\n• Sales analysis & best sellers\n• Stock alerts & restock suggestions\n• Promo code generation\n• Business insights\n\nWhat would you like to know?" }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -56,7 +56,7 @@ export default function LimjibaAdmin() {
       <div className="mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="text-limjiba-admin-title">
           <Bot className="h-7 w-7 text-blue-700" />
-          LEMJIBA Agent
+          LIMJIBA Agent
         </h1>
         <p className="text-sm text-muted-foreground mt-1">AI-powered business assistant for your store</p>
       </div>
@@ -81,7 +81,7 @@ export default function LimjibaAdmin() {
         <CardHeader className="pb-3 border-b">
           <CardTitle className="text-sm flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            LEMJIBA is online
+            LIMJIBA is online
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
@@ -124,7 +124,7 @@ export default function LimjibaAdmin() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && sendMessage()}
-                placeholder="Ask LEMJIBA about your business..."
+                placeholder="Ask LIMJIBA about your business..."
                 disabled={loading}
                 data-testid="input-admin-chat"
               />

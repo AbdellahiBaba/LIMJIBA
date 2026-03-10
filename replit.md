@@ -1,10 +1,10 @@
-# LEMJIBA / لمجيبه - E-Commerce Management System
+# LIMJIBA / لمجيبة - E-Commerce Management System
 
 ## Overview
 
-A comprehensive e-commerce management system branded as **LEMJIBA / لمجيبه** (Mauritanian premium e-commerce). Provides modules for Invoice Generation (standard and manufacturing), Stock/Inventory Management, Point-of-Sale (POS), Reseller Rewards Program, Salaries Management, Business Expenses Tracking, Profit Analytics, Supplier Management, Purchase Orders, Shipments, Audit Trail, Advanced Reporting, and a trilingual public storefront with customer authentication.
+A comprehensive e-commerce management system branded as **LIMJIBA / لمجيبة** (Mauritanian premium import & e-commerce). Provides modules for Invoice Generation (standard and manufacturing), Stock/Inventory Management, Point-of-Sale (POS), Reseller Rewards Program, Salaries Management, Business Expenses Tracking, Profit Analytics, Supplier Management, Purchase Orders, Shipments, Audit Trail, Advanced Reporting, and a trilingual public storefront with customer authentication.
 
-**Brand Identity:** Royal Blue (#1B3A6B) + Deep Gold (#C9A84C) + Black/Navy (#0A1628), Montserrat typography.
+**Brand Identity:** Deep Navy (#1B2D4A) + Muted Gold (#96823A) + Dark (#0D1520) + Cream (#F5ECD7), Montserrat typography. Logo: camel + plane + world map with Arabic "لمجيبة" + "IMPORTING" text.
 **Currency:** MRU (Mauritanian Ouguiya / أوقية)
 **Languages:** Arabic, French, English (trilingual with RTL support)
 
@@ -19,7 +19,7 @@ Preferred communication style: Simple, everyday language.
 - **Routing:** Wouter
 - **State Management:** TanStack React Query
 - **UI Components:** shadcn/ui on Radix UI
-- **Styling:** Tailwind CSS with LEMJIBA theme and Montserrat font.
+- **Styling:** Tailwind CSS with LIMJIBA theme and Montserrat font.
 - **Build Tool:** Vite
 - **Localization:** French, Arabic, and English (trilingual) with RTL support. Admin uses `t()` from `useLanguage()` context with locale JSON files (`client/src/locales/en.json`, `fr.json`, `ar.json`). Store uses separate `useStoreLanguage()` context with `client/src/locales/store.ts`. Currency uses MRU everywhere.
 
@@ -32,7 +32,7 @@ Preferred communication style: Simple, everyday language.
 
 ### Core Modules
 - **Dashboard:** Business statistics, sales, invoices, low stock alerts, quick invoices stat, recent activity feed, clickable low stock alerts, period-filtered KPIs (today/week/month/year), average order value, outstanding credit, top customer, revenue vs expenses comparison. Widget customization with visibility toggles, ordering (move up/down), and localStorage persistence.
-- **Stock Management:** CRUD for products with full cost breakdown (purchase price, shipping cost, additional cost → auto-calculated cost price per unit), weight, low stock alerts, favorite products toggle (`isFavorite`), barcode label printing (individual and bulk, Code128 format, 3-column A4 grid layout). Dynamic categories fetched from `/api/categories`.
+- **Stock Management:** CRUD for products with full cost breakdown (purchase price, shipping cost, additional cost → auto-calculated cost price per unit), weight, low stock alerts, favorite products toggle (`isFavorite`), product image upload (Base64, max 2MB), barcode label printing (individual and bulk, Code128 format, 3-column A4 grid layout). Dynamic categories fetched from `/api/categories`.
 - **Invoice Generation:** Standard (FA-) and Manufacturing (FAB-) invoices with PDF generation, delivery status tracking (none/prepared/shipped/delivered), multi-payment timeline, email draft feature.
 - **Quick Invoice:** Standalone service invoice generator with auto-numbering (FR-XXXX/YYYY), discount support (% or fixed), saved copies in history, preview and print-ready. Independent from main system (no stock/sales/accounting impact).
 - **POS (Point of Sale):** Product grid with favorites section, cart with quick customer name input, checkout, payment modes, receipt printing, recent sales panel, out-of-stock overlays, stock quantity badges, park/hold sale (F3 shortcut) with resume functionality.
@@ -53,11 +53,12 @@ Preferred communication style: Simple, everyday language.
 - **Shipments:** Logistics documents tracking product movements. Auto-numbered (BT-XXXX/YYYY), three directions (delivery=warehouse→customer, return=customer→warehouse, client_return=client→warehouse), cost breakdown (fuel/driver/other), product line items with weight tracking and display-only unit price/total value. Status flow: pending→in_transit→completed→cancelled. NO stock movements or financial impact — strictly logistics documentation.
 - **Backup & Restore:** Enhanced with last backup date tracking, restore file preview (entity counts), backup reminder warnings.
 
-### Public Storefront (LEMJIBA / لمجيبه)
+### Public Storefront (LIMJIBA / لمجيبة)
 - **Path:** `/store/*` (public, no auth required for browsing)
-- **Features:** Trilingual (AR/FR/EN) with language switcher, product browsing (in-stock only), search/filter by dynamic categories, product detail pages, cart with localStorage persistence, promo code validation, checkout with wallet payment selection and payment proof upload, order tracking with visual timeline by email/order number.
+- **Features:** Trilingual (AR/FR/EN) with language switcher, product browsing (in-stock only) with product images, search/filter by dynamic categories, product detail pages, cart with localStorage persistence, promo code validation, checkout with wallet payment selection and payment proof upload, order tracking with visual timeline by email/order number.
 - **Customer Auth:** Separate from admin login. Customers can register, login, view profile, and auto-fill checkout. Session stored in `req.session.storeCustomer`.
-- **Theme:** Royal Blue (#1B3A6B) + Deep Gold (#C9A84C) + Black (#0A1628) with Montserrat typography. LEMJIBA logo integrated across all pages.
+- **Notifications:** In-store notification bell in header with unread count badge. Shows trilingual notifications for payment confirmations and order updates. Mark as read functionality.
+- **Theme:** Deep Navy (#1B2D4A) + Muted Gold (#96823A) + Dark (#0D1520) + Cream (#F5ECD7) with Montserrat typography. LIMJIBA logo integrated across all pages.
 - **Pages:** home, products, product detail, cart, checkout (with payment step), orders (with visual timeline), about, contact, terms, login, signup, profile.
 - **Payment System:** 3 mobile wallet options (Bankily, Masrvi, Sedad) stored in `payment_wallets` table. Checkout requires selecting a wallet, viewing its number, and uploading payment proof screenshot before order submission. Server-side enforcement of payment proof.
 - **Order Tracking:** Visual 4-step timeline (Placed → Confirmed → Shipped → Delivered) with color-coded progress. Search by order number or email.
@@ -77,7 +78,7 @@ Preferred communication style: Simple, everyday language.
 - **Context:** `client/src/contexts/store-auth-context.tsx` with `StoreAuthProvider` + `useStoreAuth()`.
 - **Session:** Uses `req.session.storeCustomer` (separate from admin `req.session.userId`).
 
-### LEMJIBA AI Agent
+### LIMJIBA AI Agent
 - AI-powered assistant using OpenAI (gpt-4o-mini via Replit AI Integrations).
 - Customer-facing chat widget on all store pages (floating bubble, bottom-right) answers product queries, recommends items, tracks orders by number (ORD-XXXX/YYYY), speaks AR/FR/EN. Knows store inventory, payment methods (Bankily/Masrvi/Sedad wallets), delivery policies, and return policies.
 - Order tracking: Agent detects order numbers in conversation, looks up order data, and reports status/items/total to customer.
@@ -95,6 +96,8 @@ Preferred communication style: Simple, everyday language.
 
 ### Store Orders
 - Admin order management at `/store-orders`. View all customer orders, update status (pending→confirmed→shipped→delivered→cancelled), expand for detail view. Payment method and payment proof display with proof image viewer dialog. Stock impact: confirming an order deducts inventory, cancelling a confirmed order restores inventory. Audit logging on status changes.
+- **Payment Confirmation:** Separate "Confirm Payment" action with visual badge indicator. Audit logged.
+- **Multi-Channel Notifications:** Admin can notify customers via Email (mailto: with pre-filled message), WhatsApp (wa.me deep link), or In-Store notification (saved to `store_notifications` table). All messages trilingual (AR/FR/EN).
 
 ### CMS (Content Management)
 - Admin CMS at `/cms` with tabs for Pages (home/about/contact/terms editing), Banners (create/toggle/delete promotional banners), and Store Settings (store name, colors, hero text, contact info, social media links for WhatsApp/Instagram/Facebook/Snapchat/TikTok).
@@ -102,11 +105,11 @@ Preferred communication style: Simple, everyday language.
 ### Data Storage
 - **Type:** PostgreSQL database using Drizzle ORM.
 - **Schema:** Shared `shared/schema.ts` for type safety between frontend/backend.
-- **Key Entities:** Products (with `isFavorite`, `purchasePrice`, `shippingCost`, `additionalCost`), Invoices (with `deliveryStatus`, `deliveryCost`), Manufacturing Invoices, Sales (with `deliveryCost`), Resellers, Employees, Salary Payments, Expenses, Customers, Quick Invoices, Suppliers, Purchase Orders (with `shippingCost`), Purchase Order Items (with `shippingCostShare`, `adjustedUnitCost`), Shipments, Shipment Items, Parked Sales, Audit Logs, Users (with roles/permissions), Promo Codes, Store Orders, CMS Pages, CMS Banners, Store Settings, Conversations, Messages, Categories, Store Customers.
+- **Key Entities:** Products (with `isFavorite`, `imageUrl`, `purchasePrice`, `shippingCost`, `additionalCost`), Invoices (with `deliveryStatus`, `deliveryCost`), Manufacturing Invoices, Sales (with `deliveryCost`), Resellers, Employees, Salary Payments, Expenses, Customers, Quick Invoices, Suppliers, Purchase Orders (with `shippingCost`), Purchase Order Items (with `shippingCostShare`, `adjustedUnitCost`), Shipments, Shipment Items, Parked Sales, Audit Logs, Users (with roles/permissions), Promo Codes, Store Orders (with `paymentConfirmed`, `paymentConfirmedAt`), Store Notifications, CMS Pages, CMS Banners, Store Settings, Conversations, Messages, Categories, Store Customers.
 
 ### Key Design Decisions
 - **Shared Schema Pattern:** Centralized type definitions for consistent data structures.
-- **E-Commerce Branding:** LEMJIBA / لمجيبه — Mauritanian premium e-commerce brand.
+- **E-Commerce Branding:** LIMJIBA / لمجيبة — Mauritanian premium import & e-commerce brand.
 - **Currency:** MRU (Mauritanian Ouguiya) throughout the entire application.
 - **Multilingual Support:** French/Arabic/English with RTL for Arabic. Admin and store have separate translation systems.
 - **Stock Deduction:** POS sales automatically update product stock and reseller purchase totals.

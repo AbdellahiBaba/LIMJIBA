@@ -1,13 +1,14 @@
 import { useState, createContext, useContext, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useCart } from "@/contexts/cart-context";
 import { useStoreAuth } from "@/contexts/store-auth-context";
-import { ShoppingCart, Menu, X, Home, Package, Phone, Info, FileText, Globe, User, LogOut, Search } from "lucide-react";
+import { ShoppingCart, Menu, X, Home, Package, Phone, Info, FileText, Globe, User, LogOut, Search, Bell } from "lucide-react";
 import { SiWhatsapp, SiInstagram, SiFacebook, SiSnapchat, SiTiktok } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import type { StoreSettings } from "@shared/schema";
+import type { StoreSettings, StoreNotification } from "@shared/schema";
 import { type StoreLanguage, getStoreTranslation } from "@/locales/store";
 import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
 
@@ -78,25 +79,43 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
   const { itemCount } = useCart();
   const { lang, setLang, t } = useStoreLanguage();
   const { customer, isAuthenticated, logout } = useStoreAuth();
+  const [notifOpen, setNotifOpen] = useState(false);
 
   const { data: settings } = useQuery<StoreSettings>({
     queryKey: ["/api/store/settings"],
   });
 
-  const storeName = settings?.storeName || "LEMJIBA";
-  const primaryColor = settings?.primaryColor || "#1B3A6B";
-  const accentColor = settings?.accentColor || "#C9A84C";
+  const { data: notifications } = useQuery<StoreNotification[]>({
+    queryKey: ["/api/store/notifications"],
+    enabled: isAuthenticated,
+    refetchInterval: 30000,
+  });
+
+  const markRead = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("PATCH", `/api/store/notifications/${id}/read`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/store/notifications"] });
+    },
+  });
+
+  const unreadCount = notifications?.filter(n => !n.isRead).length || 0;
+
+  const storeName = settings?.storeName || "LIMJIBA";
+  const primaryColor = settings?.primaryColor || "#1B2D4A";
+  const accentColor = settings?.accentColor || "#96823A";
 
   return (
     <div className="min-h-screen flex flex-col store-theme" dir={lang === "ar" ? "rtl" : "ltr"} style={{ "--store-primary": primaryColor, "--store-accent": accentColor } as React.CSSProperties}>
-      <header className="store-header sticky top-0 z-50 border-b border-black/20" style={{ background: `linear-gradient(135deg, ${primaryColor}, #0A1628)` }}>
+      <header className="store-header sticky top-0 z-50 border-b border-black/20" style={{ background: `linear-gradient(135deg, ${primaryColor}, #0D1520)` }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
             <Link href="/store" className="flex items-center gap-3 text-white no-underline" data-testid="link-store-home">
               <img src={logoImg} alt={storeName} className="h-10 w-10 rounded-md object-contain bg-white/10 p-0.5" />
               <div className="flex flex-col leading-tight">
                 <span className="text-xl font-extrabold tracking-widest uppercase brand-name">{storeName}</span>
-                <span className="text-[10px] font-medium tracking-wide opacity-70 brand-name-ar">لمجيبه</span>
+                <span className="text-[10px] font-medium tracking-wide opacity-70 brand-name-ar">لمجيبة</span>
               </div>
             </Link>
 
@@ -153,6 +172,52 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                       {t("nav.signup")}
                     </Button>
                   </Link>
+                </div>
+              )}
+
+              {isAuthenticated && (
+                <div className="relative">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-white hover:bg-white/10 relative"
+                    onClick={() => setNotifOpen(!notifOpen)}
+                    data-testid="button-store-notifications"
+                  >
+                    <Bell className="h-5 w-5" />
+                    {unreadCount > 0 && (
+                      <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 text-xs" style={{ backgroundColor: "#ef4444", color: "#fff" }}>
+                        {unreadCount}
+                      </Badge>
+                    )}
+                  </Button>
+                  {notifOpen && (
+                    <div className="absolute right-0 top-full mt-2 w-80 bg-white dark:bg-gray-900 rounded-lg shadow-xl border z-50 max-h-96 overflow-auto" data-testid="dropdown-notifications">
+                      <div className="p-3 border-b font-semibold text-sm text-gray-900 dark:text-gray-100">{t("notifications.title")}</div>
+                      {(!notifications || notifications.length === 0) ? (
+                        <div className="p-4 text-center text-sm text-muted-foreground">{t("notifications.empty")}</div>
+                      ) : (
+                        notifications.slice(0, 10).map(n => (
+                          <div
+                            key={n.id}
+                            className={`p-3 border-b last:border-b-0 text-sm cursor-pointer hover:bg-muted/50 transition-colors ${!n.isRead ? "bg-blue-50 dark:bg-blue-900/20" : ""}`}
+                            onClick={() => { if (!n.isRead) markRead.mutate(n.id); }}
+                            data-testid={`notification-${n.id}`}
+                          >
+                            <p className="font-medium text-gray-900 dark:text-gray-100">
+                              {lang === "ar" ? (n.titleAr || n.title) : lang === "fr" ? (n.titleFr || n.title) : n.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              {lang === "ar" ? (n.messageAr || n.message) : lang === "fr" ? (n.messageFr || n.message) : n.message}
+                            </p>
+                            {!n.isRead && (
+                              <span className="text-xs text-blue-600 dark:text-blue-400 mt-1 inline-block">{t("notifications.markRead")}</span>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -240,7 +305,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         {children}
       </main>
 
-      <footer className="border-t text-gray-300" style={{ background: "#0A1628" }}>
+      <footer className="border-t text-gray-300" style={{ background: "#0D1520" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
@@ -248,7 +313,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                 <img src={logoImg} alt={storeName} className="h-8 w-8 rounded object-contain" />
                 <h3 className="text-lg font-extrabold tracking-widest uppercase brand-name" style={{ color: accentColor }}>{storeName}</h3>
               </div>
-              <p className="text-xs tracking-wide opacity-60 brand-name-ar mb-2">لمجيبه</p>
+              <p className="text-xs tracking-wide opacity-60 brand-name-ar mb-2">لمجيبة</p>
               <p className="text-sm text-gray-400">{settings?.storeDescription || "Your premium e-commerce destination."}</p>
             </div>
             <div>
@@ -302,7 +367,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             </div>
           </div>
           <div className="mt-8 pt-8 border-t border-gray-700/50 text-center text-sm text-gray-500">
-            &copy; {new Date().getFullYear()} {storeName} / لمجيبه. {t("footer.rights")}.
+            &copy; {new Date().getFullYear()} {storeName} / لمجيبة. {t("footer.rights")}.
           </div>
         </div>
       </footer>

@@ -40,8 +40,8 @@ export default function StoreCheckout() {
   const promoCode = searchParams.get("promo") || "";
 
   const { data: settings } = useQuery<StoreSettings>({ queryKey: ["/api/store/settings"] });
-  const primaryColor = settings?.primaryColor || "#1B3A6B";
-  const accentColor = settings?.accentColor || "#C9A84C";
+  const primaryColor = settings?.primaryColor || "#1B2D4A";
+  const accentColor = settings?.accentColor || "#96823A";
   const currency = t("currency");
 
   const { data: wallets } = useQuery<PaymentWallet[]>({ queryKey: ["/api/store/wallets"] });

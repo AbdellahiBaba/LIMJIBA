@@ -29,8 +29,8 @@ export default function StoreProducts() {
     queryKey: ["/api/store/categories"],
   });
 
-  const primaryColor = settings?.primaryColor || "#1B3A6B";
-  const accentColor = settings?.accentColor || "#C9A84C";
+  const primaryColor = settings?.primaryColor || "#1B2D4A";
+  const accentColor = settings?.accentColor || "#96823A";
 
   const getCategoryName = (cat: Category) => {
     if (lang === "ar" && cat.nameAr) return cat.nameAr;
@@ -95,7 +95,11 @@ export default function StoreProducts() {
           {filtered.map(product => (
             <div key={product.id} className="group rounded-2xl border bg-white shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 overflow-hidden" data-testid={`card-product-${product.id}`}>
               <div className="h-44 flex items-center justify-center relative" style={{ background: `linear-gradient(135deg, ${primaryColor}08, ${accentColor}08)` }}>
-                <span className="text-6xl group-hover:scale-110 transition-transform">📦</span>
+                {product.imageUrl ? (
+                  <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover group-hover:scale-110 transition-transform" data-testid={`img-product-${product.id}`} />
+                ) : (
+                  <div className="h-full w-full flex items-center justify-center bg-muted"><Package className="h-12 w-12 text-muted-foreground/40" /></div>
+                )}
                 <Badge className="absolute top-3 left-3 text-xs" style={{ backgroundColor: `${accentColor}20`, color: primaryColor }}>{product.category}</Badge>
                 {product.stockQuantity <= 5 && (
                   <Badge variant="destructive" className="absolute top-3 right-3 text-xs">{t("products.lowStock")}</Badge>
@@ -112,7 +116,7 @@ export default function StoreProducts() {
                     size="sm"
                     className="rounded-full"
                     style={{ backgroundColor: accentColor, color: primaryColor }}
-                    onClick={() => addItem({ productId: product.id, productName: product.name, unitPrice: product.unitPrice, category: product.category })}
+                    onClick={() => addItem({ productId: product.id, productName: product.name, unitPrice: product.unitPrice, category: product.category, imageUrl: product.imageUrl })}
                     data-testid={`button-add-cart-${product.id}`}
                   >
                     <ShoppingCart className="h-4 w-4 mr-1" />

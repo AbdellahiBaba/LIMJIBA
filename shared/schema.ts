@@ -50,6 +50,7 @@ export const products = pgTable("products", {
   lowStockThreshold: integer("low_stock_threshold").notNull().default(10),
   unit: text("unit").notNull().default("pcs"),
   barcode: text("barcode"),
+  imageUrl: text("image_url"),
   isFavorite: boolean("is_favorite").notNull().default(false),
 });
 
@@ -661,12 +662,35 @@ export const storeOrders = pgTable("store_orders", {
   notes: text("notes"),
   paymentMethod: text("payment_method"),
   paymentProof: text("payment_proof"),
+  paymentConfirmed: boolean("payment_confirmed").notNull().default(false),
+  paymentConfirmedAt: text("payment_confirmed_at"),
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
 export const insertStoreOrderSchema = createInsertSchema(storeOrders).omit({ id: true, createdAt: true });
 export type InsertStoreOrder = z.infer<typeof insertStoreOrderSchema>;
 export type StoreOrder = typeof storeOrders.$inferSelect;
+
+export const storeNotifications = pgTable("store_notifications", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id"),
+  customerEmail: text("customer_email"),
+  orderNumber: text("order_number"),
+  type: text("type").notNull().default("payment_confirmed"),
+  title: text("title").notNull(),
+  titleAr: text("title_ar"),
+  titleFr: text("title_fr"),
+  message: text("message").notNull(),
+  messageAr: text("message_ar"),
+  messageFr: text("message_fr"),
+  channel: text("channel").notNull().default("in_store"),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertStoreNotificationSchema = createInsertSchema(storeNotifications).omit({ id: true, createdAt: true });
+export type InsertStoreNotification = z.infer<typeof insertStoreNotificationSchema>;
+export type StoreNotification = typeof storeNotifications.$inferSelect;
 
 export const paymentWallets = pgTable("payment_wallets", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -744,10 +768,10 @@ export type StoreCustomer = typeof storeCustomers.$inferSelect;
 
 export const storeSettings = pgTable("store_settings", {
   id: varchar("id").primaryKey().default(sql`'default'`),
-  storeName: text("store_name").notNull().default("LEMJIBA"),
+  storeName: text("store_name").notNull().default("LIMJIBA"),
   storeDescription: text("store_description").default(""),
-  primaryColor: text("primary_color").notNull().default("#1B3A6B"),
-  accentColor: text("accent_color").notNull().default("#C9A84C"),
+  primaryColor: text("primary_color").notNull().default("#1B2D4A"),
+  accentColor: text("accent_color").notNull().default("#96823A"),
   logoUrl: text("logo_url"),
   heroTitle: text("hero_title").default("Welcome to Our Store"),
   heroSubtitle: text("hero_subtitle").default("Discover premium products at the best prices"),

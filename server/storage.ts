@@ -82,6 +82,8 @@ import {
   type InsertStoreCustomer,
   type PaymentWallet,
   type InsertPaymentWallet,
+  type StoreNotification,
+  type InsertStoreNotification,
   users,
   products,
   invoices,
@@ -117,6 +119,7 @@ import {
   categories,
   storeCustomers,
   paymentWallets,
+  storeNotifications,
 } from "@shared/schema";
 import { db, withRetry } from "./db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
@@ -280,7 +283,13 @@ export interface IStorage {
   getStoreOrderByNumber(orderNumber: string): Promise<StoreOrder | undefined>;
   createStoreOrder(order: InsertStoreOrder): Promise<StoreOrder>;
   updateStoreOrderStatus(id: string, status: string): Promise<StoreOrder | undefined>;
+  confirmStoreOrderPayment(id: string): Promise<StoreOrder | undefined>;
   getNextOrderNumber(): Promise<string>;
+
+  createStoreNotification(notification: InsertStoreNotification): Promise<StoreNotification>;
+  getStoreNotifications(customerId: string): Promise<StoreNotification[]>;
+  markStoreNotificationRead(id: string, customerId: string): Promise<StoreNotification | undefined>;
+  getUnreadNotificationCount(customerId: string): Promise<number>;
 
   getPaymentWallets(): Promise<PaymentWallet[]>;
   createPaymentWallet(wallet: InsertPaymentWallet): Promise<PaymentWallet>;
@@ -2580,6 +2589,50 @@ export class DatabaseStorage implements IStorage {
     return await withRetry(async () => {
       const [updated] = await db.update(storeOrders).set({ status }).where(eq(storeOrders.id, id)).returning();
       return updated || undefined;
+    });
+  }
+
+  async confirmStoreOrderPayment(id: string): Promise<StoreOrder | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(storeOrders)
+        .set({ paymentConfirmed: true, paymentConfirmedAt: new Date().toISOString() })
+        .where(eq(storeOrders.id, id))
+        .returning();
+      return updated || undefined;
+    });
+  }
+
+  async createStoreNotification(notification: InsertStoreNotification): Promise<StoreNotification> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(storeNotifications).values(notification).returning();
+      return created;
+    });
+  }
+
+  async getStoreNotifications(customerId: string): Promise<StoreNotification[]> {
+    return await withRetry(async () => {
+      return await db.select().from(storeNotifications)
+        .where(eq(storeNotifications.customerId, customerId))
+        .orderBy(desc(storeNotifications.createdAt));
+    });
+  }
+
+  async markStoreNotificationRead(id: string, customerId: string): Promise<StoreNotification | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(storeNotifications)
+        .set({ isRead: true })
+        .where(and(eq(storeNotifications.id, id), eq(storeNotifications.customerId, customerId)))
+        .returning();
+      return updated || undefined;
+    });
+  }
+
+  async getUnreadNotificationCount(customerId: string): Promise<number> {
+    return await withRetry(async () => {
+      const result = await db.select({ count: sql<number>`count(*)` })
+        .from(storeNotifications)
+        .where(and(eq(storeNotifications.customerId, customerId), eq(storeNotifications.isRead, false)));
+      return Number(result[0]?.count || 0);
     });
   }
 

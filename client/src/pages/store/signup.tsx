@@ -19,8 +19,8 @@ export default function StoreSignup() {
   const [loading, setLoading] = useState(false);
 
   const { data: settings } = useQuery<StoreSettings>({ queryKey: ["/api/store/settings"] });
-  const primaryColor = settings?.primaryColor || "#1B3A6B";
-  const accentColor = settings?.accentColor || "#C9A84C";
+  const primaryColor = settings?.primaryColor || "#1B2D4A";
+  const accentColor = settings?.accentColor || "#96823A";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,7 +48,7 @@ export default function StoreSignup() {
     <div className="min-h-[70vh] flex items-center justify-center px-4 py-12">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
-          <img src={logoImg} alt="LEMJIBA" className="h-20 w-auto mx-auto mb-4 rounded-lg" />
+          <img src={logoImg} alt="LIMJIBA" className="h-20 w-auto mx-auto mb-4 rounded-lg" />
           <h1 className="text-2xl font-bold" style={{ color: primaryColor }} data-testid="text-signup-title">{t("auth.signupTitle")}</h1>
         </div>
 
