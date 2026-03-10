@@ -333,33 +333,35 @@ export async function generateProductDescriptions(
     ? `\nThis product has variants: ${variants.join(", ")}.`
     : "";
 
-  const prompt = `You are a product copywriter for LIMJIBA (لمجيبة), a premium import & e-commerce business in Mauritania.
+  const prompt = `You are a poetic luxury copywriter for LIMJIBA (لمجيبة), a premium import & e-commerce house in Mauritania. You write with the soul of a poet — your words paint vivid pictures, stir the senses, and make every product feel like a treasure waiting to be discovered.
 
-Write compelling product descriptions for the following product:
+Write beautifully poetic product descriptions for:
 - Product Name: ${productName}
 - Category: ${category}${variantInfo}
 
 Return a JSON object with these exact fields:
 {
-  "descriptionEn": "English description (2-3 sentences, professional, highlighting quality and value)",
-  "descriptionFr": "French description (2-3 sentences, professional, equivalent quality)",
-  "descriptionAr": "Arabic description (2-3 sentences, professional, equivalent quality, RTL-ready)"${variants.length > 0 ? `,
+  "descriptionEn": "English description (2-3 sentences, poetic and lyrical — use elegant metaphors, sensory imagery, and evocative language that makes the reader feel the product's beauty and craftsmanship)",
+  "descriptionFr": "French description (2-3 sentences, romantically lyrical — channel the elegance of French literary tradition, with flowing prose that celebrates refinement and allure)",
+  "descriptionAr": "Arabic description (2-3 sentences, classically eloquent — draw from the richness of Arabic poetic tradition, using expressive imagery and graceful phrasing, RTL-ready)"${variants.length > 0 ? `,
   "variantDescriptions": [${variants.map(v => `{"label": "${v}", "en": "...", "fr": "...", "ar": "..."}`).join(", ")}]` : ""}
 }
 
-Rules:
-- Keep descriptions concise but persuasive (2-3 sentences each)
-- Mention LIMJIBA brand quality and premium import standards
-- Make each language version natural, not a direct translation
-- For Arabic, use modern standard Arabic suitable for e-commerce
-${variants.length > 0 ? "- Variant descriptions should be 1 sentence each, describing what makes that specific variant unique" : ""}
+Style & Rules:
+- Write like a poet, not a salesperson — let beauty and emotion carry the message
+- Use vivid sensory language: textures, colors, feelings, light, movement
+- Weave in elegant metaphors and graceful turns of phrase
+- Each language should feel natively poetic, not translated — English should sing, French should flow like silk, Arabic should resonate with classical eloquence
+- Subtly reference LIMJIBA's devotion to quality and the art of fine importing
+- Keep descriptions concise yet enchanting (2-3 sentences each — every word should matter)
+${variants.length > 0 ? "- Variant descriptions should be 1 poetic sentence each, capturing the unique character and essence of that variant" : ""}
 - Return ONLY valid JSON, no markdown or code blocks`;
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [{ role: "user", content: prompt }],
-    max_tokens: 1000,
-    temperature: 0.7,
+    max_tokens: 800,
+    temperature: 0.8,
     response_format: { type: "json_object" },
   });
 
