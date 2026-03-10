@@ -191,7 +191,7 @@ function ExpenseFormDialog({
               step="0.01"
               value={formData.amount}
               onChange={(e) =>
-                setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })
+                setFormData({ ...formData, amount: e.target.value === "" ? "" as any : parseFloat(e.target.value) })
               }
               data-testid="input-expense-amount"
             />

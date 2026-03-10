@@ -42,6 +42,7 @@ import {
   PanelTop,
   Bot,
   ExternalLink,
+  UsersRound,
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -77,6 +78,7 @@ export function AppSidebar() {
     { title: "Promo Codes", url: "/emanager-portal/promo-codes", icon: Tag, testId: "nav-promo-codes", permission: "dashboard" },
     { title: "CMS", url: "/emanager-portal/cms", icon: PanelTop, testId: "nav-cms", permission: "dashboard" },
     { title: "LIMJIBA Agent", url: "/emanager-portal/limjiba", icon: Bot, testId: "nav-limjiba", permission: "dashboard" },
+    { title: "Store Customers", url: "/emanager-portal/store-customers", icon: UsersRound, testId: "nav-store-customers", permission: "dashboard" },
   ];
 
   const visibleStoreItems = storeMenuItems.filter(

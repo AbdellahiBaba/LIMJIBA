@@ -800,7 +800,7 @@ export default function POS() {
                     min="0"
                     max="100"
                     value={discountPercent || ""}
-                    onChange={(e) => setDiscountPercent(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => setDiscountPercent(e.target.value === "" ? "" as any : parseFloat(e.target.value))}
                     placeholder="%"
                     className="h-9"
                     data-testid="input-discount-percent"
@@ -812,7 +812,7 @@ export default function POS() {
                     type="number"
                     min="0"
                     value={discountAmount || ""}
-                    onChange={(e) => setDiscountAmount(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => setDiscountAmount(e.target.value === "" ? "" as any : parseFloat(e.target.value))}
                     placeholder="MRU"
                     className="h-9"
                     data-testid="input-discount-amount"
@@ -824,7 +824,7 @@ export default function POS() {
                     type="number"
                     min="0"
                     value={deliveryCost || ""}
-                    onChange={(e) => setDeliveryCost(parseFloat(e.target.value) || 0)}
+                    onChange={(e) => setDeliveryCost(e.target.value === "" ? "" as any : parseFloat(e.target.value))}
                     placeholder="MRU"
                     className="h-9"
                     data-testid="input-delivery-cost"
@@ -1349,7 +1349,7 @@ export default function POS() {
                                 max={maxReturnable}
                                 value={currentReturnQty || ""}
                                 onChange={(e) => {
-                                  const val = Math.min(Math.max(0, parseInt(e.target.value) || 0), maxReturnable);
+                                  const val = Math.min(Math.max(0, e.target.value === "" ? 0 : parseInt(e.target.value)), maxReturnable);
                                   setReturnQuantities(prev => ({ ...prev, [item.productId]: val }));
                                 }}
                                 className="w-16 h-7 text-center"

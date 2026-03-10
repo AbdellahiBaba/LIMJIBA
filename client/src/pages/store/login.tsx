@@ -67,6 +67,11 @@ export default function StoreLogin() {
           <Button type="submit" className="w-full rounded-full font-semibold" size="lg" style={{ backgroundColor: accentColor, color: primaryColor }} disabled={loading} data-testid="button-login-submit">
             {loading ? <><Loader2 className="h-4 w-4 mr-2 animate-spin" /> {t("auth.signingIn")}</> : t("auth.loginBtn")}
           </Button>
+          <div className="text-center">
+            <Link href="/store/forgot-password" className="text-xs hover:underline" style={{ color: accentColor }} data-testid="link-forgot-password">
+              {t("auth.forgotPassword")}
+            </Link>
+          </div>
           <p className="text-center text-sm text-gray-500">
             {t("auth.noAccount")}{" "}
             <Link href={redirectParam ? `/store/signup?redirect=${redirectParam}` : "/store/signup"} className="font-semibold hover:underline" style={{ color: primaryColor }} data-testid="link-signup">

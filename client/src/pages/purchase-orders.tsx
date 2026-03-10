@@ -476,11 +476,11 @@ export default function PurchaseOrders() {
                     </div>
                     <div className="col-span-2">
                       {idx === 0 && <Label className="text-xs">{t("purchaseOrders.qty")}</Label>}
-                      <Input type="number" min="1" value={item.quantity} onChange={e => updateItem(idx, "quantity", parseInt(e.target.value) || 0)} />
+                      <Input type="number" min="1" value={item.quantity} onChange={e => updateItem(idx, "quantity", e.target.value === "" ? "" as any : parseInt(e.target.value))} />
                     </div>
                     <div className="col-span-2">
                       {idx === 0 && <Label className="text-xs">{t("purchaseOrders.unitCostLabel")}</Label>}
-                      <Input type="number" step="0.01" value={item.unitCost} onChange={e => updateItem(idx, "unitCost", parseFloat(e.target.value) || 0)} />
+                      <Input type="number" step="0.01" value={item.unitCost} onChange={e => updateItem(idx, "unitCost", e.target.value === "" ? "" as any : parseFloat(e.target.value))} />
                     </div>
                     <div className="col-span-1 text-right font-mono text-sm pt-1">
                       {item.total.toFixed(2)}

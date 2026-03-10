@@ -438,7 +438,7 @@ export default function InvoiceForm() {
                     step="0.01"
                     value={formData.tvaRate}
                     onChange={(e) =>
-                      setFormData({ ...formData, tvaRate: parseFloat(e.target.value) || 0.19 })
+                      setFormData({ ...formData, tvaRate: e.target.value === "" ? "" as any : parseFloat(e.target.value) })
                     }
                     className="w-20"
                     data-testid="input-tva-rate"
@@ -457,7 +457,7 @@ export default function InvoiceForm() {
                   step="0.01"
                   value={formData.deliveryCost || ""}
                   onChange={(e) =>
-                    setFormData({ ...formData, deliveryCost: parseFloat(e.target.value) || 0 })
+                    setFormData({ ...formData, deliveryCost: e.target.value === "" ? "" as any : parseFloat(e.target.value) })
                   }
                   className="w-28"
                   placeholder="0"
@@ -500,7 +500,7 @@ export default function InvoiceForm() {
                           min="0"
                           value={item.quantity || ""}
                           onChange={(e) =>
-                            updateItem(item.id, "quantity", parseInt(e.target.value) || 0)
+                            updateItem(item.id, "quantity", e.target.value === "" ? "" as any : parseInt(e.target.value))
                           }
                           className="w-20"
                           data-testid={`input-qty-${item.id}`}
@@ -545,7 +545,7 @@ export default function InvoiceForm() {
                           step="0.01"
                           value={item.unitPrice || ""}
                           onChange={(e) =>
-                            updateItem(item.id, "unitPrice", parseFloat(e.target.value) || 0)
+                            updateItem(item.id, "unitPrice", e.target.value === "" ? "" as any : parseFloat(e.target.value))
                           }
                           className="w-24"
                           data-testid={`input-price-${item.id}`}
@@ -558,7 +558,7 @@ export default function InvoiceForm() {
                           step="0.001"
                           value={item.weightPerUnit || ""}
                           onChange={(e) =>
-                            updateItem(item.id, "weightPerUnit", parseFloat(e.target.value) || 0)
+                            updateItem(item.id, "weightPerUnit", e.target.value === "" ? "" as any : parseFloat(e.target.value))
                           }
                           className="w-20"
                           data-testid={`input-weight-${item.id}`}

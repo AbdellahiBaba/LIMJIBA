@@ -822,7 +822,7 @@ export default function Sales() {
                               type="number"
                               min="1"
                               value={item.quantity}
-                              onChange={(e) => updateEditItemQuantity(index, parseInt(e.target.value) || 1)}
+                              onChange={(e) => updateEditItemQuantity(index, e.target.value === "" ? "" as any : parseInt(e.target.value))}
                               className="w-16 h-7 text-center text-sm"
                               data-testid={`input-edit-qty-${index}`}
                             />
@@ -842,7 +842,7 @@ export default function Sales() {
                               min="0"
                               step="0.01"
                               value={item.unitPrice}
-                              onChange={(e) => updateEditItemPrice(index, parseFloat(e.target.value) || 0)}
+                              onChange={(e) => updateEditItemPrice(index, e.target.value === "" ? "" as any : parseFloat(e.target.value))}
                               className="h-7 text-sm font-mono"
                               data-testid={`input-edit-price-${index}`}
                             />

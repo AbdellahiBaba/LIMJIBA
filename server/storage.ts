@@ -131,7 +131,7 @@ import {
   storeReviews,
 } from "@shared/schema";
 import { db, withRetry } from "./db";
-import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
+import { eq, desc, sql, and, gte, lte, or } from "drizzle-orm";
 import { cache, CACHE_KEYS, CACHE_TTL } from "./cache";
 
 export interface IStorage {
@@ -304,6 +304,11 @@ export interface IStorage {
   createPaymentWallet(wallet: InsertPaymentWallet): Promise<PaymentWallet>;
   updatePaymentWallet(id: string, data: Partial<InsertPaymentWallet>): Promise<PaymentWallet | undefined>;
   deletePaymentWallet(id: string): Promise<boolean>;
+  creditWalletBalance(id: string, amount: number): Promise<void>;
+
+  getAllStoreCustomers(): Promise<StoreCustomer[]>;
+  updateStoreCustomerResetToken(id: string, token: string | null, expiry: string | null): Promise<void>;
+  getStoreCustomerByResetToken(token: string): Promise<StoreCustomer | undefined>;
 
   getProductVariants(productId: string): Promise<ProductVariant[]>;
   createProductVariant(variant: InsertProductVariant): Promise<ProductVariant>;
@@ -2630,8 +2635,13 @@ export class DatabaseStorage implements IStorage {
 
   async getStoreNotifications(customerId: string): Promise<StoreNotification[]> {
     return await withRetry(async () => {
+      const customer = await this.getStoreCustomerById(customerId);
+      const conditions = [eq(storeNotifications.customerId, customerId)];
+      if (customer?.email) {
+        conditions.push(eq(storeNotifications.customerEmail, customer.email));
+      }
       return await db.select().from(storeNotifications)
-        .where(eq(storeNotifications.customerId, customerId))
+        .where(or(...conditions))
         .orderBy(desc(storeNotifications.createdAt));
     });
   }
@@ -2692,6 +2702,31 @@ export class DatabaseStorage implements IStorage {
     return await withRetry(async () => {
       const [deleted] = await db.delete(paymentWallets).where(eq(paymentWallets.id, id)).returning();
       return !!deleted;
+    });
+  }
+
+  async creditWalletBalance(id: string, amount: number): Promise<void> {
+    return await withRetry(async () => {
+      await db.update(paymentWallets).set({ balance: sql`COALESCE(balance, 0) + ${amount}` }).where(eq(paymentWallets.id, id));
+    });
+  }
+
+  async getAllStoreCustomers(): Promise<StoreCustomer[]> {
+    return await withRetry(async () => {
+      return await db.select().from(storeCustomers).orderBy(desc(storeCustomers.createdAt));
+    });
+  }
+
+  async updateStoreCustomerResetToken(id: string, token: string | null, expiry: string | null): Promise<void> {
+    return await withRetry(async () => {
+      await db.update(storeCustomers).set({ resetToken: token, resetTokenExpiry: expiry }).where(eq(storeCustomers.id, id));
+    });
+  }
+
+  async getStoreCustomerByResetToken(token: string): Promise<StoreCustomer | undefined> {
+    return await withRetry(async () => {
+      const [customer] = await db.select().from(storeCustomers).where(eq(storeCustomers.resetToken, token));
+      return customer || undefined;
     });
   }
 

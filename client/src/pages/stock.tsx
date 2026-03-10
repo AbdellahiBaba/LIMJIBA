@@ -237,7 +237,7 @@ function VariantManagementSection({
                 step="0.01"
                 min="0"
                 value={variantForm.unitPrice}
-                onChange={(e) => setVariantForm({ ...variantForm, unitPrice: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => setVariantForm({ ...variantForm, unitPrice: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
                 data-testid="input-variant-price"
               />
             </div>
@@ -247,7 +247,7 @@ function VariantManagementSection({
                 type="number"
                 min="0"
                 value={variantForm.stockQuantity}
-                onChange={(e) => setVariantForm({ ...variantForm, stockQuantity: parseInt(e.target.value) || 0 })}
+                onChange={(e) => setVariantForm({ ...variantForm, stockQuantity: e.target.value === "" ? "" as any : parseInt(e.target.value) })}
                 data-testid="input-variant-stock"
               />
             </div>
@@ -477,7 +477,7 @@ function ProductFormDialog({
               step="0.01"
               min="0"
               value={formData.unitPrice}
-              onChange={(e) => setFormData({ ...formData, unitPrice: parseFloat(e.target.value) || 0 })}
+              onChange={(e) => setFormData({ ...formData, unitPrice: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
               required
               data-testid="input-unit-price"
             />
@@ -493,7 +493,7 @@ function ProductFormDialog({
                   step="0.01"
                   min="0"
                   value={formData.purchasePrice}
-                  onChange={(e) => setFormData({ ...formData, purchasePrice: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => setFormData({ ...formData, purchasePrice: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
                   data-testid="input-purchase-price"
                 />
               </div>
@@ -505,7 +505,7 @@ function ProductFormDialog({
                   step="0.01"
                   min="0"
                   value={formData.shippingCost}
-                  onChange={(e) => setFormData({ ...formData, shippingCost: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => setFormData({ ...formData, shippingCost: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
                   data-testid="input-shipping-cost"
                 />
               </div>
@@ -517,7 +517,7 @@ function ProductFormDialog({
                   step="0.01"
                   min="0"
                   value={formData.additionalCost}
-                  onChange={(e) => setFormData({ ...formData, additionalCost: parseFloat(e.target.value) || 0 })}
+                  onChange={(e) => setFormData({ ...formData, additionalCost: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
                   data-testid="input-additional-cost"
                 />
               </div>
@@ -536,7 +536,7 @@ function ProductFormDialog({
                 step="0.001"
                 min="0"
                 value={formData.weightPerUnit}
-                onChange={(e) => setFormData({ ...formData, weightPerUnit: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => setFormData({ ...formData, weightPerUnit: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
                 data-testid="input-weight-per-unit"
               />
             </div>
@@ -566,7 +566,7 @@ function ProductFormDialog({
                 type="number"
                 min="0"
                 value={formData.stockQuantity}
-                onChange={(e) => setFormData({ ...formData, stockQuantity: parseInt(e.target.value) || 0 })}
+                onChange={(e) => setFormData({ ...formData, stockQuantity: e.target.value === "" ? "" as any : parseInt(e.target.value) })}
                 required
                 data-testid="input-stock-quantity"
               />
@@ -578,7 +578,7 @@ function ProductFormDialog({
                 type="number"
                 min="0"
                 value={formData.lowStockThreshold}
-                onChange={(e) => setFormData({ ...formData, lowStockThreshold: parseInt(e.target.value) || 0 })}
+                onChange={(e) => setFormData({ ...formData, lowStockThreshold: e.target.value === "" ? "" as any : parseInt(e.target.value) })}
                 data-testid="input-low-stock"
               />
             </div>
@@ -642,7 +642,7 @@ function ProductFormDialog({
                     min="1"
                     max="99"
                     value={formData.dealDiscount || 0}
-                    onChange={(e) => setFormData({ ...formData, dealDiscount: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setFormData({ ...formData, dealDiscount: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
                     className="w-24"
                     data-testid="input-deal-discount"
                   />
@@ -829,7 +829,7 @@ function StockAdjustmentDialog({
                 type="number"
                 min="1"
                 value={quantity}
-                onChange={(e) => setQuantity(parseInt(e.target.value) || 0)}
+                onChange={(e) => setQuantity(e.target.value === "" ? "" as any : parseInt(e.target.value))}
                 required
                 data-testid="input-adjust-quantity"
               />

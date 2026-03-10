@@ -42,6 +42,7 @@ import TransportationInvoice from "@/pages/transportation-invoice";
 import CmsManagement from "@/pages/cms";
 import PromoCodesPage from "@/pages/promo-codes";
 import StoreOrdersAdmin from "@/pages/store-orders";
+import StoreCustomers from "@/pages/store-customers";
 import LimjibaAdmin from "@/components/limjiba-admin";
 import StoreLayout, { StoreLanguageProvider } from "@/components/store-layout";
 import { StoreAuthProvider } from "@/contexts/store-auth-context";
@@ -57,6 +58,8 @@ import StoreContact from "@/pages/store/contact";
 import StoreTerms from "@/pages/store/terms";
 import StoreLogin from "@/pages/store/login";
 import StoreSignup from "@/pages/store/signup";
+import StoreForgotPassword from "@/pages/store/forgot-password";
+import StoreResetPassword from "@/pages/store/reset-password";
 import StoreProfile from "@/pages/store/profile";
 import StoreCompare from "@/pages/store/compare";
 import Login from "@/pages/login";
@@ -89,6 +92,7 @@ function Router() {
       <Route path="/emanager-portal/cms" component={CmsManagement} />
       <Route path="/emanager-portal/promo-codes" component={PromoCodesPage} />
       <Route path="/emanager-portal/store-orders" component={StoreOrdersAdmin} />
+      <Route path="/emanager-portal/store-customers" component={StoreCustomers} />
       <Route path="/emanager-portal/limjiba" component={LimjibaAdmin} />
       <Route component={NotFound} />
     </Switch>
@@ -116,6 +120,8 @@ function StoreRouter() {
               <Route path="/store/terms" component={StoreTerms} />
               <Route path="/store/login" component={StoreLogin} />
               <Route path="/store/signup" component={StoreSignup} />
+              <Route path="/store/forgot-password" component={StoreForgotPassword} />
+              <Route path="/store/reset-password" component={StoreResetPassword} />
               <Route path="/store/profile" component={StoreProfile} />
               <Route path="/compare" component={StoreCompare} />
               <Route path="/products/:id" component={StoreProductDetail} />
@@ -128,6 +134,8 @@ function StoreRouter() {
               <Route path="/terms" component={StoreTerms} />
               <Route path="/login" component={StoreLogin} />
               <Route path="/signup" component={StoreSignup} />
+              <Route path="/forgot-password" component={StoreForgotPassword} />
+              <Route path="/reset-password" component={StoreResetPassword} />
               <Route path="/profile" component={StoreProfile} />
               <Route>
                 <div className="text-center py-20">

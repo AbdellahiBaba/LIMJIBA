@@ -443,7 +443,7 @@ export default function Customers() {
                       <Input
                         {...field}
                         type="number"
-                        onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)}
+                        onChange={(e) => field.onChange(e.target.value === "" ? "" as any : parseFloat(e.target.value))}
                         data-testid="input-customer-credit-limit"
                       />
                     </FormControl>

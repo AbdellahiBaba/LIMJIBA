@@ -633,7 +633,7 @@ export default function QuickInvoice() {
                 step={formData.discountType === "percent" ? "1" : "100"}
                 max={formData.discountType === "percent" ? "100" : undefined}
                 value={formData.discountValue || ""}
-                onChange={(e) => setFormData({ ...formData, discountValue: parseFloat(e.target.value) || 0 })}
+                onChange={(e) => setFormData({ ...formData, discountValue: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
                 className="w-24"
                 placeholder="0"
                 data-testid="input-qi-discount"
@@ -674,7 +674,7 @@ export default function QuickInvoice() {
                         type="number"
                         min="0"
                         value={item.quantity || ""}
-                        onChange={(e) => updateItem(item.id, "quantity", parseInt(e.target.value) || 0)}
+                        onChange={(e) => updateItem(item.id, "quantity", e.target.value === "" ? "" as any : parseInt(e.target.value))}
                         className="w-20"
                         placeholder="0"
                         data-testid={`input-qi-qty-${item.id}`}
@@ -694,7 +694,7 @@ export default function QuickInvoice() {
                         min="0"
                         step="0.01"
                         value={item.unitPrice || ""}
-                        onChange={(e) => updateItem(item.id, "unitPrice", parseFloat(e.target.value) || 0)}
+                        onChange={(e) => updateItem(item.id, "unitPrice", e.target.value === "" ? "" as any : parseFloat(e.target.value))}
                         className="w-24"
                         placeholder="0"
                         data-testid={`input-qi-price-${item.id}`}
@@ -706,7 +706,7 @@ export default function QuickInvoice() {
                         min="0"
                         step="0.001"
                         value={item.weightPerUnit || ""}
-                        onChange={(e) => updateItem(item.id, "weightPerUnit", parseFloat(e.target.value) || 0)}
+                        onChange={(e) => updateItem(item.id, "weightPerUnit", e.target.value === "" ? "" as any : parseFloat(e.target.value))}
                         className="w-20"
                         placeholder="—"
                         data-testid={`input-qi-weight-${item.id}`}

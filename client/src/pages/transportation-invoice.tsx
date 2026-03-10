@@ -614,7 +614,7 @@ function CreateTransportDialog({
                   <Input
                     type="number"
                     value={form.fuelCost || ""}
-                    onChange={(e) => setForm({ ...form, fuelCost: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setForm({ ...form, fuelCost: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
                     min="0"
                     data-testid="input-fuel-cost"
                   />
@@ -624,7 +624,7 @@ function CreateTransportDialog({
                   <Input
                     type="number"
                     value={form.driverFee || ""}
-                    onChange={(e) => setForm({ ...form, driverFee: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setForm({ ...form, driverFee: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
                     min="0"
                     data-testid="input-driver-fee"
                   />
@@ -634,7 +634,7 @@ function CreateTransportDialog({
                   <Input
                     type="number"
                     value={form.otherCosts || ""}
-                    onChange={(e) => setForm({ ...form, otherCosts: parseFloat(e.target.value) || 0 })}
+                    onChange={(e) => setForm({ ...form, otherCosts: e.target.value === "" ? "" as any : parseFloat(e.target.value) })}
                     min="0"
                     data-testid="input-other-costs"
                   />
@@ -702,7 +702,7 @@ function CreateTransportDialog({
                           <Input
                             type="number"
                             value={item.quantity}
-                            onChange={(e) => updateItem(index, "quantity", parseInt(e.target.value) || 0)}
+                            onChange={(e) => updateItem(index, "quantity", e.target.value === "" ? "" as any : parseInt(e.target.value))}
                             className="h-8 text-xs"
                             min="1"
                             data-testid={`input-qty-${index}`}
@@ -713,7 +713,7 @@ function CreateTransportDialog({
                           <Input
                             type="number"
                             value={item.unitPrice || ""}
-                            onChange={(e) => updateItem(index, "unitPrice", parseFloat(e.target.value) || 0)}
+                            onChange={(e) => updateItem(index, "unitPrice", e.target.value === "" ? "" as any : parseFloat(e.target.value))}
                             className="h-8 text-xs"
                             min="0"
                             data-testid={`input-unit-price-${index}`}
@@ -743,7 +743,7 @@ function CreateTransportDialog({
                           <Input
                             type="number"
                             value={item.weightPerUnit || ""}
-                            onChange={(e) => updateItem(index, "weightPerUnit", parseFloat(e.target.value) || 0)}
+                            onChange={(e) => updateItem(index, "weightPerUnit", e.target.value === "" ? "" as any : parseFloat(e.target.value))}
                             className="h-8 text-xs"
                             min="0"
                             step="0.01"

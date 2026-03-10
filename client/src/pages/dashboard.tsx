@@ -45,11 +45,35 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
+import { Input } from "@/components/ui/input";
+import { ShoppingBag, PiggyBank, Landmark, Edit3, Check } from "lucide-react";
+import { queryClient, apiRequest } from "@/lib/queryClient";
 import type { DashboardStats, RecentActivity, StoreSettings } from "@shared/schema";
 
 type SalesTrend = { month: string; sales: number; revenue: number };
 type TopProduct = { name: string; quantity: number; revenue: number };
 type LowStockProduct = { id: string; name: string; stockQuantity: number; lowStockThreshold: number };
+
+interface BalanceSheet {
+  openingBalance: number;
+  walletBalances: { id: string; name: string; balance: number }[];
+  totalWalletBalance: number;
+  income: { invoices: number; sales: number; storeOrders: number; quickInvoices: number; total: number };
+  outgoing: { expenses: number; salaries: number; total: number };
+  netProfit: number;
+  currentBalance: number;
+}
+
+interface StoreOrdersSummary {
+  orders: {
+    id: string; orderNumber: string; customerName: string; customerEmail: string;
+    total: number; status: string; paymentConfirmed: boolean; createdAt: string;
+    items: { productName: string; quantity: number; unitPrice: number; purchasePrice: number; profit: number }[];
+    profit: number;
+  }[];
+  totalOrders: number; totalRevenue: number; totalProfit: number;
+  confirmedOrders: number; pendingOrders: number;
+}
 
 interface FilteredStats {
   period: string;
@@ -286,6 +310,20 @@ export default function Dashboard() {
     },
     staleTime: 30000,
   });
+
+  const { data: balanceSheet } = useQuery<BalanceSheet>({
+    queryKey: ["/api/dashboard/balance-sheet"],
+    staleTime: 30000,
+  });
+
+  const { data: storeOrdersSummary } = useQuery<StoreOrdersSummary>({
+    queryKey: ["/api/dashboard/store-orders-summary"],
+    staleTime: 30000,
+  });
+
+  const [editingBalance, setEditingBalance] = useState(false);
+  const [openingBalanceInput, setOpeningBalanceInput] = useState("");
+  const [expandedOrderId, setExpandedOrderId] = useState<string | null>(null);
 
   const navigateToStockLowFilter = () => {
     window.location.href = "/emanager-portal/stock?filter=low";
@@ -851,6 +889,188 @@ export default function Dashboard() {
             </Card>
           )}
         </div>
+      )}
+
+      {balanceSheet && (
+        <Card data-testid="card-balance-sheet">
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <Landmark className="h-5 w-5" />
+              Balance Sheet
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-2 space-y-4">
+            <div className="flex items-center gap-2 p-3 rounded-lg bg-muted/50" data-testid="opening-balance-row">
+              <PiggyBank className="h-4 w-4 text-muted-foreground" />
+              <span className="text-sm font-medium flex-1">Opening Balance</span>
+              {editingBalance ? (
+                <div className="flex items-center gap-1">
+                  <Input
+                    type="number"
+                    value={openingBalanceInput}
+                    onChange={(e) => setOpeningBalanceInput(e.target.value)}
+                    className="h-7 w-28 text-sm"
+                    data-testid="input-opening-balance"
+                  />
+                  <Button size="icon" variant="ghost" className="h-7 w-7" data-testid="button-save-opening-balance"
+                    onClick={async () => {
+                      try {
+                        await apiRequest("POST", "/api/dashboard/opening-balance", { openingBalance: parseFloat(openingBalanceInput) || 0 });
+                        queryClient.invalidateQueries({ queryKey: ["/api/dashboard/balance-sheet"] });
+                        setEditingBalance(false);
+                      } catch {}
+                    }}>
+                    <Check className="h-3 w-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1">
+                  <span className="text-sm font-bold" data-testid="text-opening-balance">{balanceSheet.openingBalance.toLocaleString()} MRU</span>
+                  <Button size="icon" variant="ghost" className="h-6 w-6" data-testid="button-edit-opening-balance"
+                    onClick={() => { setOpeningBalanceInput(String(balanceSheet.openingBalance)); setEditingBalance(true); }}>
+                    <Edit3 className="h-3 w-3" />
+                  </Button>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg border border-green-200 bg-green-50 dark:bg-green-900/10 dark:border-green-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="h-4 w-4 text-green-600" />
+                  <span className="text-sm font-semibold text-green-700 dark:text-green-400">Income</span>
+                  <span className="ml-auto text-sm font-bold text-green-700 dark:text-green-400" data-testid="text-total-income">{balanceSheet.income.total.toLocaleString()} MRU</span>
+                </div>
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <div className="flex justify-between"><span>Invoices</span><span>{balanceSheet.income.invoices.toLocaleString()} MRU</span></div>
+                  <div className="flex justify-between"><span>POS Sales</span><span>{balanceSheet.income.sales.toLocaleString()} MRU</span></div>
+                  <div className="flex justify-between"><span>Store Orders</span><span>{balanceSheet.income.storeOrders.toLocaleString()} MRU</span></div>
+                  <div className="flex justify-between"><span>Quick Invoices</span><span>{balanceSheet.income.quickInvoices.toLocaleString()} MRU</span></div>
+                </div>
+              </div>
+              <div className="p-3 rounded-lg border border-red-200 bg-red-50 dark:bg-red-900/10 dark:border-red-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <Wallet className="h-4 w-4 text-red-600" />
+                  <span className="text-sm font-semibold text-red-700 dark:text-red-400">Outgoing</span>
+                  <span className="ml-auto text-sm font-bold text-red-700 dark:text-red-400" data-testid="text-total-outgoing">{balanceSheet.outgoing.total.toLocaleString()} MRU</span>
+                </div>
+                <div className="space-y-1 text-xs text-muted-foreground">
+                  <div className="flex justify-between"><span>Expenses</span><span>{balanceSheet.outgoing.expenses.toLocaleString()} MRU</span></div>
+                  <div className="flex justify-between"><span>Salaries</span><span>{balanceSheet.outgoing.salaries.toLocaleString()} MRU</span></div>
+                </div>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-3 rounded-lg bg-primary/5 border" data-testid="net-profit-card">
+                <div className="text-xs text-muted-foreground">Net Profit</div>
+                <div className={`text-lg font-bold ${balanceSheet.netProfit >= 0 ? "text-green-600" : "text-red-600"}`} data-testid="text-net-profit">
+                  {balanceSheet.netProfit >= 0 ? "+" : ""}{balanceSheet.netProfit.toLocaleString()} MRU
+                </div>
+              </div>
+              <div className="p-3 rounded-lg bg-primary/5 border" data-testid="current-balance-card">
+                <div className="text-xs text-muted-foreground">Current Balance</div>
+                <div className="text-lg font-bold" data-testid="text-current-balance">
+                  {balanceSheet.currentBalance.toLocaleString()} MRU
+                </div>
+              </div>
+            </div>
+
+            {balanceSheet.walletBalances.length > 0 && (
+              <div>
+                <div className="text-xs font-medium text-muted-foreground mb-2">Wallet Balances</div>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {balanceSheet.walletBalances.map(w => (
+                    <div key={w.id} className="p-2 rounded-lg bg-muted/50 text-center" data-testid={`wallet-balance-${w.id}`}>
+                      <div className="text-xs text-muted-foreground truncate">{w.name}</div>
+                      <div className="text-sm font-bold">{w.balance.toLocaleString()} MRU</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {storeOrdersSummary && (
+        <Card data-testid="card-store-orders-summary">
+          <CardHeader className="p-4 pb-2">
+            <CardTitle className="text-base sm:text-lg flex items-center gap-2">
+              <ShoppingBag className="h-5 w-5" />
+              Store Orders History
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-2 space-y-4">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div className="p-3 rounded-lg bg-muted/50 text-center">
+                <div className="text-xs text-muted-foreground">Total Orders</div>
+                <div className="text-lg font-bold" data-testid="text-total-store-orders">{storeOrdersSummary.totalOrders}</div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50 text-center">
+                <div className="text-xs text-muted-foreground">Revenue</div>
+                <div className="text-lg font-bold text-green-600" data-testid="text-store-revenue">{storeOrdersSummary.totalRevenue.toLocaleString()} MRU</div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50 text-center">
+                <div className="text-xs text-muted-foreground">Profit</div>
+                <div className="text-lg font-bold text-blue-600" data-testid="text-store-profit">{storeOrdersSummary.totalProfit.toLocaleString()} MRU</div>
+              </div>
+              <div className="p-3 rounded-lg bg-muted/50 text-center">
+                <div className="text-xs text-muted-foreground">Pending</div>
+                <div className="text-lg font-bold text-amber-600" data-testid="text-pending-orders">{storeOrdersSummary.pendingOrders}</div>
+              </div>
+            </div>
+
+            <div className="space-y-2 max-h-[400px] overflow-auto">
+              {storeOrdersSummary.orders.map(order => {
+                const statusColors: Record<string, string> = {
+                  pending: "bg-amber-100 text-amber-800",
+                  confirmed: "bg-blue-100 text-blue-800",
+                  shipped: "bg-purple-100 text-purple-800",
+                  delivered: "bg-green-100 text-green-800",
+                  cancelled: "bg-red-100 text-red-800",
+                };
+                const expanded = expandedOrderId === order.id;
+                return (
+                  <div key={order.id} className="rounded-lg border p-3 hover:bg-muted/30 cursor-pointer transition-colors" onClick={() => setExpandedOrderId(expanded ? null : order.id)} data-testid={`store-order-row-${order.id}`}>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <span className="text-sm font-mono font-bold" data-testid={`text-order-number-${order.id}`}>{order.orderNumber}</span>
+                        <Badge className={`text-[10px] ${statusColors[order.status] || "bg-gray-100 text-gray-800"}`}>{order.status}</Badge>
+                        {order.paymentConfirmed && <Badge className="text-[10px] bg-green-100 text-green-800">Paid</Badge>}
+                      </div>
+                      <div className="flex items-center gap-3 flex-shrink-0">
+                        <span className="text-sm font-bold">{order.total.toFixed(2)} MRU</span>
+                        <span className={`text-xs font-medium ${order.profit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                          {order.profit >= 0 ? "+" : ""}{order.profit.toFixed(2)}
+                        </span>
+                        {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+                      <span>{order.customerName}</span>
+                      <span>·</span>
+                      <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                    </div>
+                    {expanded && (
+                      <div className="mt-3 pt-3 border-t space-y-1">
+                        {order.items.map((item, idx) => (
+                          <div key={idx} className="flex items-center justify-between text-xs">
+                            <span className="flex-1 truncate">{item.productName} × {item.quantity}</span>
+                            <span className="text-muted-foreground mx-2">{item.unitPrice.toFixed(2)} MRU</span>
+                            <span className={`font-medium ${item.profit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                              {item.profit >= 0 ? "+" : ""}{item.profit.toFixed(2)} MRU
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );

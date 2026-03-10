@@ -31,7 +31,7 @@ Preferred communication style: Simple, everyday language.
 - **Storage:** Persistent DatabaseStorage.
 
 ### Core Modules
-- **Dashboard:** Business statistics, sales, invoices, low stock alerts, quick invoices stat, recent activity feed, clickable low stock alerts, period-filtered KPIs (today/week/month/year), average order value, outstanding credit, top customer, revenue vs expenses comparison. Widget customization with visibility toggles, ordering (move up/down), and localStorage persistence.
+- **Dashboard:** Business statistics, sales, invoices, low stock alerts, quick invoices stat, recent activity feed, clickable low stock alerts, period-filtered KPIs (today/week/month/year), average order value, outstanding credit, top customer, revenue vs expenses comparison. Widget customization with visibility toggles, ordering (move up/down), and localStorage persistence. Balance sheet section with opening balance, income/expense breakdown, wallet balances, net profit, current balance. Store orders history with per-product profit tracking and expandable order details.
 - **Stock Management:** CRUD for products with full cost breakdown (purchase price, shipping cost, additional cost → auto-calculated cost price per unit), weight, low stock alerts, favorite products toggle (`isFavorite`), product image upload (Base64, max 2MB), barcode label printing (individual and bulk, Code128 format, 3-column A4 grid layout). Dynamic categories fetched from `/api/categories`.
 - **Invoice Generation:** Standard (FA-) and Manufacturing (FAB-) invoices with PDF generation, delivery status tracking (none/prepared/shipped/delivered), multi-payment timeline, email draft feature.
 - **Quick Invoice:** Standalone service invoice generator with auto-numbering (FR-XXXX/YYYY), discount support (% or fixed), saved copies in history, preview and print-ready. Independent from main system (no stock/sales/accounting impact).
@@ -90,8 +90,9 @@ Preferred communication style: Simple, everyday language.
 
 ### Admin Portal
 - **Path:** `/emanager-portal/*` (requires authentication)
-- **Sidebar:** Premium header with LIMJIBA branding + gold accents. Active items marked with gold border. Separate "Online Store" section with Store Orders, Promo Codes, CMS, LIMJIBA Agent, and View Store link.
-- **Store Orders Admin:** Expandable order cards with payment proof viewer dialog, status management dropdown, payment confirmation button, multi-channel notification (email/WhatsApp/in-store).
+- **Sidebar:** Premium header with LIMJIBA branding + gold accents. Active items marked with gold border. Separate "Online Store" section with Store Orders, Promo Codes, CMS, Store Customers, LIMJIBA Agent, and View Store link. Auto-closes on mobile after navigation.
+- **Store Orders Admin:** Expandable order cards with payment proof viewer dialog, status management dropdown, payment confirmation button, multi-channel notification (email/WhatsApp/in-store). Auto in-store notifications on status changes.
+- **Store Customers Admin:** Page at `/emanager-portal/store-customers` listing all store customers with search, bulk selection, and bulk marketing notification sending (in-store notifications with trilingual title/message).
 
 ### Category Management
 - **Table:** `categories` in schema.ts with id, name, nameAr, nameFr, icon, sortOrder, isActive, createdAt.
@@ -100,10 +101,12 @@ Preferred communication style: Simple, everyday language.
 - **Stock Integration:** `stock.tsx` fetches categories dynamically from `/api/categories`.
 
 ### Customer Authentication
-- **Table:** `store_customers` in schema.ts with id, email, passwordHash, fullName, phone, address, language, isActive, createdAt.
-- **API Routes:** POST signup/login/logout, GET session/profile, PUT profile at `/api/store/auth/*`.
+- **Table:** `store_customers` in schema.ts with id, email, passwordHash, fullName, phone, address, language, isActive, loyaltyPoints, resetToken, resetTokenExpiry, createdAt.
+- **API Routes:** POST signup/login/logout, GET session/profile, PUT profile at `/api/store/auth/*`. POST forgot-password/reset-password for password reset flow.
 - **Context:** `client/src/contexts/store-auth-context.tsx` with `StoreAuthProvider` + `useStoreAuth()`.
 - **Session:** Uses `req.session.storeCustomer` (separate from admin `req.session.userId`).
+- **Password Reset:** Forgot password page (`/store/forgot-password`) generates a reset token, stores it in DB, and (in dev) displays the token link. Reset password page (`/store/reset-password?token=...`) validates token and sets new password. Token expires after 1 hour.
+- **Guest Auto-Registration:** When a guest places an order, a `store_customers` record is auto-created with their email/name/phone and a random bcrypt password + welcome in-store notification.
 
 ### LIMJIBA AI Agent
 - AI-powered assistant using OpenAI (gpt-4o-mini via Replit AI Integrations).
@@ -114,10 +117,11 @@ Preferred communication style: Simple, everyday language.
 - Backend: `server/limjiba.ts`. Cost optimizations: SHA-256 response cache (30min TTL, 200 max entries, namespaced by mode+context fingerprint), compressed system prompts, history limited to 10 messages with 2000-char assistant truncation.
 
 ### Payment Wallets
-- **Table:** `payment_wallets` in schema.ts with id, name, nameAr, nameFr, walletNumber, iconType, isActive, sortOrder.
+- **Table:** `payment_wallets` in schema.ts with id, name, nameAr, nameFr, walletNumber, iconType, isActive, sortOrder, balance (auto-credited on payment confirmation).
 - **API:** GET `/api/store/wallets` (public, active only), CRUD at `/api/payment-wallets` (admin).
 - **Seeded Wallets:** Bankily, Masrvi, Sedad with placeholder numbers.
 - **Store Orders:** Now include `paymentMethod` and `paymentProof` fields. Server enforces payment proof before order creation.
+- **Wallet Balance Tracking:** When admin confirms payment on a store order, the matching wallet's balance is auto-incremented by order total. Wallet balances displayed on dashboard balance sheet.
 
 ### Promo Codes
 - Full CRUD management at `/promo-codes`. Supports percentage/fixed discounts, min order amounts, max uses, expiry dates. AI-generated promo codes with safe margin calculation.
@@ -154,6 +158,14 @@ Preferred communication style: Simple, everyday language.
 - **Audit Logging:** `storage.createAuditLog(...)` called in login, user CRUD, supplier CRUD, PO operations, etc. Wrapped in try/catch.
 - **serverReady guard:** In `server/index.ts` — critical for startup, do not remove.
 - **AI Cache:** Namespaced by `mode` (customer/admin) + context fingerprint — do not break.
+
+### Email Notifications (Stub)
+- **Module:** `server/email.ts` — stub that logs emails to console instead of sending. Functions: `sendOrderStatusEmail`, `sendWelcomeEmail`, `sendPasswordResetEmail`, `sendMarketingEmail`. All compose branded HTML with LIMJIBA Royal Navy + Gold styling.
+- **Integration:** No email provider configured. User declined SendGrid and Resend integrations. To enable real emails, integrate a provider and replace the stub's `console.log` calls with actual sends.
+- **Auto Triggers:** Order status changes, signup, payment confirmation, guest order auto-registration all call email stubs + create in-store notifications.
+
+### Number Input Fix
+- Admin pages use a pattern that allows clearing number fields to empty string (not stuck at zero). State accepts `string | number`, converts on blur/submit. Affected: stock, POS, invoices, expenses, salaries, purchase orders, resellers, customers, CMS.
 
 ## External Dependencies
 

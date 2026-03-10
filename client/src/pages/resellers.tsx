@@ -199,7 +199,7 @@ function ResellerFormDialog({
               min="0"
               value={formData.rewardThreshold}
               onChange={(e) =>
-                setFormData({ ...formData, rewardThreshold: parseFloat(e.target.value) || 0 })
+                setFormData({ ...formData, rewardThreshold: e.target.value === "" ? "" as any : parseFloat(e.target.value) })
               }
               data-testid="input-reward-threshold"
             />

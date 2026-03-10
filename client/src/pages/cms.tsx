@@ -461,7 +461,7 @@ function PaymentWalletsTab() {
               </div>
               <div>
                 <Label>Sort Order</Label>
-                <Input type="number" value={form.sortOrder} onChange={e => setForm(f => ({ ...f, sortOrder: parseInt(e.target.value) || 0 }))} className="mt-1" data-testid="input-wallet-sort-order" />
+                <Input type="number" value={form.sortOrder} onChange={e => setForm(f => ({ ...f, sortOrder: e.target.value === "" ? "" as any : parseInt(e.target.value) }))} className="mt-1" data-testid="input-wallet-sort-order" />
               </div>
             </div>
 

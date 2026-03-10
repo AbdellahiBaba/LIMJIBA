@@ -895,7 +895,7 @@ export default function FabricationInvoice() {
                       step="0.01"
                       value={formData.tvaRate}
                       onChange={(e) =>
-                        setFormData({ ...formData, tvaRate: parseFloat(e.target.value) || 0.19 })
+                        setFormData({ ...formData, tvaRate: e.target.value === "" ? "" as any : parseFloat(e.target.value) })
                       }
                       className="w-20"
                       data-testid="input-tva-rate"
@@ -971,7 +971,7 @@ export default function FabricationInvoice() {
                         min="0"
                         step="0.01"
                         value={item.weightKg || ""}
-                        onChange={(e) => updateItem(item.id, "weightKg", parseFloat(e.target.value) || 0)}
+                        onChange={(e) => updateItem(item.id, "weightKg", e.target.value === "" ? "" as any : parseFloat(e.target.value))}
                         placeholder="0.00"
                         data-testid={`input-weight-${item.id}`}
                       />
@@ -981,7 +981,7 @@ export default function FabricationInvoice() {
                         type="number"
                         min="0"
                         value={item.quantity || ""}
-                        onChange={(e) => updateItem(item.id, "quantity", parseInt(e.target.value) || 0)}
+                        onChange={(e) => updateItem(item.id, "quantity", e.target.value === "" ? "" as any : parseInt(e.target.value))}
                         data-testid={`input-quantity-${item.id}`}
                       />
                     </TableCell>
@@ -994,7 +994,7 @@ export default function FabricationInvoice() {
                         min="0"
                         step="0.01"
                         value={item.unitPrice || ""}
-                        onChange={(e) => updateItem(item.id, "unitPrice", parseFloat(e.target.value) || 0)}
+                        onChange={(e) => updateItem(item.id, "unitPrice", e.target.value === "" ? "" as any : parseFloat(e.target.value))}
                         data-testid={`input-price-${item.id}`}
                       />
                     </TableCell>

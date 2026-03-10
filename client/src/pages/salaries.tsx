@@ -187,7 +187,7 @@ function EmployeeFormDialog({
               min="0"
               value={formData.monthlySalary}
               onChange={(e) =>
-                setFormData({ ...formData, monthlySalary: parseFloat(e.target.value) || 0 })
+                setFormData({ ...formData, monthlySalary: e.target.value === "" ? "" as any : parseFloat(e.target.value) })
               }
               data-testid="input-employee-salary"
             />
@@ -338,7 +338,7 @@ function PaymentFormDialog({
               min="0"
               value={formData.amount}
               onChange={(e) =>
-                setFormData({ ...formData, amount: parseFloat(e.target.value) || 0 })
+                setFormData({ ...formData, amount: e.target.value === "" ? "" as any : parseFloat(e.target.value) })
               }
               data-testid="input-payment-amount"
             />
@@ -371,7 +371,7 @@ function PaymentFormDialog({
                 max="2030"
                 value={formData.year}
                 onChange={(e) =>
-                  setFormData({ ...formData, year: parseInt(e.target.value) || currentDate.getFullYear() })
+                  setFormData({ ...formData, year: e.target.value === "" ? "" as any : parseInt(e.target.value) })
                 }
                 data-testid="input-payment-year"
               />

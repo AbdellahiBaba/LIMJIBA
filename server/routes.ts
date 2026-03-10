@@ -28,6 +28,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { handleCustomerChat, handleAdminChat, generatePromoCode, getCustomerGreeting } from "./limjiba";
+import { sendOrderStatusEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail } from "./email";
 
 const loginSchema = z.object({
   username: z.string().min(1),
@@ -3121,6 +3122,37 @@ export async function registerRoutes(
         paymentProof: paymentProof || null,
       });
 
+      if (customerEmail) {
+        try {
+          const existingCustomer = await storage.getStoreCustomerByEmail(customerEmail);
+          if (!existingCustomer) {
+            const guestPassword = await bcrypt.hash(crypto.randomBytes(16).toString("hex"), 10);
+            await storage.createStoreCustomer({
+              email: customerEmail,
+              password: guestPassword,
+              fullName: customerName,
+              phone: customerPhone || null,
+              address: customerAddress || null,
+              language: "en",
+              isActive: true,
+            });
+          }
+          await storage.createStoreNotification({
+            customerEmail,
+            customerId: null,
+            orderNumber,
+            type: "order_placed",
+            title: `Order Placed - ${orderNumber}`,
+            titleAr: `تم تقديم الطلب - ${orderNumber}`,
+            titleFr: `Commande Passée - ${orderNumber}`,
+            message: `Your order ${orderNumber} has been placed successfully. Total: ${total.toFixed(2)} MRU`,
+            messageAr: `تم تقديم طلبكم ${orderNumber} بنجاح. المجموع: ${total.toFixed(2)} أوقية`,
+            messageFr: `Votre commande ${orderNumber} a été passée avec succès. Total: ${total.toFixed(2)} MRU`,
+            channel: "in_store",
+          });
+        } catch {}
+      }
+
       res.status(201).json(order);
     } catch (error) {
       handleError(res, "createStoreOrder", error);
@@ -3297,6 +3329,22 @@ export async function registerRoutes(
         isActive: true,
       });
       (req.session as any).storeCustomer = { id: customer.id, email: customer.email, fullName: customer.fullName };
+      sendWelcomeEmail(email, fullName, req.body.language || "en").catch(() => {});
+      try {
+        await storage.createStoreNotification({
+          customerEmail: email,
+          customerId: customer.id,
+          orderNumber: null,
+          type: "welcome",
+          title: "Welcome to LIMJIBA!",
+          titleAr: "مرحباً بكم في لمجيبة!",
+          titleFr: "Bienvenue chez LIMJIBA!",
+          message: "Your account has been created successfully. Enjoy shopping!",
+          messageAr: "تم إنشاء حسابكم بنجاح. تسوق ممتع!",
+          messageFr: "Votre compte a été créé avec succès. Bon shopping!",
+          channel: "in_store",
+        });
+      } catch {}
       res.status(201).json({ id: customer.id, email: customer.email, fullName: customer.fullName, phone: customer.phone });
     } catch (error) {
       handleError(res, "storeSignup", error);
@@ -3394,6 +3442,59 @@ export async function registerRoutes(
       res.json(safe);
     } catch (error) {
       handleError(res, "getMyOrders", error);
+    }
+  });
+
+  app.post("/api/store/auth/forgot-password", async (req: Request, res: Response) => {
+    try {
+      const { email } = req.body;
+      if (!email) return res.status(400).json({ error: "Email is required" });
+      const customer = await storage.getStoreCustomerByEmail(email);
+      if (!customer) return res.json({ message: "If an account exists, a reset link has been sent." });
+      const token = crypto.randomBytes(32).toString("hex");
+      const expiry = new Date(Date.now() + 3600000).toISOString();
+      await storage.updateStoreCustomerResetToken(customer.id, token, expiry);
+      const host = req.headers.host || "localhost:5000";
+      const protocol = req.headers["x-forwarded-proto"] || "http";
+      const resetUrl = `${protocol}://${host}/store/reset-password?token=${token}`;
+      sendPasswordResetEmail(email, customer.fullName, resetUrl, customer.language || "en").catch(() => {});
+      try {
+        await storage.createStoreNotification({
+          customerEmail: email,
+          customerId: customer.id,
+          orderNumber: null,
+          type: "password_reset",
+          title: "Password Reset Requested",
+          titleAr: "طلب إعادة تعيين كلمة المرور",
+          titleFr: "Réinitialisation du mot de passe demandée",
+          message: `A password reset was requested for your account. If this was not you, please ignore this message.`,
+          messageAr: `تم طلب إعادة تعيين كلمة المرور لحسابكم. إذا لم تكونوا أنتم، تجاهلوا هذه الرسالة.`,
+          messageFr: `Une réinitialisation de mot de passe a été demandée pour votre compte. Si ce n'était pas vous, ignorez ce message.`,
+          channel: "in_store",
+        });
+      } catch {}
+      res.json({ message: "If an account exists, a reset link has been sent.", token: process.env.NODE_ENV === "development" ? token : undefined });
+    } catch (error) {
+      handleError(res, "forgotPassword", error);
+    }
+  });
+
+  app.post("/api/store/auth/reset-password", async (req: Request, res: Response) => {
+    try {
+      const { token, password } = req.body;
+      if (!token || !password) return res.status(400).json({ error: "Token and password are required" });
+      if (password.length < 6) return res.status(400).json({ error: "Password must be at least 6 characters" });
+      const customer = await storage.getStoreCustomerByResetToken(token);
+      if (!customer) return res.status(400).json({ error: "Invalid or expired reset token" });
+      if (customer.resetTokenExpiry && new Date(customer.resetTokenExpiry) < new Date()) {
+        return res.status(400).json({ error: "Reset token has expired" });
+      }
+      const hashedPassword = await bcrypt.hash(password, 10);
+      await storage.updateStoreCustomer(customer.id, { password: hashedPassword } as any);
+      await storage.updateStoreCustomerResetToken(customer.id, null, null);
+      res.json({ message: "Password has been reset successfully" });
+    } catch (error) {
+      handleError(res, "resetPassword", error);
     }
   });
 
@@ -3667,6 +3768,38 @@ export async function registerRoutes(
         });
       } catch {}
 
+      try {
+        const statusTitles: Record<string, Record<string, string>> = {
+          confirmed: { en: "Order Confirmed", fr: "Commande Confirmée", ar: "تم تأكيد الطلب" },
+          shipped: { en: "Order Shipped", fr: "Commande Expédiée", ar: "تم شحن الطلب" },
+          delivered: { en: "Order Delivered", fr: "Commande Livrée", ar: "تم توصيل الطلب" },
+          cancelled: { en: "Order Cancelled", fr: "Commande Annulée", ar: "تم إلغاء الطلب" },
+        };
+        const statusMsgs: Record<string, Record<string, string>> = {
+          confirmed: { en: `Your order ${order.orderNumber} has been confirmed.`, fr: `Votre commande ${order.orderNumber} a été confirmée.`, ar: `تم تأكيد طلبكم ${order.orderNumber}.` },
+          shipped: { en: `Your order ${order.orderNumber} has been shipped!`, fr: `Votre commande ${order.orderNumber} a été expédiée!`, ar: `تم شحن طلبكم ${order.orderNumber}!` },
+          delivered: { en: `Your order ${order.orderNumber} has been delivered. Thank you!`, fr: `Votre commande ${order.orderNumber} a été livrée. Merci!`, ar: `تم توصيل طلبكم ${order.orderNumber}. شكراً!` },
+          cancelled: { en: `Your order ${order.orderNumber} has been cancelled.`, fr: `Votre commande ${order.orderNumber} a été annulée.`, ar: `تم إلغاء طلبكم ${order.orderNumber}.` },
+        };
+        if (statusTitles[status] && order.customerEmail) {
+          await storage.createStoreNotification({
+            customerEmail: order.customerEmail,
+            customerId: null,
+            orderNumber: order.orderNumber,
+            type: `order_${status}`,
+            title: statusTitles[status].en + " - " + order.orderNumber,
+            titleAr: statusTitles[status].ar + " - " + order.orderNumber,
+            titleFr: statusTitles[status].fr + " - " + order.orderNumber,
+            message: statusMsgs[status].en,
+            messageAr: statusMsgs[status].ar,
+            messageFr: statusMsgs[status].fr,
+            channel: "in_store",
+          });
+          const custLang = await storage.getStoreCustomerByEmail(order.customerEmail);
+          sendOrderStatusEmail(order.customerEmail, order.customerName || "Customer", order.orderNumber, status, order.total || 0, custLang?.language || "en").catch(() => {});
+        }
+      } catch {}
+
       res.json(updated);
     } catch (error) {
       handleError(res, "updateStoreOrderStatus", error);
@@ -3677,8 +3810,18 @@ export async function registerRoutes(
     try {
       const order = await storage.getStoreOrder(req.params.id);
       if (!order) return res.status(404).json({ error: "Order not found" });
+      if (order.paymentConfirmed) return res.json(order);
       const result = await storage.confirmStoreOrderPayment(req.params.id);
       if (!result) return res.status(404).json({ error: "Order not found" });
+      try {
+        if (order.paymentMethod && order.total) {
+          const wallets = await storage.getPaymentWallets();
+          const matchedWallet = wallets.find(w => w.name === order.paymentMethod || w.nameAr === order.paymentMethod || w.nameFr === order.paymentMethod);
+          if (matchedWallet) {
+            await storage.creditWalletBalance(matchedWallet.id, order.total);
+          }
+        }
+      } catch {}
       try {
         await storage.createAuditLog({
           userId: req.session.userId,
@@ -3690,6 +3833,23 @@ export async function registerRoutes(
           ipAddress: req.ip || null,
           createdAt: new Date().toISOString(),
         });
+      } catch {}
+      try {
+        if (order.customerEmail) {
+          await storage.createStoreNotification({
+            customerEmail: order.customerEmail,
+            customerId: null,
+            orderNumber: order.orderNumber,
+            type: "payment_confirmed",
+            title: `Payment Confirmed - ${order.orderNumber}`,
+            titleAr: `تم تأكيد الدفع - ${order.orderNumber}`,
+            titleFr: `Paiement Confirmé - ${order.orderNumber}`,
+            message: `Your payment of ${(order.total || 0).toFixed(2)} MRU for order ${order.orderNumber} has been confirmed.`,
+            messageAr: `تم تأكيد دفعتك بمبلغ ${(order.total || 0).toFixed(2)} أوقية للطلب ${order.orderNumber}.`,
+            messageFr: `Votre paiement de ${(order.total || 0).toFixed(2)} MRU pour la commande ${order.orderNumber} a été confirmé.`,
+            channel: "in_store",
+          });
+        }
       } catch {}
       res.json(result);
     } catch (error) {
@@ -3775,6 +3935,174 @@ export async function registerRoutes(
       res.json({ success: true });
     } catch (error) {
       handleError(res, "deletePaymentWallet", error);
+    }
+  });
+
+  // ==========================================
+  // ADMIN: Store Customers
+  // ==========================================
+
+  app.get("/api/store-customers", requireAuth, async (_req: Request, res: Response) => {
+    try {
+      const customers = await storage.getAllStoreCustomers();
+      const orders = await storage.getStoreOrders();
+      const enriched = customers.map(c => {
+        const customerOrders = orders.filter(o => o.customerEmail?.toLowerCase() === c.email.toLowerCase());
+        return {
+          ...c,
+          password: undefined,
+          resetToken: undefined,
+          resetTokenExpiry: undefined,
+          totalOrders: customerOrders.length,
+          totalSpent: customerOrders.filter(o => o.paymentConfirmed).reduce((sum, o) => sum + (o.total || 0), 0),
+        };
+      });
+      res.json(enriched);
+    } catch (error) {
+      handleError(res, "getStoreCustomers", error);
+    }
+  });
+
+  app.post("/api/store-customers/bulk-notify", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { customerIds, title, titleAr, titleFr, message, messageAr, messageFr, sendEmail: doSendEmail } = req.body;
+      if (!customerIds || !Array.isArray(customerIds) || customerIds.length === 0) {
+        return res.status(400).json({ error: "Customer IDs are required" });
+      }
+      const allCustomers = await storage.getAllStoreCustomers();
+      const selected = allCustomers.filter(c => customerIds.includes(c.id));
+      let sent = 0;
+      for (const customer of selected) {
+        try {
+          await storage.createStoreNotification({
+            customerEmail: customer.email,
+            customerId: customer.id,
+            orderNumber: null,
+            type: "marketing",
+            title: title || "LIMJIBA Update",
+            titleAr: titleAr || title || "تحديث لمجيبة",
+            titleFr: titleFr || title || "Mise à jour LIMJIBA",
+            message: message || "",
+            messageAr: messageAr || message || "",
+            messageFr: messageFr || message || "",
+            channel: "in_store",
+          });
+          if (doSendEmail) {
+            sendMarketingEmail(customer.email, customer.fullName, title || "LIMJIBA Update", message || "", messageFr || message || "", messageAr || message || "", customer.language || "en").catch(() => {});
+          }
+          sent++;
+        } catch {}
+      }
+      res.json({ sent, total: selected.length });
+    } catch (error) {
+      handleError(res, "bulkNotifyCustomers", error);
+    }
+  });
+
+  // ==========================================
+  // ADMIN: Dashboard Balance Sheet & Store Orders
+  // ==========================================
+
+  app.get("/api/dashboard/balance-sheet", requireAuth, async (_req: Request, res: Response) => {
+    try {
+      const settings = await storage.getStoreSettings();
+      const openingBalance = (settings as any)?.openingBalance || 0;
+      const wallets = await storage.getPaymentWallets();
+      const walletBalances = wallets.map(w => ({ id: w.id, name: w.name, balance: (w as any).balance || 0 }));
+      const totalWalletBalance = walletBalances.reduce((s, w) => s + w.balance, 0);
+
+      const allInvoices = await storage.getInvoices();
+      const invoiceIncome = allInvoices.filter(i => i.status === "paid").reduce((s, i) => s + (i.totalTTC || 0), 0);
+
+      const allSales = await storage.getSales();
+      const salesIncome = allSales.reduce((s, sale) => s + (sale.total || 0), 0);
+
+      const storeOrders = await storage.getStoreOrders();
+      const storeIncome = storeOrders.filter(o => o.paymentConfirmed).reduce((s, o) => s + (o.total || 0), 0);
+
+      const quickInvoices = await storage.getQuickInvoices();
+      const quickInvoiceIncome = quickInvoices.reduce((s, qi) => s + (qi.totalTTC || 0), 0);
+
+      const allExpenses = await storage.getExpenses();
+      const totalExpenses = allExpenses.reduce((s, e) => s + (e.amount || 0), 0);
+
+      const allSalaries = await storage.getSalaryPayments();
+      const totalSalaries = allSalaries.reduce((s, sp) => s + (sp.amount || 0), 0);
+
+      const totalIncome = invoiceIncome + salesIncome + storeIncome + quickInvoiceIncome;
+      const totalOutgoing = totalExpenses + totalSalaries;
+      const netProfit = totalIncome - totalOutgoing;
+      const currentBalance = openingBalance + netProfit;
+
+      res.json({
+        openingBalance,
+        walletBalances,
+        totalWalletBalance,
+        income: { invoices: invoiceIncome, sales: salesIncome, storeOrders: storeIncome, quickInvoices: quickInvoiceIncome, total: totalIncome },
+        outgoing: { expenses: totalExpenses, salaries: totalSalaries, total: totalOutgoing },
+        netProfit,
+        currentBalance,
+      });
+    } catch (error) {
+      handleError(res, "getBalanceSheet", error);
+    }
+  });
+
+  app.post("/api/dashboard/opening-balance", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { openingBalance } = req.body;
+      if (typeof openingBalance !== "number") return res.status(400).json({ error: "Opening balance must be a number" });
+      await storage.updateStoreSettings({ openingBalance } as any);
+      res.json({ success: true, openingBalance });
+    } catch (error) {
+      handleError(res, "setOpeningBalance", error);
+    }
+  });
+
+  app.get("/api/dashboard/store-orders-summary", requireAuth, async (_req: Request, res: Response) => {
+    try {
+      const storeOrders = await storage.getStoreOrders();
+      const allProducts = await storage.getProducts();
+      const productMap = new Map(allProducts.map(p => [p.id, p]));
+
+      const ordersWithProfit = storeOrders.map(order => {
+        let orderItems: any[] = [];
+        try { orderItems = JSON.parse(order.items); } catch {}
+        let orderProfit = 0;
+        const itemsWithProfit = orderItems.map(item => {
+          const product = productMap.get(item.productId);
+          const purchasePrice = product ? ((product as any).purchasePrice || 0) : 0;
+          const profit = (item.unitPrice - purchasePrice) * item.quantity;
+          orderProfit += profit;
+          return { ...item, purchasePrice, profit: Math.round(profit * 100) / 100 };
+        });
+        return {
+          id: order.id,
+          orderNumber: order.orderNumber,
+          customerName: order.customerName,
+          customerEmail: order.customerEmail,
+          total: order.total,
+          status: order.status,
+          paymentConfirmed: order.paymentConfirmed,
+          createdAt: order.createdAt,
+          items: itemsWithProfit,
+          profit: Math.round(orderProfit * 100) / 100,
+        };
+      });
+
+      const totalRevenue = storeOrders.filter(o => o.paymentConfirmed).reduce((s, o) => s + (o.total || 0), 0);
+      const totalProfit = ordersWithProfit.filter(o => o.paymentConfirmed).reduce((s, o) => s + o.profit, 0);
+
+      res.json({
+        orders: ordersWithProfit.slice(0, 50),
+        totalOrders: storeOrders.length,
+        totalRevenue: Math.round(totalRevenue * 100) / 100,
+        totalProfit: Math.round(totalProfit * 100) / 100,
+        confirmedOrders: storeOrders.filter(o => o.paymentConfirmed).length,
+        pendingOrders: storeOrders.filter(o => o.status === "pending").length,
+      });
+    } catch (error) {
+      handleError(res, "getStoreOrdersSummary", error);
     }
   });
 
