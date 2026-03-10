@@ -12,6 +12,7 @@ import type { StoreSettings, StoreNotification } from "@shared/schema";
 import { type StoreLanguage, getStoreTranslation } from "@/locales/store";
 import PwaInstallPrompt from "@/components/pwa-install-prompt";
 import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
+import aegisai360LogoPath from "@assets/aegisai360_logo.svg";
 
 interface StoreLanguageContextType {
   lang: StoreLanguage;
@@ -415,7 +416,14 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
             </div>
           </div>
           <div className="mt-10 pt-8 text-center text-sm text-gray-600" style={{ borderTop: "1px solid rgba(201,168,76,0.1)" }}>
-            &copy; {new Date().getFullYear()} {storeName} / لمجيبة. {t("footer.rights")}.
+            <div>&copy; {new Date().getFullYear()} {storeName} / لمجيبة. {t("footer.rights")}.</div>
+            <div className="mt-3 flex items-center justify-center gap-1.5">
+              <span className="text-xs text-gray-500">Powered by</span>
+              <a href="https://aegisai360.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-medium transition-opacity hover:opacity-80" style={{ color: "#d4a520" }} data-testid="link-aegisai360">
+                <img src={aegisai360LogoPath} alt="AegisAI360" className="h-4 w-4" />
+                AegisAI360
+              </a>
+            </div>
           </div>
         </div>
       </footer>
