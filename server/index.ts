@@ -154,6 +154,19 @@ const blockedPathPatterns = [
   /^\/_profiler(?:\/|$)/i,
   /^\/\.well-known\/(?!acme-challenge)/i,
   /\.(bak|old|orig|save|swp|temp|sql|tar\.gz|tar|gz|zip|rar|7z)$/i,
+  /^\/drupal(?:\/|$)/i,
+  /^\/user\/(login|register|password)(?:\/|$)/i,
+  /^\/CHANGELOG\.txt$/i,
+  /^\/jmx-console(?:\/|$)/i,
+  /^\/manager(?:\/|$)/i,
+  /^\/web-console(?:\/|$)/i,
+  /^\/status(?:\/|$)/i,
+  /^\/node\/\d/i,
+  /^\/sites\/default(?:\/|$)/i,
+  /^\/misc\/drupal\.js/i,
+  /^\/invoke(?:\/|$)/i,
+  /^\/jbossws(?:\/|$)/i,
+  /^\/host-manager(?:\/|$)/i,
 ];
 
 app.use((req, res, next) => {
