@@ -839,10 +839,10 @@ function ViewTransportDialog({
     const tagline = branding?.companyInfo?.tagline || "Complete E-Commerce Management System";
     const address = branding?.companyInfo?.address || "";
     const phone = branding?.companyInfo?.phone || "";
-    const primaryColor = branding?.primaryColor || "#1976D2";
+    const primaryColor = branding?.primaryColor || "#0A1628";
     const directionLabel = getDirectionShortLabel(invoice.direction, t);
-    const directionColors: Record<string, string> = { delivery: "#1565C0", return: "#E65100", client_return: "#2E7D32" };
-    const directionColor = directionColors[invoice.direction] || "#1565C0";
+    const directionColors: Record<string, string> = { delivery: "#0A1628", return: "#E65100", client_return: "#2E7D32" };
+    const directionColor = directionColors[invoice.direction] || "#0A1628";
     const currency = t("common.currency");
     const hasValues = invoice.items.some(item => (item.unitPrice || 0) > 0);
 

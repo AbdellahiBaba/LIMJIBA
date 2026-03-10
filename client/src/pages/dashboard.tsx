@@ -230,7 +230,7 @@ function getActivityColor(type: string) {
     case "sale": return "text-green-500";
     case "invoice": return "text-primary";
     case "expense": return "text-orange-500";
-    case "quick_invoice": return "text-blue-500";
+    case "quick_invoice": return "text-primary";
     default: return "text-muted-foreground";
   }
 }

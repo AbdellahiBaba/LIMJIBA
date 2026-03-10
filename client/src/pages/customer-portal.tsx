@@ -126,7 +126,7 @@ export default function CustomerPortal() {
   }
 
   const { customer, transactions, branding } = data;
-  const primaryColor = branding.primaryColor || "#1976D2";
+  const primaryColor = branding.primaryColor || "#0A1628";
   const isOverLimit = customer.currentBalance > customer.creditLimit;
 
   return (

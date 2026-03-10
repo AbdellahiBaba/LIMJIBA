@@ -280,7 +280,7 @@ export default function QuickInvoice() {
     const tagline = branding?.companyInfo?.tagline || "Complete E-Commerce Management System";
     const address = branding?.companyInfo?.address || "";
     const phone = branding?.companyInfo?.phone || "";
-    const primaryColor = branding?.primaryColor || "#1976D2";
+    const primaryColor = branding?.primaryColor || "#0A1628";
 
     const printItems = filledItems;
 

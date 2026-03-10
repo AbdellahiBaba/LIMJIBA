@@ -541,7 +541,7 @@ export default function InvoiceView() {
                   invoice.deliveryStatus === "prepared"
                     ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
                     : invoice.deliveryStatus === "shipped"
-                    ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400"
+                    ? "bg-primary/10 text-primary dark:bg-primary/20 dark:text-primary"
                     : invoice.deliveryStatus === "delivered"
                     ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
                     : "bg-muted text-muted-foreground"

@@ -24,7 +24,7 @@ function extractColorsFromImage(imageUrl: string): Promise<{ primary: string; ac
       const canvas = document.createElement("canvas");
       const ctx = canvas.getContext("2d");
       if (!ctx) {
-        resolve({ primary: "#1976D2", accent: "#42A5F5" });
+        resolve({ primary: "#0A1628", accent: "#C9A84C" });
         return;
       }
       
@@ -52,7 +52,7 @@ function extractColorsFromImage(imageUrl: string): Promise<{ primary: string; ac
       const sorted = Object.entries(colorCounts).sort((a, b) => b[1] - a[1]);
       
       if (sorted.length === 0) {
-        resolve({ primary: "#1976D2", accent: "#42A5F5" });
+        resolve({ primary: "#0A1628", accent: "#C9A84C" });
         return;
       }
       
@@ -67,7 +67,7 @@ function extractColorsFromImage(imageUrl: string): Promise<{ primary: string; ac
       resolve({ primary, accent });
     };
     img.onerror = () => {
-      resolve({ primary: "#1976D2", accent: "#42A5F5" });
+      resolve({ primary: "#0A1628", accent: "#C9A84C" });
     };
     img.src = imageUrl;
   });
