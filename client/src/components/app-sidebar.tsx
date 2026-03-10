@@ -50,31 +50,31 @@ export function AppSidebar() {
   const { user } = useAuth();
 
   const menuItems = [
-    { title: t("nav.dashboard"), url: "/", icon: LayoutDashboard, testId: "nav-dashboard", permission: "dashboard" },
-    { title: t("nav.invoices"), url: "/invoices", icon: FileText, testId: "nav-invoices", permission: "invoices" },
-    { title: t("nav.quickInvoice"), url: "/quick-invoice", icon: FilePen, testId: "nav-quick-invoice", permission: "invoices" },
-    { title: t("nav.stock"), url: "/stock", icon: Package, testId: "nav-stock", permission: "stock" },
-    { title: t("nav.pos"), url: "/pos", icon: ShoppingCart, testId: "nav-pos", permission: "pos" },
-    { title: t("nav.sales"), url: "/sales", icon: History, testId: "nav-sales", permission: "sales" },
-    { title: t("nav.resellers"), url: "/resellers", icon: Gift, testId: "nav-resellers", permission: "resellers" },
-    { title: t("nav.customers"), url: "/customers", icon: UserCircle, testId: "nav-customers", permission: "customers" },
-    { title: t("nav.suppliers"), url: "/suppliers", icon: Truck, testId: "nav-suppliers", permission: "suppliers" },
-    { title: t("nav.purchaseOrders"), url: "/purchase-orders", icon: ClipboardList, testId: "nav-purchase-orders", permission: "purchase_orders" },
-    { title: t("nav.transportation"), url: "/transportation", icon: PackageCheck, testId: "nav-transportation", permission: "transportation" },
-    { title: t("nav.salaries"), url: "/salaries", icon: Users, testId: "nav-salaries", permission: "salaries" },
-    { title: t("nav.expenses"), url: "/expenses", icon: Receipt, testId: "nav-expenses", permission: "expenses" },
-    { title: t("nav.reports"), url: "/reports", icon: BarChart3, testId: "nav-reports", permission: "reports" },
-    { title: t("nav.branding"), url: "/branding", icon: Palette, testId: "nav-branding", permission: "branding" },
-    { title: t("nav.profit"), url: "/profit", icon: Calculator, testId: "nav-profit", permission: "reports" },
-    { title: t("nav.auditLog"), url: "/audit-log", icon: ScrollText, testId: "nav-audit-log", permission: "audit_log" },
-    { title: t("nav.settings"), url: "/settings", icon: Settings, testId: "nav-settings", permission: "settings" },
+    { title: t("nav.dashboard"), url: "/emanager-portal", icon: LayoutDashboard, testId: "nav-dashboard", permission: "dashboard" },
+    { title: t("nav.invoices"), url: "/emanager-portal/invoices", icon: FileText, testId: "nav-invoices", permission: "invoices" },
+    { title: t("nav.quickInvoice"), url: "/emanager-portal/quick-invoice", icon: FilePen, testId: "nav-quick-invoice", permission: "invoices" },
+    { title: t("nav.stock"), url: "/emanager-portal/stock", icon: Package, testId: "nav-stock", permission: "stock" },
+    { title: t("nav.pos"), url: "/emanager-portal/pos", icon: ShoppingCart, testId: "nav-pos", permission: "pos" },
+    { title: t("nav.sales"), url: "/emanager-portal/sales", icon: History, testId: "nav-sales", permission: "sales" },
+    { title: t("nav.resellers"), url: "/emanager-portal/resellers", icon: Gift, testId: "nav-resellers", permission: "resellers" },
+    { title: t("nav.customers"), url: "/emanager-portal/customers", icon: UserCircle, testId: "nav-customers", permission: "customers" },
+    { title: t("nav.suppliers"), url: "/emanager-portal/suppliers", icon: Truck, testId: "nav-suppliers", permission: "suppliers" },
+    { title: t("nav.purchaseOrders"), url: "/emanager-portal/purchase-orders", icon: ClipboardList, testId: "nav-purchase-orders", permission: "purchase_orders" },
+    { title: t("nav.transportation"), url: "/emanager-portal/transportation", icon: PackageCheck, testId: "nav-transportation", permission: "transportation" },
+    { title: t("nav.salaries"), url: "/emanager-portal/salaries", icon: Users, testId: "nav-salaries", permission: "salaries" },
+    { title: t("nav.expenses"), url: "/emanager-portal/expenses", icon: Receipt, testId: "nav-expenses", permission: "expenses" },
+    { title: t("nav.reports"), url: "/emanager-portal/reports", icon: BarChart3, testId: "nav-reports", permission: "reports" },
+    { title: t("nav.branding"), url: "/emanager-portal/branding", icon: Palette, testId: "nav-branding", permission: "branding" },
+    { title: t("nav.profit"), url: "/emanager-portal/profit", icon: Calculator, testId: "nav-profit", permission: "reports" },
+    { title: t("nav.auditLog"), url: "/emanager-portal/audit-log", icon: ScrollText, testId: "nav-audit-log", permission: "audit_log" },
+    { title: t("nav.settings"), url: "/emanager-portal/settings", icon: Settings, testId: "nav-settings", permission: "settings" },
   ];
 
   const storeMenuItems = [
-    { title: "Store Orders", url: "/store-orders", icon: ShoppingBag, testId: "nav-store-orders", permission: "dashboard" },
-    { title: "Promo Codes", url: "/promo-codes", icon: Tag, testId: "nav-promo-codes", permission: "dashboard" },
-    { title: "CMS", url: "/cms", icon: PanelTop, testId: "nav-cms", permission: "dashboard" },
-    { title: "LIMJIBA Agent", url: "/limjiba", icon: Bot, testId: "nav-limjiba", permission: "dashboard" },
+    { title: "Store Orders", url: "/emanager-portal/store-orders", icon: ShoppingBag, testId: "nav-store-orders", permission: "dashboard" },
+    { title: "Promo Codes", url: "/emanager-portal/promo-codes", icon: Tag, testId: "nav-promo-codes", permission: "dashboard" },
+    { title: "CMS", url: "/emanager-portal/cms", icon: PanelTop, testId: "nav-cms", permission: "dashboard" },
+    { title: "LIMJIBA Agent", url: "/emanager-portal/limjiba", icon: Bot, testId: "nav-limjiba", permission: "dashboard" },
   ];
 
   const visibleStoreItems = storeMenuItems.filter(

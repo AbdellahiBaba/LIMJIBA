@@ -63,32 +63,31 @@ import NotFound from "@/pages/not-found";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard} />
-      <Route path="/stock" component={Stock} />
-      <Route path="/invoices" component={Invoices} />
-      <Route path="/invoices/new" component={InvoiceForm} />
-      <Route path="/invoices/fabrication" component={FabricationInvoice} />
-      <Route path="/invoices/:id" component={InvoiceView} />
-      <Route path="/pos" component={POS} />
-      <Route path="/sales" component={Sales} />
-      <Route path="/resellers" component={Resellers} />
-      <Route path="/customers" component={Customers} />
-      <Route path="/suppliers" component={Suppliers} />
-      <Route path="/purchase-orders" component={PurchaseOrders} />
-      <Route path="/transportation" component={TransportationInvoice} />
-      <Route path="/salaries" component={Salaries} />
-      <Route path="/expenses" component={Expenses} />
-      <Route path="/branding" component={Branding} />
-      <Route path="/profit" component={ProfitCalculator} />
-      <Route path="/reports" component={Reports} />
-      <Route path="/audit-log" component={AuditLog} />
-      <Route path="/settings" component={Settings} />
-      <Route path="/quick-invoice" component={QuickInvoice} />
-      <Route path="/portal/:customerId" component={CustomerPortal} />
-      <Route path="/cms" component={CmsManagement} />
-      <Route path="/promo-codes" component={PromoCodesPage} />
-      <Route path="/store-orders" component={StoreOrdersAdmin} />
-      <Route path="/limjiba" component={LimjibaAdmin} />
+      <Route path="/emanager-portal" component={Dashboard} />
+      <Route path="/emanager-portal/stock" component={Stock} />
+      <Route path="/emanager-portal/invoices" component={Invoices} />
+      <Route path="/emanager-portal/invoices/new" component={InvoiceForm} />
+      <Route path="/emanager-portal/invoices/fabrication" component={FabricationInvoice} />
+      <Route path="/emanager-portal/invoices/:id" component={InvoiceView} />
+      <Route path="/emanager-portal/pos" component={POS} />
+      <Route path="/emanager-portal/sales" component={Sales} />
+      <Route path="/emanager-portal/resellers" component={Resellers} />
+      <Route path="/emanager-portal/customers" component={Customers} />
+      <Route path="/emanager-portal/suppliers" component={Suppliers} />
+      <Route path="/emanager-portal/purchase-orders" component={PurchaseOrders} />
+      <Route path="/emanager-portal/transportation" component={TransportationInvoice} />
+      <Route path="/emanager-portal/salaries" component={Salaries} />
+      <Route path="/emanager-portal/expenses" component={Expenses} />
+      <Route path="/emanager-portal/branding" component={Branding} />
+      <Route path="/emanager-portal/profit" component={ProfitCalculator} />
+      <Route path="/emanager-portal/reports" component={Reports} />
+      <Route path="/emanager-portal/audit-log" component={AuditLog} />
+      <Route path="/emanager-portal/settings" component={Settings} />
+      <Route path="/emanager-portal/quick-invoice" component={QuickInvoice} />
+      <Route path="/emanager-portal/cms" component={CmsManagement} />
+      <Route path="/emanager-portal/promo-codes" component={PromoCodesPage} />
+      <Route path="/emanager-portal/store-orders" component={StoreOrdersAdmin} />
+      <Route path="/emanager-portal/limjiba" component={LimjibaAdmin} />
       <Route component={NotFound} />
     </Switch>
   );
@@ -101,6 +100,7 @@ function StoreRouter() {
         <CartProvider>
           <StoreLayout>
             <Switch>
+              <Route path="/" component={StoreHome} />
               <Route path="/store" component={StoreHome} />
               <Route path="/store/products/:id" component={StoreProductDetail} />
               <Route path="/store/products" component={StoreProducts} />
@@ -113,6 +113,17 @@ function StoreRouter() {
               <Route path="/store/login" component={StoreLogin} />
               <Route path="/store/signup" component={StoreSignup} />
               <Route path="/store/profile" component={StoreProfile} />
+              <Route path="/products/:id" component={StoreProductDetail} />
+              <Route path="/products" component={StoreProducts} />
+              <Route path="/cart" component={StoreCart} />
+              <Route path="/checkout" component={StoreCheckout} />
+              <Route path="/orders" component={StoreOrders} />
+              <Route path="/about" component={StoreAbout} />
+              <Route path="/contact" component={StoreContact} />
+              <Route path="/terms" component={StoreTerms} />
+              <Route path="/login" component={StoreLogin} />
+              <Route path="/signup" component={StoreSignup} />
+              <Route path="/profile" component={StoreProfile} />
               <Route>
                 <div className="text-center py-20">
                   <h2 className="text-2xl font-bold text-gray-500">Page Not Found</h2>
@@ -216,27 +227,25 @@ function AppContent() {
   const { isAuthenticated, isLoading } = useAuth();
   const [location] = useLocation();
 
-  if (location === "/store" || location.startsWith("/store/")) {
-    return <StoreRouter />;
+  if (location.startsWith("/emanager-portal")) {
+    if (isLoading) {
+      return (
+        <div className="min-h-screen flex items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-primary" />
+        </div>
+      );
+    }
+    if (!isAuthenticated) {
+      return <Login />;
+    }
+    return <AuthenticatedApp />;
   }
 
   if (location.startsWith("/portal/")) {
     return <CustomerPortal />;
   }
 
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (!isAuthenticated) {
-    return <Login />;
-  }
-
-  return <AuthenticatedApp />;
+  return <StoreRouter />;
 }
 
 function App() {
