@@ -9,6 +9,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { ShoppingCart, ArrowRight, Star, Sparkles, Package, Shield, Truck, Award, ChevronRight, Clock, Flame, Eye, Heart, Zap, CheckCircle, Globe, Crown, Gift, Lock, Diamond, ThumbsUp, Medal, Gem, Quote } from "lucide-react";
 import type { Product, CmsBanner, StoreSettings, Category, StoreReview } from "@shared/schema";
 import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
+import { LogoAnimation } from "@/components/logo-animation";
 
 function DealCountdown({ accentColor }: { accentColor: string }) {
   const { t } = useStoreLanguage();
@@ -185,9 +186,24 @@ export default function StoreHome() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center w-full py-20">
           <div className="animate-fade-in-up">
-            <div className="mx-auto mb-8 w-24 h-24 md:w-32 md:h-32 rounded-2xl overflow-hidden animate-float" style={{ boxShadow: `0 0 60px rgba(201,168,76,0.3), 0 0 120px rgba(201,168,76,0.1)` }}>
-              <img src={logoImg} alt="LIMJIBA" className="w-full h-full object-contain bg-white/10 p-2" />
-            </div>
+            {(() => {
+              let hasPlayed = false;
+              try { hasPlayed = sessionStorage.getItem("limjiba-logo-animated") === "1"; } catch {}
+              if (hasPlayed) {
+                return (
+                  <div className="mx-auto mb-8 w-24 h-24 md:w-32 md:h-32 rounded-2xl overflow-hidden animate-float" style={{ boxShadow: "0 0 60px rgba(201,168,76,0.3), 0 0 120px rgba(201,168,76,0.1)" }} data-testid="img-hero-logo">
+                    <img src={logoImg} alt="LIMJIBA" className="w-full h-full object-contain bg-white/10 p-2" />
+                  </div>
+                );
+              }
+              return (
+                <LogoAnimation
+                  logoSrc={logoImg}
+                  size={128}
+                  onComplete={() => { try { sessionStorage.setItem("limjiba-logo-animated", "1"); } catch {} }}
+                />
+              );
+            })()}
           </div>
 
           <div className="animate-fade-in-up-delay-1">

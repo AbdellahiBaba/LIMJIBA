@@ -86,7 +86,8 @@ Preferred communication style: Simple, everyday language.
 ### Premium CSS System
 - **Arabic Typography:** Amiri (serif) auto-applied to all h1/h2/h3 headings in `.store-theme` when RTL. Tajawal/Cairo for body text. CSS classes: `.store-heading-ar` and `.brand-name-ar` for explicit Amiri usage.
 - **CSS Variables:** `--royal-navy`, `--royal-gold`, `--royal-gold-light`, `--royal-gold-dark`, `--deep-black`, `--ivory`, `--gold-gradient` defined in `.store-theme`.
-- **Animations:** `animate-fade-in-up` (with delay variants -1 through -3), `animate-float`, `gold-pulse`, `shimmer-slide`.
+- **Animations:** `animate-fade-in-up` (with delay variants -1 through -3), `animate-float`, `gold-pulse`, `shimmer-slide`, `logo-shine-sweep` (diagonal light sweep for logo reveal).
+- **Logo Assembly Animation:** Canvas-based particle/line/geometry animation on homepage hero. Particles, golden lines, and geometric shapes scatter then magnetically converge to form the LIMJIBA logo silhouette (pixel-sampled from logo image). Phases: scatter → converge → solidify (crossfade to real image) → shine sweep. Plays once per session (`sessionStorage`). Respects `prefers-reduced-motion`. Component: `client/src/components/logo-animation.tsx`.
 - **Premium Classes:** `store-card-premium` (hover zoom + gold border), `store-btn-gold` (gradient + shimmer + scale), `gold-text` (gradient text), `gold-divider` (subtle gold line), `hero-glow` (animated orbs), `glass-card`, `premium-badge`, `trust-badge`, `card-image` (zoom transition).
 
 ### Admin Portal

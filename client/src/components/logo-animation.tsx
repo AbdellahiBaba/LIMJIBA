@@ -85,6 +85,7 @@ export function LogoAnimation({
   const [animationDone, setAnimationDone] = useState(false);
   const [showShine, setShowShine] = useState(false);
   const animFrameRef = useRef<number>(0);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const runAnimation = useCallback(() => {
     const canvas = canvasRef.current;
@@ -327,7 +328,7 @@ export function LogoAnimation({
 
         if (progress >= 1) {
           setShowShine(true);
-          setTimeout(() => {
+          timeoutRef.current = setTimeout(() => {
             setAnimationDone(true);
             onComplete?.();
           }, 600);
@@ -357,6 +358,7 @@ export function LogoAnimation({
     return () => {
       cleanup?.();
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, [runAnimation]);
 

@@ -362,6 +362,15 @@ html[dir="rtl"] .right-0 {
   100% { background-position: 200% center; }
 }
 
+@keyframes logo-shine-sweep {
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(120%); }
+}
+
+.logo-shine-sweep {
+  animation: logo-shine-sweep 0.6s ease-in-out forwards;
+}
+
 .store-btn-gold {
   position: relative;
   overflow: hidden;
