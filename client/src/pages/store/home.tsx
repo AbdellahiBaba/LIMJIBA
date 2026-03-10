@@ -169,16 +169,18 @@ export default function StoreHome() {
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 md:gap-6">
               {featured.map(product => (
                 <div key={product.id} className="store-card-premium group rounded-2xl overflow-hidden" data-testid={`card-product-${product.id}`}>
-                  <div className="h-48 md:h-56 overflow-hidden relative" style={{ background: `linear-gradient(135deg, ${primaryColor}05, ${accentColor}08)` }}>
-                    {product.imageUrl ? (
-                      <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover card-image" data-testid={`img-product-${product.id}`} />
-                    ) : (
-                      <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100"><Package className="h-12 w-12 text-gray-300" /></div>
-                    )}
-                    <div className="absolute top-3 left-3">
-                      <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full" style={{ background: "rgba(10,22,40,0.85)", color: accentColor }}>{product.category}</span>
+                  <Link href={`/store/products/${product.id}`}>
+                    <div className="h-48 md:h-56 overflow-hidden relative cursor-pointer" style={{ background: `linear-gradient(135deg, ${primaryColor}05, ${accentColor}08)` }}>
+                      {product.imageUrl ? (
+                        <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover card-image" data-testid={`img-product-${product.id}`} />
+                      ) : (
+                        <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100"><Package className="h-12 w-12 text-gray-300" /></div>
+                      )}
+                      <div className="absolute top-3 left-3">
+                        <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full" style={{ background: "rgba(10,22,40,0.85)", color: accentColor }}>{product.category}</span>
+                      </div>
                     </div>
-                  </div>
+                  </Link>
                   <div className="p-4">
                     <Link href={`/store/products/${product.id}`}>
                       <h3 className="font-semibold text-sm mb-2 hover:underline cursor-pointer line-clamp-2" style={{ color: primaryColor }} data-testid={`link-product-${product.id}`}>{product.name}</h3>

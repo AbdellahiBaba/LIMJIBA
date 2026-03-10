@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { useRoute, Link } from "wouter";
+import { useRoute, Link, useLocation } from "wouter";
 import { useCart } from "@/contexts/cart-context";
 import { useStoreLanguage } from "@/components/store-layout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShoppingCart, ArrowLeft, Minus, Plus, Check, Package, AlertCircle, Shield, Truck } from "lucide-react";
+import { ShoppingCart, ArrowLeft, Minus, Plus, Check, Package, AlertCircle, Shield, Truck, CreditCard } from "lucide-react";
 import type { Product, StoreSettings } from "@shared/schema";
 
 export default function StoreProductDetail() {
@@ -13,6 +13,7 @@ export default function StoreProductDetail() {
   const productId = params?.id;
   const { addItem, getItemQuantity } = useCart();
   const { t, lang } = useStoreLanguage();
+  const [, setLocation] = useLocation();
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
@@ -50,6 +51,12 @@ export default function StoreProductDetail() {
     setAdded(true);
     setQuantity(1);
     setTimeout(() => setAdded(false), 2000);
+  };
+
+  const handleBuyNow = () => {
+    if (!product || !canAdd) return;
+    addItem({ productId: product.id, productName: product.name, unitPrice: product.unitPrice, category: product.category, imageUrl: product.imageUrl }, quantity, product.stockQuantity);
+    setLocation("/store/checkout");
   };
 
   if (isLoading) {
@@ -142,28 +149,44 @@ export default function StoreProductDetail() {
             )}
           </div>
 
-          <div className="flex items-center gap-4">
-            <div className="flex items-center rounded-xl overflow-hidden" style={{ border: "1px solid rgba(201,168,76,0.2)" }}>
-              <Button variant="ghost" size="sm" className="rounded-none h-12 w-12 p-0 hover:bg-gray-50" onClick={() => setQuantity(Math.max(1, quantity - 1))} data-testid="button-qty-minus">
-                <Minus className="h-4 w-4" />
-              </Button>
-              <span className="w-14 text-center font-bold text-lg" style={{ color: primaryColor }} data-testid="text-qty">{quantity}</span>
-              <Button variant="ghost" size="sm" className="rounded-none h-12 w-12 p-0 hover:bg-gray-50" onClick={() => setQuantity(Math.min(maxSelectableQty, quantity + 1))} disabled={quantity >= maxSelectableQty} data-testid="button-qty-plus">
-                <Plus className="h-4 w-4" />
+          <div className="space-y-3">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center rounded-xl overflow-hidden" style={{ border: "1px solid rgba(201,168,76,0.2)" }}>
+                <Button variant="ghost" size="sm" className="rounded-none h-12 w-12 p-0 hover:bg-gray-50" onClick={() => setQuantity(Math.max(1, quantity - 1))} data-testid="button-qty-minus">
+                  <Minus className="h-4 w-4" />
+                </Button>
+                <span className="w-14 text-center font-bold text-lg" style={{ color: primaryColor }} data-testid="text-qty">{quantity}</span>
+                <Button variant="ghost" size="sm" className="rounded-none h-12 w-12 p-0 hover:bg-gray-50" onClick={() => setQuantity(Math.min(maxSelectableQty, quantity + 1))} disabled={quantity >= maxSelectableQty} data-testid="button-qty-plus">
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+              <Button
+                size="lg"
+                className={`rounded-xl flex-1 font-bold h-12 text-base ${!canAdd && !added ? "" : added ? "" : "store-btn-gold"}`}
+                style={{
+                  backgroundColor: added ? "#22c55e" : !canAdd ? "#9ca3af" : undefined,
+                  color: added ? "white" : !canAdd ? "#fff" : "#0A1628"
+                }}
+                onClick={handleAddToCart}
+                disabled={!canAdd || maxSelectableQty === 0}
+                data-testid="button-add-to-cart"
+              >
+                {added ? <><Check className="h-5 w-5 mr-2" /> {t("detail.added")}</> : maxSelectableQty === 0 ? t("cart.maxAvailable") : <><ShoppingCart className="h-5 w-5 mr-2" /> {t("detail.addToCart")}</>}
               </Button>
             </div>
             <Button
               size="lg"
-              className={`rounded-xl flex-1 font-bold h-12 text-base ${!canAdd && !added ? "" : added ? "" : "store-btn-gold"}`}
+              className="rounded-xl w-full font-bold h-12 text-base"
               style={{
-                backgroundColor: added ? "#22c55e" : !canAdd ? "#9ca3af" : undefined,
-                color: added ? "white" : !canAdd ? "#fff" : "#0A1628"
+                backgroundColor: !canAdd ? "#9ca3af" : "#0A1628",
+                color: !canAdd ? "#fff" : "#C9A84C"
               }}
-              onClick={handleAddToCart}
+              onClick={handleBuyNow}
               disabled={!canAdd || maxSelectableQty === 0}
-              data-testid="button-add-to-cart"
+              data-testid="button-buy-now"
             >
-              {added ? <><Check className="h-5 w-5 mr-2" /> {t("detail.added")}</> : maxSelectableQty === 0 ? t("cart.maxAvailable") : <><ShoppingCart className="h-5 w-5 mr-2" /> {t("detail.addToCart")}</>}
+              <CreditCard className="h-5 w-5 mr-2" />
+              {lang === "ar" ? "اشترِ الآن" : lang === "fr" ? "Acheter maintenant" : "Buy Now"}
             </Button>
           </div>
 

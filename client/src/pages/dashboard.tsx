@@ -283,7 +283,7 @@ export default function Dashboard() {
   });
 
   const navigateToStockLowFilter = () => {
-    window.location.href = "/stock?filter=low";
+    window.location.href = "/emanager-portal/stock?filter=low";
   };
 
   const revenuePercent = filteredStats && (filteredStats.totalRevenue + filteredStats.totalExpenses) > 0
@@ -641,7 +641,7 @@ export default function Dashboard() {
                     {lowStockProducts.slice(0, 5).map((product) => (
                       <a
                         key={product.id}
-                        href={`/stock?filter=low&highlight=${product.id}`}
+                        href={`/emanager-portal/stock?filter=low&highlight=${product.id}`}
                         className="flex items-center justify-between gap-2 p-2 rounded-md bg-muted/50 hover-elevate"
                         data-testid={`low-stock-item-${product.id}`}
                       >
@@ -659,7 +659,7 @@ export default function Dashboard() {
                     ))}
                     {lowStockProducts.length > 5 && (
                       <a
-                        href="/stock?filter=low"
+                        href="/emanager-portal/stock?filter=low"
                         className="flex items-center justify-center gap-1 p-2 text-xs text-primary hover-elevate rounded-md"
                         data-testid="link-view-all-low-stock"
                       >
@@ -688,7 +688,7 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="p-3 sm:p-4 pt-0 grid gap-2 sm:gap-3 grid-cols-1 sm:grid-cols-2">
                 <a
-                  href="/invoices/new"
+                  href="/emanager-portal/invoices/new"
                   className="flex items-center gap-2 sm:gap-3 p-2 sm:p-4 rounded-md bg-muted hover-elevate"
                   data-testid="link-new-invoice"
                 >
@@ -699,7 +699,7 @@ export default function Dashboard() {
                   </div>
                 </a>
                 <a
-                  href="/pos"
+                  href="/emanager-portal/pos"
                   className="flex items-center gap-2 sm:gap-3 p-2 sm:p-4 rounded-md bg-muted hover-elevate"
                   data-testid="link-open-pos"
                 >
@@ -710,7 +710,7 @@ export default function Dashboard() {
                   </div>
                 </a>
                 <a
-                  href="/stock"
+                  href="/emanager-portal/stock"
                   className="flex items-center gap-2 sm:gap-3 p-2 sm:p-4 rounded-md bg-muted hover-elevate"
                   data-testid="link-manage-stock"
                 >
@@ -721,7 +721,7 @@ export default function Dashboard() {
                   </div>
                 </a>
                 <a
-                  href="/quick-invoice"
+                  href="/emanager-portal/quick-invoice"
                   className="flex items-center gap-2 sm:gap-3 p-2 sm:p-4 rounded-md bg-muted hover-elevate"
                   data-testid="link-quick-invoice"
                 >
