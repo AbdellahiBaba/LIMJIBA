@@ -1157,6 +1157,11 @@ async function runMigrations(): Promise<void> {
       )
     `);
 
+    try {
+      await client.query(`ALTER TABLE categories ADD COLUMN image_url TEXT`);
+      console.log('[DB] Added image_url to categories');
+    } catch {}
+
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);

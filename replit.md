@@ -96,7 +96,9 @@ Preferred communication style: Simple, everyday language.
 - **Store Customers Admin:** Page at `/emanager-portal/store-customers` listing all store customers with search, bulk selection, and bulk marketing notification sending (in-store notifications with trilingual title/message).
 
 ### Category Management
-- **Table:** `categories` in schema.ts with id, name, nameAr, nameFr, icon, sortOrder, isActive, createdAt.
+- **Table:** `categories` in schema.ts with id, name, nameAr, nameFr, icon, imageUrl, sortOrder, isActive, createdAt.
+- **Admin UI:** CMS page → Categories tab with full CRUD, Base64 image upload (max 2MB), trilingual names, sort order, active toggle.
+- **Store Display:** Homepage category grid shows uploaded category image when available, falls back to Package icon.
 - **API:** GET/POST/PUT/DELETE `/api/categories` (admin), GET `/api/store/categories` (public).
 - **Seeded Categories:** Electronics, Fashion, Home & Living, Beauty & Health, Food & Groceries, Sports & Outdoors, Books & Stationery, Accessories, Other.
 - **Stock Integration:** `stock.tsx` fetches categories dynamically from `/api/categories`.

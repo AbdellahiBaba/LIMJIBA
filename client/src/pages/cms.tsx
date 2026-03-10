@@ -13,7 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { FileText, Image, Settings, Save, Plus, Trash2, Edit, Loader2, Wallet, Upload, X, Palette, Truck, Shield, Award, Star, Heart, Zap, CheckCircle, Globe, Crown, Diamond, Gift, ThumbsUp, Lock, Medal, Gem, Package, Sparkles, Eye, Flame } from "lucide-react";
 import { SiWhatsapp, SiInstagram, SiFacebook, SiSnapchat, SiTiktok } from "react-icons/si";
-import type { CmsPage, CmsBanner, StoreSettings, PaymentWallet } from "@shared/schema";
+import type { CmsPage, CmsBanner, StoreSettings, PaymentWallet, Category, InsertCategory } from "@shared/schema";
 
 function PagesTab() {
   const { toast } = useToast();
@@ -790,6 +790,224 @@ function StoreContentTab() {
   );
 }
 
+function CategoriesTab() {
+  const { toast } = useToast();
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [form, setForm] = useState({ name: "", nameAr: "", nameFr: "", icon: "", imageUrl: "", sortOrder: 0, isActive: true });
+
+  const { data: categories = [], isLoading } = useQuery<Category[]>({ queryKey: ["/api/categories"] });
+
+  const createMutation = useMutation({
+    mutationFn: async (data: Partial<InsertCategory>) => {
+      await apiRequest("POST", "/api/categories", data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/store/categories"] });
+      toast({ title: "Category created" });
+      resetForm();
+    },
+    onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string; data: Partial<InsertCategory> }) => {
+      await apiRequest("PUT", `/api/categories/${id}`, data);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/store/categories"] });
+      toast({ title: "Category updated" });
+      setEditingId(null);
+    },
+    onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: async (id: string) => {
+      await apiRequest("DELETE", `/api/categories/${id}`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/categories"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/store/categories"] });
+      toast({ title: "Category deleted" });
+    },
+    onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
+  });
+
+  const resetForm = () => {
+    setForm({ name: "", nameAr: "", nameFr: "", icon: "", imageUrl: "", sortOrder: 0, isActive: true });
+    setShowAdd(false);
+    setEditingId(null);
+  };
+
+  const startEdit = (cat: Category) => {
+    setEditingId(cat.id);
+    setForm({
+      name: cat.name,
+      nameAr: cat.nameAr || "",
+      nameFr: cat.nameFr || "",
+      icon: cat.icon || "",
+      imageUrl: cat.imageUrl || "",
+      sortOrder: cat.sortOrder,
+      isActive: cat.isActive,
+    });
+    setShowAdd(false);
+  };
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Image must be under 2MB", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setForm(prev => ({ ...prev, imageUrl: reader.result as string }));
+    reader.readAsDataURL(file);
+  };
+
+  const handleSave = () => {
+    if (!form.name.trim()) {
+      toast({ title: "Category name is required", variant: "destructive" });
+      return;
+    }
+    const data = {
+      name: form.name.trim(),
+      nameAr: form.nameAr.trim() || null,
+      nameFr: form.nameFr.trim() || null,
+      icon: form.icon.trim() || null,
+      imageUrl: form.imageUrl || null,
+      sortOrder: form.sortOrder,
+      isActive: form.isActive,
+    };
+    if (editingId) {
+      updateMutation.mutate({ id: editingId, data });
+    } else {
+      createMutation.mutate(data);
+    }
+  };
+
+  const formCard = (showAdd || editingId) && (
+    <Card className="mb-4">
+      <CardHeader>
+        <CardTitle className="text-base">{editingId ? "Edit Category" : "Add Category"}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <Label>Name (English) *</Label>
+            <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} data-testid="input-category-name" />
+          </div>
+          <div>
+            <Label>Nom (Français)</Label>
+            <Input value={form.nameFr} onChange={e => setForm(p => ({ ...p, nameFr: e.target.value }))} data-testid="input-category-name-fr" />
+          </div>
+          <div>
+            <Label>الاسم (العربية)</Label>
+            <Input value={form.nameAr} onChange={e => setForm(p => ({ ...p, nameAr: e.target.value }))} dir="rtl" data-testid="input-category-name-ar" />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <div>
+            <Label>Sort Order</Label>
+            <Input type="number" value={form.sortOrder} onChange={e => setForm(p => ({ ...p, sortOrder: parseInt(e.target.value) || 0 }))} data-testid="input-category-sort" />
+          </div>
+          <div className="flex items-end gap-2">
+            <div className="flex items-center gap-2">
+              <Switch checked={form.isActive} onCheckedChange={v => setForm(p => ({ ...p, isActive: v }))} data-testid="switch-category-active" />
+              <Label>Active</Label>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <Label>Category Image</Label>
+          <div className="flex items-start gap-4 mt-1">
+            {form.imageUrl ? (
+              <div className="relative w-20 h-20 rounded-lg overflow-hidden border">
+                <img src={form.imageUrl} alt="Category" className="w-full h-full object-cover" />
+                <button onClick={() => setForm(p => ({ ...p, imageUrl: "" }))} className="absolute top-0 right-0 bg-red-500 text-white rounded-bl p-0.5" data-testid="button-remove-category-image">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <label className="w-20 h-20 rounded-lg border-2 border-dashed flex flex-col items-center justify-center cursor-pointer hover:border-gray-400 transition-colors">
+                <Upload className="h-5 w-5 text-gray-400" />
+                <span className="text-[10px] text-gray-400 mt-1">Upload</span>
+                <input type="file" accept="image/*" className="hidden" onChange={handleImageUpload} data-testid="input-category-image" />
+              </label>
+            )}
+            <p className="text-xs text-gray-500 mt-2">Max 2MB. Displayed on the store category section.</p>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <Button onClick={handleSave} disabled={createMutation.isPending || updateMutation.isPending} data-testid="button-save-category">
+            {(createMutation.isPending || updateMutation.isPending) ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+            {editingId ? "Update" : "Create"}
+          </Button>
+          <Button variant="outline" onClick={resetForm} data-testid="button-cancel-category">Cancel</Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+
+  return (
+    <div className="space-y-4">
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold">Categories ({categories.length})</h2>
+        {!showAdd && !editingId && (
+          <Button onClick={() => { resetForm(); setShowAdd(true); }} size="sm" data-testid="button-add-category">
+            <Plus className="h-4 w-4 mr-1" /> Add Category
+          </Button>
+        )}
+      </div>
+
+      {formCard}
+
+      {isLoading ? (
+        <div className="flex justify-center p-8"><Loader2 className="h-6 w-6 animate-spin" /></div>
+      ) : (
+        <div className="grid gap-3">
+          {categories.sort((a, b) => a.sortOrder - b.sortOrder).map(cat => (
+            <Card key={cat.id} className={!cat.isActive ? "opacity-60" : ""}>
+              <CardContent className="p-4 flex items-center gap-4">
+                {cat.imageUrl ? (
+                  <img src={cat.imageUrl} alt={cat.name} className="w-12 h-12 rounded-lg object-cover border" />
+                ) : (
+                  <div className="w-12 h-12 rounded-lg bg-gray-100 flex items-center justify-center">
+                    <Package className="h-5 w-5 text-gray-400" />
+                  </div>
+                )}
+                <div className="flex-1 min-w-0">
+                  <div className="font-medium" data-testid={`text-category-name-${cat.id}`}>{cat.name}</div>
+                  <div className="text-xs text-gray-500 flex gap-2">
+                    {cat.nameFr && <span>FR: {cat.nameFr}</span>}
+                    {cat.nameAr && <span>AR: {cat.nameAr}</span>}
+                  </div>
+                </div>
+                <Badge variant={cat.isActive ? "default" : "secondary"}>{cat.isActive ? "Active" : "Inactive"}</Badge>
+                <span className="text-xs text-gray-400">#{cat.sortOrder}</span>
+                <div className="flex gap-1">
+                  <Button size="sm" variant="ghost" onClick={() => startEdit(cat)} data-testid={`button-edit-category-${cat.id}`}>
+                    <Edit className="h-4 w-4" />
+                  </Button>
+                  <Button size="sm" variant="ghost" onClick={() => { if (confirm("Delete this category?")) deleteMutation.mutate(cat.id); }} data-testid={`button-delete-category-${cat.id}`}>
+                    <Trash2 className="h-4 w-4 text-red-500" />
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function CmsManagement() {
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto">
@@ -802,12 +1020,14 @@ export default function CmsManagement() {
         <TabsList className="mb-6 flex-wrap">
           <TabsTrigger value="pages" data-testid="tab-pages"><FileText className="h-4 w-4 mr-1" /> Pages</TabsTrigger>
           <TabsTrigger value="banners" data-testid="tab-banners"><Image className="h-4 w-4 mr-1" /> Banners</TabsTrigger>
+          <TabsTrigger value="categories" data-testid="tab-categories"><Package className="h-4 w-4 mr-1" /> Categories</TabsTrigger>
           <TabsTrigger value="wallets" data-testid="tab-wallets"><Wallet className="h-4 w-4 mr-1" /> Payment Wallets</TabsTrigger>
           <TabsTrigger value="settings" data-testid="tab-settings"><Settings className="h-4 w-4 mr-1" /> Store Settings</TabsTrigger>
           <TabsTrigger value="store-content" data-testid="tab-store-content"><Palette className="h-4 w-4 mr-1" /> Store Content</TabsTrigger>
         </TabsList>
         <TabsContent value="pages"><PagesTab /></TabsContent>
         <TabsContent value="banners"><BannersTab /></TabsContent>
+        <TabsContent value="categories"><CategoriesTab /></TabsContent>
         <TabsContent value="wallets"><PaymentWalletsTab /></TabsContent>
         <TabsContent value="settings"><SettingsTab /></TabsContent>
         <TabsContent value="store-content"><StoreContentTab /></TabsContent>

@@ -3565,7 +3565,7 @@ export async function registerRoutes(
   // ADMIN: Categories Management
   // ==========================================
 
-  app.get("/api/categories", requireAuth, async (req: Request, res: Response) => {
+  app.get("/api/categories", requirePermission("settings"), async (req: Request, res: Response) => {
     try {
       const cats = await storage.getCategories();
       res.json(cats);
@@ -3574,7 +3574,7 @@ export async function registerRoutes(
     }
   });
 
-  app.post("/api/categories", requireAuth, async (req: Request, res: Response) => {
+  app.post("/api/categories", requirePermission("settings"), async (req: Request, res: Response) => {
     try {
       const data = insertCategorySchema.parse(req.body);
       const cat = await storage.createCategory(data);
@@ -3584,7 +3584,7 @@ export async function registerRoutes(
     }
   });
 
-  app.put("/api/categories/:id", requireAuth, async (req: Request, res: Response) => {
+  app.put("/api/categories/:id", requirePermission("settings"), async (req: Request, res: Response) => {
     try {
       const data = insertCategorySchema.partial().parse(req.body);
       const updated = await storage.updateCategory(req.params.id, data);
@@ -3595,7 +3595,7 @@ export async function registerRoutes(
     }
   });
 
-  app.delete("/api/categories/:id", requireAuth, async (req: Request, res: Response) => {
+  app.delete("/api/categories/:id", requirePermission("settings"), async (req: Request, res: Response) => {
     try {
       const deleted = await storage.deleteCategory(req.params.id);
       if (!deleted) return res.status(404).json({ error: "Category not found" });

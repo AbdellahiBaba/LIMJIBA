@@ -321,8 +321,12 @@ export default function StoreHome() {
               {categories.slice(0, 8).map(cat => (
                 <Link key={cat.id} href={`/store/products?category=${encodeURIComponent(cat.name)}`}>
                   <div className="group rounded-2xl p-6 text-center cursor-pointer transition-all duration-300 hover:-translate-y-2 hover:shadow-lg" style={{ background: "white", border: "1px solid rgba(201,168,76,0.12)" }}>
-                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl mx-auto mb-3 flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${primaryColor}10, ${accentColor}15)` }}>
-                      <Package className="h-7 w-7" style={{ color: accentColor }} />
+                    <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl mx-auto mb-3 flex items-center justify-center overflow-hidden" style={{ background: cat.imageUrl ? "transparent" : `linear-gradient(135deg, ${primaryColor}10, ${accentColor}15)` }}>
+                      {cat.imageUrl ? (
+                        <img src={cat.imageUrl} alt={getCategoryName(cat)} className="w-full h-full object-cover rounded-xl" />
+                      ) : (
+                        <Package className="h-7 w-7" style={{ color: accentColor }} />
+                      )}
                     </div>
                     <h3 className="font-semibold text-sm md:text-base" style={{ color: primaryColor }}>{getCategoryName(cat)}</h3>
                     <ChevronRight className="h-4 w-4 mx-auto mt-2 opacity-0 group-hover:opacity-100 transition-opacity" style={{ color: accentColor }} />

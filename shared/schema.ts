@@ -780,6 +780,7 @@ export const categories = pgTable("categories", {
   nameAr: text("name_ar"),
   nameFr: text("name_fr"),
   icon: text("icon"),
+  imageUrl: text("image_url"),
   sortOrder: integer("sort_order").notNull().default(0),
   isActive: boolean("is_active").notNull().default(true),
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
