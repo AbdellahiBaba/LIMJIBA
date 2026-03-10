@@ -70,13 +70,14 @@ app.use(
   session({
     secret: process.env.SESSION_SECRET,
     name: "pfp_session",
-    resave: false,
+    rolling: true,
+    resave: true,
     saveUninitialized: false,
     store: createSessionStore(),
     cookie: {
       secure: isProduction,
       httpOnly: true,
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: 30 * 60 * 1000,
       sameSite: "lax",
       path: "/",
     },
