@@ -97,13 +97,20 @@ export default function PurchaseOrders() {
   });
 
   const receiveMutation = useMutation({
-    mutationFn: (id: string) => apiRequest("POST", `/api/purchase-orders/${id}/receive`),
-    onSuccess: () => {
+    mutationFn: async (id: string) => {
+      const res = await apiRequest("POST", `/api/purchase-orders/${id}/receive`);
+      return res.json();
+    },
+    onSuccess: (data: any) => {
       queryClient.invalidateQueries({ queryKey: ["/api/purchase-orders"] });
       queryClient.invalidateQueries({ queryKey: ["/api/products"] });
       queryClient.invalidateQueries({ queryKey: ["/api/payment-wallets"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/balance-sheet"] });
-      toast({ title: t("purchaseOrders.poReceived"), description: t("purchaseOrders.stockUpdated") });
+      let description = t("purchaseOrders.stockUpdated");
+      if (data?.walletDebited && data.newWalletBalance !== null) {
+        description += ` | ${data.walletName || "Wallet"}: ${Number(data.debitedAmount).toLocaleString()} MRU debited → New balance: ${Number(data.newWalletBalance).toLocaleString()} MRU`;
+      }
+      toast({ title: t("purchaseOrders.poReceived"), description });
     },
     onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
   });

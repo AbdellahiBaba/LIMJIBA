@@ -550,9 +550,15 @@ export async function registerRoutes(
       if (!po) return res.status(500).json({ error: "Failed to receive purchase order" });
 
       let walletDebited = false;
+      let newWalletBalance: number | null = null;
+      let walletName: string | null = null;
       if (po.paymentWalletId && po.totalAmount) {
         await storage.debitWalletBalance(po.paymentWalletId, po.totalAmount);
         walletDebited = true;
+        newWalletBalance = await storage.getWalletBalance(po.paymentWalletId);
+        const wallets = await storage.getPaymentWallets();
+        const w = wallets.find(w => w.id === po.paymentWalletId);
+        if (w) walletName = w.name;
       }
 
       await storage.createAuditLog({
@@ -561,11 +567,11 @@ export async function registerRoutes(
         action: "update",
         entity: "purchase_order",
         entityId: po.id,
-        details: JSON.stringify({ action: "received", orderNumber: po.orderNumber, walletDebited: walletDebited ? po.paymentWalletId : null, amount: walletDebited ? po.totalAmount : 0 }),
+        details: JSON.stringify({ action: "received", orderNumber: po.orderNumber, walletDebited: walletDebited ? po.paymentWalletId : null, amount: walletDebited ? po.totalAmount : 0, newWalletBalance }),
         ipAddress: req.ip || null,
         createdAt: new Date().toISOString(),
       });
-      res.json(po);
+      res.json({ ...po, walletDebited, debitedAmount: walletDebited ? po.totalAmount : 0, newWalletBalance, walletName });
     } catch (error) {
       handleError(res, "receivePurchaseOrder", error);
     }
