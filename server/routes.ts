@@ -538,16 +538,19 @@ export async function registerRoutes(
       if (!existing) return res.status(404).json({ error: "Purchase order not found" });
       if (existing.status === "received") return res.status(409).json({ error: "Purchase order already received" });
 
+      if (existing.paymentWalletId && existing.totalAmount) {
+        const balance = await storage.getWalletBalance(existing.paymentWalletId);
+        if (balance < existing.totalAmount) {
+          return res.status(400).json({ error: `Insufficient wallet balance. Available: ${balance.toLocaleString()} MRU, Required: ${existing.totalAmount.toLocaleString()} MRU` });
+        }
+      }
+
       const receivedBy = req.session.username || "unknown";
       const po = await storage.receivePurchaseOrder(req.params.id, receivedBy);
       if (!po) return res.status(500).json({ error: "Failed to receive purchase order" });
 
       let walletDebited = false;
       if (po.paymentWalletId && po.totalAmount) {
-        const balance = await storage.getWalletBalance(po.paymentWalletId);
-        if (balance < po.totalAmount) {
-          console.warn(`[PO Receive] Wallet ${po.paymentWalletId} has insufficient balance (${balance}) for PO ${po.orderNumber} (${po.totalAmount})`);
-        }
         await storage.debitWalletBalance(po.paymentWalletId, po.totalAmount);
         walletDebited = true;
       }
@@ -3973,11 +3976,13 @@ export async function registerRoutes(
   app.get("/api/store/support/conversations/:id/messages", async (req: Request, res: Response) => {
     try {
       const session = (req as any).session?.storeCustomer;
-      if (!session?.email) return res.status(401).json({ error: "Login required" });
+      const guestEmail = req.headers["x-support-email"] as string | undefined;
+      const email = session?.email || guestEmail;
+      if (!email) return res.status(401).json({ error: "Login required" });
 
       const conv = await storage.getSupportConversation(parseInt(req.params.id));
       if (!conv) return res.status(404).json({ error: "Conversation not found" });
-      if (conv.customerEmail !== session.email) return res.status(403).json({ error: "Access denied" });
+      if (conv.customerEmail !== email) return res.status(403).json({ error: "Access denied" });
 
       await storage.markSupportMessagesRead(conv.id, "admin");
       const messages = await storage.getSupportMessages(conv.id);
@@ -3990,19 +3995,21 @@ export async function registerRoutes(
   app.post("/api/store/support/conversations/:id/messages", async (req: Request, res: Response) => {
     try {
       const session = (req as any).session?.storeCustomer;
-      if (!session?.email) return res.status(401).json({ error: "Login required" });
+      const guestEmail = req.headers["x-support-email"] as string | undefined;
+      const email = session?.email || guestEmail;
+      if (!email) return res.status(401).json({ error: "Login required" });
 
       const { content } = req.body;
       if (!content?.trim() || content.trim().length > 5000) return res.status(400).json({ error: "Message content required (max 5000 chars)" });
 
       const conv = await storage.getSupportConversation(parseInt(req.params.id));
       if (!conv) return res.status(404).json({ error: "Conversation not found" });
-      if (conv.customerEmail !== session.email) return res.status(403).json({ error: "Access denied" });
+      if (conv.customerEmail !== email) return res.status(403).json({ error: "Access denied" });
 
       const msg = await storage.createSupportMessage({
         conversationId: conv.id,
         senderType: "customer",
-        senderName: session.fullName || conv.customerName,
+        senderName: session?.fullName || conv.customerName,
         content: content.trim(),
       });
 
@@ -4019,11 +4026,13 @@ export async function registerRoutes(
   app.get("/api/store/support/conversations/:id/poll", async (req: Request, res: Response) => {
     try {
       const session = (req as any).session?.storeCustomer;
-      if (!session?.email) return res.status(401).json({ error: "Login required" });
+      const guestEmail = req.headers["x-support-email"] as string | undefined;
+      const email = session?.email || guestEmail;
+      if (!email) return res.status(401).json({ error: "Login required" });
 
       const conv = await storage.getSupportConversation(parseInt(req.params.id));
       if (!conv) return res.status(404).json({ error: "Conversation not found" });
-      if (conv.customerEmail !== session.email) return res.status(403).json({ error: "Access denied" });
+      if (conv.customerEmail !== email) return res.status(403).json({ error: "Access denied" });
 
       const afterId = parseInt(req.query.after as string) || 0;
       const messages = await storage.getSupportMessagesSince(conv.id, afterId);
@@ -4246,7 +4255,11 @@ export async function registerRoutes(
 
   app.post("/api/wallets/:id/credit", requirePermission("suppliers"), async (req: Request, res: Response) => {
     try {
-      const { amount, note } = req.body;
+      const { amount, note, method } = req.body;
+      const validMethods = ["cash", "bank_transfer", "check_deposit", "mobile_wallet", "other"];
+      if (!method || !validMethods.includes(method)) {
+        return res.status(400).json({ error: "Method required: cash, bank_transfer, check_deposit, mobile_wallet, or other" });
+      }
       const parsedAmount = typeof amount === "number" ? amount : parseFloat(amount);
       if (!Number.isFinite(parsedAmount) || parsedAmount <= 0) {
         return res.status(400).json({ error: "Amount must be a positive number" });
@@ -4261,7 +4274,7 @@ export async function registerRoutes(
         action: "update",
         entity: "payment_wallet",
         entityId: req.params.id,
-        details: JSON.stringify({ action: "cash_credit", amount: parsedAmount, note: note || "", walletName: wallet.name }),
+        details: JSON.stringify({ action: "cash_credit", method, amount: parsedAmount, note: note || "", walletName: wallet.name }),
         ipAddress: req.ip || null,
         createdAt: new Date().toISOString(),
       });
@@ -4402,15 +4415,30 @@ export async function registerRoutes(
       const { openingBalance } = req.body;
       const parsedBalance = typeof openingBalance === "number" ? openingBalance : parseFloat(openingBalance);
       if (!Number.isFinite(parsedBalance)) return res.status(400).json({ error: "Opening balance must be a number" });
+
+      const wallets = await storage.getPaymentWallets();
+      const currentWallet = wallets.find(w => w.id === req.params.id);
+      if (!currentWallet) return res.status(404).json({ error: "Wallet not found" });
+
+      const oldOB = (currentWallet as any).openingBalance || 0;
+      const delta = parsedBalance - oldOB;
+
       const wallet = await storage.updatePaymentWallet(req.params.id, { openingBalance: parsedBalance } as any);
       if (!wallet) return res.status(404).json({ error: "Wallet not found" });
+
+      if (delta > 0) {
+        await storage.creditWalletBalance(req.params.id, delta);
+      } else if (delta < 0) {
+        await storage.debitWalletBalance(req.params.id, Math.abs(delta));
+      }
+
       await storage.createAuditLog({
         userId: req.session.userId,
         username: req.session.username || "system",
         action: "update",
         entity: "payment_wallet",
         entityId: req.params.id,
-        details: JSON.stringify({ action: "set_opening_balance", openingBalance: parsedBalance, walletName: wallet.name }),
+        details: JSON.stringify({ action: "set_opening_balance", openingBalance: parsedBalance, previousOpeningBalance: oldOB, balanceAdjustment: delta, walletName: (wallet as any).name || currentWallet.name }),
         ipAddress: req.ip || null,
         createdAt: new Date().toISOString(),
       });

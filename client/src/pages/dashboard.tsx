@@ -350,6 +350,7 @@ export default function Dashboard() {
   const [creditWalletName, setCreditWalletName] = useState("");
   const [creditAmount, setCreditAmount] = useState("");
   const [creditNote, setCreditNote] = useState("");
+  const [creditMethod, setCreditMethod] = useState("");
 
   const transferMutation = useMutation({
     mutationFn: (data: { fromWalletId: string; toWalletId: string; amount: number }) =>
@@ -365,14 +366,14 @@ export default function Dashboard() {
   });
 
   const creditMutation = useMutation({
-    mutationFn: (data: { walletId: string; amount: number; note: string }) =>
-      apiRequest("POST", `/api/wallets/${data.walletId}/credit`, { amount: data.amount, note: data.note }),
+    mutationFn: (data: { walletId: string; amount: number; note: string; method: string }) =>
+      apiRequest("POST", `/api/wallets/${data.walletId}/credit`, { amount: data.amount, note: data.note, method: data.method }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/balance-sheet"] });
       queryClient.invalidateQueries({ queryKey: ["/api/payment-wallets"] });
       toast({ title: "Wallet credited successfully" });
       setCreditDialogOpen(false);
-      setCreditAmount(""); setCreditNote("");
+      setCreditAmount(""); setCreditNote(""); setCreditMethod("");
     },
     onError: (e: Error) => toast({ title: e.message, variant: "destructive" }),
   });
@@ -1046,7 +1047,7 @@ export default function Dashboard() {
                           <div className="text-base font-bold">{w.balance.toLocaleString()} MRU</div>
                         </div>
                         <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity" style={{ color: "#22c55e" }} data-testid={`button-credit-wallet-${w.id}`}
-                          onClick={() => { setCreditWalletId(w.id); setCreditWalletName(w.name); setCreditAmount(""); setCreditNote(""); setCreditDialogOpen(true); }}>
+                          onClick={() => { setCreditWalletId(w.id); setCreditWalletName(w.name); setCreditAmount(""); setCreditNote(""); setCreditMethod(""); setCreditDialogOpen(true); }}>
                           <PlusCircle className="h-4 w-4" />
                         </Button>
                       </div>
@@ -1134,7 +1135,22 @@ export default function Dashboard() {
           </DialogHeader>
           <div className="space-y-4">
             <div className="space-y-2">
-              <Label className="text-sm">Amount (MRU)</Label>
+              <Label className="text-sm">Method *</Label>
+              <Select value={creditMethod} onValueChange={setCreditMethod}>
+                <SelectTrigger data-testid="select-credit-method">
+                  <SelectValue placeholder="Select payment method" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="cash">Cash</SelectItem>
+                  <SelectItem value="bank_transfer">Bank Transfer</SelectItem>
+                  <SelectItem value="check_deposit">Check Deposit</SelectItem>
+                  <SelectItem value="mobile_wallet">Mobile Wallet</SelectItem>
+                  <SelectItem value="other">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label className="text-sm">Amount (MRU) *</Label>
               <Input type="number" min="0" step="0.01" value={creditAmount} onChange={e => setCreditAmount(e.target.value)} placeholder="0.00" data-testid="input-credit-amount" />
             </div>
             <div className="space-y-2">
@@ -1144,8 +1160,8 @@ export default function Dashboard() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setCreditDialogOpen(false)}>Cancel</Button>
-            <Button disabled={!creditAmount || creditMutation.isPending} data-testid="button-confirm-credit"
-              onClick={() => creditMutation.mutate({ walletId: creditWalletId, amount: parseFloat(creditAmount) || 0, note: creditNote })}>
+            <Button disabled={!creditAmount || !creditMethod || creditMutation.isPending} data-testid="button-confirm-credit"
+              onClick={() => creditMutation.mutate({ walletId: creditWalletId, amount: parseFloat(creditAmount) || 0, note: creditNote, method: creditMethod })}>
               {creditMutation.isPending ? "Crediting..." : "Credit Wallet"}
             </Button>
           </DialogFooter>

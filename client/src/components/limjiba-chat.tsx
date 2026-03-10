@@ -108,6 +108,7 @@ export default function LimjibaChat() {
   const [guestEmail, setGuestEmail] = useState("");
   const lastSupportMsgIdRef = useRef<number>(0);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const guestEmailRef = useRef<string>("");
 
   const isLoggedIn = useCallback(() => {
     return document.cookie.includes("connect.sid") || !!localStorage.getItem("store-customer");
@@ -130,17 +131,28 @@ export default function LimjibaChat() {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages, supportMessages]);
 
+  const getSupportHeaders = useCallback((): HeadersInit => {
+    const headers: HeadersInit = {};
+    if (!isLoggedIn() && guestEmailRef.current) {
+      headers["x-support-email"] = guestEmailRef.current;
+    }
+    return headers;
+  }, [isLoggedIn]);
+
   const pollSupportMessages = useCallback(async () => {
     if (!supportConvId) return;
     try {
-      const res = await fetch(`/api/store/support/conversations/${supportConvId}/poll?after=${lastSupportMsgIdRef.current}`);
+      const res = await fetch(`/api/store/support/conversations/${supportConvId}/poll?after=${lastSupportMsgIdRef.current}`, {
+        headers: getSupportHeaders(),
+      });
+      if (!res.ok) return;
       const newMsgs: SupportMessage[] = await res.json();
       if (newMsgs.length > 0) {
         setSupportMessages(prev => [...prev, ...newMsgs]);
         lastSupportMsgIdRef.current = newMsgs[newMsgs.length - 1].id;
       }
     } catch {}
-  }, [supportConvId]);
+  }, [supportConvId, getSupportHeaders]);
 
   useEffect(() => {
     if (pollRef.current) clearInterval(pollRef.current);
@@ -164,14 +176,18 @@ export default function LimjibaChat() {
     setSupportConvId(convId);
     setSupportLoading(true);
     try {
-      const res = await fetch(`/api/store/support/conversations/${convId}/messages`);
-      const msgs: SupportMessage[] = await res.json();
-      setSupportMessages(msgs);
-      if (msgs.length > 0) lastSupportMsgIdRef.current = msgs[msgs.length - 1].id;
+      const res = await fetch(`/api/store/support/conversations/${convId}/messages`, {
+        headers: getSupportHeaders(),
+      });
+      if (res.ok) {
+        const msgs: SupportMessage[] = await res.json();
+        setSupportMessages(msgs);
+        if (msgs.length > 0) lastSupportMsgIdRef.current = msgs[msgs.length - 1].id;
+      }
     } catch {}
     setSupportLoading(false);
     setMode("support");
-  }, []);
+  }, [getSupportHeaders]);
 
   const sendAiMessage = async (text?: string) => {
     const userMsg = (text || input).trim();
@@ -215,6 +231,10 @@ export default function LimjibaChat() {
       if (guestName) body.customerName = guestName.trim();
       if (guestEmail) body.customerEmail = guestEmail.trim();
 
+      if (!isLoggedIn() && guestEmail.trim()) {
+        guestEmailRef.current = guestEmail.trim();
+      }
+
       const res = await fetch("/api/store/support/conversations", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -227,7 +247,22 @@ export default function LimjibaChat() {
         return;
       }
       const conv = await res.json();
-      await openSupportConversation(conv.id);
+
+      setSupportConvId(conv.id);
+      setSupportLoading(true);
+      try {
+        const msgsRes = await fetch(`/api/store/support/conversations/${conv.id}/messages`, {
+          headers: getSupportHeaders(),
+        });
+        if (msgsRes.ok) {
+          const msgs: SupportMessage[] = await msgsRes.json();
+          setSupportMessages(msgs);
+          if (msgs.length > 0) lastSupportMsgIdRef.current = msgs[msgs.length - 1].id;
+        }
+      } catch {}
+      setSupportLoading(false);
+      setMode("support");
+
       setNewSubject("");
       setNewMessage("");
       setGuestName("");
@@ -246,7 +281,7 @@ export default function LimjibaChat() {
     try {
       const res = await fetch(`/api/store/support/conversations/${supportConvId}/messages`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...getSupportHeaders() },
         body: JSON.stringify({ content }),
       });
       if (res.ok) {
