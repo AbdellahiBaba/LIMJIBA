@@ -246,14 +246,14 @@ function SettingsTab() {
             <div>
               <Label>Primary Color</Label>
               <div className="flex gap-2 mt-1">
-                <input type="color" value={form.primaryColor || "#4A0E4E"} onChange={e => setForm(f => ({ ...f, primaryColor: e.target.value }))} className="h-10 w-10 rounded cursor-pointer" />
+                <input type="color" value={form.primaryColor || "#1B3A6B"} onChange={e => setForm(f => ({ ...f, primaryColor: e.target.value }))} className="h-10 w-10 rounded cursor-pointer" />
                 <Input value={form.primaryColor || ""} onChange={e => setForm(f => ({ ...f, primaryColor: e.target.value }))} data-testid="input-primary-color" />
               </div>
             </div>
             <div>
               <Label>Accent Color</Label>
               <div className="flex gap-2 mt-1">
-                <input type="color" value={form.accentColor || "#D4AF37"} onChange={e => setForm(f => ({ ...f, accentColor: e.target.value }))} className="h-10 w-10 rounded cursor-pointer" />
+                <input type="color" value={form.accentColor || "#C9A84C"} onChange={e => setForm(f => ({ ...f, accentColor: e.target.value }))} className="h-10 w-10 rounded cursor-pointer" />
                 <Input value={form.accentColor || ""} onChange={e => setForm(f => ({ ...f, accentColor: e.target.value }))} data-testid="input-accent-color" />
               </div>
             </div>

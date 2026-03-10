@@ -23,8 +23,8 @@ export default function StoreProducts() {
     queryKey: ["/api/store/settings"],
   });
 
-  const primaryColor = settings?.primaryColor || "#4A0E4E";
-  const accentColor = settings?.accentColor || "#D4AF37";
+  const primaryColor = settings?.primaryColor || "#1B3A6B";
+  const accentColor = settings?.accentColor || "#C9A84C";
 
   const categories = products ? [...new Set(products.map(p => p.category))].sort() : [];
 

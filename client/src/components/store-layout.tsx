@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useCart } from "@/contexts/cart-context";
-import { ShoppingCart, Menu, X, Store, Home, Package, Phone, Info, FileText } from "lucide-react";
+import { ShoppingCart, Menu, X, Crown, Home, Package, Phone, Info, FileText } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import type { StoreSettings } from "@shared/schema";
@@ -24,18 +24,21 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
     queryKey: ["/api/store/settings"],
   });
 
-  const storeName = settings?.storeName || "Limjiba Store";
-  const primaryColor = settings?.primaryColor || "#4A0E4E";
-  const accentColor = settings?.accentColor || "#D4AF37";
+  const storeName = settings?.storeName || "LEMJIBA";
+  const primaryColor = settings?.primaryColor || "#1B3A6B";
+  const accentColor = settings?.accentColor || "#C9A84C";
 
   return (
     <div className="min-h-screen flex flex-col store-theme" style={{ "--store-primary": primaryColor, "--store-accent": accentColor } as React.CSSProperties}>
-      <header className="store-header sticky top-0 z-50 border-b" style={{ background: `linear-gradient(135deg, ${primaryColor}, ${primaryColor}dd)` }}>
+      <header className="store-header sticky top-0 z-50 border-b border-black/20" style={{ background: `linear-gradient(135deg, ${primaryColor}, #0A1628)` }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link href="/store" className="flex items-center gap-2 text-white no-underline" data-testid="link-store-home">
-              <Store className="h-7 w-7" style={{ color: accentColor }} />
-              <span className="text-xl font-bold tracking-tight">{storeName}</span>
+            <Link href="/store" className="flex items-center gap-3 text-white no-underline" data-testid="link-store-home">
+              <Crown className="h-7 w-7" style={{ color: accentColor }} />
+              <div className="flex flex-col leading-tight">
+                <span className="text-xl font-extrabold tracking-widest uppercase brand-name">{storeName}</span>
+                <span className="text-[10px] font-medium tracking-wide opacity-70 brand-name-ar">لمجيبه</span>
+              </div>
             </Link>
 
             <nav className="hidden md:flex items-center gap-1" data-testid="nav-store-desktop">
@@ -100,12 +103,16 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         {children}
       </main>
 
-      <footer className="border-t bg-gray-900 text-gray-300">
+      <footer className="border-t text-gray-300" style={{ background: "#0A1628" }}>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
-              <h3 className="text-lg font-bold text-white mb-3" style={{ color: accentColor }}>{storeName}</h3>
-              <p className="text-sm text-gray-400">{settings?.storeDescription || "Your trusted e-commerce destination."}</p>
+              <div className="flex items-center gap-2 mb-3">
+                <Crown className="h-5 w-5" style={{ color: accentColor }} />
+                <h3 className="text-lg font-extrabold tracking-widest uppercase brand-name" style={{ color: accentColor }}>{storeName}</h3>
+              </div>
+              <p className="text-xs tracking-wide opacity-60 brand-name-ar mb-2">لمجيبه</p>
+              <p className="text-sm text-gray-400">{settings?.storeDescription || "Your premium e-commerce destination."}</p>
             </div>
             <div>
               <h4 className="text-sm font-semibold text-white mb-3">Quick Links</h4>
@@ -125,8 +132,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               {settings?.contactAddress && <p className="text-sm text-gray-400">{settings.contactAddress}</p>}
             </div>
           </div>
-          <div className="mt-8 pt-8 border-t border-gray-700 text-center text-sm text-gray-500">
-            &copy; {new Date().getFullYear()} {storeName}. All rights reserved.
+          <div className="mt-8 pt-8 border-t border-gray-700/50 text-center text-sm text-gray-500">
+            &copy; {new Date().getFullYear()} {storeName} / لمجيبه. All rights reserved.
           </div>
         </div>
       </footer>

@@ -18,7 +18,7 @@ const QUICK_ACTIONS = [
 
 export default function LimjibaAdmin() {
   const [messages, setMessages] = useState<Message[]>([
-    { role: "assistant", content: "Hello! I'm Limjiba, your business assistant. I can help you with:\n\n• Sales analysis & best sellers\n• Stock alerts & restock suggestions\n• Promo code generation\n• Business insights\n\nWhat would you like to know?" }
+    { role: "assistant", content: "Hello! I'm LEMJIBA, your business assistant. I can help you with:\n\n• Sales analysis & best sellers\n• Stock alerts & restock suggestions\n• Promo code generation\n• Business insights\n\nWhat would you like to know?" }
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -55,8 +55,8 @@ export default function LimjibaAdmin() {
     <div className="p-4 sm:p-6 max-w-5xl mx-auto">
       <div className="mb-6">
         <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="text-limjiba-admin-title">
-          <Bot className="h-7 w-7 text-purple-600" />
-          Limjiba Agent
+          <Bot className="h-7 w-7 text-blue-700" />
+          LEMJIBA Agent
         </h1>
         <p className="text-sm text-muted-foreground mt-1">AI-powered business assistant for your store</p>
       </div>
@@ -66,12 +66,12 @@ export default function LimjibaAdmin() {
           <Button
             key={action.label}
             variant="outline"
-            className="h-auto py-3 flex flex-col items-center gap-1 text-xs hover:bg-purple-50 hover:border-purple-200"
+            className="h-auto py-3 flex flex-col items-center gap-1 text-xs hover:bg-blue-50 hover:border-blue-200"
             onClick={() => sendMessage(action.prompt)}
             disabled={loading}
             data-testid={`button-quick-${action.label.toLowerCase().replace(/\s/g, "-")}`}
           >
-            <action.icon className="h-4 w-4 text-purple-500" />
+            <action.icon className="h-4 w-4 text-blue-600" />
             {action.label}
           </Button>
         ))}
@@ -81,7 +81,7 @@ export default function LimjibaAdmin() {
         <CardHeader className="pb-3 border-b">
           <CardTitle className="text-sm flex items-center gap-2">
             <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-            Limjiba is online
+            LEMJIBA is online
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-1 flex flex-col p-0 overflow-hidden">
@@ -89,13 +89,13 @@ export default function LimjibaAdmin() {
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-3 ${msg.role === "user" ? "justify-end" : ""}`}>
                 {msg.role === "assistant" && (
-                  <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center shrink-0 mt-0.5">
-                    <Bot className="h-4 w-4 text-purple-600" />
+                  <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0 mt-0.5">
+                    <Bot className="h-4 w-4 text-blue-700" />
                   </div>
                 )}
                 <div className={`max-w-[80%] px-4 py-3 rounded-xl text-sm whitespace-pre-wrap ${
                   msg.role === "user"
-                    ? "bg-purple-600 text-white rounded-br-sm"
+                    ? "bg-blue-700 text-white rounded-br-sm"
                     : "bg-muted rounded-bl-sm"
                 }`} data-testid={`admin-chat-msg-${i}`}>
                   {msg.content}
@@ -109,11 +109,11 @@ export default function LimjibaAdmin() {
             ))}
             {loading && (
               <div className="flex gap-3">
-                <div className="h-8 w-8 rounded-full bg-purple-100 flex items-center justify-center shrink-0">
-                  <Bot className="h-4 w-4 text-purple-600" />
+                <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center shrink-0">
+                  <Bot className="h-4 w-4 text-blue-700" />
                 </div>
                 <div className="bg-muted rounded-xl rounded-bl-sm px-4 py-3">
-                  <Loader2 className="h-4 w-4 animate-spin text-purple-500" />
+                  <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
                 </div>
               </div>
             )}
@@ -124,7 +124,7 @@ export default function LimjibaAdmin() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === "Enter" && sendMessage()}
-                placeholder="Ask Limjiba about your business..."
+                placeholder="Ask LEMJIBA about your business..."
                 disabled={loading}
                 data-testid="input-admin-chat"
               />

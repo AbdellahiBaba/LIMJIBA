@@ -19,8 +19,8 @@ export default function StoreCheckout() {
   const promoCode = searchParams.get("promo") || "";
 
   const { data: settings } = useQuery<StoreSettings>({ queryKey: ["/api/store/settings"] });
-  const primaryColor = settings?.primaryColor || "#4A0E4E";
-  const accentColor = settings?.accentColor || "#D4AF37";
+  const primaryColor = settings?.primaryColor || "#1B3A6B";
+  const accentColor = settings?.accentColor || "#C9A84C";
 
   const placeOrder = useMutation({
     mutationFn: async () => {

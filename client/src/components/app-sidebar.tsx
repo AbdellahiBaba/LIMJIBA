@@ -200,7 +200,7 @@ export function AppSidebar() {
       permission: "dashboard",
     },
     {
-      title: "Limjiba Agent",
+      title: "LEMJIBA Agent",
       url: "/limjiba",
       icon: Bot,
       testId: "nav-limjiba",
@@ -231,14 +231,14 @@ export function AppSidebar() {
               className="w-10 h-10 rounded-md flex items-center justify-center"
               style={{ backgroundColor: branding.primaryColor }}
             >
-              <span className="text-white font-bold text-lg">ECM</span>
+              <span className="text-white font-bold text-lg">LMJ</span>
             </div>
           )}
           <div className="flex flex-col">
             <span className="font-semibold text-sm text-sidebar-foreground">
-              E-Commerce
+              LEMJIBA
             </span>
-            <span className="text-xs text-muted-foreground">Manager</span>
+            <span className="text-xs text-muted-foreground">لمجيبه</span>
           </div>
         </div>
       </SidebarHeader>

@@ -21,29 +21,29 @@ export default function StoreHome() {
     queryKey: ["/api/store/settings"],
   });
 
-  const accentColor = settings?.accentColor || "#D4AF37";
-  const primaryColor = settings?.primaryColor || "#4A0E4E";
+  const accentColor = settings?.accentColor || "#C9A84C";
+  const primaryColor = settings?.primaryColor || "#1B3A6B";
   const featured = products?.slice(0, 8) || [];
 
   return (
     <div className="store-page">
-      <section className="relative overflow-hidden py-20 md:py-32" style={{ background: `linear-gradient(135deg, ${primaryColor}, #1A0A2E)` }} data-testid="section-hero">
+      <section className="relative overflow-hidden py-20 md:py-32" style={{ background: `linear-gradient(135deg, ${primaryColor}, #0A1628)` }} data-testid="section-hero">
         <div className="absolute inset-0 opacity-10">
-          <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle at 25% 50%, rgba(212,175,55,0.3) 0%, transparent 50%), radial-gradient(circle at 75% 50%, rgba(212,175,55,0.2) 0%, transparent 50%)" }} />
+          <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle at 25% 50%, rgba(201,168,76,0.3) 0%, transparent 50%), radial-gradient(circle at 75% 50%, rgba(201,168,76,0.2) 0%, transparent 50%)" }} />
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-sm mb-6" style={{ backgroundColor: `${accentColor}20`, color: accentColor, border: `1px solid ${accentColor}40` }}>
             <Sparkles className="h-4 w-4" />
             Premium Quality Products
           </div>
-          <h1 className="text-4xl md:text-6xl font-bold text-white mb-6 tracking-tight">
+          <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-6 tracking-tight brand-name" style={{ letterSpacing: "0.05em" }}>
             {settings?.heroTitle || "Welcome to Our Store"}
           </h1>
           <p className="text-lg md:text-xl text-gray-300 mb-8 max-w-2xl mx-auto">
             {settings?.heroSubtitle || "Discover premium products at the best prices"}
           </p>
           <Link href="/store/products">
-            <Button size="lg" className="text-lg px-8 py-6 rounded-full font-semibold shadow-xl hover:scale-105 transition-transform" style={{ backgroundColor: accentColor, color: primaryColor }} data-testid="button-shop-now">
+            <Button size="lg" className="text-lg px-8 py-6 rounded-full font-semibold shadow-xl store-btn-gold" style={{ backgroundColor: accentColor, color: "#0A1628" }} data-testid="button-shop-now">
               Shop Now <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
           </Link>

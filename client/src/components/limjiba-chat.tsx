@@ -19,7 +19,7 @@ export default function LimjibaChat() {
   useEffect(() => {
     if (open && !greeted) {
       setGreeted(true);
-      setMessages([{ role: "assistant", content: "Welcome to our store! 👋 I'm Limjiba, your shopping assistant. How can I help you today?" }]);
+      setMessages([{ role: "assistant", content: "Welcome to our store! 👋 I'm LEMJIBA, your shopping assistant. How can I help you today?" }]);
     }
   }, [open, greeted]);
 
@@ -58,24 +58,24 @@ export default function LimjibaChat() {
         <button
           onClick={() => setOpen(true)}
           className="h-14 w-14 rounded-full shadow-xl flex items-center justify-center hover:scale-110 transition-transform animate-bounce-slow"
-          style={{ background: "linear-gradient(135deg, #4A0E4E, #1A0A2E)" }}
+          style={{ background: "linear-gradient(135deg, #1B3A6B, #0A1628)" }}
           data-testid="button-open-chat"
         >
           <MessageCircle className="h-6 w-6 text-white" />
-          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#D4AF37] animate-ping" />
-          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#D4AF37]" />
+          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#C9A84C] animate-ping" />
+          <span className="absolute -top-1 -right-1 h-4 w-4 rounded-full bg-[#C9A84C]" />
         </button>
       </div>
 
       <div className={`fixed bottom-6 right-6 z-50 transition-all duration-300 origin-bottom-right ${open ? "scale-100 opacity-100" : "scale-0 opacity-0 pointer-events-none"}`}>
         <div className="w-[360px] h-[500px] rounded-2xl shadow-2xl flex flex-col overflow-hidden border" style={{ background: "white" }}>
-          <div className="px-4 py-3 flex items-center justify-between" style={{ background: "linear-gradient(135deg, #4A0E4E, #1A0A2E)" }}>
+          <div className="px-4 py-3 flex items-center justify-between" style={{ background: "linear-gradient(135deg, #1B3A6B, #0A1628)" }}>
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "#D4AF3730" }}>
-                <Bot className="h-4 w-4" style={{ color: "#D4AF37" }} />
+              <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "#C9A84C30" }}>
+                <Bot className="h-4 w-4" style={{ color: "#C9A84C" }} />
               </div>
               <div>
-                <p className="text-white font-semibold text-sm">Limjiba Agent</p>
+                <p className="text-white font-semibold text-sm">LEMJIBA Agent</p>
                 <p className="text-white/60 text-xs">Your shopping assistant</p>
               </div>
             </div>
@@ -84,12 +84,12 @@ export default function LimjibaChat() {
             </Button>
           </div>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3" style={{ background: "linear-gradient(to bottom, #f8f6ff, #fff)" }}>
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3" style={{ background: "linear-gradient(to bottom, #f0f3f8, #fff)" }}>
             {messages.map((msg, i) => (
               <div key={i} className={`flex gap-2 ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                 {msg.role === "assistant" && (
-                  <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-1" style={{ backgroundColor: "#4A0E4E15" }}>
-                    <Bot className="h-3.5 w-3.5" style={{ color: "#4A0E4E" }} />
+                  <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-1" style={{ backgroundColor: "#1B3A6B15" }}>
+                    <Bot className="h-3.5 w-3.5" style={{ color: "#1B3A6B" }} />
                   </div>
                 )}
                 <div
@@ -98,22 +98,22 @@ export default function LimjibaChat() {
                       ? "rounded-br-sm text-white"
                       : "rounded-bl-sm text-gray-800 bg-white border shadow-sm"
                   }`}
-                  style={msg.role === "user" ? { background: "linear-gradient(135deg, #4A0E4E, #6B1D70)" } : {}}
+                  style={msg.role === "user" ? { background: "linear-gradient(135deg, #1B3A6B, #0A1628)" } : {}}
                   data-testid={`chat-msg-${i}`}
                 >
                   {msg.content}
                 </div>
                 {msg.role === "user" && (
-                  <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-1" style={{ backgroundColor: "#D4AF3720" }}>
-                    <User className="h-3.5 w-3.5" style={{ color: "#D4AF37" }} />
+                  <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-1" style={{ backgroundColor: "#C9A84C20" }}>
+                    <User className="h-3.5 w-3.5" style={{ color: "#C9A84C" }} />
                   </div>
                 )}
               </div>
             ))}
             {loading && (
               <div className="flex gap-2">
-                <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#4A0E4E15" }}>
-                  <Bot className="h-3.5 w-3.5" style={{ color: "#4A0E4E" }} />
+                <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0" style={{ backgroundColor: "#1B3A6B15" }}>
+                  <Bot className="h-3.5 w-3.5" style={{ color: "#1B3A6B" }} />
                 </div>
                 <div className="bg-white border shadow-sm rounded-2xl rounded-bl-sm px-4 py-3">
                   <div className="flex gap-1">
@@ -140,7 +140,7 @@ export default function LimjibaChat() {
               <Button
                 size="sm"
                 className="rounded-full h-9 w-9 p-0 shrink-0"
-                style={{ backgroundColor: "#4A0E4E" }}
+                style={{ backgroundColor: "#1B3A6B" }}
                 onClick={sendMessage}
                 disabled={!input.trim() || loading}
                 data-testid="button-send-chat"

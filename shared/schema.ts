@@ -693,10 +693,10 @@ export type CmsBanner = typeof cmsBanners.$inferSelect;
 
 export const storeSettings = pgTable("store_settings", {
   id: varchar("id").primaryKey().default(sql`'default'`),
-  storeName: text("store_name").notNull().default("Limjiba Store"),
+  storeName: text("store_name").notNull().default("LEMJIBA"),
   storeDescription: text("store_description").default(""),
-  primaryColor: text("primary_color").notNull().default("#4A0E4E"),
-  accentColor: text("accent_color").notNull().default("#D4AF37"),
+  primaryColor: text("primary_color").notNull().default("#1B3A6B"),
+  accentColor: text("accent_color").notNull().default("#C9A84C"),
   logoUrl: text("logo_url"),
   heroTitle: text("hero_title").default("Welcome to Our Store"),
   heroSubtitle: text("hero_subtitle").default("Discover premium products at the best prices"),

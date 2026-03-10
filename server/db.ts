@@ -783,10 +783,10 @@ async function runMigrations(): Promise<void> {
     await client.query(`
       CREATE TABLE IF NOT EXISTS store_settings (
         id VARCHAR PRIMARY KEY DEFAULT 'default',
-        store_name TEXT NOT NULL DEFAULT 'Limjiba Store',
+        store_name TEXT NOT NULL DEFAULT 'LEMJIBA',
         store_description TEXT DEFAULT '',
-        primary_color TEXT NOT NULL DEFAULT '#4A0E4E',
-        accent_color TEXT NOT NULL DEFAULT '#D4AF37',
+        primary_color TEXT NOT NULL DEFAULT '#1B3A6B',
+        accent_color TEXT NOT NULL DEFAULT '#C9A84C',
         logo_url TEXT,
         hero_title TEXT DEFAULT 'Welcome to Our Store',
         hero_subtitle TEXT DEFAULT 'Discover premium products at the best prices',
@@ -804,6 +804,15 @@ async function runMigrations(): Promise<void> {
       await client.query(`INSERT INTO store_settings (id) VALUES ('default')`);
       console.log('[DB] Seeded default store settings');
     }
+
+    await client.query(`
+      UPDATE store_settings 
+      SET store_name = 'LEMJIBA', 
+          primary_color = '#1B3A6B', 
+          accent_color = '#C9A84C' 
+      WHERE id = 'default' 
+        AND (primary_color = '#4A0E4E' OR store_name = 'Limjiba Store')
+    `);
 
     console.log('[DB] Schema migrations complete');
   } catch (error) {

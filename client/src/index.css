@@ -239,7 +239,20 @@ html[dir="rtl"] .right-0 {
 }
 
 .store-theme {
-  font-family: 'Roboto', 'Cairo', sans-serif;
+  font-family: 'Montserrat', 'Cairo', 'Roboto', sans-serif;
+}
+
+.brand-name {
+  font-family: 'Montserrat', sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.brand-name-ar {
+  font-family: 'Cairo', 'Tajawal', sans-serif;
+  font-weight: 600;
+  letter-spacing: 0.05em;
 }
 
 @keyframes bounce-once {
@@ -271,6 +284,46 @@ html[dir="rtl"] .right-0 {
 
 .store-header {
   backdrop-filter: blur(12px);
+}
+
+@keyframes gold-shimmer {
+  0% { background-position: -200% center; }
+  100% { background-position: 200% center; }
+}
+
+.store-btn-gold {
+  position: relative;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.store-btn-gold:hover {
+  box-shadow: 0 0 20px rgba(201, 168, 76, 0.4), 0 4px 15px rgba(0, 0, 0, 0.2);
+  transform: translateY(-1px);
+}
+
+.store-card-premium {
+  transition: all 0.3s ease;
+  border: 1px solid rgba(201, 168, 76, 0.1);
+}
+
+.store-card-premium:hover {
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(201, 168, 76, 0.15);
+  border-color: rgba(201, 168, 76, 0.3);
+}
+
+.gold-underline {
+  position: relative;
+}
+
+.gold-underline::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 40px;
+  height: 2px;
+  background: linear-gradient(90deg, #C9A84C, transparent);
 }
 
 .line-clamp-1 {

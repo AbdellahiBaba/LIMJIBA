@@ -55,7 +55,7 @@ async function getLowStockContext(): Promise<string> {
   return lines.length > 0 ? lines.join("\n") : "All products are well-stocked.";
 }
 
-const CUSTOMER_SYSTEM_PROMPT = `You are Limjiba, an intelligent and friendly e-commerce sales assistant. You work for this online store.
+const CUSTOMER_SYSTEM_PROMPT = `You are LEMJIBA, an intelligent and friendly e-commerce sales assistant for the LEMJIBA premium store.
 
 Your responsibilities:
 - Answer customer questions about products, availability, pricing, and stock
@@ -75,7 +75,7 @@ Rules:
 Current product catalog:
 {PRODUCTS}`;
 
-const ADMIN_SYSTEM_PROMPT = `You are Limjiba, an AI business assistant for the admin/owner of this e-commerce store.
+const ADMIN_SYSTEM_PROMPT = `You are LEMJIBA, an AI business assistant for the admin/owner of the LEMJIBA premium store.
 
 Your capabilities:
 - Analyze sales data and identify best-selling products
