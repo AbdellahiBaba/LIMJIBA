@@ -45,7 +45,7 @@ import {
   Tooltip,
   ResponsiveContainer,
 } from "recharts";
-import type { DashboardStats, RecentActivity } from "@shared/schema";
+import type { DashboardStats, RecentActivity, StoreSettings } from "@shared/schema";
 
 type SalesTrend = { month: string; sales: number; revenue: number };
 type TopProduct = { name: string; quantity: number; revenue: number };
@@ -265,6 +265,11 @@ export default function Dashboard() {
   const { data: recentActivity, isLoading: activityLoading } = useQuery<RecentActivity[]>({
     queryKey: ["/api/dashboard/recent-activity"],
     staleTime: 30000,
+  });
+
+  const { data: storeSettings } = useQuery<StoreSettings>({
+    queryKey: ["/api/store-settings"],
+    staleTime: 60000,
   });
 
   const { data: lowStockProducts, isLoading: lowStockLoading } = useQuery<LowStockProduct[]>({
@@ -738,24 +743,24 @@ export default function Dashboard() {
           {settings.showCompanyInfo && (
             <Card>
               <CardHeader className="p-3 sm:p-4 pb-2">
-                <CardTitle className="text-base sm:text-lg">{t("company.name")}</CardTitle>
+                <CardTitle className="text-base sm:text-lg">{storeSettings?.storeName || t("company.name")}</CardTitle>
               </CardHeader>
               <CardContent className="p-3 sm:p-4 pt-0 space-y-2 sm:space-y-3 text-xs sm:text-sm">
                 <div className="flex justify-between gap-2">
                   <span className="text-muted-foreground">{t("common.name")}</span>
-                  <span className="font-medium text-right">{t("company.name")}</span>
+                  <span className="font-medium text-right">{storeSettings?.storeName || t("company.name")}</span>
                 </div>
                 <div className="flex justify-between gap-2">
                   <span className="text-muted-foreground">{t("common.description")}</span>
-                  <span className="font-medium text-right text-[10px] sm:text-sm">{t("company.tagline")}</span>
+                  <span className="font-medium text-right text-[10px] sm:text-sm">{storeSettings?.storeDescription || t("company.tagline")}</span>
                 </div>
                 <div className="flex justify-between gap-2">
                   <span className="text-muted-foreground">{t("common.address")}</span>
-                  <span className="font-medium text-right text-[10px] sm:text-sm">{t("company.address")}</span>
+                  <span className="font-medium text-right text-[10px] sm:text-sm">{storeSettings?.contactAddress || t("company.address")}</span>
                 </div>
                 <div className="flex justify-between gap-2">
                   <span className="text-muted-foreground">{t("common.email")}</span>
-                  <span className="font-medium">{t("company.email")}</span>
+                  <span className="font-medium">{storeSettings?.contactEmail || t("company.email")}</span>
                 </div>
               </CardContent>
             </Card>

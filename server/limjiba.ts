@@ -314,9 +314,6 @@ export async function generatePromoCode(margin?: number): Promise<{
 }
 
 export async function getCustomerGreeting(language: string = "en"): Promise<string> {
-  const products = await storage.getStoreProducts();
-  const cats = [...new Set(products.map(p => p.category))].length;
-
   let promoLine = "";
   try {
     const promos = await storage.getPromoCodes();
@@ -333,9 +330,9 @@ export async function getCustomerGreeting(language: string = "en"): Promise<stri
   } catch {}
 
   const greetings: Record<string, string> = {
-    en: `Welcome to LIMJIBA! 🛍️ We have ${products.length} products in ${cats} categories. How can I help you today?${promoLine}`,
-    fr: `Bienvenue chez LIMJIBA! 🛍️ ${products.length} produits dans ${cats} catégories. Comment puis-je vous aider?${promoLine}`,
-    ar: `مرحباً بكم في لمجيبة! 🛍️ لدينا ${products.length} منتج في ${cats} فئات. كيف أساعدك؟${promoLine}`,
+    en: `Welcome to LIMJIBA! 🛍️ Your premium import destination in Mauritania. How can I help you today?${promoLine}`,
+    fr: `Bienvenue chez LIMJIBA! 🛍️ Votre destination d'importation premium en Mauritanie. Comment puis-je vous aider?${promoLine}`,
+    ar: `أهلاً وسهلاً بكم في لمجيبة! 🛍️ وجهتكم المميّزة للاستيراد الفاخر في موريتانيا. كيف أساعدكم؟${promoLine}`,
   };
   return greetings[language] || greetings.en;
 }

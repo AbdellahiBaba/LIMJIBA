@@ -161,21 +161,21 @@ export default function StoreHome() {
           </div>
 
           <div className="animate-fade-in-up-delay-1">
-            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm mb-6 premium-badge">
+            <div className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm mb-6 premium-badge ${lang === "ar" ? "brand-name-ar" : ""}`}>
               <Sparkles className="h-4 w-4" />
               <span className="font-medium">{t("home.badge")}</span>
             </div>
           </div>
 
-          <h1 className="animate-fade-in-up-delay-1 text-4xl md:text-6xl lg:text-7xl font-extrabold text-white mb-4 tracking-tight brand-name" style={{ letterSpacing: "0.08em" }}>
+          <h1 className={`animate-fade-in-up-delay-1 text-4xl md:text-6xl lg:text-7xl font-extrabold text-white mb-4 tracking-tight ${lang === "ar" ? "brand-name-ar" : "brand-name"}`} style={{ letterSpacing: lang === "ar" ? "0" : "0.08em" }}>
             {settings?.heroTitle || t("home.heroTitle")}
           </h1>
 
-          <p className="animate-fade-in-up-delay-2 text-lg md:text-xl lg:text-2xl mb-4 max-w-3xl mx-auto font-serif-brand" style={{ color: accentColor }}>
+          <p className={`animate-fade-in-up-delay-2 text-lg md:text-xl lg:text-2xl mb-4 max-w-3xl mx-auto ${lang === "ar" ? "brand-name-ar" : "font-serif-brand"}`} style={{ color: accentColor }}>
             {t("home.badge")}
           </p>
 
-          <p className="animate-fade-in-up-delay-2 text-base md:text-lg text-gray-400 mb-10 max-w-2xl mx-auto">
+          <p className={`animate-fade-in-up-delay-2 text-base md:text-lg text-gray-400 mb-10 max-w-2xl mx-auto ${lang === "ar" ? "brand-name-ar" : ""}`}>
             {settings?.heroSubtitle || t("home.heroSubtitle")}
           </p>
 

@@ -20,6 +20,32 @@ const QUICK_ACTIONS: Record<string, { en: string; fr: string; ar: string }[]> = 
   ],
 };
 
+function renderMessageContent(content: string) {
+  const linkPattern = /((?:https?:\/\/[^\s]+)|(?:\/store\/[^\s,.)]+))/g;
+  const parts = content.split(linkPattern);
+  if (parts.length === 1) return content;
+  const checkLink = /^(?:https?:\/\/|\/store\/)/;
+  return parts.map((part, i) => {
+    if (checkLink.test(part)) {
+      const isExternal = part.startsWith("http");
+      return (
+        <a
+          key={i}
+          href={part}
+          target={isExternal ? "_blank" : "_self"}
+          rel={isExternal ? "noopener noreferrer" : undefined}
+          className="underline font-medium"
+          style={{ color: "#C9A84C" }}
+          data-testid={`chat-link-${i}`}
+        >
+          {part}
+        </a>
+      );
+    }
+    return part;
+  });
+}
+
 export default function LimjibaChat() {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -124,7 +150,7 @@ export default function LimjibaChat() {
                   style={msg.role === "user" ? { background: "linear-gradient(135deg, #0A1628, #0D1520)" } : {}}
                   data-testid={`chat-msg-${i}`}
                 >
-                  {msg.content}
+                  {renderMessageContent(msg.content)}
                 </div>
                 {msg.role === "user" && (
                   <div className="h-7 w-7 rounded-full flex items-center justify-center shrink-0 mt-1" style={{ backgroundColor: "#C9A84C20" }}>
