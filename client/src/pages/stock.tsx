@@ -654,6 +654,13 @@ export function ProductFormPage() {
   }, [existingVariants, initialized, isEditing]);
 
   useEffect(() => {
+    if (hasOptions) {
+      const totalVariantStock = variants.reduce((sum, v) => sum + (v.stockQuantity || 0), 0);
+      setFormData(prev => prev.stockQuantity !== totalVariantStock ? { ...prev, stockQuantity: totalVariantStock } : prev);
+    }
+  }, [hasOptions, variants]);
+
+  useEffect(() => {
     const pp = formData.purchasePrice || 0;
     const sc = formData.shippingCost || 0;
     const ac = formData.additionalCost || 0;
@@ -986,8 +993,13 @@ export function ProductFormPage() {
                     value={formData.stockQuantity}
                     onChange={(e) => setFormData(prev => ({ ...prev, stockQuantity: e.target.value === "" ? 0 as any : parseInt(e.target.value) }))}
                     required
+                    readOnly={hasOptions && variants.length > 0}
+                    className={hasOptions && variants.length > 0 ? "bg-muted cursor-not-allowed" : ""}
                     data-testid="input-stock-quantity"
                   />
+                  {hasOptions && variants.length > 0 && (
+                    <p className="text-xs text-muted-foreground">Auto-calculated from variant quantities</p>
+                  )}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="lowStockThreshold">{t("stock.lowStock")}</Label>

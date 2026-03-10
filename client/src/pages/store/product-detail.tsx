@@ -13,8 +13,9 @@ import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Product, StoreSettings, ProductReview, ProductVariant } from "@shared/schema";
 
 export default function StoreProductDetail() {
-  const [, params] = useRoute("/store/products/:id");
-  const productId = params?.id;
+  const [, storeParams] = useRoute("/store/products/:id");
+  const [, rootParams] = useRoute("/products/:id");
+  const productId = storeParams?.id || rootParams?.id;
   const { addItem, getItemQuantity, items } = useCart();
   const { t, lang } = useStoreLanguage();
   const { customer, isAuthenticated } = useStoreAuth();
