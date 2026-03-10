@@ -186,24 +186,7 @@ export default function StoreHome() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center w-full py-20">
           <div className="animate-fade-in-up">
-            {(() => {
-              let hasPlayed = false;
-              try { hasPlayed = sessionStorage.getItem("limjiba-logo-animated") === "1"; } catch {}
-              if (hasPlayed) {
-                return (
-                  <div className="mx-auto mb-8 w-24 h-24 md:w-32 md:h-32 rounded-2xl overflow-hidden animate-float" style={{ boxShadow: "0 0 60px rgba(201,168,76,0.3), 0 0 120px rgba(201,168,76,0.1)" }} data-testid="img-hero-logo">
-                    <img src={logoImg} alt="LIMJIBA" className="w-full h-full object-contain bg-white/10 p-2" />
-                  </div>
-                );
-              }
-              return (
-                <LogoAnimation
-                  logoSrc={logoImg}
-                  size={128}
-                  onComplete={() => { try { sessionStorage.setItem("limjiba-logo-animated", "1"); } catch {} }}
-                />
-              );
-            })()}
+            <LogoAnimation logoSrc={logoImg} size={128} />
           </div>
 
           <div className="animate-fade-in-up-delay-1">
