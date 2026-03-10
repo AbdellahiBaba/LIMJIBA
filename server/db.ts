@@ -1032,6 +1032,63 @@ async function runMigrations(): Promise<void> {
       console.log('[DB] Added footer_description column to store_settings');
     } catch {}
 
+    try {
+      await client.query(`ALTER TABLE products ADD COLUMN has_variants BOOLEAN NOT NULL DEFAULT false`);
+      console.log('[DB] Added has_variants column to products');
+    } catch {}
+    try {
+      await client.query(`ALTER TABLE products ADD COLUMN description_en TEXT`);
+      console.log('[DB] Added description_en column to products');
+    } catch {}
+    try {
+      await client.query(`ALTER TABLE products ADD COLUMN description_fr TEXT`);
+      console.log('[DB] Added description_fr column to products');
+    } catch {}
+    try {
+      await client.query(`ALTER TABLE products ADD COLUMN description_ar TEXT`);
+      console.log('[DB] Added description_ar column to products');
+    } catch {}
+
+    try {
+      await client.query(`CREATE TABLE IF NOT EXISTS product_variants (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        product_id VARCHAR NOT NULL,
+        variant_label TEXT NOT NULL,
+        sku TEXT,
+        unit_price REAL NOT NULL,
+        stock_quantity INTEGER NOT NULL DEFAULT 0,
+        image_url TEXT,
+        sort_order INTEGER NOT NULL DEFAULT 0,
+        is_active BOOLEAN NOT NULL DEFAULT true
+      )`);
+      console.log('[DB] Created product_variants table');
+    } catch {}
+
+    try {
+      await client.query(`CREATE TABLE IF NOT EXISTS product_reviews (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        product_id VARCHAR NOT NULL,
+        customer_email TEXT NOT NULL,
+        customer_name TEXT NOT NULL,
+        rating INTEGER NOT NULL,
+        review_text TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )`);
+      console.log('[DB] Created product_reviews table');
+    } catch {}
+
+    try {
+      await client.query(`CREATE TABLE IF NOT EXISTS store_reviews (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        customer_email TEXT NOT NULL,
+        customer_name TEXT NOT NULL,
+        rating INTEGER NOT NULL,
+        review_text TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )`);
+      console.log('[DB] Created store_reviews table');
+    } catch {}
+
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);

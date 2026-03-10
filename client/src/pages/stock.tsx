@@ -56,7 +56,7 @@ import {
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { exportToCsv } from "@/lib/csv-export";
-import type { Product, InsertProduct, StockMovementWithProduct, InventoryValuation, Category } from "@shared/schema";
+import type { Product, InsertProduct, StockMovementWithProduct, InventoryValuation, Category, ProductVariant } from "@shared/schema";
 
 const fallbackCategories = ["General Products", "Food & Beverages", "Industrial Supplies", "Accessories", "Other"];
 
@@ -68,6 +68,220 @@ const stockReasonKeys = [
   { value: "transfer", key: "stock.reasons.transfer" },
   { value: "other", key: "stock.reasons.other" },
 ];
+
+function VariantManagementSection({
+  productId,
+  t,
+}: {
+  productId: string;
+  t: (key: string) => string;
+}) {
+  const { toast } = useToast();
+  const [editingVariant, setEditingVariant] = useState<ProductVariant | null>(null);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [variantForm, setVariantForm] = useState({
+    variantLabel: "",
+    unitPrice: 0,
+    stockQuantity: 0,
+    imageUrl: "" as string | null,
+  });
+
+  const { data: variants, isLoading } = useQuery<ProductVariant[]>({
+    queryKey: ["/api/products", productId, "variants"],
+    queryFn: async () => {
+      const res = await fetch(`/api/products/${productId}/variants`, { credentials: "include" });
+      if (!res.ok) throw new Error("Failed to fetch variants");
+      return res.json();
+    },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: typeof variantForm) =>
+      apiRequest("POST", `/api/products/${productId}/variants`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products", productId, "variants"] });
+      toast({ title: "Variant added" });
+      resetForm();
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || "Error", variant: "destructive" });
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: typeof variantForm }) =>
+      apiRequest("PATCH", `/api/product-variants/${id}`, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products", productId, "variants"] });
+      toast({ title: "Variant updated" });
+      resetForm();
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || "Error", variant: "destructive" });
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) =>
+      apiRequest("DELETE", `/api/product-variants/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/products", productId, "variants"] });
+      toast({ title: "Variant deleted" });
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || "Error", variant: "destructive" });
+    },
+  });
+
+  const resetForm = () => {
+    setVariantForm({ variantLabel: "", unitPrice: 0, stockQuantity: 0, imageUrl: null });
+    setEditingVariant(null);
+    setShowAddForm(false);
+  };
+
+  const handleEdit = (variant: ProductVariant) => {
+    setEditingVariant(variant);
+    setVariantForm({
+      variantLabel: variant.variantLabel,
+      unitPrice: variant.unitPrice,
+      stockQuantity: variant.stockQuantity,
+      imageUrl: variant.imageUrl,
+    });
+    setShowAddForm(true);
+  };
+
+  const handleVariantImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      toast({ title: "Image must be under 2MB", variant: "destructive" });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      setVariantForm(prev => ({ ...prev, imageUrl: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveVariant = () => {
+    if (!variantForm.variantLabel.trim()) {
+      toast({ title: "Variant label is required", variant: "destructive" });
+      return;
+    }
+    if (editingVariant) {
+      updateMutation.mutate({ id: editingVariant.id, data: variantForm });
+    } else {
+      createMutation.mutate(variantForm);
+    }
+  };
+
+  const isSaving = createMutation.isPending || updateMutation.isPending;
+
+  return (
+    <div className="border rounded-lg p-4 space-y-3 bg-muted/30">
+      <div className="flex items-center justify-between gap-2 flex-wrap">
+        <Label className="font-semibold text-sm">Variants</Label>
+        {!showAddForm && (
+          <Button type="button" variant="outline" size="sm" onClick={() => setShowAddForm(true)} data-testid="button-add-variant">
+            <Plus className="h-3 w-3 mr-1" />
+            Add Variant
+          </Button>
+        )}
+      </div>
+
+      {isLoading && <Skeleton className="h-8 w-full" />}
+
+      {variants && variants.length > 0 && (
+        <div className="space-y-2">
+          {variants.map((v) => (
+            <div key={v.id} className="flex items-center justify-between gap-2 p-2 border rounded-md bg-background" data-testid={`row-variant-${v.id}`}>
+              <div className="flex items-center gap-2 min-w-0">
+                {v.imageUrl && (
+                  <img src={v.imageUrl} alt={v.variantLabel} className="h-8 w-8 rounded object-cover border" />
+                )}
+                <div className="min-w-0">
+                  <p className="text-sm font-medium truncate">{v.variantLabel}</p>
+                  <p className="text-xs text-muted-foreground">{v.unitPrice} MRU &middot; Stock: {v.stockQuantity}</p>
+                </div>
+              </div>
+              <div className="flex gap-1 shrink-0">
+                <Button type="button" variant="ghost" size="icon" onClick={() => handleEdit(v)} data-testid={`button-edit-variant-${v.id}`}>
+                  <Edit className="h-3 w-3" />
+                </Button>
+                <Button type="button" variant="ghost" size="icon" onClick={() => deleteMutation.mutate(v.id)} disabled={deleteMutation.isPending} data-testid={`button-delete-variant-${v.id}`}>
+                  <Trash2 className="h-3 w-3 text-destructive" />
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showAddForm && (
+        <div className="space-y-3 border rounded-md p-3 bg-background">
+          <div className="space-y-2">
+            <Label className="text-xs">Variant Label *</Label>
+            <Input
+              value={variantForm.variantLabel}
+              onChange={(e) => setVariantForm({ ...variantForm, variantLabel: e.target.value })}
+              placeholder="e.g. Red / XL"
+              data-testid="input-variant-label"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div className="space-y-2">
+              <Label className="text-xs">Unit Price (MRU) *</Label>
+              <Input
+                type="number"
+                step="0.01"
+                min="0"
+                value={variantForm.unitPrice}
+                onChange={(e) => setVariantForm({ ...variantForm, unitPrice: parseFloat(e.target.value) || 0 })}
+                data-testid="input-variant-price"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="text-xs">Stock Quantity *</Label>
+              <Input
+                type="number"
+                min="0"
+                value={variantForm.stockQuantity}
+                onChange={(e) => setVariantForm({ ...variantForm, stockQuantity: parseInt(e.target.value) || 0 })}
+                data-testid="input-variant-stock"
+              />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label className="text-xs">Image (optional)</Label>
+            {variantForm.imageUrl ? (
+              <div className="relative inline-block">
+                <img src={variantForm.imageUrl} alt="Variant" className="h-16 w-16 object-cover rounded-md border" />
+                <button type="button" onClick={() => setVariantForm(prev => ({ ...prev, imageUrl: null }))} className="absolute -top-2 -right-2 h-5 w-5 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center" data-testid="button-remove-variant-image">
+                  <X className="h-3 w-3" />
+                </button>
+              </div>
+            ) : (
+              <label className="flex items-center gap-2 border-2 border-dashed rounded-md p-3 cursor-pointer hover:bg-muted/50 transition-colors" data-testid="input-variant-image">
+                <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                <span className="text-xs text-muted-foreground">Upload image</span>
+                <input type="file" accept="image/*" onChange={handleVariantImageUpload} className="hidden" />
+              </label>
+            )}
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button type="button" variant="outline" size="sm" onClick={resetForm} data-testid="button-cancel-variant">
+              {t("common.cancel")}
+            </Button>
+            <Button type="button" size="sm" onClick={handleSaveVariant} disabled={isSaving} data-testid="button-save-variant">
+              {isSaving ? t("common.loading") : editingVariant ? t("common.save") : t("common.create")}
+            </Button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function ProductFormDialog({
   open,
@@ -102,6 +316,10 @@ function ProductFormDialog({
     imageUrl: product?.imageUrl ?? null,
     isDealOfDay: product?.isDealOfDay ?? false,
     dealDiscount: product?.dealDiscount ?? 0,
+    descriptionEn: product?.descriptionEn ?? "",
+    descriptionFr: product?.descriptionFr ?? "",
+    descriptionAr: product?.descriptionAr ?? "",
+    hasVariants: product?.hasVariants ?? false,
   });
 
   useEffect(() => {
@@ -122,6 +340,10 @@ function ProductFormDialog({
         imageUrl: product?.imageUrl ?? null,
         isDealOfDay: product?.isDealOfDay ?? false,
         dealDiscount: product?.dealDiscount ?? 0,
+        descriptionEn: product?.descriptionEn ?? "",
+        descriptionFr: product?.descriptionFr ?? "",
+        descriptionAr: product?.descriptionAr ?? "",
+        hasVariants: product?.hasVariants ?? false,
       });
     }
   }, [open, product]);
@@ -429,6 +651,59 @@ function ProductFormDialog({
               </div>
             )}
           </div>
+          <div className="space-y-3">
+            <Label className="font-semibold text-sm">Description EN</Label>
+            <Textarea
+              value={formData.descriptionEn || ""}
+              onChange={(e) => setFormData({ ...formData, descriptionEn: e.target.value })}
+              placeholder="Product description in English"
+              rows={3}
+              data-testid="input-description-en"
+            />
+          </div>
+          <div className="space-y-3">
+            <Label className="font-semibold text-sm">Description FR</Label>
+            <Textarea
+              value={formData.descriptionFr || ""}
+              onChange={(e) => setFormData({ ...formData, descriptionFr: e.target.value })}
+              placeholder="Description du produit en français"
+              rows={3}
+              data-testid="input-description-fr"
+            />
+          </div>
+          <div className="space-y-3">
+            <Label className="font-semibold text-sm">Description AR</Label>
+            <Textarea
+              value={formData.descriptionAr || ""}
+              onChange={(e) => setFormData({ ...formData, descriptionAr: e.target.value })}
+              placeholder="وصف المنتج بالعربية"
+              rows={3}
+              dir="rtl"
+              data-testid="input-description-ar"
+            />
+          </div>
+          <div className="border rounded-lg p-3 space-y-3 bg-muted/30">
+            <div className="flex items-center gap-3">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={formData.hasVariants || false}
+                  onChange={(e) => setFormData({ ...formData, hasVariants: e.target.checked })}
+                  className="rounded"
+                  data-testid="checkbox-has-variants"
+                />
+                <span className="text-sm font-medium">Has Variants</span>
+              </label>
+            </div>
+            {formData.hasVariants && !product && (
+              <p className="text-xs text-muted-foreground">
+                Save the product first, then edit it to manage variants.
+              </p>
+            )}
+          </div>
+          {product && formData.hasVariants && (
+            <VariantManagementSection productId={product.id} t={t} />
+          )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               {t("common.cancel")}

@@ -9,17 +9,19 @@ export interface CartItem {
   category: string;
   imageUrl?: string | null;
   maxStock?: number;
+  variantId?: string;
+  variantLabel?: string;
 }
 
 interface CartContextType {
   items: CartItem[];
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number, maxStock?: number) => void;
-  removeItem: (productId: string) => void;
-  updateQuantity: (productId: string, quantity: number, maxStock?: number) => void;
+  removeItem: (productId: string, variantId?: string) => void;
+  updateQuantity: (productId: string, quantity: number, maxStock?: number, variantId?: string) => void;
   clearCart: () => void;
   itemCount: number;
   subtotal: number;
-  getItemQuantity: (productId: string) => number;
+  getItemQuantity: (productId: string, variantId?: string) => number;
 }
 
 const CartContext = createContext<CartContextType | null>(null);
@@ -38,9 +40,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
     localStorage.setItem("store-cart", JSON.stringify(items));
   }, [items]);
 
+  const matchCartItem = (i: CartItem, item: { productId: string; variantId?: string }) =>
+    i.productId === item.productId && (i.variantId || "") === (item.variantId || "");
+
   const addItem = (item: Omit<CartItem, "quantity">, quantity = 1, maxStock?: number) => {
     setItems(prev => {
-      const existing = prev.find(i => i.productId === item.productId);
+      const existing = prev.find(i => matchCartItem(i, item));
       const currentQty = existing ? existing.quantity : 0;
       const effectiveMax = maxStock ?? item.maxStock;
 
@@ -62,7 +67,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
       if (existing) {
         return prev.map(i =>
-          i.productId === item.productId
+          matchCartItem(i, item)
             ? { ...i, quantity: i.quantity + quantity, maxStock: effectiveMax ?? i.maxStock }
             : i
         );
@@ -71,17 +76,17 @@ export function CartProvider({ children }: { children: ReactNode }) {
     });
   };
 
-  const removeItem = (productId: string) => {
-    setItems(prev => prev.filter(i => i.productId !== productId));
+  const removeItem = (productId: string, variantId?: string) => {
+    setItems(prev => prev.filter(i => !matchCartItem(i, { productId, variantId })));
   };
 
-  const updateQuantity = (productId: string, quantity: number, maxStock?: number) => {
+  const updateQuantity = (productId: string, quantity: number, maxStock?: number, variantId?: string) => {
     if (quantity <= 0) {
-      removeItem(productId);
+      removeItem(productId, variantId);
       return;
     }
     setItems(prev => prev.map(i => {
-      if (i.productId !== productId) return i;
+      if (!matchCartItem(i, { productId, variantId })) return i;
       const effectiveMax = maxStock ?? i.maxStock;
       if (effectiveMax !== undefined && quantity > effectiveMax) {
         toast({
@@ -96,8 +101,11 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const clearCart = () => setItems([]);
 
-  const getItemQuantity = (productId: string) => {
-    return items.find(i => i.productId === productId)?.quantity || 0;
+  const getItemQuantity = (productId: string, variantId?: string) => {
+    if (variantId) {
+      return items.find(i => matchCartItem(i, { productId, variantId }))?.quantity || 0;
+    }
+    return items.filter(i => i.productId === productId).reduce((sum, i) => sum + i.quantity, 0);
   };
 
   const itemCount = items.reduce((sum, i) => sum + i.quantity, 0);

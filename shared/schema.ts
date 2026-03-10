@@ -54,11 +54,31 @@ export const products = pgTable("products", {
   isFavorite: boolean("is_favorite").notNull().default(false),
   isDealOfDay: boolean("is_deal_of_day").notNull().default(false),
   dealDiscount: real("deal_discount").notNull().default(0),
+  hasVariants: boolean("has_variants").notNull().default(false),
+  descriptionEn: text("description_en"),
+  descriptionFr: text("description_fr"),
+  descriptionAr: text("description_ar"),
 });
 
 export const insertProductSchema = createInsertSchema(products).omit({ id: true });
 export type InsertProduct = z.infer<typeof insertProductSchema>;
 export type Product = typeof products.$inferSelect;
+
+export const productVariants = pgTable("product_variants", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar("product_id").notNull(),
+  variantLabel: text("variant_label").notNull(),
+  sku: text("sku"),
+  unitPrice: real("unit_price").notNull(),
+  stockQuantity: integer("stock_quantity").notNull().default(0),
+  imageUrl: text("image_url"),
+  sortOrder: integer("sort_order").notNull().default(0),
+  isActive: boolean("is_active").notNull().default(true),
+});
+
+export const insertProductVariantSchema = createInsertSchema(productVariants).omit({ id: true });
+export type InsertProductVariant = z.infer<typeof insertProductVariantSchema>;
+export type ProductVariant = typeof productVariants.$inferSelect;
 
 // Stock movements for tracking inventory changes
 export const stockMovements = pgTable("stock_movements", {
@@ -793,3 +813,30 @@ export const storeSettings = pgTable("store_settings", {
 export const insertStoreSettingsSchema = createInsertSchema(storeSettings).omit({ id: true, updatedAt: true });
 export type InsertStoreSettings = z.infer<typeof insertStoreSettingsSchema>;
 export type StoreSettings = typeof storeSettings.$inferSelect;
+
+export const productReviews = pgTable("product_reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  productId: varchar("product_id").notNull(),
+  customerEmail: text("customer_email").notNull(),
+  customerName: text("customer_name").notNull(),
+  rating: integer("rating").notNull(),
+  reviewText: text("review_text"),
+  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertProductReviewSchema = createInsertSchema(productReviews).omit({ id: true, createdAt: true });
+export type InsertProductReview = z.infer<typeof insertProductReviewSchema>;
+export type ProductReview = typeof productReviews.$inferSelect;
+
+export const storeReviews = pgTable("store_reviews", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerEmail: text("customer_email").notNull(),
+  customerName: text("customer_name").notNull(),
+  rating: integer("rating").notNull(),
+  reviewText: text("review_text"),
+  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertStoreReviewSchema = createInsertSchema(storeReviews).omit({ id: true, createdAt: true });
+export type InsertStoreReview = z.infer<typeof insertStoreReviewSchema>;
+export type StoreReview = typeof storeReviews.$inferSelect;

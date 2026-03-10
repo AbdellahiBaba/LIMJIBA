@@ -3373,6 +3373,142 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/store/auth/my-orders", async (req: Request, res: Response) => {
+    try {
+      const sc = (req.session as any).storeCustomer;
+      if (!sc) return res.status(401).json({ error: "Not authenticated" });
+      const allOrders = await storage.getStoreOrders();
+      const myOrders = allOrders.filter(o => o.customerEmail && o.customerEmail.toLowerCase() === sc.email.toLowerCase());
+      const safe = myOrders.map(o => ({
+        id: o.id,
+        orderNumber: o.orderNumber,
+        items: o.items,
+        subtotal: o.subtotal,
+        discount: o.discount,
+        total: o.total,
+        status: o.status,
+        paymentMethod: o.paymentMethod,
+        paymentConfirmed: o.paymentConfirmed,
+        createdAt: o.createdAt,
+      }));
+      res.json(safe);
+    } catch (error) {
+      handleError(res, "getMyOrders", error);
+    }
+  });
+
+  app.get("/api/store/products/:id/reviews", async (req: Request, res: Response) => {
+    try {
+      const reviews = await storage.getProductReviews(req.params.id);
+      res.json(reviews);
+    } catch (error) {
+      handleError(res, "getProductReviews", error);
+    }
+  });
+
+  app.post("/api/store/products/:id/reviews", async (req: Request, res: Response) => {
+    try {
+      const sc = (req.session as any).storeCustomer;
+      if (!sc) return res.status(401).json({ error: "Not authenticated" });
+      const { rating, reviewText } = req.body;
+      if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: "Rating must be 1-5" });
+      const existing = await storage.getProductReviews(req.params.id);
+      if (existing.some(r => r.customerEmail.toLowerCase() === sc.email.toLowerCase())) {
+        return res.status(400).json({ error: "You have already reviewed this product" });
+      }
+      const customer = await storage.getStoreCustomerById(sc.id);
+      const review = await storage.createProductReview({
+        productId: req.params.id,
+        customerEmail: sc.email,
+        customerName: customer?.fullName || sc.email,
+        rating,
+        reviewText: reviewText || null,
+      });
+      res.status(201).json(review);
+    } catch (error) {
+      handleError(res, "createProductReview", error);
+    }
+  });
+
+  app.get("/api/store/reviews", async (_req: Request, res: Response) => {
+    try {
+      const reviews = await storage.getStoreReviews();
+      res.json(reviews);
+    } catch (error) {
+      handleError(res, "getStoreReviews", error);
+    }
+  });
+
+  app.post("/api/store/reviews", async (req: Request, res: Response) => {
+    try {
+      const sc = (req.session as any).storeCustomer;
+      if (!sc) return res.status(401).json({ error: "Not authenticated" });
+      const { rating, reviewText } = req.body;
+      if (!rating || rating < 1 || rating > 5) return res.status(400).json({ error: "Rating must be 1-5" });
+      const existing = await storage.getStoreReviews();
+      if (existing.some(r => r.customerEmail.toLowerCase() === sc.email.toLowerCase())) {
+        return res.status(400).json({ error: "You have already rated our store" });
+      }
+      const customer = await storage.getStoreCustomerById(sc.id);
+      const review = await storage.createStoreReview({
+        customerEmail: sc.email,
+        customerName: customer?.fullName || sc.email,
+        rating,
+        reviewText: reviewText || null,
+      });
+      res.status(201).json(review);
+    } catch (error) {
+      handleError(res, "createStoreReview", error);
+    }
+  });
+
+  app.get("/api/store/products/:id/variants", async (req: Request, res: Response) => {
+    try {
+      const variants = await storage.getProductVariants(req.params.id);
+      res.json(variants.filter(v => v.isActive));
+    } catch (error) {
+      handleError(res, "getProductVariants", error);
+    }
+  });
+
+  app.get("/api/products/:id/variants", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const variants = await storage.getProductVariants(req.params.id);
+      res.json(variants);
+    } catch (error) {
+      handleError(res, "getProductVariantsAdmin", error);
+    }
+  });
+
+  app.post("/api/products/:id/variants", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const variant = await storage.createProductVariant({ ...req.body, productId: req.params.id });
+      res.status(201).json(variant);
+    } catch (error) {
+      handleError(res, "createProductVariant", error);
+    }
+  });
+
+  app.patch("/api/product-variants/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const updated = await storage.updateProductVariant(req.params.id, req.body);
+      if (!updated) return res.status(404).json({ error: "Variant not found" });
+      res.json(updated);
+    } catch (error) {
+      handleError(res, "updateProductVariant", error);
+    }
+  });
+
+  app.delete("/api/product-variants/:id", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const deleted = await storage.deleteProductVariant(req.params.id);
+      if (!deleted) return res.status(404).json({ error: "Variant not found" });
+      res.json({ success: true });
+    } catch (error) {
+      handleError(res, "deleteProductVariant", error);
+    }
+  });
+
   // ==========================================
   // ADMIN: Promo Codes
   // ==========================================

@@ -91,24 +91,28 @@ export default function StoreCart() {
             const currentStock = getProductStock(item.productId);
             const maxStock = currentStock ?? item.maxStock;
             const atMax = maxStock !== undefined && item.quantity >= maxStock;
+            const itemKey = `${item.productId}-${item.variantId || "base"}`;
 
             return (
-              <div key={item.productId} className="store-card-premium flex items-center gap-4 p-4 rounded-xl" data-testid={`cart-item-${item.productId}`}>
+              <div key={itemKey} className="store-card-premium flex items-center gap-4 p-4 rounded-xl" data-testid={`cart-item-${itemKey}`}>
                 <div className="h-20 w-20 rounded-xl flex items-center justify-center shrink-0 overflow-hidden" style={{ background: `linear-gradient(135deg, ${primaryColor}05, ${accentColor}08)` }}>
                   {item.imageUrl ? (
-                    <img src={item.imageUrl} alt={item.productName} className="h-full w-full object-cover" data-testid={`img-product-${item.productId}`} />
+                    <img src={item.imageUrl} alt={item.productName} className="h-full w-full object-cover" data-testid={`img-product-${itemKey}`} />
                   ) : (
                     <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100"><Package className="h-8 w-8 text-gray-200" /></div>
                   )}
                 </div>
                 <div className="flex-1 min-w-0">
                   <Link href={`/store/products/${item.productId}`}>
-                    <h3 className="font-semibold truncate hover:underline cursor-pointer" style={{ color: primaryColor }}>{item.productName}</h3>
+                    <h3 className="font-semibold truncate hover:underline cursor-pointer" style={{ color: primaryColor }}>
+                      {item.productName}
+                      {item.variantLabel && <span className="text-xs font-normal text-gray-400 ml-1">({item.variantLabel})</span>}
+                    </h3>
                   </Link>
                   <p className="text-xs text-gray-400 mt-0.5">{item.category}</p>
                   <p className="font-bold mt-1 gold-text">{item.unitPrice.toFixed(2)} <span className="text-xs text-gray-400">{currency}</span></p>
                   {atMax && (
-                    <p className="text-xs text-amber-600 flex items-center gap-1 mt-1" data-testid={`text-max-stock-${item.productId}`}>
+                    <p className="text-xs text-amber-600 flex items-center gap-1 mt-1" data-testid={`text-max-stock-${itemKey}`}>
                       <AlertCircle className="h-3 w-3" />
                       {t("cart.maxAvailable")}
                     </p>
@@ -116,16 +120,16 @@ export default function StoreCart() {
                 </div>
                 <div className="flex flex-col sm:flex-row items-end sm:items-center gap-2">
                   <div className="flex items-center rounded-lg overflow-hidden" style={{ border: "1px solid rgba(201,168,76,0.2)" }}>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-none hover:bg-gray-50" onClick={() => updateQuantity(item.productId, item.quantity - 1, maxStock)} data-testid={`button-cart-minus-${item.productId}`}>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-none hover:bg-gray-50" onClick={() => updateQuantity(item.productId, item.quantity - 1, maxStock, item.variantId)} data-testid={`button-cart-minus-${itemKey}`}>
                       <Minus className="h-3 w-3" />
                     </Button>
                     <span className="w-10 text-center text-sm font-bold" style={{ color: primaryColor }}>{item.quantity}</span>
-                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-none hover:bg-gray-50" onClick={() => updateQuantity(item.productId, item.quantity + 1, maxStock)} disabled={atMax} data-testid={`button-cart-plus-${item.productId}`}>
+                    <Button variant="ghost" size="sm" className="h-8 w-8 p-0 rounded-none hover:bg-gray-50" onClick={() => updateQuantity(item.productId, item.quantity + 1, maxStock, item.variantId)} disabled={atMax} data-testid={`button-cart-plus-${itemKey}`}>
                       <Plus className="h-3 w-3" />
                     </Button>
                   </div>
                   <span className="font-bold text-sm w-24 text-right" style={{ color: primaryColor }}>{(item.unitPrice * item.quantity).toFixed(2)} {currency}</span>
-                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => removeItem(item.productId)} data-testid={`button-cart-remove-${item.productId}`}>
+                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0 text-red-300 hover:text-red-500 hover:bg-red-50 rounded-lg" onClick={() => removeItem(item.productId, item.variantId)} data-testid={`button-cart-remove-${itemKey}`}>
                     <Trash2 className="h-4 w-4" />
                   </Button>
                 </div>

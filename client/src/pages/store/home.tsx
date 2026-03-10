@@ -6,8 +6,8 @@ import { useStoreLanguage } from "@/components/store-layout";
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ShoppingCart, ArrowRight, Star, Sparkles, Package, Shield, Truck, Award, ChevronRight, Clock, Flame, Eye, Heart, Zap, CheckCircle, Globe, Crown, Gift, Lock, Diamond, ThumbsUp, Medal, Gem } from "lucide-react";
-import type { Product, CmsBanner, StoreSettings, Category } from "@shared/schema";
+import { ShoppingCart, ArrowRight, Star, Sparkles, Package, Shield, Truck, Award, ChevronRight, Clock, Flame, Eye, Heart, Zap, CheckCircle, Globe, Crown, Gift, Lock, Diamond, ThumbsUp, Medal, Gem, Quote } from "lucide-react";
+import type { Product, CmsBanner, StoreSettings, Category, StoreReview } from "@shared/schema";
 import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
 
 function DealCountdown({ accentColor }: { accentColor: string }) {
@@ -63,6 +63,10 @@ export default function StoreHome() {
 
   const { data: categories } = useQuery<Category[]>({
     queryKey: ["/api/store/categories"],
+  });
+
+  const { data: storeReviews = [] } = useQuery<StoreReview[]>({
+    queryKey: ["/api/store/reviews"],
   });
 
   const accentColor = settings?.accentColor || "#C9A84C";
@@ -405,6 +409,55 @@ export default function StoreHome() {
           </div>
         </section>
       )}
+
+      {storeReviews.length > 0 && (() => {
+        const storeAvg = storeReviews.reduce((sum, r) => sum + r.rating, 0) / storeReviews.length;
+        const latestReviews = storeReviews.slice(0, 3);
+        return (
+          <section className="py-16" style={{ background: "#FAF6EE" }} data-testid="section-customer-reviews">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+              <div className="text-center mb-10">
+                <div className="inline-flex items-center gap-2 mb-3 premium-badge rounded-full px-4 py-1.5 text-sm">
+                  <Star className="h-4 w-4" />
+                  {t("reviews.customerReviews")}
+                </div>
+                <h2 className="text-3xl md:text-4xl font-bold mb-3" style={{ color: primaryColor }}>{t("reviews.customerReviews")}</h2>
+                <div className="flex items-center justify-center gap-2 mb-2">
+                  <div className="flex items-center gap-0.5">
+                    {[1, 2, 3, 4, 5].map(s => (
+                      <Star key={s} className="h-5 w-5" style={{ color: accentColor }} fill={s <= Math.round(storeAvg) ? accentColor : "none"} />
+                    ))}
+                  </div>
+                  <span className="text-lg font-bold" style={{ color: primaryColor }}>{storeAvg.toFixed(1)}</span>
+                </div>
+                <p className="text-gray-500 text-sm">{t("reviews.basedOn").replace("{count}", String(storeReviews.length))}</p>
+                <div className="gold-divider w-24 mx-auto mt-4" />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                {latestReviews.map(review => (
+                  <div key={review.id} className="rounded-2xl bg-white p-6" style={{ border: "1px solid rgba(201,168,76,0.12)" }} data-testid={`card-store-review-${review.id}`}>
+                    <div className="flex items-center gap-0.5 mb-3">
+                      {[1, 2, 3, 4, 5].map(s => (
+                        <Star key={s} className="h-4 w-4" style={{ color: accentColor }} fill={s <= review.rating ? accentColor : "none"} />
+                      ))}
+                    </div>
+                    {review.reviewText && <p className="text-sm text-gray-600 mb-4 line-clamp-3">{review.reviewText}</p>}
+                    <div className="flex items-center gap-2 mt-auto">
+                      <div className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold text-white" style={{ backgroundColor: accentColor }}>
+                        {review.customerName.charAt(0).toUpperCase()}
+                      </div>
+                      <div>
+                        <p className="text-sm font-semibold" style={{ color: primaryColor }}>{review.customerName}</p>
+                        {review.createdAt && <p className="text-xs text-gray-400">{new Date(review.createdAt).toLocaleDateString()}</p>}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </section>
+        );
+      })()}
 
       <section className="py-16" style={{ background: `linear-gradient(160deg, ${primaryColor}, #0D1520)` }} data-testid="section-cta">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">

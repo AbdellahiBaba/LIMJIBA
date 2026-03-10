@@ -84,6 +84,12 @@ import {
   type InsertPaymentWallet,
   type StoreNotification,
   type InsertStoreNotification,
+  type ProductVariant,
+  type InsertProductVariant,
+  type ProductReview,
+  type InsertProductReview,
+  type StoreReview,
+  type InsertStoreReview,
   users,
   products,
   invoices,
@@ -120,6 +126,9 @@ import {
   storeCustomers,
   paymentWallets,
   storeNotifications,
+  productVariants,
+  productReviews,
+  storeReviews,
 } from "@shared/schema";
 import { db, withRetry } from "./db";
 import { eq, desc, sql, and, gte, lte } from "drizzle-orm";
@@ -295,6 +304,16 @@ export interface IStorage {
   createPaymentWallet(wallet: InsertPaymentWallet): Promise<PaymentWallet>;
   updatePaymentWallet(id: string, data: Partial<InsertPaymentWallet>): Promise<PaymentWallet | undefined>;
   deletePaymentWallet(id: string): Promise<boolean>;
+
+  getProductVariants(productId: string): Promise<ProductVariant[]>;
+  createProductVariant(variant: InsertProductVariant): Promise<ProductVariant>;
+  updateProductVariant(id: string, data: Partial<InsertProductVariant>): Promise<ProductVariant | undefined>;
+  deleteProductVariant(id: string): Promise<boolean>;
+
+  getProductReviews(productId: string): Promise<ProductReview[]>;
+  createProductReview(review: InsertProductReview): Promise<ProductReview>;
+  getStoreReviews(): Promise<StoreReview[]>;
+  createStoreReview(review: InsertStoreReview): Promise<StoreReview>;
 
   getStoreProducts(): Promise<Product[]>;
 
@@ -2797,6 +2816,59 @@ export class DatabaseStorage implements IStorage {
     return await withRetry(async () => {
       const [updated] = await db.update(storeCustomers).set(data).where(eq(storeCustomers.id, id)).returning();
       return updated || undefined;
+    });
+  }
+
+  async getProductVariants(productId: string): Promise<ProductVariant[]> {
+    return await withRetry(async () => {
+      return await db.select().from(productVariants).where(eq(productVariants.productId, productId)).orderBy(productVariants.sortOrder);
+    });
+  }
+
+  async createProductVariant(variant: InsertProductVariant): Promise<ProductVariant> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(productVariants).values(variant).returning();
+      return created;
+    });
+  }
+
+  async updateProductVariant(id: string, data: Partial<InsertProductVariant>): Promise<ProductVariant | undefined> {
+    return await withRetry(async () => {
+      const [updated] = await db.update(productVariants).set(data).where(eq(productVariants.id, id)).returning();
+      return updated || undefined;
+    });
+  }
+
+  async deleteProductVariant(id: string): Promise<boolean> {
+    return await withRetry(async () => {
+      const [deleted] = await db.delete(productVariants).where(eq(productVariants.id, id)).returning();
+      return !!deleted;
+    });
+  }
+
+  async getProductReviews(productId: string): Promise<ProductReview[]> {
+    return await withRetry(async () => {
+      return await db.select().from(productReviews).where(eq(productReviews.productId, productId)).orderBy(desc(productReviews.createdAt));
+    });
+  }
+
+  async createProductReview(review: InsertProductReview): Promise<ProductReview> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(productReviews).values(review).returning();
+      return created;
+    });
+  }
+
+  async getStoreReviews(): Promise<StoreReview[]> {
+    return await withRetry(async () => {
+      return await db.select().from(storeReviews).orderBy(desc(storeReviews.createdAt));
+    });
+  }
+
+  async createStoreReview(review: InsertStoreReview): Promise<StoreReview> {
+    return await withRetry(async () => {
+      const [created] = await db.insert(storeReviews).values(review).returning();
+      return created;
     });
   }
 }
