@@ -822,7 +822,7 @@ export default function InvoiceForm() {
                   <span className="font-semibold">{t("invoices.amountInWordsPrefix")}</span>
                 </p>
                 <p className="text-lg font-medium mt-1" style={{ color: branding.primaryColor }}>
-                  {numberToFrenchWords(Math.floor(totalTTC))} dinars algériens
+                  {numberToFrenchWords(Math.floor(totalTTC))} ouguiyas MRU
                   {formData.applyTva && " (TTC)"}
                 </p>
               </div>

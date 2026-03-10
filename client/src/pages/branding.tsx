@@ -503,7 +503,7 @@ export default function Branding() {
                 id="phone"
                 value={branding.companyInfo.phone}
                 onChange={(e) => updateBranding({ companyInfo: { ...branding.companyInfo, phone: e.target.value } })}
-                placeholder="+213 6 70 04 91 24 / +213 6 70 04 91 36"
+                placeholder="+222 00 00 00 00"
                 data-testid="input-phone"
               />
             </div>

@@ -73,21 +73,7 @@ async function getProductContext(): Promise<string> {
 }
 
 async function getSalesContext(): Promise<string> {
-  const allSales = await storage.getSales();
-  const ps: Record<string, { name: string; qty: number; rev: number }> = {};
-  for (const sale of allSales.slice(-200)) {
-    try {
-      const s = await storage.getSaleWithItems(sale.id);
-      if (s) for (const item of s.items) {
-        const k = item.productId;
-        if (!ps[k]) ps[k] = { name: item.productName, qty: 0, rev: 0 };
-        ps[k].qty += item.quantity;
-        ps[k].rev += item.total;
-      }
-    } catch {}
-  }
-  return Object.values(ps).sort((a, b) => b.rev - a.rev).slice(0, 10)
-    .map((p, i) => `${i + 1}.${p.name}:${p.qty}sold,${p.rev.toFixed(0)}MRU`).join("\n");
+  return "";
 }
 
 async function getLowStockContext(): Promise<string> {
@@ -113,12 +99,6 @@ async function getActivePromosContext(): Promise<string> {
   }
 }
 
-async function getBestSellersContext(): Promise<string> {
-  const salesCtx = await getSalesContext();
-  if (!salesCtx || salesCtx === "") return "";
-  return "\nBest Sellers:\n" + salesCtx;
-}
-
 const CUSTOMER_PROMPT = `You are LIMJIBA (لمجيبة) smart shopping assistant — a premium import company in Mauritania. You are a marketing-savvy assistant that helps customers discover great products, find deals, check orders, and make purchases.
 
 LANGUAGE RULES:
@@ -140,14 +120,21 @@ For ANY other topic (politics, weather, personal advice, etc.), politely redirec
 - FR: "Je ne peux vous aider qu'avec les affaires de LIMJIBA. Voulez-vous voir nos produits ou suivre une commande?"
 - AR: "يمكنني مساعدتك فقط في شؤون لمجيبة. هل تريد رؤية منتجاتنا أو تتبع طلب؟"
 
+IMPORTANT: LIMJIBA is a premium IMPORTING company. We import a variety of products — NOT a plastic business. Never assume or mention plastic bags. Always refer ONLY to the actual products listed in the catalog below.
+
 MARKETING BEHAVIOR:
-- Proactively suggest popular products and best sellers
+- Proactively suggest products from the catalog below — ONLY mention products that actually exist in the catalog
 - Mention active promotions and promo codes when relevant
 - Recommend related products when a customer asks about a specific item
 - Be enthusiastic about product quality and value
-- Use the best sellers data to recommend trending items
+- When recommending products, provide the store link: /store/products
+
+PRODUCT LINKS:
+- All products page: /store/products
+- When suggesting products, tell customers to visit the store to browse and order
 
 RULES:
+- ONLY recommend products that appear in the Catalog below. NEVER invent or assume products.
 - Only recommend in-stock items. Prices in MRU (Mauritanian Ouguiya).
 - Suggest same-category alternatives for out-of-stock items.
 - Be concise, friendly, and professional.
@@ -158,7 +145,6 @@ RULES:
 Catalog:
 {PRODUCTS}
 {PROMOS}
-{BEST_SELLERS}
 {ORDER_DATA}`;
 
 const LANG_NAMES: Record<string, string> = {
@@ -167,8 +153,15 @@ const LANG_NAMES: Record<string, string> = {
   en: "English",
 };
 
-const ADMIN_PROMPT = `LIMJIBA business assistant (Mauritania). Analyze sales in MRU (Mauritanian Ouguiya), suggest restocking, generate promo codes (PROMO-XXXXX format, keep margin>15%, 1-3day expiry), provide insights.
-Inventory:\n{PRODUCTS}\nTop sellers:\n{SALES}\nAlerts:\n{STOCK_ALERTS}`;
+const ADMIN_PROMPT = `You are LIMJIBA (لمجيبة) business assistant — a premium IMPORTING company in Mauritania. LIMJIBA is NOT a plastic business. We import a variety of premium products.
+
+IMPORTANT: Only reference products that exist in the inventory below. Never assume or mention plastic bags or any products not in the inventory.
+
+Your role: Analyze inventory, suggest restocking for low-stock items, generate promo codes (PROMO-XXXXX format, keep margin>15%, 1-3day expiry), and provide business insights based on actual inventory data.
+
+Currency: MRU (Mauritanian Ouguiya).
+
+Inventory:\n{PRODUCTS}\nAlerts:\n{STOCK_ALERTS}`;
 
 function extractOrderNumbers(text: string): string[] {
   const matches = text.match(/ORD-\d{4}\/\d{4}/gi);
@@ -212,13 +205,12 @@ export async function handleCustomerChat(
   lang: string = "en"
 ): Promise<string> {
   const trimmed = trimHistory(conversationHistory);
-  const [productContext, orderData, promosContext, bestSellers] = await Promise.all([
+  const [productContext, orderData, promosContext] = await Promise.all([
     getProductContext(),
     getOrderContext(trimmed, message),
     getActivePromosContext(),
-    getBestSellersContext(),
   ]);
-  const ctxFp = fingerprint(productContext + orderData + promosContext + bestSellers + lang);
+  const ctxFp = fingerprint(productContext + orderData + promosContext + lang);
   const allMsgs = [...trimmed, { role: "user", content: message }];
   const cacheKey = getCacheKey("customer", ctxFp, allMsgs);
   const cached = getCached(cacheKey);
@@ -228,7 +220,6 @@ export async function handleCustomerChat(
     .replace("{PRODUCTS}", productContext)
     .replace("{ORDER_DATA}", orderData)
     .replace("{PROMOS}", promosContext)
-    .replace("{BEST_SELLERS}", bestSellers)
     .replace(/{LANG}/g, lang)
     .replace("{LANG_NAME}", LANG_NAMES[lang] || "English");
 
@@ -256,13 +247,12 @@ export async function handleAdminChat(
 ): Promise<string> {
   const trimmed = trimHistory(conversationHistory);
 
-  const [productContext, salesContext, stockContext] = await Promise.all([
+  const [productContext, stockContext] = await Promise.all([
     getProductContext(),
-    getSalesContext(),
     getLowStockContext(),
   ]);
 
-  const ctxFp = fingerprint(productContext + salesContext + stockContext);
+  const ctxFp = fingerprint(productContext + stockContext);
   const allMsgs = [...trimmed, { role: "user", content: message }];
   const cacheKey = getCacheKey("admin", ctxFp, allMsgs);
   const cached = getCached(cacheKey);
@@ -270,7 +260,6 @@ export async function handleAdminChat(
 
   const systemPrompt = ADMIN_PROMPT
     .replace("{PRODUCTS}", productContext)
-    .replace("{SALES}", salesContext)
     .replace("{STOCK_ALERTS}", stockContext);
 
   const messages: OpenAI.ChatCompletionMessageParam[] = [

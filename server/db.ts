@@ -922,11 +922,33 @@ async function runMigrations(): Promise<void> {
       )
     `);
 
-    // ===================== CLEANUP: Remove plastic products =====================
-    const plasticCheck = await client.query(`SELECT id FROM products WHERE category = 'Sacs en plastique' OR name ILIKE '%plastique%' LIMIT 1`);
+    // ===================== CLEANUP: Remove all plastic data and old business data =====================
+    const plasticCheck = await client.query(`SELECT id FROM products WHERE category ILIKE '%plastique%' OR name ILIKE '%plastique%' OR name ILIKE '%plastic%' LIMIT 1`);
     if (plasticCheck.rows.length > 0) {
-      await client.query(`DELETE FROM products WHERE category = 'Sacs en plastique' OR name ILIKE '%plastique%'`);
-      console.log('[DB] Removed plastic bag products');
+      await client.query(`DELETE FROM sale_items WHERE product_id IN (SELECT id FROM products WHERE category ILIKE '%plastique%' OR name ILIKE '%plastique%' OR name ILIKE '%plastic%')`);
+      await client.query(`DELETE FROM products WHERE category ILIKE '%plastique%' OR name ILIKE '%plastique%' OR name ILIKE '%plastic%'`);
+      console.log('[DB] Removed plastic products and related sale items');
+    }
+
+    // One-time cleanup: Clear old legacy sales, purchase orders, and expenses data
+    const legacyCleanupDone = await client.query(`SELECT id FROM store_settings WHERE id = 'legacy_data_cleaned' LIMIT 1`);
+    if (legacyCleanupDone.rows.length === 0) {
+      await client.query(`DELETE FROM sale_return_items`);
+      await client.query(`DELETE FROM sale_returns`);
+      await client.query(`DELETE FROM sale_payments`);
+      await client.query(`DELETE FROM sale_items`);
+      await client.query(`DELETE FROM sales`);
+      console.log('[DB] Cleared all sales history');
+
+      await client.query(`DELETE FROM purchase_order_items`);
+      await client.query(`DELETE FROM purchase_orders`);
+      console.log('[DB] Cleared all purchase orders');
+
+      await client.query(`DELETE FROM expenses`);
+      console.log('[DB] Cleared all expenses');
+
+      await client.query(`INSERT INTO store_settings (id) VALUES ('legacy_data_cleaned') ON CONFLICT DO NOTHING`);
+      console.log('[DB] Legacy data cleanup completed (one-time)');
     }
 
     // Update CMS pages with rich trilingual content

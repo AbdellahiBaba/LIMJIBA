@@ -3841,15 +3841,15 @@ function generateInvoicePDF(invoice: any, branding: InvoiceBranding = {
     totalHT: isArabic ? "المجموع بدون ضريبة" : "Total H.T",
     totalTTC: isArabic ? "المجموع الكلي" : "Total T.T.C",
     amountInWords: isArabic ? "المبلغ بالحروف" : "Arrêter la présente facture à la somme de",
-    companyName: "POLY FLECTA PLASTICA",
-    companySubtitle: isArabic ? "تصنيع التغليف البلاستيكي" : "FABRICATION D'EMBALLAGE EN PLASTIQUE",
+    companyName: "LIMJIBA - لمجيبة",
+    companySubtitle: isArabic ? "استيراد المنتجات الفاخرة" : "IMPORTATION DE PRODUITS PREMIUM",
     weightPerUnit: isArabic ? "الوزن/الوحدة" : "Poids/U",
     totalWeight: isArabic ? "الوزن الكلي" : "Poids Total",
   };
 
   const amountWords = isArabic 
-    ? numberToArabicWords(Math.floor(invoice.totalTTC)) + " دينار جزائري"
-    : numberToFrenchWords(Math.floor(invoice.totalTTC)) + " dinars algériens";
+    ? numberToArabicWords(Math.floor(invoice.totalTTC)) + " أوقية موريتانية"
+    : numberToFrenchWords(Math.floor(invoice.totalTTC)) + " ouguiyas mauritaniens";
 
   const logoHtml = branding.logo ? `<img src="${branding.logo}" style="max-height: 60px; max-width: 150px;" />` : '';
   
@@ -3909,8 +3909,8 @@ function generateInvoicePDF(invoice: any, branding: InvoiceBranding = {
       <div class="company">
         <h1>${labels.companyName}</h1>
         <p>${labels.companySubtitle}</p>
-        <p style="margin-top: 10px;">M'sila, Hammam Dalaa</p>
-        <p>Tel: +213 6 70 04 91 24 / +213 6 70 04 91 36</p>
+        <p style="margin-top: 10px;">Nouakchott, Mauritania</p>
+        <p>Tel: +222 00 00 00 00</p>
       </div>
       <div class="invoice-info">
         <div class="invoice-title">${isBilingual ? `${labels.invoiceFr} / ${labels.invoiceAr}` : labels.invoice}</div>
@@ -4053,9 +4053,9 @@ function generateDeliveryNotePDF(invoice: any, branding: { logo?: string; primar
   <div class="container">
     <div class="header">
       <div class="company-info">
-        <h1>POLY FLECTA PLASTICA</h1>
-        <p>M'sila, Hammam Dalaa<br>
-        Tél: +213 6 70 04 91 24 / +213 6 70 04 91 36</p>
+        <h1>LIMJIBA - لمجيبة</h1>
+        <p>Nouakchott, Mauritania<br>
+        Tél: +222 00 00 00 00</p>
       </div>
       ${logo ? `<img src="${logo}" class="logo" alt="Logo">` : ''}
     </div>
@@ -4124,9 +4124,9 @@ function generateDeliveryNotePDF(invoice: any, branding: { logo?: string; primar
 function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null): string {
   const logo = query.logo || '';
   const primaryColor = query.primaryColor || '#1976D2';
-  const companyPhone = '+213 6 70 04 91 24 / +213 6 70 04 91 36';
-  const companyAddress = 'M\'sila, Hammam Dalaa';
-  const companyName = 'POLY FLECTA PLASTICA';
+  const companyPhone = '+222 00 00 00 00';
+  const companyAddress = 'Nouakchott, Mauritania';
+  const companyName = 'LIMJIBA - لمجيبة';
   
   // Format date as DD/MM/YYYY
   const formatDate = (dateStr: string) => {

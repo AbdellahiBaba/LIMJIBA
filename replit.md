@@ -2,7 +2,7 @@
 
 ## Overview
 
-A comprehensive e-commerce management system branded as **LIMJIBA / لمجيبة** (Mauritanian premium import & e-commerce). Provides modules for Invoice Generation (standard and manufacturing), Stock/Inventory Management, Point-of-Sale (POS), Reseller Rewards Program, Salaries Management, Business Expenses Tracking, Profit Analytics, Supplier Management, Purchase Orders, Shipments, Audit Trail, Advanced Reporting, and a trilingual public storefront with customer authentication.
+A comprehensive e-commerce management system branded as **LIMJIBA / لمجيبة** (Mauritanian premium import & e-commerce). Provides modules for Invoice Generation (standard and manufacturing), Stock/Inventory Management, Point-of-Sale (POS), Reseller Rewards Program, Salaries Management, Business Expenses Tracking, Profit Analytics, Supplier Management, Purchase Orders, Shipments, Audit Trail, Advanced Reporting, and a trilingual public storefront with customer authentication. All old plastic business data (POLY FLECTA PLASTICA) has been completely removed and replaced with LIMJIBA branding.
 
 **Brand Identity:** Royal Navy (#0A1628) + Royal Gold (#C9A84C) + Deep Black (#060B14) + Ivory (#FAF6EE), Montserrat typography. Gold gradient: linear-gradient(135deg, #C9A84C, #B8963F, #D4B55A). Logo: camel + plane + world map with Arabic "لمجيبة" + "IMPORTING" text.
 **Currency:** MRU (Mauritanian Ouguiya / أوقية)

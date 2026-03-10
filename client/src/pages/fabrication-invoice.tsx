@@ -473,9 +473,9 @@ export default function FabricationInvoice() {
   const getAmountInWords = (amount: number) => {
     const intPart = Math.floor(amount);
     if (invoiceLang === "ar") {
-      return numberToArabicWords(intPart) + " دينار جزائري";
+      return numberToArabicWords(intPart) + " أوقية موريتانية";
     }
-    return numberToFrenchWords(intPart) + " dinars algériens";
+    return numberToFrenchWords(intPart) + " ouguiyas MRU";
   };
 
   const getLabel = (fr: string, ar: string) => {

@@ -94,7 +94,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
           ...parsed,
           companyInfo: { ...defaultCompanyInfo, ...(parsed.companyInfo || {}) },
         };
-        if (merged.companyInfo.phone === "+213 6 70 04 91 24") {
+        if (merged.companyInfo.phone === "+213 6 70 04 91 24" || merged.companyInfo.phone === "+213 6 70 04 91 24 / +213 6 70 04 91 36") {
           merged.companyInfo.phone = defaultCompanyInfo.phone;
         }
         return merged;
@@ -126,7 +126,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
               ...dbBranding,
               companyInfo: { ...defaultCompanyInfo, ...(dbBranding.companyInfo || {}) },
             };
-            if (merged.companyInfo.phone === "+213 6 70 04 91 24") {
+            if (merged.companyInfo.phone === "+213 6 70 04 91 24" || merged.companyInfo.phone === "+213 6 70 04 91 24 / +213 6 70 04 91 36") {
               merged.companyInfo.phone = defaultCompanyInfo.phone;
             }
             setBranding(merged);

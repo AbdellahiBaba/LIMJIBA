@@ -379,7 +379,7 @@ export default function QuickInvoice() {
 
   <div style="padding:12px;background:${primaryColor}08;border:1px solid ${primaryColor}30;border-radius:6px;margin-bottom:20px;">
     <p style="margin:0;font-size:12px;"><strong>Arrêté la présente facture à la somme de:</strong></p>
-    <p style="margin:4px 0 0;font-size:14px;color:${primaryColor};font-weight:500;">${numberToFrenchWords(Math.floor(finalTotal))} dinars algériens${formData.applyTva ? ' (TTC)' : ''}</p>
+    <p style="margin:4px 0 0;font-size:14px;color:${primaryColor};font-weight:500;">${numberToFrenchWords(Math.floor(finalTotal))} ouguiyas MRU${formData.applyTva ? ' (TTC)' : ''}</p>
   </div>
 
   ${formData.notes ? `<div style="margin-bottom:20px;padding:10px;background:#fffde7;border:1px solid #fff9c4;border-radius:4px;">
@@ -761,7 +761,7 @@ export default function QuickInvoice() {
               <span className="font-mono text-primary" data-testid="text-qi-total-ttc">{finalTotal.toLocaleString()} {t("common.currency")}</span>
             </div>
             <p className="text-sm text-muted-foreground italic mt-1">
-              {numberToFrenchWords(Math.floor(finalTotal))} dinars algériens
+              {numberToFrenchWords(Math.floor(finalTotal))} ouguiyas MRU
             </p>
           </div>
         </CardContent>
@@ -914,7 +914,7 @@ export default function QuickInvoice() {
               >
                 <p className="text-sm"><span className="font-semibold">Arrêté la présente facture à la somme de:</span></p>
                 <p className="text-lg font-medium mt-1" style={{ color: branding.primaryColor }}>
-                  {numberToFrenchWords(Math.floor(finalTotal))} dinars algériens
+                  {numberToFrenchWords(Math.floor(finalTotal))} ouguiyas MRU
                   {formData.applyTva && " (TTC)"}
                 </p>
               </div>
