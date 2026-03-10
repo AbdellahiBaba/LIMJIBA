@@ -54,7 +54,7 @@ Preferred communication style: Simple, everyday language.
 - **Backup & Restore:** Enhanced with last backup date tracking, restore file preview (entity counts), backup reminder warnings.
 
 ### Public Storefront (LIMJIBA / لمجيبة)
-- **Path:** `/store/*` (public, no auth required for browsing)
+- **Path:** `/` (root domain = store), also accessible via `/store/*` (public, no auth required for browsing)
 - **Design:** Premium royal luxury brand identity with Royal Navy (#0A1628) + Royal Gold (#C9A84C) + Deep Black (#060B14) + Ivory (#FAF6EE). Gold gradient accents, glassmorphism header, animated hero with glow effects, premium card system with hover zoom, trust badges.
 - **Features:** Trilingual (AR/FR/EN) with language switcher, product browsing (in-stock only) with product images, search/filter by dynamic categories with pill selectors, product detail pages with premium layout, cart with localStorage persistence, promo code validation, checkout with wallet payment selection and payment proof upload, order tracking with visual timeline by email/order number.
 - **Stock Enforcement:** Out-of-stock products hidden from store. Cart context enforces max quantity per product via `addItem(item, qty, maxStock)` and `updateQuantity(id, qty, maxStock)`. `getItemQuantity(productId)` helper checks current cart quantity. "Only X left" badges when stock ≤ 5. Buttons disabled at max. Toast notifications when limits reached.
@@ -71,11 +71,13 @@ Preferred communication style: Simple, everyday language.
 - **CMS Pages:** About/Contact/Terms render HTML content via `dangerouslySetInnerHTML`.
 
 ### Premium CSS System
+- **Arabic Typography:** Amiri (serif) auto-applied to all h1/h2/h3 headings in `.store-theme` when RTL. Tajawal/Cairo for body text. CSS classes: `.store-heading-ar` and `.brand-name-ar` for explicit Amiri usage.
 - **CSS Variables:** `--royal-navy`, `--royal-gold`, `--royal-gold-light`, `--royal-gold-dark`, `--deep-black`, `--ivory`, `--gold-gradient` defined in `.store-theme`.
 - **Animations:** `animate-fade-in-up` (with delay variants -1 through -3), `animate-float`, `gold-pulse`, `shimmer-slide`.
 - **Premium Classes:** `store-card-premium` (hover zoom + gold border), `store-btn-gold` (gradient + shimmer + scale), `gold-text` (gradient text), `gold-divider` (subtle gold line), `hero-glow` (animated orbs), `glass-card`, `premium-badge`, `trust-badge`, `card-image` (zoom transition).
 
 ### Admin Portal
+- **Path:** `/emanager-portal/*` (requires authentication)
 - **Sidebar:** Premium header with LIMJIBA branding + gold accents. Active items marked with gold border. Separate "Online Store" section with Store Orders, Promo Codes, CMS, LIMJIBA Agent, and View Store link.
 - **Store Orders Admin:** Expandable order cards with payment proof viewer dialog, status management dropdown, payment confirmation button, multi-channel notification (email/WhatsApp/in-store).
 
