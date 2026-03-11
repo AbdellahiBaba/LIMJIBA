@@ -3,6 +3,8 @@ import { createServer, type Server } from "http";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import puppeteer from "puppeteer";
+import fs from "fs";
+import path from "path";
 import { storage } from "./storage";
 import { isTransientError, checkDatabaseHealth, getPoolStats } from "./db";
 import { cache } from "./cache";
@@ -45,7 +47,7 @@ function escapeHtml(str: string): string {
     .replace(/'/g, '&#x27;');
 }
 
-function sanitizeColor(color: string, fallback: string = "#1976D2"): string {
+function sanitizeColor(color: string, fallback: string = "#C9A84C"): string {
   if (/^#[0-9a-fA-F]{3,8}$/.test(color)) {
     return color;
   }
@@ -1328,10 +1330,10 @@ export async function registerRoutes(
       if (brandingJson) {
         res.json(JSON.parse(brandingJson));
       } else {
-        res.json({ primaryColor: "#1976D2", accentColor: "#42A5F5" });
+        res.json({ primaryColor: "#C9A84C", accentColor: "#C9A84C" });
       }
     } catch (error) {
-      res.json({ primaryColor: "#1976D2", accentColor: "#42A5F5" });
+      res.json({ primaryColor: "#C9A84C", accentColor: "#C9A84C" });
     }
   });
 
@@ -1349,8 +1351,7 @@ export async function registerRoutes(
         reseller = await storage.getReseller(sale.resellerId);
       }
 
-      // Fetch branding from server settings (not URL params - avoids URL length issues)
-      let branding: any = { primaryColor: "#1976D2" };
+      let branding: any = { primaryColor: "#C9A84C" };
       try {
         const brandingJson = await storage.getSetting("branding");
         if (brandingJson) {
@@ -1365,9 +1366,24 @@ export async function registerRoutes(
         storeSettings = await storage.getStoreSettings();
       } catch (e) {}
 
+      let logoDataUrl = '';
+      if (req.query.logo) {
+        logoDataUrl = sanitizeUrl(req.query.logo as string);
+      } else if (branding.logo) {
+        logoDataUrl = sanitizeUrl(branding.logo);
+      } else {
+        try {
+          const logoPath = path.resolve('attached_assets/WhatsApp_Image_2026-03-09_at_20.11.18-removebg-preview_1773192470477.png');
+          if (fs.existsSync(logoPath)) {
+            const logoBuffer = fs.readFileSync(logoPath);
+            logoDataUrl = `data:image/png;base64,${logoBuffer.toString('base64')}`;
+          }
+        } catch (e) {}
+      }
+
       const queryParams = {
-        logo: req.query.logo ? sanitizeUrl(req.query.logo as string) : (branding.logo ? sanitizeUrl(branding.logo) : ''),
-        primaryColor: sanitizeColor((req.query.primaryColor as string) || branding.primaryColor || '#1976D2'),
+        logo: logoDataUrl,
+        primaryColor: sanitizeColor((req.query.primaryColor as string) || branding.primaryColor || '#C9A84C'),
       };
 
       const html = generateReceiptHTML(sale, queryParams, reseller, storeSettings);
@@ -2139,9 +2155,32 @@ export async function registerRoutes(
         storeSettings = await storage.getStoreSettings();
       } catch (e) {}
 
+      let branding: any = { primaryColor: "#C9A84C" };
+      try {
+        const brandingJson = await storage.getSetting("branding");
+        if (brandingJson) {
+          branding = JSON.parse(brandingJson);
+        }
+      } catch (e) {}
+
+      let logoDataUrl = '';
+      if (req.query.logo) {
+        logoDataUrl = sanitizeUrl(req.query.logo as string);
+      } else if (branding.logo) {
+        logoDataUrl = sanitizeUrl(branding.logo);
+      } else {
+        try {
+          const logoPath = path.resolve('attached_assets/WhatsApp_Image_2026-03-09_at_20.11.18-removebg-preview_1773192470477.png');
+          if (fs.existsSync(logoPath)) {
+            const logoBuffer = fs.readFileSync(logoPath);
+            logoDataUrl = `data:image/png;base64,${logoBuffer.toString('base64')}`;
+          }
+        } catch (e) {}
+      }
+
       const sanitizedQuery = {
-        logo: req.query.logo ? sanitizeUrl(req.query.logo as string) : '',
-        primaryColor: sanitizeColor((req.query.primaryColor as string) || '#1976D2'),
+        logo: logoDataUrl,
+        primaryColor: sanitizeColor((req.query.primaryColor as string) || branding.primaryColor || '#C9A84C'),
       };
       const html = generateReceiptHTML(sale, sanitizedQuery, reseller, storeSettings);
       res.setHeader("Content-Type", "text/html");
@@ -5329,11 +5368,11 @@ function generateDeliveryNotePDF(invoice: any, branding: { logo?: string; primar
 }
 
 function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null, storeSettings: any = null): string {
-  const logo = query.logo ? sanitizeUrl(String(query.logo)) : '';
-  const primaryColor = sanitizeColor(String(query.primaryColor || '#1976D2'));
-  const companyPhone = escapeHtml(storeSettings?.contactPhone || '');
+  const logo = query.logo || '';
+  const primaryColor = sanitizeColor(String(query.primaryColor || '#C9A84C'));
+  const companyPhone = escapeHtml(storeSettings?.contactPhone || '+222 XX XX XX XX');
   const companyAddress = escapeHtml(storeSettings?.contactAddress || 'Nouakchott, Mauritania');
-  const companyEmail = escapeHtml(storeSettings?.contactEmail || '');
+  const companyEmail = escapeHtml(storeSettings?.contactEmail || 'support@limjiba.com');
   const companyName = escapeHtml(storeSettings?.storeName ? `${storeSettings.storeName} - لمجيبة` : 'LIMJIBA - لمجيبة');
   
   // Format date as DD/MM/YYYY
@@ -5388,8 +5427,8 @@ function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null, s
       margin-bottom: 10px;
     }
     .logo {
-      max-width: 70px;
-      max-height: 70px;
+      max-width: 90px;
+      max-height: 90px;
       object-fit: contain;
     }
     .company-name { 
