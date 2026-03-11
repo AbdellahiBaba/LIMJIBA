@@ -52,32 +52,29 @@ if (isProduction) {
   app.set("trust proxy", 1);
 }
 
-const memStore = new MemoryStoreSession({ checkPeriod: 86400000 });
-let backingStore: session.Store = memStore;
+let serverReady = false;
 
-function upgradeToPgSessionStore() {
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (!serverReady && req.path !== "/health") {
+    res.status(200).set({ "Content-Type": "text/html" }).end(`<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2"></head><body><div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif"><p>Loading...</p></div></body></html>`);
+    return;
+  }
+  next();
+});
+
+function createSessionStore() {
   const dbUrl = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
   if (isProduction && dbUrl) {
     const pool = new pg.Pool({ connectionString: dbUrl, max: 3 });
-    backingStore = new PgSessionStore({
+    return new PgSessionStore({
       pool,
       tableName: "user_sessions",
       createTableIfMissing: false,
       pruneSessionInterval: 60 * 15,
     });
-    log("Session store upgraded to PostgreSQL");
   }
+  return new MemoryStoreSession({ checkPeriod: 86400000 });
 }
-
-const proxyStore = new Proxy(memStore, {
-  get(_target, prop, receiver) {
-    const val = (backingStore as any)[prop];
-    if (typeof val === "function") {
-      return val.bind(backingStore);
-    }
-    return val;
-  }
-});
 
 app.use(
   session({
@@ -86,7 +83,7 @@ app.use(
     rolling: true,
     resave: true,
     saveUninitialized: false,
-    store: proxyStore,
+    store: createSessionStore(),
     cookie: {
       secure: isProduction,
       httpOnly: true,
@@ -320,16 +317,6 @@ app.use((req, res, next) => {
       console.error("Server error:", err);
     });
 
-    let serverReady = false;
-
-    app.use((req: Request, res: Response, next: NextFunction) => {
-      if (!serverReady && req.path !== "/health") {
-        res.status(200).set({ "Content-Type": "text/html" }).end(`<!DOCTYPE html><html><head><meta http-equiv="refresh" content="2"></head><body><div style="display:flex;align-items:center;justify-content:center;height:100vh;font-family:sans-serif"><p>Loading...</p></div></body></html>`);
-        return;
-      }
-      next();
-    });
-
     log("Registering routes...");
     await registerRoutes(httpServer, app);
     log("Routes registered successfully");
@@ -355,10 +342,9 @@ app.use((req, res, next) => {
     try {
       const dbSuccess = await verifyDatabaseConnection();
       if (dbSuccess) {
-        upgradeToPgSessionStore();
         log("Database ready for requests");
       } else {
-        log("WARNING: Database connection issues - sessions will use memory store");
+        log("WARNING: Database connection issues - operations will retry automatically");
       }
     } catch (err: any) {
       log(`Database verification error: ${err.message}`);
