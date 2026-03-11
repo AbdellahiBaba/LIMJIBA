@@ -18,7 +18,7 @@ export default function StoreProfile() {
   const { t } = useStoreLanguage();
   const { customer, isAuthenticated, isLoading: authLoading, refreshProfile } = useStoreAuth();
   const [, setLocation] = useLocation();
-  const [form, setForm] = useState({ fullName: "", phone: "", address: "" });
+  const [form, setForm] = useState({ email: "", fullName: "", phone: "", address: "" });
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [expandedOrder, setExpandedOrder] = useState<string | null>(null);
@@ -68,6 +68,7 @@ export default function StoreProfile() {
   useEffect(() => {
     if (customer) {
       setForm({
+        email: customer.email || "",
         fullName: customer.fullName || "",
         phone: customer.phone || "",
         address: customer.address || "",
@@ -82,7 +83,13 @@ export default function StoreProfile() {
       await refreshProfile();
       setSaved(true);
       setTimeout(() => setSaved(false), 2000);
-    } catch {
+    } catch (err: any) {
+      const msg = err?.message || "";
+      if (msg.includes("already exists") || msg.includes("Duplicate") || err?.status === 409) {
+        alert(t("auth.emailTaken") || "An account with this email already exists");
+      } else {
+        alert(msg || "Failed to update profile");
+      }
     } finally {
       setSaving(false);
     }
@@ -132,7 +139,7 @@ export default function StoreProfile() {
         <div className="space-y-4">
           <div>
             <Label>{t("auth.email")}</Label>
-            <Input value={customer?.email || ""} disabled className="rounded-lg mt-1 bg-gray-50" />
+            <Input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} type="email" className="rounded-lg mt-1" data-testid="input-profile-email" />
           </div>
           <div>
             <Label>{t("auth.fullName")}</Label>

@@ -6,7 +6,9 @@ import puppeteer from "puppeteer";
 import fs from "fs";
 import path from "path";
 import { storage } from "./storage";
-import { isTransientError, isCapacityLimitError, checkDatabaseHealth, getPoolStats } from "./db";
+import { isTransientError, isCapacityLimitError, checkDatabaseHealth, getPoolStats, db } from "./db";
+import { storeOrders, storeNotifications, productReviews, storeReviews } from "@shared/schema";
+import { eq } from "drizzle-orm";
 import { cache } from "./cache";
 import { 
   insertProductSchema, 
@@ -330,6 +332,7 @@ const storeLoginSchema = z.object({
 });
 
 const storeProfileUpdateSchema = z.object({
+  email: z.string().email().max(200).optional(),
   fullName: z.string().min(1).max(200).optional(),
   phone: z.string().max(50).nullable().optional(),
   address: z.string().max(500).nullable().optional(),
@@ -3957,9 +3960,28 @@ export async function registerRoutes(
     try {
       const sc = (req.session as any).storeCustomer;
       if (!sc) return res.status(401).json({ error: "Not authenticated" });
-      const { fullName, phone, address, language } = storeProfileUpdateSchema.parse(req.body);
-      const updated = await storage.updateStoreCustomer(sc.id, { fullName, phone, address, language });
+      const parsed = storeProfileUpdateSchema.parse(req.body);
+      const newEmail = parsed.email?.trim().toLowerCase();
+      const oldEmail = sc.email?.toLowerCase();
+      if (newEmail && newEmail !== oldEmail) {
+        const existing = await storage.getStoreCustomerByEmail(newEmail);
+        if (existing && existing.id !== sc.id) {
+          return res.status(409).json({ error: "An account with this email already exists" });
+        }
+      }
+      const updated = await storage.updateStoreCustomer(sc.id, { ...parsed, email: newEmail || parsed.email });
       if (!updated) return res.status(404).json({ error: "Customer not found" });
+      if (newEmail && newEmail !== oldEmail) {
+        try {
+          await db.update(storeOrders).set({ customerEmail: updated.email }).where(eq(storeOrders.customerEmail, sc.email));
+          await db.update(storeNotifications).set({ customerEmail: updated.email }).where(eq(storeNotifications.customerEmail, sc.email));
+          await db.update(productReviews).set({ customerEmail: updated.email }).where(eq(productReviews.customerEmail, sc.email));
+          await db.update(storeReviews).set({ customerEmail: updated.email }).where(eq(storeReviews.customerEmail, sc.email));
+        } catch (e) {
+          console.error("[profile] Failed to migrate email references:", e);
+        }
+      }
+      (req.session as any).storeCustomer = { id: updated.id, email: updated.email, fullName: updated.fullName };
       res.json({ id: updated.id, email: updated.email, fullName: updated.fullName, phone: updated.phone, address: updated.address, language: updated.language });
     } catch (error) {
       handleError(res, "updateStoreProfile", error);
