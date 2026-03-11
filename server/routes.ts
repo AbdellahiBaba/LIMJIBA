@@ -36,7 +36,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { handleCustomerChat, handleAdminChat, generatePromoCode, getCustomerGreeting, generateProductDescriptions } from "./limjiba";
-import { sendOrderStatusEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail } from "./email";
+import { sendOrderStatusEmail, sendOrderInvoiceEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail } from "./email";
 
 function escapeHtml(str: string): string {
   return str
@@ -3508,6 +3508,31 @@ export async function registerRoutes(
             messageFr: `Votre commande ${orderNumber} a été passée avec succès. Total: ${total.toFixed(2)} MRU`,
             channel: "in_store",
           });
+        } catch {}
+      }
+
+      if (customerEmail) {
+        try {
+          const settings = await storage.getStoreSettings();
+          if (settings?.autoEmailInvoice !== false) {
+            const custRecord = await storage.getStoreCustomerByEmail(customerEmail);
+            const lang = custRecord?.language || "en";
+            sendOrderInvoiceEmail({
+              orderNumber,
+              customerName,
+              customerEmail,
+              customerPhone: customerPhone || undefined,
+              customerAddress: customerAddress || undefined,
+              items: validatedItems.map(i => ({ productName: i.productName, quantity: i.quantity, unitPrice: i.unitPrice })),
+              subtotal,
+              discount,
+              deliveryCost: deliveryCost || 0,
+              total,
+              paymentMethod: paymentMethod || undefined,
+              status: "pending",
+              createdAt: new Date().toISOString(),
+            }, lang).catch((err: any) => console.error("[EMAIL] Invoice send failed:", err.message || err));
+          }
         } catch {}
       }
 

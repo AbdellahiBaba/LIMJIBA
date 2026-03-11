@@ -167,10 +167,11 @@ Preferred communication style: Simple, everyday language.
 - **serverReady guard:** In `server/index.ts` — critical for startup, do not remove.
 - **AI Cache:** Namespaced by `mode` (customer/admin) + context fingerprint — do not break.
 
-### Email Notifications (Stub)
-- **Module:** `server/email.ts` — stub that logs emails to console instead of sending. Functions: `sendOrderStatusEmail`, `sendWelcomeEmail`, `sendPasswordResetEmail`, `sendMarketingEmail`. All compose branded HTML with LIMJIBA Royal Navy + Gold styling.
-- **Integration:** No email provider configured. User declined SendGrid and Resend integrations. To enable real emails, integrate a provider and replace the stub's `console.log` calls with actual sends.
-- **Auto Triggers:** Order status changes, signup, payment confirmation, guest order auto-registration all call email stubs + create in-store notifications.
+### Email Notifications (Live via SMTP)
+- **Module:** `server/email.ts` — sends real emails via nodemailer SMTP (Zoho Mail). Functions: `sendOrderInvoiceEmail`, `sendOrderStatusEmail`, `sendWelcomeEmail`, `sendPasswordResetEmail`, `sendMarketingEmail`.
+- **SMTP Config:** `SMTP_HOST` (env var, default `smtp.zoho.com`), `SMTP_PORT` (env var, default `465`), `SMTP_USER` (secret), `SMTP_PASS` (secret), `SMTP_FROM` (env var). Zoho SSL on port 465.
+- **Auto Invoice Email:** On order creation (`POST /api/store/orders`), a professional branded HTML invoice is auto-sent to customer email with itemized table, totals, discounts, delivery cost, payment method, order status. Trilingual (EN/FR/AR with RTL). Controlled by `autoEmailInvoice` toggle in store settings (CMS → Store Settings → Email Notifications).
+- **Auto Triggers:** Order creation → invoice email. Order status changes → status email. Signup → welcome email. All non-blocking (fire-and-forget with error logging).
 
 ### Number Input Fix
 - Admin pages use a pattern that allows clearing number fields to empty string (not stuck at zero). State accepts `string | number`, converts on blur/submit. Affected: stock, POS, invoices, expenses, salaries, purchase orders, resellers, customers, CMS.
@@ -194,6 +195,7 @@ Preferred communication style: Simple, everyday language.
 - bcrypt
 - crypto (Node built-in)
 - openai (via Replit AI Integrations)
+- nodemailer (SMTP email transport)
 - helmet (security headers)
 - express-rate-limit (rate limiting)
 - connect-pg-simple (persistent sessions in production)

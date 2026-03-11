@@ -830,6 +830,7 @@ export const storeSettings = pgTable("store_settings", {
   ctaText: text("cta_text"),
   footerDescription: text("footer_description"),
   openingBalance: real("opening_balance").notNull().default(0),
+  autoEmailInvoice: boolean("auto_email_invoice").notNull().default(true),
   updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
 

@@ -1129,6 +1129,11 @@ async function runMigrations(): Promise<void> {
     } catch {}
 
     try {
+      await client.query(`ALTER TABLE store_settings ADD COLUMN auto_email_invoice BOOLEAN NOT NULL DEFAULT true`);
+      console.log('[DB] Added auto_email_invoice column to store_settings');
+    } catch {}
+
+    try {
       await client.query(`ALTER TABLE products ADD COLUMN images TEXT[]`);
       console.log('[DB] Added images array column to products');
     } catch {}

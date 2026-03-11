@@ -356,6 +356,23 @@ function SettingsTab() {
         </CardContent>
       </Card>
 
+      <Card>
+        <CardHeader><CardTitle className="text-lg">Email Notifications</CardTitle></CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <Label className="text-sm font-medium">Auto Email Invoice</Label>
+              <p className="text-xs text-muted-foreground mt-1">Automatically send a professional invoice email to customers when they place an order</p>
+            </div>
+            <Switch
+              checked={form.autoEmailInvoice !== false}
+              onCheckedChange={(checked) => setForm(f => ({ ...f, autoEmailInvoice: checked }))}
+              data-testid="switch-auto-email-invoice"
+            />
+          </div>
+        </CardContent>
+      </Card>
+
       <Button onClick={() => updateSettings.mutate()} disabled={updateSettings.isPending} className="w-full" data-testid="button-save-settings">
         {updateSettings.isPending ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
         Save Settings
