@@ -1370,7 +1370,10 @@ export async function registerRoutes(
       if (req.query.logo) {
         logoDataUrl = sanitizeUrl(req.query.logo as string);
       } else if (storeSettings?.logoUrl) {
-        logoDataUrl = storeSettings.logoUrl;
+        const sUrl = storeSettings.logoUrl;
+        if (/^data:image\/(png|jpeg|webp|gif|svg\+xml);base64,/i.test(sUrl) || /^https:\/\//i.test(sUrl)) {
+          logoDataUrl = sUrl;
+        }
       } else if (branding.logo) {
         logoDataUrl = sanitizeUrl(branding.logo);
       } else {
@@ -2197,7 +2200,10 @@ export async function registerRoutes(
       if (req.query.logo) {
         logoDataUrl = sanitizeUrl(req.query.logo as string);
       } else if (storeSettings?.logoUrl) {
-        logoDataUrl = storeSettings.logoUrl;
+        const sUrl = storeSettings.logoUrl;
+        if (/^data:image\/(png|jpeg|webp|gif|svg\+xml);base64,/i.test(sUrl) || /^https:\/\//i.test(sUrl)) {
+          logoDataUrl = sUrl;
+        }
       } else if (branding.logo) {
         logoDataUrl = sanitizeUrl(branding.logo);
       } else {
