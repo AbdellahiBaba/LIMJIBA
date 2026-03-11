@@ -216,11 +216,11 @@ export default function StoreHome() {
             {settings?.heroTitle || t("home.heroTitle")}
           </h1>
 
-          <p className={`animate-fade-in-up-delay-2 text-lg md:text-xl lg:text-2xl mb-4 max-w-3xl mx-auto ${lang === "ar" ? "brand-name-ar" : "font-serif-brand"}`} style={{ color: accentColor }}>
+          <p className={`animate-fade-in-up-delay-2 text-lg md:text-xl lg:text-2xl mb-4 max-w-3xl mx-auto ${lang === "ar" ? "font-serif-brand-ar" : "font-serif-brand"}`} style={{ color: accentColor }}>
             {t("home.badge")}
           </p>
 
-          <p className={`animate-fade-in-up-delay-2 text-base md:text-lg text-gray-400 mb-10 max-w-2xl mx-auto ${lang === "ar" ? "brand-name-ar" : ""}`}>
+          <p className={`animate-fade-in-up-delay-2 text-base md:text-lg text-gray-400 mb-10 max-w-2xl mx-auto ${lang === "ar" ? "store-heading-ar" : ""}`}>
             {settings?.heroSubtitle || t("home.heroSubtitle")}
           </p>
 
@@ -484,7 +484,7 @@ export default function StoreHome() {
           <h2 className={`text-3xl md:text-4xl mb-4 ${lang === "ar" ? "brand-name-ar" : "brand-name-hero brand-glow"}`} data-text={lang === "ar" ? "لمجيبة" : "LIMJIBA"}>
             {lang === "ar" ? "لمجيبة" : "LIMJIBA"}
           </h2>
-          <p className={`text-lg text-gray-300 mb-8 max-w-2xl mx-auto ${lang === "ar" ? "brand-name-ar" : "font-serif-brand"}`} style={{ color: `${accentColor}cc` }}>
+          <p className={`text-lg text-gray-300 mb-8 max-w-2xl mx-auto ${lang === "ar" ? "font-serif-brand-ar" : "font-serif-brand"}`} style={{ color: `${accentColor}cc` }}>
             {ctaSubtitle}
           </p>
           <Link href="/store/products">
