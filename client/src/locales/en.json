@@ -453,7 +453,11 @@
     "kbRemoveLast": "Remove last",
     "kbClearCart": "Clear cart",
     "holdSaleBtn": "Hold",
-    "article": "item(s)"
+    "article": "item(s)",
+    "wallet": "Wallet",
+    "depositTo": "Deposit cash to",
+    "selectWallet": "Select wallet",
+    "chooseWallet": "Choose wallet..."
   },
   "sales": {
     "title": "Sales",

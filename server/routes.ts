@@ -3420,8 +3420,8 @@ export async function registerRoutes(
         promoCode: z.string().max(100).nullable().optional(),
         deliveryCost: z.number().min(0).optional(),
         notes: z.string().max(2000).nullable().optional(),
-        paymentMethod: z.string().min(1).max(100),
-        paymentProof: z.string().min(1).max(5000),
+        paymentMethod: z.string().max(100).nullable().optional(),
+        paymentProof: z.string().max(8_000_000).nullable().optional(),
       });
       const { customerName, customerEmail, customerPhone, customerAddress, items, promoCode, deliveryCost, notes, paymentMethod, paymentProof } = storeOrderInputSchema.parse(req.body);
 

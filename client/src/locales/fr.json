@@ -453,7 +453,11 @@
     "kbRemoveLast": "Retirer dernier",
     "kbClearCart": "Vider panier",
     "holdSaleBtn": "Attente",
-    "article": "article(s)"
+    "article": "article(s)",
+    "wallet": "Portefeuille",
+    "depositTo": "Déposer l'espèce dans",
+    "selectWallet": "Sélectionner portefeuille",
+    "chooseWallet": "Choisir portefeuille..."
   },
   "sales": {
     "title": "Ventes",

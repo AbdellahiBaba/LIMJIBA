@@ -453,7 +453,11 @@
     "kbRemoveLast": "إزالة الأخير",
     "kbClearCart": "تفريغ السلة",
     "holdSaleBtn": "تعليق",
-    "article": "عنصر(عناصر)"
+    "article": "عنصر(عناصر)",
+    "wallet": "المحفظة",
+    "depositTo": "إيداع النقد في",
+    "selectWallet": "اختر المحفظة",
+    "chooseWallet": "اختر محفظة..."
   },
   "sales": {
     "title": "المبيعات",
