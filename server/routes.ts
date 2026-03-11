@@ -4354,7 +4354,7 @@ export async function registerRoutes(
           costPrice: Math.max(0, Number(v.costPrice) || 0),
           stockQuantity: Math.max(0, Math.floor(Number(v.stockQuantity) || 0)),
           imageUrl: v.imageUrl || (imgArr && imgArr.length > 0 ? imgArr[0] : null),
-          images: imgArr && imgArr.length > 0 ? imgArr : null,
+          images: imgArr && imgArr.length > 0 ? imgArr : undefined,
           option1Name: v.option1Name || null,
           option1Value: v.option1Value || null,
           option2Name: v.option2Name || null,
