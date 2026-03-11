@@ -65,11 +65,15 @@ function trimHistory(history: { role: string; content: string }[]): { role: stri
 }
 
 async function getProductContext(): Promise<string> {
-  const products = await storage.getProducts();
-  const inStock = products.filter(p => p.stockQuantity > 0);
-  return inStock.length > 0
-    ? inStock.map(p => `${p.name}|${p.category}|${p.unitPrice}MRU|qty:${p.stockQuantity}|${p.unit}`).join("\n")
-    : "No products in stock.";
+  try {
+    const products = await storage.getProducts();
+    const inStock = products.filter(p => p.stockQuantity > 0);
+    return inStock.length > 0
+      ? inStock.map(p => `${p.name}|${p.category}|${p.unitPrice}MRU|qty:${p.stockQuantity}|${p.unit}`).join("\n")
+      : "No products in stock.";
+  } catch {
+    return "Product catalog temporarily unavailable.";
+  }
 }
 
 async function getSalesContext(): Promise<string> {
@@ -77,13 +81,17 @@ async function getSalesContext(): Promise<string> {
 }
 
 async function getLowStockContext(): Promise<string> {
-  const products = await storage.getProducts();
-  const low = products.filter(p => p.stockQuantity <= p.lowStockThreshold && p.stockQuantity > 0);
-  const out = products.filter(p => p.stockQuantity === 0);
-  const lines: string[] = [];
-  if (low.length > 0) lines.push("LOW:" + low.map(p => `${p.name}(${p.stockQuantity}left)`).join(","));
-  if (out.length > 0) lines.push("OUT:" + out.map(p => p.name).join(","));
-  return lines.length > 0 ? lines.join("\n") : "All stocked.";
+  try {
+    const products = await storage.getProducts();
+    const low = products.filter(p => p.stockQuantity <= p.lowStockThreshold && p.stockQuantity > 0);
+    const out = products.filter(p => p.stockQuantity === 0);
+    const lines: string[] = [];
+    if (low.length > 0) lines.push("LOW:" + low.map(p => `${p.name}(${p.stockQuantity}left)`).join(","));
+    if (out.length > 0) lines.push("OUT:" + out.map(p => p.name).join(","));
+    return lines.length > 0 ? lines.join("\n") : "All stocked.";
+  } catch {
+    return "Stock data temporarily unavailable.";
+  }
 }
 
 async function getActivePromosContext(): Promise<string> {
@@ -175,13 +183,14 @@ function extractOrderNumbers(text: string): string[] {
 }
 
 async function getOrderContext(messages: { role: string; content: string }[], currentMessage: string): Promise<string> {
-  const allText = [...messages.map(m => m.content), currentMessage].join(" ");
-  const orderNums = extractOrderNumbers(allText);
-  if (orderNums.length === 0) return "";
+  try {
+    const allText = [...messages.map(m => m.content), currentMessage].join(" ");
+    const orderNums = extractOrderNumbers(allText);
+    if (orderNums.length === 0) return "";
 
-  const results: string[] = [];
-  for (const num of orderNums.slice(0, 3)) {
-    const order = await storage.getStoreOrderByNumber(num);
+    const results: string[] = [];
+    for (const num of orderNums.slice(0, 3)) {
+      const order = await storage.getStoreOrderByNumber(num);
     if (order) {
       const statusMap: Record<string, string> = {
         pending: "Pending (قيد الانتظار)",
@@ -202,7 +211,10 @@ async function getOrderContext(messages: { role: string; content: string }[], cu
       results.push(`Order ${num}: NOT FOUND`);
     }
   }
-  return results.length > 0 ? "\nOrder Data:\n" + results.join("\n") : "";
+    return results.length > 0 ? "\nOrder Data:\n" + results.join("\n") : "";
+  } catch {
+    return "";
+  }
 }
 
 export async function handleCustomerChat(

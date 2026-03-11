@@ -6,7 +6,7 @@ import puppeteer from "puppeteer";
 import fs from "fs";
 import path from "path";
 import { storage } from "./storage";
-import { isTransientError, checkDatabaseHealth, getPoolStats } from "./db";
+import { isTransientError, isCapacityLimitError, checkDatabaseHealth, getPoolStats } from "./db";
 import { cache } from "./cache";
 import { 
   insertProductSchema, 
@@ -123,6 +123,14 @@ function handleError(res: any, context: string, error: unknown, defaultStatus: n
     });
   }
   
+  if (isCapacityLimitError(error)) {
+    return res.status(503).json({ 
+      error: "Service temporarily unavailable", 
+      details: "The service is experiencing capacity limits. Please try again later.",
+      retryable: false
+    });
+  }
+
   if (isTransientError(error)) {
     return res.status(500).json({ 
       error: "Database operation failed", 

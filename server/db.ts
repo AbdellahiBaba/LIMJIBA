@@ -140,6 +140,18 @@ const TRANSIENT_ERROR_MESSAGES = [
   'WebSocket',
 ];
 
+const CAPACITY_ERROR_MESSAGES = [
+  'data transfer quota',
+  'exceeded the data transfer',
+  'upgrade your plan',
+];
+
+export function isCapacityLimitError(error: any): boolean {
+  if (!error) return false;
+  const message = error?.message?.toLowerCase() || '';
+  return CAPACITY_ERROR_MESSAGES.some(pattern => message.includes(pattern.toLowerCase()));
+}
+
 export function isTransientError(error: any): boolean {
   if (!error) return false;
   

@@ -302,7 +302,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                   data-testid="nav-store-mobile"
                 >
                   <div className="flex items-center gap-3 p-5 pb-4" style={{ borderBottom: "1px solid rgba(201,168,76,0.12)" }}>
-                    <img src={logoImg} alt={storeName} className="h-9 w-9 rounded-lg object-contain p-0.5" />
+                    <img src={logoImg} alt={storeName} className="h-9 w-9 rounded-lg object-contain p-0.5" style={{ boxShadow: "0 0 16px rgba(201,168,76,0.2)", background: "rgba(201,168,76,0.06)" }} />
                     <div className="flex flex-col leading-tight">
                       <span className="text-sm brand-name">{storeName}</span>
                       <span className="text-[9px] brand-name-ar" style={{ opacity: 0.65 }}>لمجيبة</span>

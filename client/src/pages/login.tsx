@@ -248,7 +248,12 @@ export default function Login() {
                     animate={{ opacity: 1, scale: 1 }}
                   >
                     <p className="text-sm text-red-600 text-center" data-testid="text-login-error">
-                      {isRTL ? "اسم المستخدم أو كلمة المرور غير صحيحة" : "Identifiant ou mot de passe incorrect"}
+                      {(() => {
+                        const e = error.toLowerCase();
+                        return (e.includes("database") || e.includes("service") || e.includes("capacity") || e.includes("unavailable") || e.includes("500") || e.includes("network") || e.includes("fetch"))
+                          ? (isRTL ? "خطأ في الخادم. يرجى المحاولة لاحقاً" : "Erreur de connexion au serveur. Réessayez plus tard.")
+                          : (isRTL ? "اسم المستخدم أو كلمة المرور غير صحيحة" : "Identifiant ou mot de passe incorrect");
+                      })()}
                     </p>
                   </motion.div>
                 )}
