@@ -556,3 +556,93 @@ export async function sendProductMarketingEmail(
     html: brandedHtml(body, dir),
   });
 }
+
+export async function sendAbandonedCartReminderEmail(
+  email: string,
+  customerName: string,
+  lang: string,
+  itemCount: number,
+  subtotal: number
+): Promise<boolean> {
+  const l = (lang === "ar" || lang === "fr") ? lang : "en";
+  const dir = l === "ar" ? "rtl" : "ltr";
+  const safeName = escHtml(customerName || (l === "ar" ? "عزيزنا" : l === "fr" ? "Cher client" : "Valued Customer"));
+  const total = `${subtotal.toLocaleString()} MRU`;
+
+  const subjects: Record<string, string> = {
+    en: "Your treasures await you ✨",
+    fr: "Vos trésors vous attendent ✨",
+    ar: "كنوزكم في الانتظار ✨"
+  };
+
+  const greetings: Record<string, string> = {
+    en: `Dear ${safeName}`,
+    fr: `Cher(e) ${safeName}`,
+    ar: `عزيزي/عزيزتي ${safeName}`
+  };
+
+  const poeticBlocks: Record<string, string> = {
+    en: `<p style="font-style:italic;color:#5a4d3a;font-size:15px;line-height:1.8;">
+      We noticed you left something special behind — treasures carefully chosen, waiting patiently in the glow of golden light.
+      Like a letter left unsealed, your selection longs for its destination. The finest things in life don't wait forever — 
+      let us bring them home to you before the moment passes.
+    </p>`,
+    fr: `<p style="font-style:italic;color:#5a4d3a;font-size:15px;line-height:1.8;">
+      Nous avons remarqué que vous avez laissé quelque chose de spécial derrière vous — des trésors soigneusement choisis, 
+      attendant patiemment sous l'éclat doré. Comme une lettre restée ouverte, votre sélection aspire à sa destination. 
+      Les plus belles choses de la vie n'attendent pas éternellement — laissez-nous vous les apporter avant que l'instant ne s'envole.
+    </p>`,
+    ar: `<p style="font-style:italic;color:#5a4d3a;font-size:15px;line-height:1.8;">
+      لاحظنا أنكم تركتم شيئاً مميزاً خلفكم — كنوزٌ مُنتقاة بعناية، تنتظر بصبرٍ تحت وهج الذهب.
+      كرسالةٍ لم تُختم بعد، اختياركم يتوق إلى وجهته. أجمل ما في الحياة لا ينتظر طويلاً — 
+      دعونا نحمله إليكم قبل أن تمضي اللحظة.
+    </p>`
+  };
+
+  const cartSummaryLabels: Record<string, { items: string; total: string }> = {
+    en: { items: "Items in your cart", total: "Cart value" },
+    fr: { items: "Articles dans votre panier", total: "Valeur du panier" },
+    ar: { items: "المنتجات في سلتكم", total: "قيمة السلة" }
+  };
+
+  const ctaLabels: Record<string, string> = {
+    en: "Complete Your Order",
+    fr: "Terminer Votre Commande",
+    ar: "أكملوا طلبكم"
+  };
+
+  const signoffs: Record<string, string> = {
+    en: "With warmest regards, The LIMJIBA Team",
+    fr: "Avec nos plus chaleureuses salutations, l'équipe LIMJIBA",
+    ar: "مع أطيب التحيات، فريق لمجيبة"
+  };
+
+  const labels = cartSummaryLabels[l];
+
+  const body = `
+    <p style="font-size:16px;color:#0A1628;font-weight:600;">${greetings[l]},</p>
+    ${poeticBlocks[l]}
+    <div style="margin:24px 0;padding:20px;background:linear-gradient(135deg,#0A1628,#132240);border-radius:12px;text-align:center;">
+      <div style="margin-bottom:12px;">
+        <span style="color:rgba(201,168,76,0.7);font-size:13px;text-transform:uppercase;letter-spacing:2px;">${labels.items}</span>
+        <p style="color:#C9A84C;font-size:28px;font-weight:700;margin:4px 0;">${itemCount}</p>
+      </div>
+      <div style="width:40px;height:1px;background:rgba(201,168,76,0.3);margin:0 auto 12px;"></div>
+      <div>
+        <span style="color:rgba(201,168,76,0.7);font-size:13px;text-transform:uppercase;letter-spacing:2px;">${labels.total}</span>
+        <p style="color:#C9A84C;font-size:28px;font-weight:700;margin:4px 0;">${total}</p>
+      </div>
+    </div>
+    <div style="text-align:center;margin:28px 0;">
+      <a href="https://limjiba.com" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#B8963F);color:#0A1628;text-decoration:none;padding:16px 48px;border-radius:8px;font-weight:700;font-size:16px;letter-spacing:1px;">${ctaLabels[l]}</a>
+    </div>
+    <div style="width:60px;height:1px;background:linear-gradient(90deg,transparent,#C9A84C,transparent);margin:24px auto;"></div>
+    <p style="text-align:center;color:rgba(10,22,40,0.5);font-size:12px;">${signoffs[l]}</p>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: `LIMJIBA — ${subjects[l]}`,
+    html: brandedHtml(body, dir),
+  });
+}

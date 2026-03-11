@@ -37,6 +37,27 @@ export default function StoreCheckout() {
     }
   }, [isAuthenticated, customer]);
 
+  const lastSyncedEmailRef = useRef("");
+  useEffect(() => {
+    const email = isAuthenticated ? customer?.email : form.customerEmail;
+    if (!email || !email.includes("@") || items.length === 0 || orderPlaced) return;
+    if (lastSyncedEmailRef.current === email) return;
+    const timer = setTimeout(() => {
+      lastSyncedEmailRef.current = email;
+      fetch("/api/store/cart/sync", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          customerName: form.customerName || customer?.fullName,
+          language: lang,
+          items: items.map(i => ({ productId: i.productId, productName: i.productName, unitPrice: i.unitPrice, quantity: i.quantity })),
+        }),
+      }).catch(() => {});
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [isAuthenticated, customer, form.customerEmail, items, lang, orderPlaced]);
+
   const searchParams = new URLSearchParams(window.location.search);
   const promoCode = searchParams.get("promo") || "";
 

@@ -90,6 +90,8 @@ import {
   type InsertProductReview,
   type StoreReview,
   type InsertStoreReview,
+  type AbandonedCart,
+  type InsertAbandonedCart,
   type SupportConversation,
   type InsertSupportConversation,
   type SupportMessage,
@@ -135,6 +137,7 @@ import {
   storeReviews,
   supportConversations,
   supportMessages,
+  abandonedCarts,
 } from "@shared/schema";
 import { db, withRetry } from "./db";
 import { eq, desc, sql, and, gte, lte, or } from "drizzle-orm";
@@ -363,6 +366,11 @@ export interface IStorage {
   markSupportMessagesRead(conversationId: number, senderType: string): Promise<void>;
   getUnreadSupportCount(): Promise<number>;
   getSupportMessagesSince(conversationId: number, afterId: number): Promise<SupportMessage[]>;
+
+  upsertAbandonedCart(email: string, customerId: string | null, customerName: string | null, language: string, items: string, itemCount: number, subtotal: number): Promise<AbandonedCart>;
+  markAbandonedCartConverted(email: string): Promise<void>;
+  getAbandonedCartsForReminder(minAgeMinutes: number): Promise<AbandonedCart[]>;
+  markAbandonedCartReminderSent(id: string): Promise<void>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -3071,6 +3079,58 @@ export class DatabaseStorage implements IStorage {
           gt(supportMessages.id, afterId)
         ))
         .orderBy(supportMessages.createdAt);
+    });
+  }
+
+  async upsertAbandonedCart(email: string, customerId: string | null, customerName: string | null, language: string, items: string, itemCount: number, subtotal: number): Promise<AbandonedCart> {
+    return await withRetry(async () => {
+      const now = new Date().toISOString();
+      const normalizedEmail = email.toLowerCase().trim();
+      const existing = await db.select().from(abandonedCarts).where(sql`lower(${abandonedCarts.customerEmail}) = ${normalizedEmail}`).limit(1);
+      if (existing.length > 0) {
+        const updateData: any = { customerId, customerName, language, items, itemCount, subtotal, reminderSent: false, lastUpdatedAt: now };
+        if (existing[0].convertedToOrder) {
+          updateData.convertedToOrder = false;
+        }
+        const [updated] = await db.update(abandonedCarts)
+          .set(updateData)
+          .where(eq(abandonedCarts.id, existing[0].id))
+          .returning();
+        return updated;
+      }
+      const [created] = await db.insert(abandonedCarts)
+        .values({ customerEmail: normalizedEmail, customerId, customerName, language, items, itemCount, subtotal, lastUpdatedAt: now })
+        .returning();
+      return created;
+    });
+  }
+
+  async markAbandonedCartConverted(email: string): Promise<void> {
+    await withRetry(async () => {
+      const normalizedEmail = email.toLowerCase().trim();
+      await db.update(abandonedCarts)
+        .set({ convertedToOrder: true })
+        .where(sql`lower(${abandonedCarts.customerEmail}) = ${normalizedEmail}`);
+    });
+  }
+
+  async getAbandonedCartsForReminder(minAgeMinutes: number): Promise<AbandonedCart[]> {
+    return await withRetry(async () => {
+      const cutoff = new Date(Date.now() - minAgeMinutes * 60 * 1000).toISOString();
+      return await db.select().from(abandonedCarts)
+        .where(and(
+          eq(abandonedCarts.reminderSent, false),
+          eq(abandonedCarts.convertedToOrder, false),
+          lte(abandonedCarts.lastUpdatedAt, cutoff)
+        ));
+    });
+  }
+
+  async markAbandonedCartReminderSent(id: string): Promise<void> {
+    await withRetry(async () => {
+      await db.update(abandonedCarts)
+        .set({ reminderSent: true })
+        .where(eq(abandonedCarts.id, id));
     });
   }
 }

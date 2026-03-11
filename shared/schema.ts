@@ -866,3 +866,22 @@ export const storeReviews = pgTable("store_reviews", {
 export const insertStoreReviewSchema = createInsertSchema(storeReviews).omit({ id: true, createdAt: true });
 export type InsertStoreReview = z.infer<typeof insertStoreReviewSchema>;
 export type StoreReview = typeof storeReviews.$inferSelect;
+
+export const abandonedCarts = pgTable("abandoned_carts", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerEmail: text("customer_email").notNull(),
+  customerId: text("customer_id"),
+  customerName: text("customer_name"),
+  language: text("language").notNull().default("en"),
+  items: text("items").notNull(),
+  itemCount: integer("item_count").notNull().default(0),
+  subtotal: real("subtotal").notNull().default(0),
+  reminderSent: boolean("reminder_sent").notNull().default(false),
+  convertedToOrder: boolean("converted_to_order").notNull().default(false),
+  lastUpdatedAt: text("last_updated_at").default(sql`CURRENT_TIMESTAMP`),
+  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export const insertAbandonedCartSchema = createInsertSchema(abandonedCarts).omit({ id: true, createdAt: true });
+export type InsertAbandonedCart = z.infer<typeof insertAbandonedCartSchema>;
+export type AbandonedCart = typeof abandonedCarts.$inferSelect;

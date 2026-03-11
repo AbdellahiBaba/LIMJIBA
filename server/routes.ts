@@ -38,7 +38,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { handleCustomerChat, handleAdminChat, generatePromoCode, getCustomerGreeting, generateProductDescriptions, generateNotificationContent } from "./limjiba";
-import { sendOrderStatusEmail, sendOrderInvoiceEmail, sendPaymentConfirmedEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail, sendProductMarketingEmail } from "./email";
+import { sendOrderStatusEmail, sendOrderInvoiceEmail, sendPaymentConfirmedEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail, sendProductMarketingEmail, sendAbandonedCartReminderEmail } from "./email";
 
 function escapeHtml(str: string): string {
   return str
@@ -3788,9 +3788,37 @@ export async function registerRoutes(
         } catch {}
       }
 
+      if (customerEmail) {
+        storage.markAbandonedCartConverted(customerEmail).catch(console.error);
+      }
+
       res.status(201).json(order);
     } catch (error) {
       handleError(res, "createStoreOrder", error);
+    }
+  });
+
+  app.post("/api/store/cart/sync", async (req: Request, res: Response) => {
+    try {
+      const sc = (req.session as any)?.storeCustomer;
+      const body = req.body;
+      const email = sc?.email || body.email;
+      if (!email || typeof email !== "string" || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        return res.status(400).json({ error: "Valid email required" });
+      }
+      const items = body.items;
+      if (!items || !Array.isArray(items) || items.length === 0 || items.length > 100) {
+        return res.json({ success: true, skipped: true });
+      }
+      const customerId = sc?.id || null;
+      const customerName = sc?.fullName || body.customerName || null;
+      const language = sc?.language || body.language || "en";
+      const itemCount = items.reduce((sum: number, i: any) => sum + (i.quantity || 1), 0);
+      const subtotal = items.reduce((sum: number, i: any) => sum + ((i.unitPrice || i.price || 0) * (i.quantity || 1)), 0);
+      await storage.upsertAbandonedCart(email, customerId, customerName, language, JSON.stringify(items), itemCount, subtotal);
+      res.json({ success: true });
+    } catch (error) {
+      handleError(res, "syncAbandonedCart", error);
     }
   });
 
@@ -5342,6 +5370,74 @@ export async function registerRoutes(
       handleError(res, "adminChat", error);
     }
   });
+
+  async function processAbandonedCartReminders() {
+    try {
+      const carts = await storage.getAbandonedCartsForReminder(60);
+      if (carts.length === 0) return;
+      console.log(`[ABANDONED-CART] Processing ${carts.length} abandoned carts for reminders`);
+
+      const notifTitles: Record<string, string> = {
+        en: "🛒 Your cart is waiting for you!",
+        fr: "🛒 Votre panier vous attend !",
+        ar: "🛒 سلتكم في الانتظار!"
+      };
+      const notifMessages: Record<string, string> = {
+        en: "You left treasures in your cart. Complete your order before they slip away — the finest things don't wait forever.",
+        fr: "Vous avez laissé des trésors dans votre panier. Finalisez votre commande avant qu'ils ne s'envolent — les plus belles choses n'attendent pas éternellement.",
+        ar: "تركتم كنوزاً في سلتكم. أكملوا طلبكم قبل أن تمضي الفرصة — أجمل ما في الحياة لا ينتظر طويلاً."
+      };
+
+      const BATCH_SIZE = 5;
+      for (let i = 0; i < carts.length; i += BATCH_SIZE) {
+        const batch = carts.slice(i, i + BATCH_SIZE);
+        await Promise.allSettled(batch.map(async (cart) => {
+          try {
+            const emailSent = await sendAbandonedCartReminderEmail(
+              cart.customerEmail,
+              cart.customerName || "",
+              cart.language,
+              cart.itemCount,
+              cart.subtotal
+            );
+
+            if (cart.customerId) {
+              await storage.createStoreNotification({
+                customerId: cart.customerId,
+                customerEmail: cart.customerEmail,
+                type: "promotion",
+                title: notifTitles.en,
+                titleAr: notifTitles.ar,
+                titleFr: notifTitles.fr,
+                message: notifMessages.en,
+                messageAr: notifMessages.ar,
+                messageFr: notifMessages.fr,
+                isRead: false,
+              });
+            }
+
+            if (emailSent || cart.customerId) {
+              await storage.markAbandonedCartReminderSent(cart.id);
+            }
+            console.log(`[ABANDONED-CART] Reminder sent to ${cart.customerEmail} (email=${emailSent})`);
+          } catch (err: any) {
+            console.error(`[ABANDONED-CART] Failed for ${cart.customerEmail}:`, err.message);
+          }
+        }));
+      }
+      console.log(`[ABANDONED-CART] Finished processing ${carts.length} reminders`);
+    } catch (err: any) {
+      console.error("[ABANDONED-CART] processAbandonedCartReminders error:", err.message);
+    }
+  }
+
+  setInterval(() => {
+    processAbandonedCartReminders().catch(console.error);
+  }, 15 * 60 * 1000);
+
+  setTimeout(() => {
+    processAbandonedCartReminders().catch(console.error);
+  }, 60 * 1000);
 
   return httpServer;
 }
