@@ -7,8 +7,7 @@ import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
 import { serveStatic } from "./static";
 import { createServer } from "http";
-import { verifyDatabaseConnection, isDatabaseReady, getPoolStats } from "./db";
-import pg from "pg";
+import { verifyDatabaseConnection, isDatabaseReady, getPoolStats, pool as dbPool } from "./db";
 
 declare module "express-session" {
   interface SessionData {
@@ -62,28 +61,16 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-function createSessionStore() {
-  const dbUrl = process.env.DATABASE_URL || process.env.NEON_DATABASE_URL;
-  if (isProduction && dbUrl) {
-    const pool = new pg.Pool({ connectionString: dbUrl, max: 3 });
-    return new PgSessionStore({
-      pool,
-      tableName: "user_sessions",
-      createTableIfMissing: false,
-      pruneSessionInterval: false,
-    });
-  }
-  return new MemoryStoreSession({ checkPeriod: 86400000 });
-}
+let activeSessionMiddleware: any = null;
 
-app.use(
-  session({
+function createSessionMiddleware(store: any) {
+  return session({
     secret: process.env.SESSION_SECRET,
     name: "pfp_session",
     rolling: true,
-    resave: true,
+    resave: false,
     saveUninitialized: false,
-    store: createSessionStore(),
+    store,
     cookie: {
       secure: isProduction,
       httpOnly: true,
@@ -91,8 +78,21 @@ app.use(
       sameSite: "lax",
       path: "/",
     },
-  })
-);
+  });
+}
+
+if (!isProduction) {
+  activeSessionMiddleware = createSessionMiddleware(
+    new MemoryStoreSession({ checkPeriod: 86400000 })
+  );
+}
+
+app.use((req: Request, res: Response, next: NextFunction) => {
+  if (!activeSessionMiddleware) {
+    return next();
+  }
+  activeSessionMiddleware(req, res, next);
+});
 
 app.use(helmet({
   contentSecurityPolicy: isProduction ? {
@@ -343,11 +343,41 @@ app.use((req, res, next) => {
       const dbSuccess = await verifyDatabaseConnection();
       if (dbSuccess) {
         log("Database ready for requests");
+
+        if (isProduction) {
+          try {
+            await dbPool.query(`DELETE FROM user_sessions WHERE expire < NOW()`);
+            const countResult = await dbPool.query(`SELECT COUNT(*) as cnt FROM user_sessions`);
+            log(`Session cleanup done. Active sessions: ${countResult.rows[0]?.cnt || 0}`);
+          } catch (cleanupErr: any) {
+            log(`Session table cleanup: ${cleanupErr.message}`);
+          }
+          try {
+            const pgStore = new PgSessionStore({
+              pool: dbPool,
+              tableName: "user_sessions",
+              createTableIfMissing: false,
+              pruneSessionInterval: 60 * 15,
+            });
+            await dbPool.query(`SELECT 1 FROM user_sessions LIMIT 1`);
+            activeSessionMiddleware = createSessionMiddleware(pgStore);
+            log("PgSessionStore activated after DB verification");
+          } catch (storeErr: any) {
+            log(`PgSessionStore probe failed, falling back to MemoryStore: ${storeErr.message}`);
+          }
+        }
       } else {
         log("WARNING: Database connection issues - operations will retry automatically");
       }
     } catch (err: any) {
       log(`Database verification error: ${err.message}`);
+    }
+
+    if (!activeSessionMiddleware) {
+      activeSessionMiddleware = createSessionMiddleware(
+        new MemoryStoreSession({ checkPeriod: 86400000 })
+      );
+      log("Using MemoryStore for sessions (fallback)");
     }
 
     serverReady = true;
