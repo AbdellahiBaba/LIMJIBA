@@ -96,6 +96,7 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
     "footer.quickLinks": "Quick Links",
     "footer.trackOrder": "Track Order",
     "footer.contact": "Contact",
+    "footer.followUs": "Follow Us",
     "footer.rights": "All rights reserved",
     "footer.currency": "MRU",
 
@@ -330,6 +331,7 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
     "footer.quickLinks": "Liens Rapides",
     "footer.trackOrder": "Suivi de Commande",
     "footer.contact": "Contact",
+    "footer.followUs": "Suivez-nous",
     "footer.rights": "Tous droits réservés",
     "footer.currency": "MRU",
 
@@ -564,6 +566,7 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
     "footer.quickLinks": "روابط مهمّة",
     "footer.trackOrder": "تتبّع الطلب",
     "footer.contact": "تواصلوا معنا",
+    "footer.followUs": "تابعونا",
     "footer.rights": "جميع الحقوق محفوظة",
     "footer.currency": "أوقية",
 

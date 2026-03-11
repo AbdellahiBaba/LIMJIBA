@@ -483,6 +483,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                 if (socialItems.length === 0) return null;
                 return (
                   <div className="flex items-center gap-4 mt-5" data-testid="footer-social-links">
+                    <span className="text-xs text-[#C9A84C]/60 uppercase tracking-widest font-semibold">{t("footer.followUs")}</span>
                     {socialItems.map(item => (
                       <a
                         key={item.key}
