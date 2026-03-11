@@ -35,7 +35,7 @@ import {
   insertPurchaseOrderItemSchema,
 } from "@shared/schema";
 import { z } from "zod";
-import { handleCustomerChat, handleAdminChat, generatePromoCode, getCustomerGreeting, generateProductDescriptions } from "./limjiba";
+import { handleCustomerChat, handleAdminChat, generatePromoCode, getCustomerGreeting, generateProductDescriptions, generateNotificationContent } from "./limjiba";
 import { sendOrderStatusEmail, sendOrderInvoiceEmail, sendPaymentConfirmedEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail } from "./email";
 
 function escapeHtml(str: string): string {
@@ -4205,6 +4205,18 @@ export async function registerRoutes(
       res.json(result);
     } catch (error) {
       handleError(res, "generateProductDescriptions", error);
+    }
+  });
+
+  app.post("/api/ai/generate-notification", requireAdmin, async (req: Request, res: Response) => {
+    try {
+      const { topic } = z.object({
+        topic: z.string().max(200).optional(),
+      }).parse(req.body);
+      const result = await generateNotificationContent(topic);
+      res.json(result);
+    } catch (error) {
+      handleError(res, "generateNotificationContent", error);
     }
   });
 

@@ -399,6 +399,62 @@ ${variants.length > 0 ? "- Variant descriptions should be 1 poetic sentence each
   }
 }
 
+export async function generateNotificationContent(topic?: string): Promise<{
+  title: string;
+  titleAr: string;
+  titleFr: string;
+  message: string;
+  messageAr: string;
+  messageFr: string;
+}> {
+  const topicLine = topic ? `Topic/Theme: ${topic}` : "Theme: General promotional — celebrate the LIMJIBA brand, inspire customers to explore";
+
+  const prompt = `You are a poetic luxury copywriter for LIMJIBA (لمجيبة), a premium import & e-commerce house in Mauritania. Currency: MRU. Write a marketing push notification for customers.
+
+${topicLine}
+
+Return a JSON object with these exact fields:
+{
+  "title": "English title (short, 5-10 words, captivating and poetic — like a whispered invitation)",
+  "titleAr": "Arabic title (short, 5-10 words, classically elegant Arabic — RTL)",
+  "titleFr": "French title (short, 5-10 words, romantically refined French)",
+  "message": "English message (2-3 sentences, lyrical and enchanting — paint a vivid sensory picture that makes the reader feel the magic of LIMJIBA. Use elegant metaphors, create urgency through beauty not pressure)",
+  "messageAr": "Arabic message (2-3 sentences, drawn from classical Arabic poetic tradition — flowing, expressive, graceful. RTL-ready)",
+  "messageFr": "French message (2-3 sentences, romantically lyrical French — channel literary elegance, flowing prose that celebrates refinement)"
+}
+
+Style Rules:
+- Write like a poet, not a marketer — let beauty carry the message
+- Each language should feel natively poetic, not translated
+- Subtly weave in LIMJIBA's devotion to quality and premium imports
+- Keep titles punchy yet elegant, messages enchanting yet concise
+- Return ONLY valid JSON, no markdown or code blocks`;
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    max_tokens: 600,
+    temperature: 0.85,
+    response_format: { type: "json_object" },
+  });
+
+  const text = response.choices[0]?.message?.content || "{}";
+  const cleaned = text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim();
+  try {
+    const parsed = JSON.parse(cleaned);
+    return {
+      title: String(parsed.title || ""),
+      titleAr: String(parsed.titleAr || ""),
+      titleFr: String(parsed.titleFr || ""),
+      message: String(parsed.message || ""),
+      messageAr: String(parsed.messageAr || ""),
+      messageFr: String(parsed.messageFr || ""),
+    };
+  } catch {
+    throw new Error("Failed to parse AI-generated notification content");
+  }
+}
+
 export async function getCustomerGreeting(language: string = "en"): Promise<string> {
   let promoLine = "";
   try {

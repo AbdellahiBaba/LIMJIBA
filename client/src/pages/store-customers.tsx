@@ -26,7 +26,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { UsersRound, Bell, Loader2, Search } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { UsersRound, Bell, Loader2, Search, Sparkles, FileText } from "lucide-react";
 
 interface StoreCustomer {
   id: string;
@@ -78,6 +79,97 @@ export default function StoreCustomers() {
     },
   });
 
+  const [aiTopic, setAiTopic] = useState("");
+  const [showAiInput, setShowAiInput] = useState(false);
+
+  const NOTIFICATION_TEMPLATES: Record<string, { title: string; titleAr: string; titleFr: string; message: string; messageAr: string; messageFr: string }> = {
+    new_arrivals: {
+      title: "A New Chapter of Elegance Awaits",
+      titleAr: "فصلٌ جديد من الأناقة بانتظاركم",
+      titleFr: "Un Nouveau Chapitre d'Élégance Vous Attend",
+      message: "The winds of distinction have carried treasures to LIMJIBA's shores. Discover our latest arrivals — each piece a story of craftsmanship, woven with threads of beauty from distant lands. Step into a world where every detail whispers luxury.",
+      messageAr: "حملت رياح التميّز كنوزاً جديدة إلى شواطئ لمجيبة. اكتشفوا أحدث وصولاتنا — كل قطعة حكايةٌ من الحِرَفية، نُسِجَت بخيوط الجمال من أراضٍ بعيدة. ادخلوا عالماً تهمس فيه كل تفصيلة بالفخامة.",
+      messageFr: "Les vents de la distinction ont porté des trésors jusqu'aux rivages de LIMJIBA. Découvrez nos dernières arrivées — chaque pièce est une histoire d'artisanat, tissée de fils de beauté venus de terres lointaines. Entrez dans un monde où chaque détail murmure le luxe.",
+    },
+    flash_sale: {
+      title: "A Golden Hour of Splendor",
+      titleAr: "ساعةٌ ذهبية من الروعة",
+      titleFr: "Une Heure Dorée de Splendeur",
+      message: "For a fleeting moment, LIMJIBA opens its golden gates wider. Exceptional prices dance alongside exquisite quality — a rare symphony of value and beauty. Seize this shimmering window before it fades like a desert sunset.",
+      messageAr: "للحظةٍ عابرة، تفتح لمجيبة أبوابها الذهبية على مصراعيها. أسعارٌ استثنائية ترقص إلى جانب جودة رفيعة — سيمفونية نادرة من القيمة والجمال. اغتنموا هذه النافذة المتلألئة قبل أن تتلاشى كغروب الصحراء.",
+      messageFr: "Pour un instant fugace, LIMJIBA ouvre plus grand ses portes dorées. Des prix exceptionnels dansent aux côtés d'une qualité exquise — une symphonie rare de valeur et de beauté. Saisissez cette fenêtre scintillante avant qu'elle ne s'évanouisse comme un coucher de soleil saharien.",
+    },
+    vip_exclusive: {
+      title: "You Are Our Most Cherished Guest",
+      titleAr: "أنتم ضيوفنا الأعزّ",
+      titleFr: "Vous Êtes Notre Invité le Plus Précieux",
+      message: "To our distinguished patrons — LIMJIBA reserves its finest moments for those who understand true elegance. An exclusive selection awaits you, curated with the devotion of an artisan preparing a masterpiece. Your loyalty is the crown we wear with pride.",
+      messageAr: "إلى عملائنا المتميّزين — لمجيبة تحتفظ بأجمل لحظاتها لمن يعرفون الأناقة الحقيقية. تشكيلة حصرية بانتظاركم، أُعِدّت بإخلاص الفنّان وهو يُعدّ تحفته. ولاؤكم تاجٌ نتزيّن به بفخر.",
+      messageFr: "À nos clients distingués — LIMJIBA réserve ses plus beaux moments à ceux qui comprennent la véritable élégance. Une sélection exclusive vous attend, préparée avec la dévotion d'un artisan préparant son chef-d'œuvre. Votre fidélité est la couronne que nous portons avec fierté.",
+    },
+    seasonal: {
+      title: "The Season Blooms with New Wonders",
+      titleAr: "الموسم يتفتّح بعجائب جديدة",
+      titleFr: "La Saison Fleurit de Nouvelles Merveilles",
+      message: "As the seasons turn their golden pages, LIMJIBA unveils a collection born of this beautiful moment. Each product carries the spirit of the season — fresh, vibrant, and irresistibly enchanting. Let the rhythm of nature guide you to something extraordinary.",
+      messageAr: "مع تقليب الفصول صفحاتها الذهبية، تكشف لمجيبة عن تشكيلة وُلِدت من هذه اللحظة الجميلة. كل منتج يحمل روح الموسم — منعش ونابض وساحر بلا مقاومة. دعوا إيقاع الطبيعة يقودكم إلى شيء استثنائي.",
+      messageFr: "Alors que les saisons tournent leurs pages dorées, LIMJIBA dévoile une collection née de ce bel instant. Chaque produit porte l'esprit de la saison — frais, vibrant et irrésistiblement enchanteur. Laissez le rythme de la nature vous guider vers quelque chose d'extraordinaire.",
+    },
+    free_shipping: {
+      title: "Your Treasures Travel Free",
+      titleAr: "كنوزكم تسافر مجّاناً",
+      titleFr: "Vos Trésors Voyagent Gratuitement",
+      message: "LIMJIBA believes beauty should arrive at your doorstep without burden. For a limited time, we carry the journey's cost — so your chosen treasures travel freely from our world to yours. Indulge without boundaries.",
+      messageAr: "تؤمن لمجيبة أن الجمال يجب أن يصل إلى عتبة داركم دون عناء. لفترة محدودة، نتحمّل نحن تكلفة الرحلة — لتسافر كنوزكم المختارة بحرّية من عالمنا إلى عالمكم. تمتّعوا بلا حدود.",
+      messageFr: "LIMJIBA croit que la beauté doit arriver à votre porte sans fardeau. Pour une durée limitée, nous prenons en charge le coût du voyage — pour que vos trésors choisis voyagent librement de notre monde au vôtre. Faites-vous plaisir sans limites.",
+    },
+    thank_you: {
+      title: "A Heartfelt Thank You, Dear Friend",
+      titleAr: "شكرٌ من القلب، يا صديقنا العزيز",
+      titleFr: "Un Merci du Fond du Cœur, Cher Ami",
+      message: "Every purchase you make is a verse in the poem LIMJIBA writes each day. Your trust is the most precious gift we receive — more valuable than any treasure we import. Thank you for being part of our journey of excellence.",
+      messageAr: "كل عملية شراء تقومون بها هي بيتٌ في القصيدة التي تكتبها لمجيبة كل يوم. ثقتكم أغلى هدية نتلقّاها — أثمن من أي كنز نستورده. شكراً لكونكم جزءاً من رحلتنا نحو التميّز.",
+      messageFr: "Chaque achat que vous faites est un vers dans le poème que LIMJIBA écrit chaque jour. Votre confiance est le cadeau le plus précieux que nous recevons — plus précieux que tout trésor que nous importons. Merci de faire partie de notre voyage vers l'excellence.",
+    },
+  };
+
+  const aiGenerateMutation = useMutation({
+    mutationFn: async (topic: string) => {
+      const res = await apiRequest("POST", "/api/ai/generate-notification", { topic: topic || undefined });
+      return res.json();
+    },
+    onSuccess: (data: any) => {
+      if (!data.title && !data.message) {
+        toast({ title: "AI generated empty content. Try again.", variant: "destructive" });
+        return;
+      }
+      setTitle(data.title || "");
+      setTitleAr(data.titleAr || "");
+      setTitleFr(data.titleFr || "");
+      setMessage(data.message || "");
+      setMessageAr(data.messageAr || "");
+      setMessageFr(data.messageFr || "");
+      setShowAiInput(false);
+      setAiTopic("");
+      toast({ title: "AI content generated successfully" });
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || "Failed to generate content", variant: "destructive" });
+    },
+  });
+
+  const applyTemplate = (key: string) => {
+    const tpl = NOTIFICATION_TEMPLATES[key];
+    if (tpl) {
+      setTitle(tpl.title);
+      setTitleAr(tpl.titleAr);
+      setTitleFr(tpl.titleFr);
+      setMessage(tpl.message);
+      setMessageAr(tpl.messageAr);
+      setMessageFr(tpl.messageFr);
+    }
+  };
+
   const resetNotifyForm = () => {
     setTitle("");
     setTitleAr("");
@@ -85,6 +177,8 @@ export default function StoreCustomers() {
     setMessage("");
     setMessageAr("");
     setMessageFr("");
+    setShowAiInput(false);
+    setAiTopic("");
   };
 
   const filteredCustomers = customers?.filter((c) => {
@@ -252,7 +346,7 @@ export default function StoreCustomers() {
       </Card>
 
       <Dialog open={notifyDialogOpen} onOpenChange={setNotifyDialogOpen}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Bell className="h-5 w-5" />
@@ -260,6 +354,73 @@ export default function StoreCustomers() {
             </DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
+            <div className="p-3 rounded-lg border bg-muted/30 space-y-3">
+              <div className="space-y-2">
+                <Label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                  <FileText className="h-3.5 w-3.5" />
+                  Quick Template
+                </Label>
+                <Select onValueChange={applyTemplate} data-testid="select-notify-template">
+                  <SelectTrigger data-testid="select-trigger-notify-template">
+                    <SelectValue placeholder="Choose a pre-made marketing template..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="new_arrivals">New Arrivals</SelectItem>
+                    <SelectItem value="flash_sale">Flash Sale</SelectItem>
+                    <SelectItem value="vip_exclusive">Exclusive VIP</SelectItem>
+                    <SelectItem value="seasonal">Seasonal Collection</SelectItem>
+                    <SelectItem value="free_shipping">Free Shipping</SelectItem>
+                    <SelectItem value="thank_you">Thank You</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="h-px flex-1 bg-border" />
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">or</span>
+                <div className="h-px flex-1 bg-border" />
+              </div>
+              {!showAiInput ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="w-full"
+                  onClick={() => setShowAiInput(true)}
+                  data-testid="button-show-ai-generate"
+                >
+                  <Sparkles className="h-4 w-4 mr-2 text-amber-500" />
+                  Generate with AI Agent
+                </Button>
+              ) : (
+                <div className="flex gap-2">
+                  <Input
+                    value={aiTopic}
+                    onChange={(e) => setAiTopic(e.target.value)}
+                    placeholder="Topic (optional, e.g. Ramadan, Summer...)"
+                    className="flex-1 text-sm"
+                    data-testid="input-ai-topic"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !aiGenerateMutation.isPending) {
+                        e.preventDefault();
+                        aiGenerateMutation.mutate(aiTopic);
+                      }
+                    }}
+                  />
+                  <Button
+                    size="sm"
+                    onClick={() => aiGenerateMutation.mutate(aiTopic)}
+                    disabled={aiGenerateMutation.isPending}
+                    data-testid="button-ai-generate"
+                  >
+                    {aiGenerateMutation.isPending ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-4 w-4" />
+                    )}
+                  </Button>
+                </div>
+              )}
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="notify-title">Title (EN)</Label>
               <Input
