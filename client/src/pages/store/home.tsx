@@ -8,8 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ShoppingCart, ArrowRight, Star, Sparkles, Package, Shield, Truck, Award, ChevronRight, Clock, Flame, Eye, Heart, Zap, CheckCircle, Globe, Crown, Gift, Lock, Diamond, ThumbsUp, Medal, Gem, Quote } from "lucide-react";
 import type { Product, CmsBanner, StoreSettings, Category, StoreReview } from "@shared/schema";
-import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18-removebg-preview_1773192470477.png";
-import { LogoAnimation } from "@/components/logo-animation";
+import { SvgLogoAnimation } from "@/components/svg-logo-animation";
 
 function getProductName(product: Product, lang: string): string {
   if (lang === "ar" && product.nameAr) return product.nameAr;
@@ -193,7 +192,7 @@ export default function StoreHome() {
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center w-full py-20">
           <div className="animate-fade-in-up">
-            <LogoAnimation logoSrc={logoImg} size={128} />
+            <SvgLogoAnimation size={280} primaryColor={primaryColor} accentColor={accentColor} />
           </div>
 
           <div className="animate-fade-in-up-delay-1">
