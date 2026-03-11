@@ -186,6 +186,7 @@ export const sales = pgTable("sales", {
   status: text("status").notNull().default("completed"), // 'completed' | 'partial' | 'credit'
   customerName: text("customer_name"),
   customerPhone: text("customer_phone"),
+  customerEmail: text("customer_email"),
   walletId: varchar("wallet_id"),
 });
 

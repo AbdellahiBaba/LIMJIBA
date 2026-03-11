@@ -38,7 +38,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { handleCustomerChat, handleAdminChat, generatePromoCode, getCustomerGreeting, generateProductDescriptions, generateNotificationContent } from "./limjiba";
-import { sendOrderStatusEmail, sendOrderInvoiceEmail, sendPaymentConfirmedEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail, sendProductMarketingEmail, sendAbandonedCartReminderEmail, setEmailSocialLinks } from "./email";
+import { sendOrderStatusEmail, sendOrderInvoiceEmail, sendPaymentConfirmedEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail, sendProductMarketingEmail, sendAbandonedCartReminderEmail, setEmailSocialLinks, sendNewAccountWithPasswordEmail, sendPosReceiptEmail } from "./email";
 
 function escapeHtml(str: string): string {
   return str
@@ -2305,6 +2305,83 @@ export async function registerRoutes(
           createdAt: new Date().toISOString(),
         });
       } catch (e) {}
+
+      // Auto-provision store account and send receipt if customer email provided
+      if (saleData.customerEmail) {
+        const customerEmail = saleData.customerEmail.trim().toLowerCase();
+        const customerName = saleData.customerName || customerEmail.split("@")[0];
+        const lang = "en";
+        try {
+          let isNewAccount = false;
+          let existingCustomer = await storage.getStoreCustomerByEmail(customerEmail);
+          if (!existingCustomer) {
+            isNewAccount = true;
+            const plainPassword = Math.random().toString(36).slice(2, 6) + Math.random().toString(36).slice(2, 6).toUpperCase();
+            const hashedPassword = await bcrypt.hash(plainPassword, 10);
+            existingCustomer = await storage.createStoreCustomer({
+              email: customerEmail,
+              password: hashedPassword,
+              fullName: customerName,
+              phone: saleData.customerPhone || null,
+              language: lang,
+              isActive: true,
+              loyaltyPoints: 0,
+            });
+            // Send account credentials email (fire-and-forget)
+            sendNewAccountWithPasswordEmail(customerEmail, customerName, plainPassword, lang).catch(() => {});
+          }
+
+          // Create a store_order so the POS sale appears in the customer's profile history
+          const orderItems = itemsData.map(item => ({
+            productId: item.productId,
+            productName: item.productName,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            total: item.total,
+            variantName: null,
+          }));
+          await storage.createStoreOrder({
+            orderNumber: created.saleNumber,
+            customerName,
+            customerEmail,
+            customerPhone: saleData.customerPhone || null,
+            customerAddress: null,
+            items: JSON.stringify(orderItems),
+            subtotal: saleData.total + (saleData.discount || 0) - (saleData.deliveryCost || 0),
+            discount: saleData.discount || 0,
+            promoCode: null,
+            deliveryCost: saleData.deliveryCost || 0,
+            total: saleData.total,
+            status: "delivered",
+            notes: `POS sale by admin — ${saleData.paymentMode}`,
+            paymentMethod: saleData.paymentMode,
+            paymentProof: null,
+            paymentConfirmed: true,
+            paymentConfirmedAt: new Date().toISOString(),
+          });
+
+          // Send receipt email (fire-and-forget)
+          sendPosReceiptEmail({
+            saleNumber: created.saleNumber,
+            date: saleData.date,
+            customerName,
+            customerEmail,
+            items: itemsData.map(i => ({ productName: i.productName, quantity: i.quantity, unitPrice: i.unitPrice, total: i.total })),
+            subtotal: saleData.total + (saleData.discount || 0) - (saleData.deliveryCost || 0),
+            discount: saleData.discount || 0,
+            deliveryCost: saleData.deliveryCost || 0,
+            total: saleData.total,
+            paymentMode: saleData.paymentMode,
+            amountPaid: saleData.amountPaid || 0,
+            status: created.status,
+          }, lang).catch(() => {});
+
+          console.log(`[POST /api/sales] Customer email provisioning: email=${customerEmail}, newAccount=${isNewAccount}`);
+        } catch (e) {
+          console.error("[POST /api/sales] Customer email provisioning error:", e);
+        }
+      }
+
       res.status(201).json(created);
     } catch (error) {
       handleError(res, "create sale", error);

@@ -716,3 +716,124 @@ export async function sendAbandonedCartReminderEmail(
     html: brandedHtml(body, dir),
   });
 }
+
+export async function sendNewAccountWithPasswordEmail(
+  email: string, customerName: string, password: string, lang: string = "en"
+): Promise<boolean> {
+  const l = (lang === "ar" || lang === "fr") ? lang : "en";
+  const dir = l === "ar" ? "rtl" : "ltr";
+  const subjects: Record<string, string> = {
+    en: "Your LIMJIBA Account Has Been Created",
+    fr: "Votre compte LIMJIBA a été créé",
+    ar: "تم إنشاء حسابكم في لمجيبة",
+  };
+  const bodies: Record<string, string> = {
+    en: `
+      <h2 style="color:#0A1628;font-size:22px;margin-bottom:8px;">Welcome to LIMJIBA, ${customerName}!</h2>
+      <p style="color:#444;margin-bottom:16px;">An account has been created for you automatically. Use the credentials below to sign in and view your order history.</p>
+      <div style="background:#f4f1e8;border-left:4px solid #C9A84C;border-radius:8px;padding:18px 22px;margin:18px 0;">
+        <p style="margin:0 0 8px;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:1px;">Your Login Details</p>
+        <p style="margin:4px 0;font-size:15px;color:#0A1628;"><strong>Email:</strong> ${email}</p>
+        <p style="margin:4px 0;font-size:15px;color:#0A1628;"><strong>Password:</strong> <span style="font-family:monospace;background:#fff;padding:2px 8px;border-radius:4px;border:1px solid #ddd;">${password}</span></p>
+      </div>
+      <p style="color:#666;font-size:13px;margin-bottom:20px;">We recommend changing your password after your first login.</p>
+      <div style="text-align:center;margin:24px 0;">
+        <a href="https://limjiba.com/store/login" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#B8963F);color:#0A1628;text-decoration:none;padding:14px 40px;border-radius:8px;font-weight:700;font-size:15px;letter-spacing:1px;">Sign In to Your Account</a>
+      </div>`,
+    fr: `
+      <h2 style="color:#0A1628;font-size:22px;margin-bottom:8px;">Bienvenue chez LIMJIBA, ${customerName}!</h2>
+      <p style="color:#444;margin-bottom:16px;">Un compte a été créé automatiquement pour vous. Utilisez les identifiants ci-dessous pour vous connecter et consulter votre historique de commandes.</p>
+      <div style="background:#f4f1e8;border-left:4px solid #C9A84C;border-radius:8px;padding:18px 22px;margin:18px 0;">
+        <p style="margin:0 0 8px;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:1px;">Vos identifiants</p>
+        <p style="margin:4px 0;font-size:15px;color:#0A1628;"><strong>Email:</strong> ${email}</p>
+        <p style="margin:4px 0;font-size:15px;color:#0A1628;"><strong>Mot de passe:</strong> <span style="font-family:monospace;background:#fff;padding:2px 8px;border-radius:4px;border:1px solid #ddd;">${password}</span></p>
+      </div>
+      <p style="color:#666;font-size:13px;margin-bottom:20px;">Nous vous recommandons de changer votre mot de passe après votre première connexion.</p>
+      <div style="text-align:center;margin:24px 0;">
+        <a href="https://limjiba.com/store/login" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#B8963F);color:#0A1628;text-decoration:none;padding:14px 40px;border-radius:8px;font-weight:700;font-size:15px;letter-spacing:1px;">Se connecter</a>
+      </div>`,
+    ar: `
+      <h2 style="color:#0A1628;font-size:22px;margin-bottom:8px;">مرحباً بكم في لمجيبة، ${customerName}!</h2>
+      <p style="color:#444;margin-bottom:16px;">تم إنشاء حساب لكم تلقائياً. استخدموا بيانات الاعتماد أدناه لتسجيل الدخول وعرض سجل طلباتكم.</p>
+      <div style="background:#f4f1e8;border-right:4px solid #C9A84C;border-radius:8px;padding:18px 22px;margin:18px 0;">
+        <p style="margin:0 0 8px;font-size:13px;color:#888;text-transform:uppercase;letter-spacing:1px;">بيانات تسجيل الدخول</p>
+        <p style="margin:4px 0;font-size:15px;color:#0A1628;"><strong>البريد الإلكتروني:</strong> ${email}</p>
+        <p style="margin:4px 0;font-size:15px;color:#0A1628;"><strong>كلمة المرور:</strong> <span style="font-family:monospace;background:#fff;padding:2px 8px;border-radius:4px;border:1px solid #ddd;">${password}</span></p>
+      </div>
+      <p style="color:#666;font-size:13px;margin-bottom:20px;">ننصحكم بتغيير كلمة المرور بعد تسجيل الدخول الأول.</p>
+      <div style="text-align:center;margin:24px 0;">
+        <a href="https://limjiba.com/store/login" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#B8963F);color:#0A1628;text-decoration:none;padding:14px 40px;border-radius:8px;font-weight:700;font-size:15px;letter-spacing:1px;">تسجيل الدخول</a>
+      </div>`,
+  };
+  return sendEmail({ to: email, subject: subjects[l], html: brandedHtml(bodies[l], dir) });
+}
+
+export interface PosReceiptData {
+  saleNumber: string;
+  date: string;
+  customerName?: string;
+  customerEmail: string;
+  items: Array<{ productName: string; quantity: number; unitPrice: number; total: number }>;
+  subtotal: number;
+  discount?: number;
+  deliveryCost?: number;
+  total: number;
+  paymentMode: string;
+  amountPaid?: number;
+  status: string;
+}
+
+export async function sendPosReceiptEmail(data: PosReceiptData, lang: string = "en"): Promise<boolean> {
+  const l = (lang === "ar" || lang === "fr") ? lang : "en";
+  const dir = l === "ar" ? "rtl" : "ltr";
+  const subjects: Record<string, string> = {
+    en: `Your LIMJIBA Receipt — ${data.saleNumber}`,
+    fr: `Votre reçu LIMJIBA — ${data.saleNumber}`,
+    ar: `إيصال لمجيبة — ${data.saleNumber}`,
+  };
+  const labels: Record<string, Record<string, string>> = {
+    en: { title: "Sale Receipt", saleNum: "Sale #", date: "Date", item: "Item", qty: "Qty", price: "Unit Price", total: "Total", discount: "Discount", delivery: "Delivery", grandTotal: "Grand Total", payment: "Payment Method", paid: "Amount Paid", thank: "Thank you for shopping with LIMJIBA!" },
+    fr: { title: "Reçu de vente", saleNum: "Vente #", date: "Date", item: "Article", qty: "Qté", price: "Prix unitaire", total: "Total", discount: "Remise", delivery: "Livraison", grandTotal: "Total général", payment: "Mode de paiement", paid: "Montant payé", thank: "Merci pour votre achat chez LIMJIBA!" },
+    ar: { title: "إيصال البيع", saleNum: "رقم البيع", date: "التاريخ", item: "المنتج", qty: "الكمية", price: "سعر الوحدة", total: "الإجمالي", discount: "الخصم", delivery: "التوصيل", grandTotal: "الإجمالي الكلي", payment: "طريقة الدفع", paid: "المبلغ المدفوع", thank: "شكراً لتسوقكم في لمجيبة!" },
+  };
+  const lb = labels[l];
+
+  const itemRows = data.items.map(item => `
+    <tr>
+      <td style="padding:10px 12px;border-bottom:1px solid #f0ead8;color:#333;">${item.productName}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f0ead8;text-align:center;color:#333;">${item.quantity}</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f0ead8;text-align:right;color:#333;">${item.unitPrice.toLocaleString()} MRU</td>
+      <td style="padding:10px 12px;border-bottom:1px solid #f0ead8;text-align:right;font-weight:600;color:#0A1628;">${item.total.toLocaleString()} MRU</td>
+    </tr>`).join("");
+
+  const body = `
+    <h2 style="color:#0A1628;font-size:22px;margin-bottom:4px;">${lb.title}</h2>
+    <p style="color:#888;font-size:13px;margin-bottom:20px;">${lb.saleNum} ${data.saleNumber} &nbsp;|&nbsp; ${lb.date}: ${data.date}</p>
+    ${data.customerName ? `<p style="color:#444;margin-bottom:16px;"><strong>${data.customerName}</strong></p>` : ""}
+    <table style="width:100%;border-collapse:collapse;margin-bottom:20px;background:#fff;border-radius:8px;overflow:hidden;border:1px solid #f0ead8;">
+      <thead>
+        <tr style="background:#0A1628;">
+          <th style="padding:12px;text-align:left;color:#C9A84C;font-weight:600;">${lb.item}</th>
+          <th style="padding:12px;text-align:center;color:#C9A84C;font-weight:600;">${lb.qty}</th>
+          <th style="padding:12px;text-align:right;color:#C9A84C;font-weight:600;">${lb.price}</th>
+          <th style="padding:12px;text-align:right;color:#C9A84C;font-weight:600;">${lb.total}</th>
+        </tr>
+      </thead>
+      <tbody>${itemRows}</tbody>
+    </table>
+    <div style="background:#f9f6ef;border-radius:8px;padding:16px 20px;margin-bottom:20px;">
+      ${(data.discount || 0) > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:#666;">${lb.discount}</span><span style="color:#c33;">−${(data.discount || 0).toLocaleString()} MRU</span></div>` : ""}
+      ${(data.deliveryCost || 0) > 0 ? `<div style="display:flex;justify-content:space-between;margin-bottom:8px;"><span style="color:#666;">${lb.delivery}</span><span style="color:#333;">${(data.deliveryCost || 0).toLocaleString()} MRU</span></div>` : ""}
+      <div style="display:flex;justify-content:space-between;border-top:2px solid #C9A84C;padding-top:12px;margin-top:4px;">
+        <span style="color:#0A1628;font-weight:700;font-size:17px;">${lb.grandTotal}</span>
+        <span style="color:#C9A84C;font-weight:700;font-size:20px;">${data.total.toLocaleString()} MRU</span>
+      </div>
+    </div>
+    <div style="background:#fff;border:1px solid #f0ead8;border-radius:8px;padding:14px 18px;margin-bottom:20px;font-size:14px;">
+      <div style="display:flex;justify-content:space-between;margin-bottom:6px;"><span style="color:#888;">${lb.payment}</span><span style="color:#333;font-weight:600;">${data.paymentMode}</span></div>
+      ${data.amountPaid !== undefined ? `<div style="display:flex;justify-content:space-between;"><span style="color:#888;">${lb.paid}</span><span style="color:#333;font-weight:600;">${data.amountPaid.toLocaleString()} MRU</span></div>` : ""}
+    </div>
+    <p style="text-align:center;color:#C9A84C;font-weight:600;font-size:15px;margin-top:24px;">${lb.thank}</p>`;
+
+  return sendEmail({ to: data.customerEmail, subject: subjects[l], html: brandedHtml(body, dir) });
+}

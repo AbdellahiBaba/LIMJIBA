@@ -87,6 +87,7 @@ export default function POS() {
   const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({});
   const [returnReason, setReturnReason] = useState("");
   const [customerName, setCustomerName] = useState("");
+  const [customerEmail, setCustomerEmail] = useState("");
   const [selectedWalletId, setSelectedWalletId] = useState<string>("");
   const [recentSalesOpen, setRecentSalesOpen] = useState(false);
   const [parkDialogOpen, setParkDialogOpen] = useState(false);
@@ -140,6 +141,7 @@ export default function POS() {
       setDeliveryCost(0);
       setSelectedReseller("none");
       setCustomerName("");
+      setCustomerEmail("");
       setSelectedWalletId("");
     },
     onError: (error: Error) => {
@@ -497,6 +499,7 @@ export default function POS() {
         resellerId: selectedReseller !== "none" ? selectedReseller : null,
         status,
         customerName: customerName.trim() || null,
+        customerEmail: customerEmail.trim() || null,
         walletId: (paymentMode === "CASH" || paymentMode === "WALLET") && selectedWalletId ? selectedWalletId : null,
       },
       items: saleItems,
@@ -1165,6 +1168,26 @@ export default function POS() {
                     </SelectContent>
                   </Select>
                 </div>
+              )}
+            </div>
+
+            <div className="space-y-2">
+              <Label className="flex items-center gap-1">
+                {t("pos.customerEmail") || "Customer Email"}
+                <span className="text-xs text-muted-foreground font-normal">({t("common.optional") || "optional"})</span>
+              </Label>
+              <Input
+                type="email"
+                placeholder="customer@example.com"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                data-testid="input-customer-email"
+              />
+              {customerEmail.trim() && (
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+                  {t("pos.emailConfirmationWillBeSent") || "Receipt & account confirmation will be emailed"}
+                </p>
               )}
             </div>
 
