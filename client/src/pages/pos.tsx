@@ -57,8 +57,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus } from "lucide-react";
-import type { Product, CartItem, Reseller, Sale, InsertSale, InsertSaleItem, InsertReseller, ParkedSale } from "@shared/schema";
+import { UserPlus, Wallet } from "lucide-react";
+import type { Product, CartItem, Reseller, Sale, InsertSale, InsertSaleItem, InsertReseller, ParkedSale, PaymentWallet } from "@shared/schema";
 
 export default function POS() {
   const { toast } = useToast();
@@ -86,6 +86,7 @@ export default function POS() {
   const [returnQuantities, setReturnQuantities] = useState<Record<string, number>>({});
   const [returnReason, setReturnReason] = useState("");
   const [customerName, setCustomerName] = useState("");
+  const [selectedWalletId, setSelectedWalletId] = useState<string>("");
   const [recentSalesOpen, setRecentSalesOpen] = useState(false);
   const [parkDialogOpen, setParkDialogOpen] = useState(false);
   const [parkLabel, setParkLabel] = useState("");
@@ -103,6 +104,11 @@ export default function POS() {
     queryKey: ["/api/parked-sales"],
   });
 
+  const { data: paymentWallets } = useQuery<PaymentWallet[]>({
+    queryKey: ["/api/payment-wallets"],
+  });
+  const activeWallets = paymentWallets?.filter(w => w.isActive) || [];
+
   const { data: allSales } = useQuery<Sale[]>({
     queryKey: ["/api/sales"],
   });
@@ -118,6 +124,8 @@ export default function POS() {
       queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
       queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
       queryClient.invalidateQueries({ queryKey: ["/api/resellers"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/payment-wallets"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/balance-sheet"] });
       setLastSaleId(response.id);
       setCheckoutDialogOpen(false);
       setSuccessDialogOpen(true);
@@ -127,6 +135,7 @@ export default function POS() {
       setDeliveryCost(0);
       setSelectedReseller("none");
       setCustomerName("");
+      setSelectedWalletId("");
     },
     onError: (error: Error) => {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
@@ -379,6 +388,8 @@ export default function POS() {
     setDeliveryCost(0);
     setSelectedReseller("none");
     setCustomerName("");
+    setSelectedWalletId("");
+    setPaymentMode("CASH");
   };
 
   const subtotal = cart.reduce((sum, item) => sum + item.total, 0);
@@ -431,6 +442,7 @@ export default function POS() {
         resellerId: selectedReseller !== "none" ? selectedReseller : null,
         status,
         customerName: customerName.trim() || null,
+        walletId: (paymentMode === "CASH" || paymentMode === "WALLET") && selectedWalletId ? selectedWalletId : null,
       },
       items: saleItems,
     });
@@ -1024,7 +1036,7 @@ export default function POS() {
 
             <div className="space-y-2">
               <Label>{t("pos.paymentMethod")}</Label>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-4 gap-2">
                 <Button
                   type="button"
                   variant={paymentMode === "CASH" ? "default" : "outline"}
@@ -1047,6 +1059,16 @@ export default function POS() {
                 </Button>
                 <Button
                   type="button"
+                  variant={paymentMode === "WALLET" ? "default" : "outline"}
+                  onClick={() => setPaymentMode("WALLET")}
+                  className="flex-col h-auto py-3"
+                  data-testid="button-payment-wallet"
+                >
+                  <Wallet className="h-5 w-5 mb-1" />
+                  <span className="text-xs">{t("pos.wallet") || "Wallet"}</span>
+                </Button>
+                <Button
+                  type="button"
                   variant={paymentMode === "CREDIT" ? "default" : "outline"}
                   onClick={() => {
                     setPaymentMode("CREDIT");
@@ -1059,6 +1081,25 @@ export default function POS() {
                   <span className="text-xs">{t("pos.credit")}</span>
                 </Button>
               </div>
+              {(paymentMode === "CASH" || paymentMode === "WALLET") && activeWallets.length > 0 && (
+                <div className="mt-2">
+                  <Label className="text-xs text-muted-foreground mb-1 block">
+                    {paymentMode === "CASH" ? (t("pos.depositTo") || "Deposit cash to") : (t("pos.selectWallet") || "Select wallet")}
+                  </Label>
+                  <Select value={selectedWalletId} onValueChange={setSelectedWalletId}>
+                    <SelectTrigger data-testid="select-wallet">
+                      <SelectValue placeholder={t("pos.chooseWallet") || "Choose wallet..."} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {activeWallets.map(w => (
+                        <SelectItem key={w.id} value={w.id} data-testid={`wallet-option-${w.id}`}>
+                          {w.name} {w.walletNumber ? `(${w.walletNumber})` : ""} — {(w.balance || 0).toLocaleString()} MRU
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
             </div>
 
             <div className="space-y-2">

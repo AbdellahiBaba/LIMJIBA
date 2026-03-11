@@ -1510,16 +1510,17 @@ export async function registerRoutes(
     }
   });
 
-  app.get("/api/dashboard/recent-activity", async (req, res) => {
+  app.get("/api/dashboard/recent-activity", requireAuth, async (req, res) => {
     try {
-      const [allSales, allInvoices, allExpenses, allQuickInvoices] = await Promise.all([
+      const [allSales, allInvoices, allExpenses, allQuickInvoices, allStoreOrders] = await Promise.all([
         storage.getSales(),
         storage.getInvoices(),
         storage.getExpenses(),
         storage.getQuickInvoices(),
+        storage.getStoreOrders(),
       ]);
 
-      type ActivityItem = { id: string; type: "sale" | "invoice" | "expense" | "quick_invoice"; description: string; amount: number; date: string; reference: string };
+      type ActivityItem = { id: string; type: "sale" | "invoice" | "expense" | "quick_invoice" | "store_order"; description: string; amount: number; date: string; reference: string };
       const activities: ActivityItem[] = [];
 
       allSales.slice(0, 10).forEach(s => {
@@ -1563,6 +1564,17 @@ export async function registerRoutes(
           amount: qi.totalTTC || 0,
           date: qi.date,
           reference: qi.invoiceNumber,
+        });
+      });
+
+      allStoreOrders.slice(0, 10).forEach(so => {
+        activities.push({
+          id: so.id,
+          type: "store_order",
+          description: so.customerName || "Store Order",
+          amount: so.total || 0,
+          date: so.createdAt || "",
+          reference: so.orderNumber,
         });
       });
 
@@ -2118,7 +2130,23 @@ export async function registerRoutes(
       
       const saleData = insertSaleSchema.parse(sale);
       const itemsData = z.array(insertSaleItemSchema).parse(items);
+
+      if (saleData.walletId && (saleData.amountPaid || 0) > 0) {
+        const wallets = await storage.getPaymentWallets();
+        const wallet = wallets.find(w => w.id === saleData.walletId && w.isActive);
+        if (!wallet) {
+          return res.status(400).json({ error: "Selected wallet not found or inactive" });
+        }
+      }
+
       const created = await storage.createSale(saleData, itemsData);
+      if (saleData.walletId && (saleData.amountPaid || 0) > 0) {
+        try {
+          await storage.creditWalletBalance(saleData.walletId, saleData.amountPaid || 0);
+        } catch (e) {
+          console.error("[POST /api/sales] Failed to credit wallet:", e);
+        }
+      }
       try {
         await storage.createAuditLog({
           userId: req.session?.userId || null,
@@ -2126,7 +2154,7 @@ export async function registerRoutes(
           action: "create",
           entity: "sale",
           entityId: created.id,
-          details: JSON.stringify({ total: created.totalAmount, items: itemsData.length }),
+          details: JSON.stringify({ total: created.totalAmount, items: itemsData.length, walletId: saleData.walletId || null }),
           ipAddress: req.ip || null,
           createdAt: new Date().toISOString(),
         });

@@ -255,6 +255,7 @@ function getActivityIcon(type: string) {
     case "invoice": return FileText;
     case "expense": return Wallet;
     case "quick_invoice": return Zap;
+    case "store_order": return ShoppingBag;
     default: return Activity;
   }
 }
@@ -265,6 +266,7 @@ function getActivityColor(type: string) {
     case "invoice": return "text-primary";
     case "expense": return "text-orange-500";
     case "quick_invoice": return "text-primary";
+    case "store_order": return "text-purple-500";
     default: return "text-muted-foreground";
   }
 }

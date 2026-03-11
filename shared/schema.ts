@@ -183,6 +183,7 @@ export const sales = pgTable("sales", {
   status: text("status").notNull().default("completed"), // 'completed' | 'partial' | 'credit'
   customerName: text("customer_name"),
   customerPhone: text("customer_phone"),
+  walletId: varchar("wallet_id"),
 });
 
 export const insertSaleSchema = createInsertSchema(sales).omit({ id: true });
