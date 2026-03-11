@@ -114,7 +114,16 @@ export default function StoreProductDetail() {
     }
   }, [product?.id]);
 
-  const related = allProducts?.filter(p => p.id !== productId && p.category === product?.category).slice(0, 4) || [];
+  const relRecParams = new URLSearchParams();
+  if (productId) relRecParams.set("excludeId", productId);
+  if (product?.category) relRecParams.set("viewedCategories", product.category);
+  relRecParams.set("limit", "4");
+  const { data: related = [] } = useQuery<Product[]>({
+    queryKey: ["/api/store/recommendations", "related", productId, customer?.email || ""],
+    queryFn: () => fetch(`/api/store/recommendations?${relRecParams.toString()}`, { credentials: "include" }).then(r => r.json()),
+    enabled: !!product,
+    staleTime: 60000,
+  });
 
   const recentProducts = allProducts?.filter(p =>
     p.id !== productId && recentlyViewed.some(rv => rv.productId === p.id)

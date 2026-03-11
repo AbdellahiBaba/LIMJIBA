@@ -3406,6 +3406,130 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/store/recommendations", async (req: Request, res: Response) => {
+    try {
+      let email = "";
+      const sc = (req.session as any)?.storeCustomer;
+      if (sc?.email) {
+        email = sc.email;
+      } else if (typeof req.query.email === "string" && (req as any).session?.userId) {
+        email = req.query.email;
+      }
+      const viewedIds = typeof req.query.viewedIds === "string" ? req.query.viewedIds.split(",").filter(Boolean) : [];
+      const viewedCategories = typeof req.query.viewedCategories === "string" ? req.query.viewedCategories.split(",").filter(Boolean) : [];
+      const limit = Math.min(parseInt(String(req.query.limit)) || 12, 30);
+      const excludeId = typeof req.query.excludeId === "string" ? req.query.excludeId : "";
+
+      const allProducts = await storage.getProducts();
+      const activeProducts = allProducts.filter(p => (p.stockQuantity ?? 0) > 0);
+
+      const purchasedProductIds = new Set<string>();
+      const purchasedCategories = new Map<string, number>();
+      const coBoughtMap = new Map<string, Set<string>>();
+
+      if (email) {
+        const allOrders = await storage.getStoreOrders();
+        const customerOrders = allOrders.filter(o => o.customerEmail === email);
+
+        for (const order of customerOrders) {
+          try {
+            const items = JSON.parse(order.items || "[]");
+            const orderProductIds: string[] = [];
+            for (const item of items) {
+              const pid = item.productId || item.id;
+              if (pid) {
+                purchasedProductIds.add(pid);
+                orderProductIds.push(pid);
+                const product = allProducts.find(p => p.id === pid);
+                if (product?.category) {
+                  purchasedCategories.set(product.category, (purchasedCategories.get(product.category) || 0) + (item.quantity || 1));
+                }
+              }
+            }
+            for (const pid of orderProductIds) {
+              if (!coBoughtMap.has(pid)) coBoughtMap.set(pid, new Set());
+              for (const other of orderProductIds) {
+                if (other !== pid) coBoughtMap.get(pid)!.add(other);
+              }
+            }
+          } catch {}
+        }
+      }
+
+      const scores = new Map<string, number>();
+      const viewedIdSet = new Set(viewedIds);
+      const excludeSet = new Set([...purchasedProductIds, ...viewedIds]);
+      if (excludeId) excludeSet.add(excludeId);
+
+      for (const product of activeProducts) {
+        if (excludeSet.has(product.id)) continue;
+
+        let score = 0;
+
+        if (product.category && purchasedCategories.has(product.category)) {
+          score += 5 * Math.min(purchasedCategories.get(product.category)!, 5);
+        }
+
+        for (const [, coBought] of coBoughtMap) {
+          if (coBought.has(product.id)) {
+            score += 3;
+          }
+        }
+
+        if (product.category && viewedCategories.includes(product.category)) {
+          score += 3;
+        }
+
+        if (product.isFavorite) score += 1;
+        if (product.isDealOfDay) score += 2;
+
+        scores.set(product.id, score);
+      }
+
+      try {
+        const topCandidates = [...scores.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, limit * 2)
+          .map(([id]) => id);
+        const reviews = await Promise.all(
+          topCandidates.map(async (pid) => {
+            const r = await storage.getProductReviews(pid);
+            return { pid, avg: r.length > 0 ? r.reduce((s, rv) => s + (rv.rating || 0), 0) / r.length : 0, count: r.length };
+          })
+        );
+        for (const { pid, avg, count } of reviews) {
+          if (avg >= 4 && count >= 1) {
+            scores.set(pid, (scores.get(pid) || 0) + Math.min(avg * 0.5, 3));
+          }
+        }
+      } catch {}
+
+      const scored = [...scores.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, limit)
+        .map(([id]) => id);
+
+      let results = scored.map(id => activeProducts.find(p => p.id === id)!).filter(Boolean);
+
+      if (results.length < limit) {
+        const resultIds = new Set(results.map(r => r.id));
+        const fillers = activeProducts
+          .filter(p => !resultIds.has(p.id) && !excludeSet.has(p.id))
+          .sort((a, b) => {
+            const aScore = (a.isFavorite ? 2 : 0) + (a.isDealOfDay ? 1 : 0);
+            const bScore = (b.isFavorite ? 2 : 0) + (b.isDealOfDay ? 1 : 0);
+            return bScore - aScore;
+          })
+          .slice(0, limit - results.length);
+        results = [...results, ...fillers];
+      }
+
+      res.json(results);
+    } catch (error) {
+      handleError(res, "getRecommendations", error);
+    }
+  });
+
   app.post("/api/store/orders", async (req: Request, res: Response) => {
     try {
       const storeOrderInputSchema = z.object({

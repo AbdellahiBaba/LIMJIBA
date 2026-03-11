@@ -174,6 +174,14 @@ Preferred communication style: Simple, everyday language.
 - **Payment Confirmed Email:** When admin confirms payment (`PATCH /api/store-orders/:id/confirm-payment`), a branded email is auto-sent to customer with payment amount, order number, and a "Track Your Order" button linking to `/store/orders`. Trilingual, respects `autoEmailInvoice` toggle.
 - **Auto Triggers:** Order creation → invoice email. Order status changes → status email. Payment confirmed → payment confirmation email. Signup → welcome email. All non-blocking (fire-and-forget with error logging).
 
+### Personalized Product Recommendations
+- **API:** `GET /api/store/recommendations` — weighted scoring algorithm combining purchase patterns, browsing history, and product popularity
+- **Signals:** Purchase category frequency (weight 5×qty), co-bought products (weight 2), browsed categories (weight 3), favorites (weight 1), deals (weight 2), high-rated reviews (weight up to 3)
+- **Query params:** `email` (customer purchase history), `viewedIds` (browsed product IDs), `viewedCategories` (browsed categories), `excludeId` (current product), `limit` (max 30, default 12)
+- **Frontend:** Store homepage "Recommended For You" section uses API; product detail "Related Products" section uses API with current product category context
+- **Fallback:** If insufficient scored results, fills with popular/featured products
+- **Files:** `server/routes.ts` (endpoint), `client/src/pages/store/home.tsx` (homepage section), `client/src/pages/store/product-detail.tsx` (related products)
+
 ### Number Input Fix
 - Admin pages use a pattern that allows clearing number fields to empty string (not stuck at zero). State accepts `string | number`, converts on blur/submit. Affected: stock, POS, invoices, expenses, salaries, purchase orders, resellers, customers, CMS.
 

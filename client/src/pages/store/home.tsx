@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { useCart } from "@/contexts/cart-context";
 import { useStoreLanguage } from "@/components/store-layout";
+import { useStoreAuth } from "@/contexts/store-auth-context";
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -49,6 +50,7 @@ function DealCountdown({ accentColor }: { accentColor: string }) {
 export default function StoreHome() {
   const { addItem } = useCart();
   const { t, lang } = useStoreLanguage();
+  const { customer } = useStoreAuth();
   const { recentlyViewed, getViewedCategories, getViewedIds } = useRecentlyViewed();
 
   const { data: products, isLoading: productsLoading } = useQuery<Product[]>({
@@ -81,9 +83,17 @@ export default function StoreHome() {
 
   const viewedCategories = getViewedCategories();
   const viewedIds = getViewedIds();
-  const recommendations = products?.filter(p =>
-    viewedCategories.includes(p.category) && !viewedIds.includes(p.id)
-  ).slice(0, 8) || [];
+  const recParams = new URLSearchParams();
+  if (viewedIds.length) recParams.set("viewedIds", viewedIds.join(","));
+  if (viewedCategories.length) recParams.set("viewedCategories", viewedCategories.join(","));
+  recParams.set("limit", "8");
+
+  const { data: recommendations = [] } = useQuery<Product[]>({
+    queryKey: ["/api/store/recommendations", customer?.email || "", viewedIds.join(","), viewedCategories.join(",")],
+    queryFn: () => fetch(`/api/store/recommendations?${recParams.toString()}`, { credentials: "include" }).then(r => r.json()),
+    enabled: viewedIds.length > 0 || viewedCategories.length > 0 || !!customer?.email,
+    staleTime: 60000,
+  });
 
   const recentProducts = products?.filter(p =>
     recentlyViewed.some(rv => rv.productId === p.id)
