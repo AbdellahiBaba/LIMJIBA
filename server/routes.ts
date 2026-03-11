@@ -36,7 +36,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { handleCustomerChat, handleAdminChat, generatePromoCode, getCustomerGreeting, generateProductDescriptions } from "./limjiba";
-import { sendOrderStatusEmail, sendOrderInvoiceEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail } from "./email";
+import { sendOrderStatusEmail, sendOrderInvoiceEmail, sendPaymentConfirmedEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail } from "./email";
 
 function escapeHtml(str: string): string {
   return str
@@ -4318,6 +4318,29 @@ export async function registerRoutes(
           });
         }
       } catch {}
+
+      if (order.customerEmail) {
+        try {
+          const settings = await storage.getStoreSettings();
+          if (settings?.autoEmailInvoice !== false) {
+            const custRecord = await storage.getStoreCustomerByEmail(order.customerEmail);
+            const lang = custRecord?.language || "en";
+            const trustedHost = process.env.APP_BASE_URL || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}` : "https://limjiba.com");
+            const trackingUrl = `${trustedHost}/store/orders`;
+            sendPaymentConfirmedEmail(
+              order.customerEmail,
+              order.customerName || "Customer",
+              order.orderNumber,
+              order.total || 0,
+              trackingUrl,
+              lang
+            ).catch((err: any) => console.error("[EMAIL] Payment confirmed email failed:", err.message || err));
+          }
+        } catch (emailErr: any) {
+          console.error("[EMAIL] Payment confirmed email prep failed:", emailErr.message || emailErr);
+        }
+      }
+
       res.json(result);
     } catch (error) {
       handleError(res, "confirmStoreOrderPayment", error);

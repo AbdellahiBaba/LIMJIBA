@@ -171,7 +171,8 @@ Preferred communication style: Simple, everyday language.
 - **Module:** `server/email.ts` — sends real emails via nodemailer SMTP (Zoho Mail). Functions: `sendOrderInvoiceEmail`, `sendOrderStatusEmail`, `sendWelcomeEmail`, `sendPasswordResetEmail`, `sendMarketingEmail`.
 - **SMTP Config:** `SMTP_HOST` (env var, default `smtp.zoho.com`), `SMTP_PORT` (env var, default `465`), `SMTP_USER` (secret), `SMTP_PASS` (secret), `SMTP_FROM` (env var). Zoho SSL on port 465.
 - **Auto Invoice Email:** On order creation (`POST /api/store/orders`), a professional branded HTML invoice is auto-sent to customer email with itemized table, totals, discounts, delivery cost, payment method, order status. Trilingual (EN/FR/AR with RTL). Controlled by `autoEmailInvoice` toggle in store settings (CMS → Store Settings → Email Notifications).
-- **Auto Triggers:** Order creation → invoice email. Order status changes → status email. Signup → welcome email. All non-blocking (fire-and-forget with error logging).
+- **Payment Confirmed Email:** When admin confirms payment (`PATCH /api/store-orders/:id/confirm-payment`), a branded email is auto-sent to customer with payment amount, order number, and a "Track Your Order" button linking to `/store/orders`. Trilingual, respects `autoEmailInvoice` toggle.
+- **Auto Triggers:** Order creation → invoice email. Order status changes → status email. Payment confirmed → payment confirmation email. Signup → welcome email. All non-blocking (fire-and-forget with error logging).
 
 ### Number Input Fix
 - Admin pages use a pattern that allows clearing number fields to empty string (not stuck at zero). State accepts `string | number`, converts on blur/submit. Affected: stock, POS, invoices, expenses, salaries, purchase orders, resellers, customers, CMS.
