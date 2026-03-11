@@ -1208,33 +1208,37 @@ export default function Dashboard() {
                 const expanded = expandedOrderId === order.id;
                 return (
                   <div key={order.id} className="rounded-lg border p-3 hover:bg-muted/30 cursor-pointer transition-colors" onClick={() => setExpandedOrderId(expanded ? null : order.id)} data-testid={`store-order-row-${order.id}`}>
-                    <div className="flex items-center justify-between gap-2">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className="text-sm font-mono font-bold" data-testid={`text-order-number-${order.id}`}>{order.orderNumber}</span>
-                        <Badge className={`text-[10px] ${statusColors[order.status] || "bg-gray-100 text-gray-800"}`}>{order.status}</Badge>
-                        {order.paymentConfirmed && <Badge className="text-[10px] bg-green-100 text-green-800">Paid</Badge>}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="min-w-0 flex-1">
+                        <span className="text-sm font-mono font-bold block" data-testid={`text-order-number-${order.id}`}>{order.orderNumber}</span>
+                        <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                          <Badge className={`text-[10px] ${statusColors[order.status] || "bg-gray-100 text-gray-800"}`}>{order.status}</Badge>
+                          {order.paymentConfirmed && <Badge className="text-[10px] bg-green-100 text-green-800">Paid</Badge>}
+                        </div>
                       </div>
-                      <div className="flex items-center gap-3 flex-shrink-0">
-                        <span className="text-sm font-bold">{order.total.toFixed(2)} MRU</span>
-                        <span className={`text-xs font-medium ${order.profit >= 0 ? "text-green-600" : "text-red-600"}`}>
-                          {order.profit >= 0 ? "+" : ""}{order.profit.toFixed(2)}
-                        </span>
-                        {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <div className="text-right">
+                          <span className="text-sm font-bold block">{order.total.toFixed(2)} MRU</span>
+                          <span className={`text-xs font-medium ${order.profit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                            {order.profit >= 0 ? "+" : ""}{order.profit.toFixed(2)}
+                          </span>
+                        </div>
+                        {expanded ? <ChevronUp className="h-4 w-4 flex-shrink-0" /> : <ChevronDown className="h-4 w-4 flex-shrink-0" />}
                       </div>
                     </div>
                     <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                      <span>{order.customerName}</span>
+                      <span className="truncate">{order.customerName}</span>
                       <span>·</span>
-                      <span>{new Date(order.createdAt).toLocaleDateString()}</span>
+                      <span className="flex-shrink-0">{new Date(order.createdAt).toLocaleDateString()}</span>
                     </div>
                     {expanded && (
                       <div className="mt-3 pt-3 border-t space-y-1">
                         {order.items.map((item, idx) => (
-                          <div key={idx} className="flex items-center justify-between text-xs">
-                            <span className="flex-1 truncate">{item.productName} × {item.quantity}</span>
-                            <span className="text-muted-foreground mx-2">{item.unitPrice.toFixed(2)} MRU</span>
-                            <span className={`font-medium ${item.profit >= 0 ? "text-green-600" : "text-red-600"}`}>
-                              {item.profit >= 0 ? "+" : ""}{item.profit.toFixed(2)} MRU
+                          <div key={idx} className="flex items-center justify-between gap-2 text-xs">
+                            <span className="flex-1 min-w-0 truncate">{item.productName} × {item.quantity}</span>
+                            <span className="text-muted-foreground flex-shrink-0">{item.unitPrice.toFixed(2)}</span>
+                            <span className={`font-medium flex-shrink-0 ${item.profit >= 0 ? "text-green-600" : "text-red-600"}`}>
+                              {item.profit >= 0 ? "+" : ""}{item.profit.toFixed(2)}
                             </span>
                           </div>
                         ))}

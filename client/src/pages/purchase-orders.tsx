@@ -326,6 +326,7 @@ export default function PurchaseOrders() {
 
       <Card>
         <CardContent className="p-0">
+          <div className="overflow-x-auto">
           <Table>
             <TableHeader>
               <TableRow>
@@ -429,6 +430,7 @@ export default function PurchaseOrders() {
               )}
             </TableBody>
           </Table>
+          </div>
         </CardContent>
       </Card>
 
@@ -592,7 +594,7 @@ export default function PurchaseOrders() {
             {shippingPO && shippingCostInput && parseFloat(shippingCostInput) > 0 && (
               <div>
                 <Label className="text-sm font-semibold">{t("purchaseOrders.shippingBreakdown")}</Label>
-                <div className="mt-2 rounded-md border">
+                <div className="mt-2 rounded-md border overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -686,7 +688,7 @@ export default function PurchaseOrders() {
 
               <div>
                 <Label className="text-sm font-semibold">{t("purchaseOrders.itemBreakdown")}</Label>
-                <div className="mt-2 rounded-md border">
+                <div className="mt-2 rounded-md border overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>

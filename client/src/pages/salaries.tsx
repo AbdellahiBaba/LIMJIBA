@@ -637,6 +637,7 @@ export default function SalariesPage() {
                   <p className="text-muted-foreground text-sm">{t("salaries.addEmployee")}</p>
                 </div>
               ) : (
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -682,6 +683,7 @@ export default function SalariesPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </CardContent>
           </Card>
@@ -710,6 +712,7 @@ export default function SalariesPage() {
                   <p className="text-muted-foreground text-sm">{t("salaries.addPayment")}</p>
                 </div>
               ) : (
+                <div className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -745,6 +748,7 @@ export default function SalariesPage() {
                     ))}
                   </TableBody>
                 </Table>
+                </div>
               )}
             </CardContent>
           </Card>

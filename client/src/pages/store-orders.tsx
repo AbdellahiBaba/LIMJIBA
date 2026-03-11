@@ -132,27 +132,25 @@ export default function StoreOrdersAdmin() {
             return (
               <Card key={order.id} data-testid={`admin-order-${order.id}`}>
                 <CardContent className="pt-4">
-                  <div className="flex items-center justify-between gap-2 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : order.id)}>
-                    <div className="flex items-center gap-4">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-bold">{order.orderNumber}</p>
-                          {order.paymentConfirmed && (
-                            <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 flex items-center gap-1" data-testid={`badge-payment-confirmed-${order.id}`}>
-                              <BadgeCheck className="h-3 w-3" />
-                              {t("storeOrders.paymentConfirmed")}
-                            </Badge>
-                          )}
-                        </div>
-                        <p className="text-sm text-muted-foreground">{order.customerName} • {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ""}</p>
+                  <div className="flex items-start justify-between gap-2 cursor-pointer" onClick={() => setExpandedId(isExpanded ? null : order.id)}>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-bold text-sm sm:text-base">{order.orderNumber}</p>
+                      <div className="flex items-center gap-1.5 flex-wrap mt-1">
+                        <Badge className="flex items-center gap-1 text-[10px] sm:text-xs" style={{ backgroundColor: `${statusConfig.color}20`, color: statusConfig.color }}>
+                          <StatusIcon className="h-3 w-3" />
+                          {STATUS_LABELS[order.status]?.[lang] || statusConfig.labelKey}
+                        </Badge>
+                        {order.paymentConfirmed && (
+                          <Badge className="bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 flex items-center gap-1 text-[10px] sm:text-xs" data-testid={`badge-payment-confirmed-${order.id}`}>
+                            <BadgeCheck className="h-3 w-3" />
+                            {t("storeOrders.paymentConfirmed")}
+                          </Badge>
+                        )}
                       </div>
+                      <p className="text-xs sm:text-sm text-muted-foreground mt-1 truncate">{order.customerName} · {order.createdAt ? new Date(order.createdAt).toLocaleDateString() : ""}</p>
                     </div>
-                    <div className="flex items-center gap-3 flex-wrap">
-                      <span className="font-bold">{order.total.toFixed(2)} MRU</span>
-                      <Badge className="flex items-center gap-1" style={{ backgroundColor: `${statusConfig.color}20`, color: statusConfig.color }}>
-                        <StatusIcon className="h-3 w-3" />
-                        {STATUS_LABELS[order.status]?.[lang] || statusConfig.labelKey}
-                      </Badge>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className="font-bold text-sm sm:text-base">{order.total.toFixed(2)} MRU</span>
                       {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
                     </div>
                   </div>
