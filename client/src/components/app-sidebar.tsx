@@ -110,10 +110,10 @@ export function AppSidebar() {
             />
           </div>
           <div className="flex flex-col">
-            <span className="text-base brand-name">
+            <span className="text-base brand-name brand-glow" data-text="LIMJIBA">
               LIMJIBA
             </span>
-            <span className="text-[11px] brand-name-ar">لمجيبة</span>
+            <span className="text-[11px] brand-name-ar" style={{ opacity: 0.75 }}>لمجيبة</span>
             <span className="text-[9px] uppercase tracking-widest mt-0.5" style={{ color: "rgba(201,168,76,0.35)" }}>E-Manager</span>
           </div>
         </div>

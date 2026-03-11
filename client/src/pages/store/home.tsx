@@ -212,7 +212,7 @@ export default function StoreHome() {
             </div>
           </div>
 
-          <h1 className={`animate-fade-in-up-delay-1 text-4xl md:text-6xl lg:text-7xl font-extrabold text-white mb-4 ${lang === "ar" ? "brand-name-ar" : "brand-name"}`}>
+          <h1 className={`animate-fade-in-up-delay-1 text-4xl md:text-6xl lg:text-7xl mb-4 ${lang === "ar" ? "brand-name-ar" : "brand-name-hero brand-glow"}`} data-text={settings?.heroTitle || t("home.heroTitle")}>
             {settings?.heroTitle || t("home.heroTitle")}
           </h1>
 
@@ -481,7 +481,7 @@ export default function StoreHome() {
 
       <section className="py-16" style={{ background: `linear-gradient(160deg, ${primaryColor}, #0D1520)` }} data-testid="section-cta">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className={`text-3xl md:text-4xl mb-4 ${lang === "ar" ? "brand-name-ar" : "brand-name"}`}>
+          <h2 className={`text-3xl md:text-4xl mb-4 ${lang === "ar" ? "brand-name-ar" : "brand-name-hero brand-glow"}`} data-text={lang === "ar" ? "لمجيبة" : "LIMJIBA"}>
             {lang === "ar" ? "لمجيبة" : "LIMJIBA"}
           </h2>
           <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto font-serif-brand" style={{ color: `${accentColor}cc` }}>

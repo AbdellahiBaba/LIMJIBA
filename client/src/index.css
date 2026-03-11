@@ -262,15 +262,27 @@ html[dir="rtl"] .right-0 {
 
 .brand-name {
   font-family: 'Playfair Display', 'Libre Baskerville', Georgia, serif;
-  font-weight: 700;
-  letter-spacing: 0.32em;
+  font-weight: 600;
+  letter-spacing: 0.35em;
   text-transform: uppercase;
   color: transparent;
-  background: linear-gradient(135deg, #C9A84C 0%, #E8D48B 45%, #C9A84C 55%, #A68A3E 100%);
+  background: linear-gradient(
+    90deg,
+    #A68A3E 0%,
+    #C9A84C 20%,
+    #F5E6A3 40%,
+    #FFFCE0 50%,
+    #F5E6A3 60%,
+    #C9A84C 80%,
+    #A68A3E 100%
+  );
+  background-size: 200% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-  filter: drop-shadow(0 1px 2px rgba(201,168,76,0.3));
+  animation: brand-shimmer 4s ease-in-out infinite;
+  filter: drop-shadow(0 0 8px rgba(201,168,76,0.25)) drop-shadow(0 0 20px rgba(201,168,76,0.1));
+  position: relative;
 }
 
 .brand-name-ar {
@@ -278,10 +290,82 @@ html[dir="rtl"] .right-0 {
   font-weight: 700;
   letter-spacing: 0.06em;
   color: transparent;
-  background: linear-gradient(135deg, #C9A84C 0%, #E8D48B 50%, #C9A84C 100%);
+  background: linear-gradient(
+    90deg,
+    #A68A3E 0%,
+    #C9A84C 25%,
+    #F5E6A3 50%,
+    #C9A84C 75%,
+    #A68A3E 100%
+  );
+  background-size: 200% 100%;
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+  animation: brand-shimmer 4s ease-in-out infinite;
+  animation-delay: 0.5s;
+}
+
+.brand-name-hero {
+  font-family: 'Playfair Display', 'Libre Baskerville', Georgia, serif;
+  font-weight: 700;
+  letter-spacing: 0.38em;
+  text-transform: uppercase;
+  color: transparent;
+  background: linear-gradient(
+    90deg,
+    #8B7332 0%,
+    #C9A84C 15%,
+    #E8D48B 30%,
+    #FFFCE0 45%,
+    #FFF8CC 50%,
+    #FFFCE0 55%,
+    #E8D48B 70%,
+    #C9A84C 85%,
+    #8B7332 100%
+  );
+  background-size: 300% 100%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  animation: brand-shimmer-hero 5s ease-in-out infinite;
+  filter: drop-shadow(0 0 15px rgba(201,168,76,0.35)) drop-shadow(0 0 40px rgba(201,168,76,0.15));
+  text-shadow: none;
+}
+
+@keyframes brand-shimmer {
+  0%, 100% { background-position: 100% 50%; }
+  50% { background-position: 0% 50%; }
+}
+
+@keyframes brand-shimmer-hero {
+  0% { background-position: 100% 50%; }
+  50% { background-position: 0% 50%; }
+  100% { background-position: 100% 50%; }
+}
+
+.brand-glow {
+  position: relative;
+}
+.brand-glow::before {
+  content: attr(data-text);
+  position: absolute;
+  inset: 0;
+  color: #C9A84C;
+  filter: blur(12px);
+  opacity: 0.3;
+  animation: brand-glow-pulse 3s ease-in-out infinite;
+  z-index: -1;
+  font-family: inherit;
+  font-weight: inherit;
+  font-size: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
+@keyframes brand-glow-pulse {
+  0%, 100% { opacity: 0.2; filter: blur(12px); }
+  50% { opacity: 0.45; filter: blur(18px); }
 }
 
 .store-heading-ar {
