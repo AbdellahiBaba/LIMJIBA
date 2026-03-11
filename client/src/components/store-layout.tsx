@@ -1,10 +1,10 @@
-import { useState, useEffect, useCallback, createContext, useContext } from "react";
+import { useState, useEffect, useCallback, useRef, createContext, useContext } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useCart } from "@/contexts/cart-context";
 import { useStoreAuth } from "@/contexts/store-auth-context";
-import { ShoppingCart, Menu, Home, Package, Phone, Info, FileText, Globe, User, LogOut, Search, Bell, ChevronRight, Award } from "lucide-react";
+import { ShoppingCart, Menu, Home, Package, Phone, Info, FileText, Globe, User, LogOut, Search, Bell, ChevronRight, Award, CheckCheck } from "lucide-react";
 import { SiWhatsapp, SiInstagram, SiFacebook, SiSnapchat, SiTiktok } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -120,9 +120,31 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
     refetchInterval: 30000,
   });
 
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!notifOpen) return;
+    const handleClickOutside = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [notifOpen]);
+
   const markRead = useMutation({
     mutationFn: async (id: string) => {
       await apiRequest("PATCH", `/api/store/notifications/${id}/read`);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/store/notifications"] });
+    },
+  });
+
+  const markAllRead = useMutation({
+    mutationFn: async () => {
+      await apiRequest("PATCH", "/api/store/notifications/read-all");
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["/api/store/notifications"] });
@@ -228,7 +250,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               )}
 
               {isAuthenticated && (
-                <div className="relative">
+                <div className="relative" ref={notifRef}>
                   <Button
                     variant="ghost"
                     size="sm"
@@ -244,31 +266,58 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                     )}
                   </Button>
                   {notifOpen && (
-                    <div className="absolute right-0 top-full mt-2 w-80 rounded-xl shadow-2xl border z-50 max-h-96 overflow-auto" style={{ background: "#0A1628", borderColor: "rgba(201,168,76,0.2)" }} data-testid="dropdown-notifications">
-                      <div className="p-3 border-b font-semibold text-sm" style={{ color: "#C9A84C", borderColor: "rgba(201,168,76,0.15)" }}>{t("notifications.title")}</div>
-                      {(!notifications || notifications.length === 0) ? (
-                        <div className="p-4 text-center text-sm text-gray-400">{t("notifications.empty")}</div>
-                      ) : (
-                        notifications.slice(0, 10).map(n => (
-                          <div
-                            key={n.id}
-                            className={`p-3 border-b last:border-b-0 text-sm cursor-pointer transition-colors ${!n.isRead ? "bg-[#C9A84C]/5" : "hover:bg-white/5"}`}
-                            style={{ borderColor: "rgba(201,168,76,0.08)" }}
-                            onClick={() => { if (!n.isRead) markRead.mutate(n.id); }}
-                            data-testid={`notification-${n.id}`}
+                    <div
+                      className="absolute top-full mt-2 w-80 sm:w-96 rounded-xl shadow-2xl border max-h-[70vh] flex flex-col"
+                      style={{ background: "#0A1628", borderColor: "rgba(201,168,76,0.2)", zIndex: 9999, right: lang === "ar" ? "auto" : 0, left: lang === "ar" ? 0 : "auto" }}
+                      data-testid="dropdown-notifications"
+                    >
+                      <div className="p-3 border-b font-semibold text-sm flex items-center justify-between shrink-0" style={{ color: "#C9A84C", borderColor: "rgba(201,168,76,0.15)" }}>
+                        <span>{t("notifications.title")}</span>
+                        {unreadCount > 0 && (
+                          <button
+                            className="text-xs flex items-center gap-1 px-2 py-1 rounded-md transition-colors hover:bg-white/10 disabled:opacity-50"
+                            style={{ color: "#C9A84C" }}
+                            disabled={markAllRead.isPending}
+                            onClick={(e) => { e.stopPropagation(); markAllRead.mutate(); }}
+                            data-testid="button-mark-all-read"
                           >
-                            <p className="font-medium text-white">
-                              {lang === "ar" ? (n.titleAr || n.title) : lang === "fr" ? (n.titleFr || n.title) : n.title}
-                            </p>
-                            <p className="text-xs text-gray-400 mt-1">
-                              {lang === "ar" ? (n.messageAr || n.message) : lang === "fr" ? (n.messageFr || n.message) : n.message}
-                            </p>
-                            {!n.isRead && (
-                              <span className="text-xs mt-1 inline-block" style={{ color: "#C9A84C" }}>{t("notifications.markRead")}</span>
-                            )}
-                          </div>
-                        ))
-                      )}
+                            <CheckCheck className="h-3.5 w-3.5" />
+                            {t("notifications.markAllRead")}
+                          </button>
+                        )}
+                      </div>
+                      <div className="overflow-y-auto flex-1">
+                        {(!notifications || notifications.length === 0) ? (
+                          <div className="p-6 text-center text-sm text-gray-400">{t("notifications.empty")}</div>
+                        ) : (
+                          notifications.slice(0, 15).map(n => (
+                            <div
+                              key={n.id}
+                              className={`p-3 border-b last:border-b-0 text-sm cursor-pointer transition-colors hover:bg-white/10 ${!n.isRead ? "bg-[#C9A84C]/8" : ""}`}
+                              style={{ borderColor: "rgba(201,168,76,0.08)" }}
+                              onClick={() => { if (!n.isRead) markRead.mutate(n.id); }}
+                              data-testid={`notification-${n.id}`}
+                            >
+                              <div className="flex items-start gap-2">
+                                {!n.isRead && (
+                                  <div className="w-2 h-2 rounded-full mt-1.5 shrink-0" style={{ background: "#C9A84C" }} />
+                                )}
+                                <div className={!n.isRead ? "" : "pl-4"}>
+                                  <p className="font-medium text-white text-sm leading-snug">
+                                    {lang === "ar" ? (n.titleAr || n.title) : lang === "fr" ? (n.titleFr || n.title) : n.title}
+                                  </p>
+                                  <p className="text-xs text-gray-400 mt-1 leading-relaxed">
+                                    {lang === "ar" ? (n.messageAr || n.message) : lang === "fr" ? (n.messageFr || n.message) : n.message}
+                                  </p>
+                                  <p className="text-[10px] text-gray-500 mt-1.5">
+                                    {new Date(n.createdAt).toLocaleDateString(lang === "ar" ? "ar" : lang === "fr" ? "fr" : "en", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          ))
+                        )}
+                      </div>
                     </div>
                   )}
                 </div>

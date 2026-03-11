@@ -170,6 +170,7 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
 
     "notifications.title": "Notifications",
     "notifications.markRead": "Mark as read",
+    "notifications.markAllRead": "Mark all read",
     "notifications.empty": "No notifications",
     "notifications.paymentConfirmed": "Payment Confirmed",
     "stock.productImage": "Product Image",
@@ -403,6 +404,7 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
 
     "notifications.title": "Notifications",
     "notifications.markRead": "Marquer comme lu",
+    "notifications.markAllRead": "Tout marquer lu",
     "notifications.empty": "Aucune notification",
     "notifications.paymentConfirmed": "Paiement Confirmé",
     "stock.productImage": "Image du Produit",
@@ -636,6 +638,7 @@ export const storeTranslations: Record<StoreLanguage, Record<string, string>> = 
 
     "notifications.title": "الإشعارات",
     "notifications.markRead": "تعليم كمقروء",
+    "notifications.markAllRead": "تعليم الكل كمقروء",
     "notifications.empty": "لا توجد إشعارات حالياً",
     "notifications.paymentConfirmed": "تمّ تأكيد الدفع",
     "stock.productImage": "صورة المنتج",

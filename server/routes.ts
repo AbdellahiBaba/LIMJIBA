@@ -4788,11 +4788,22 @@ export async function registerRoutes(
     }
   });
 
+  app.patch("/api/store/notifications/read-all", async (req: Request, res: Response) => {
+    try {
+      const sc = (req.session as any)?.storeCustomer;
+      if (!sc?.id) return res.status(401).json({ error: "Not authenticated" });
+      const count = await storage.markAllStoreNotificationsRead(sc.id, sc.email);
+      res.json({ success: true, count });
+    } catch (error) {
+      handleError(res, "markAllStoreNotificationsRead", error);
+    }
+  });
+
   app.patch("/api/store/notifications/:id/read", async (req: Request, res: Response) => {
     try {
       const sc = (req.session as any)?.storeCustomer;
       if (!sc?.id) return res.status(401).json({ error: "Not authenticated" });
-      const result = await storage.markStoreNotificationRead(req.params.id, sc.id);
+      const result = await storage.markStoreNotificationRead(req.params.id, sc.id, sc.email);
       if (!result) return res.status(404).json({ error: "Notification not found" });
       res.json(result);
     } catch (error) {

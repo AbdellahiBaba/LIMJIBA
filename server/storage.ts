@@ -303,7 +303,8 @@ export interface IStorage {
 
   createStoreNotification(notification: InsertStoreNotification): Promise<StoreNotification>;
   getStoreNotifications(customerId: string): Promise<StoreNotification[]>;
-  markStoreNotificationRead(id: string, customerId: string): Promise<StoreNotification | undefined>;
+  markStoreNotificationRead(id: string, customerId: string, customerEmail?: string): Promise<StoreNotification | undefined>;
+  markAllStoreNotificationsRead(customerId: string, customerEmail: string): Promise<number>;
   getUnreadNotificationCount(customerId: string): Promise<number>;
 
   getPaymentWallets(): Promise<PaymentWallet[]>;
@@ -2666,13 +2667,30 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async markStoreNotificationRead(id: string, customerId: string): Promise<StoreNotification | undefined> {
+  async markStoreNotificationRead(id: string, customerId: string, customerEmail?: string): Promise<StoreNotification | undefined> {
     return await withRetry(async () => {
+      const ownerConditions: any[] = [eq(storeNotifications.customerId, customerId)];
+      if (customerEmail) ownerConditions.push(eq(storeNotifications.customerEmail, customerEmail));
       const [updated] = await db.update(storeNotifications)
         .set({ isRead: true })
-        .where(and(eq(storeNotifications.id, id), eq(storeNotifications.customerId, customerId)))
+        .where(and(eq(storeNotifications.id, id), or(...ownerConditions)))
         .returning();
       return updated || undefined;
+    });
+  }
+
+  async markAllStoreNotificationsRead(customerId: string, customerEmail: string): Promise<number> {
+    return await withRetry(async () => {
+      const conditions: any[] = [eq(storeNotifications.isRead, false)];
+      const orConditions: any[] = [];
+      if (customerId) orConditions.push(eq(storeNotifications.customerId, customerId));
+      if (customerEmail) orConditions.push(eq(storeNotifications.customerEmail, customerEmail));
+      if (orConditions.length > 0) conditions.push(or(...orConditions));
+      const result = await db.update(storeNotifications)
+        .set({ isRead: true })
+        .where(and(...conditions))
+        .returning();
+      return result.length;
     });
   }
 
