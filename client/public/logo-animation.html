@@ -1,0 +1,548 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>LIMJIBA - لمجيبة | Logo Reveal</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #060B14;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    overflow: hidden;
+  }
+  .logo-container {
+    width: min(90vw, 700px);
+    height: min(90vh, 700px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  svg { width: 100%; height: 100%; }
+</style>
+</head>
+<body>
+<div class="logo-container">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" preserveAspectRatio="xMidYMid meet">
+  <defs>
+    <filter id="glowNavy" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur"/>
+      <feComposite in="SourceGraphic" in2="blur" operator="over"/>
+    </filter>
+    <filter id="glowGold" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="4" result="blur"/>
+      <feFlood flood-color="#C9A84C" flood-opacity="0.6" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="glow"/>
+      <feMerge>
+        <feMergeNode in="glow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="glowNavyStrong" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="5" result="blur"/>
+      <feFlood flood-color="#1B3A5C" flood-opacity="0.5" result="color"/>
+      <feComposite in="color" in2="blur" operator="in" result="glow"/>
+      <feMerge>
+        <feMergeNode in="glow"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+    <filter id="organicMotion">
+      <feTurbulence type="fractalNoise" baseFrequency="0.015" numOctaves="2" seed="3" result="noise">
+        <animate attributeName="seed" values="1;5;1" dur="8s" repeatCount="indefinite"/>
+      </feTurbulence>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="1.5" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#B8963F"/>
+      <stop offset="50%" stop-color="#D4B55A"/>
+      <stop offset="100%" stop-color="#C9A84C"/>
+    </linearGradient>
+    <linearGradient id="navyGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1B3A5C"/>
+      <stop offset="100%" stop-color="#0A1628"/>
+    </linearGradient>
+    <radialGradient id="mapGrad" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#C9A84C" stop-opacity="0.35"/>
+      <stop offset="100%" stop-color="#C9A84C" stop-opacity="0.08"/>
+    </radialGradient>
+    <clipPath id="mapClip">
+      <rect x="180" y="120" width="440" height="300" rx="10"/>
+    </clipPath>
+  </defs>
+
+  <style>
+    @keyframes drawStroke {
+      from { stroke-dashoffset: var(--dash-len); }
+      to   { stroke-dashoffset: 0; }
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+    @keyframes fillReveal {
+      0%   { fill-opacity: 0; stroke-opacity: 1; }
+      100% { fill-opacity: 1; stroke-opacity: 0.2; }
+    }
+    @keyframes mapDotsFade {
+      0%   { opacity: 0; transform: scale(0.95); }
+      100% { opacity: 1; transform: scale(1); }
+    }
+    @keyframes subtleFloat {
+      0%, 100% { transform: translateY(0); }
+      50%      { transform: translateY(-3px); }
+    }
+    @keyframes planeEntry {
+      0%   { stroke-dashoffset: var(--dash-len); transform: translateX(-10px); }
+      100% { stroke-dashoffset: 0; transform: translateX(0); }
+    }
+    @keyframes goldShimmer {
+      0%   { filter: url(#glowGold) brightness(1); }
+      50%  { filter: url(#glowGold) brightness(1.15); }
+      100% { filter: url(#glowGold) brightness(1); }
+    }
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.4; }
+      50%      { opacity: 0.8; }
+    }
+
+    .world-map {
+      opacity: 0;
+      animation: mapDotsFade 2s ease-out 0.3s forwards;
+    }
+
+    .angular-shape {
+      --dash-len: 1200;
+      stroke-dasharray: var(--dash-len);
+      stroke-dashoffset: var(--dash-len);
+      fill-opacity: 0;
+      animation:
+        drawStroke 1.8s cubic-bezier(0.4,0,0.2,1) 0.8s forwards,
+        fillReveal 1.2s ease 2.6s forwards;
+    }
+
+    .camel-body {
+      --dash-len: 2000;
+      stroke-dasharray: var(--dash-len);
+      stroke-dashoffset: var(--dash-len);
+      fill-opacity: 0;
+      animation:
+        drawStroke 2s cubic-bezier(0.4,0,0.2,1) 1.5s forwards,
+        fillReveal 1.2s ease 3.5s forwards;
+    }
+
+    .camel-head {
+      --dash-len: 800;
+      stroke-dasharray: var(--dash-len);
+      stroke-dashoffset: var(--dash-len);
+      fill-opacity: 0;
+      animation:
+        drawStroke 1.2s cubic-bezier(0.4,0,0.2,1) 2s forwards,
+        fillReveal 1.2s ease 3.5s forwards;
+    }
+
+    .rider {
+      --dash-len: 600;
+      stroke-dasharray: var(--dash-len);
+      stroke-dashoffset: var(--dash-len);
+      fill-opacity: 0;
+      animation:
+        drawStroke 1s cubic-bezier(0.4,0,0.2,1) 2.3s forwards,
+        fillReveal 1.2s ease 3.5s forwards;
+    }
+
+    .airplane-body {
+      --dash-len: 1500;
+      stroke-dasharray: var(--dash-len);
+      stroke-dashoffset: var(--dash-len);
+      fill-opacity: 0;
+      animation:
+        planeEntry 1.5s cubic-bezier(0.4,0,0.2,1) 3s forwards,
+        fillReveal 1s ease 4.5s forwards;
+    }
+
+    .airplane-wings {
+      --dash-len: 800;
+      stroke-dasharray: var(--dash-len);
+      stroke-dashoffset: var(--dash-len);
+      fill-opacity: 0;
+      animation:
+        drawStroke 1s cubic-bezier(0.4,0,0.2,1) 3.5s forwards,
+        fillReveal 1s ease 4.5s forwards;
+    }
+
+    .ground-base {
+      --dash-len: 600;
+      stroke-dasharray: var(--dash-len);
+      stroke-dashoffset: var(--dash-len);
+      fill-opacity: 0;
+      animation:
+        drawStroke 1s cubic-bezier(0.4,0,0.2,1) 4.2s forwards,
+        fillReveal 0.8s ease 5.2s forwards;
+    }
+
+    .arabic-text {
+      --dash-len: 3000;
+      stroke-dasharray: var(--dash-len);
+      stroke-dashoffset: var(--dash-len);
+      fill-opacity: 0;
+      animation:
+        drawStroke 2.5s cubic-bezier(0.4,0,0.2,1) 4.8s forwards,
+        fillReveal 1.2s ease 7.3s forwards;
+    }
+
+    .importing-text {
+      --dash-len: 2000;
+      stroke-dasharray: var(--dash-len);
+      stroke-dashoffset: var(--dash-len);
+      fill-opacity: 0;
+      animation:
+        drawStroke 2s cubic-bezier(0.4,0,0.2,1) 6.5s forwards,
+        fillReveal 1s ease 8.5s forwards;
+    }
+
+    .importing-text-filled {
+      opacity: 0;
+      animation: fadeIn 1.5s ease 8.5s forwards, goldShimmer 4s ease-in-out 10s infinite;
+    }
+
+    .final-glow {
+      opacity: 0;
+      animation: fadeIn 2s ease 8s forwards, pulseGlow 4s ease-in-out 10s infinite;
+    }
+
+    .logo-group {
+      animation: subtleFloat 6s ease-in-out 9s infinite;
+    }
+  </style>
+
+  <g class="logo-group" filter="url(#organicMotion)">
+
+    <!-- World Map Background - Dotted Pattern -->
+    <g class="world-map" clip-path="url(#mapClip)" opacity="0.3">
+      <!-- North America -->
+      <g fill="#C9A84C" opacity="0.4">
+        <circle cx="240" cy="180" r="2.5"/><circle cx="248" cy="178" r="2.5"/><circle cx="256" cy="176" r="2.5"/>
+        <circle cx="235" cy="190" r="2.5"/><circle cx="243" cy="188" r="2.5"/><circle cx="251" cy="186" r="2.5"/><circle cx="259" cy="184" r="2.5"/>
+        <circle cx="230" cy="200" r="2.5"/><circle cx="238" cy="198" r="2.5"/><circle cx="246" cy="196" r="2.5"/><circle cx="254" cy="194" r="2.5"/><circle cx="262" cy="196" r="2.5"/>
+        <circle cx="228" cy="210" r="2.5"/><circle cx="236" cy="208" r="2.5"/><circle cx="244" cy="206" r="2.5"/><circle cx="252" cy="208" r="2.5"/><circle cx="260" cy="210" r="2.5"/>
+        <circle cx="232" cy="220" r="2.5"/><circle cx="240" cy="218" r="2.5"/><circle cx="248" cy="216" r="2.5"/><circle cx="256" cy="218" r="2.5"/>
+        <circle cx="236" cy="230" r="2.5"/><circle cx="244" cy="228" r="2.5"/><circle cx="252" cy="230" r="2.5"/>
+        <circle cx="242" cy="240" r="2.5"/><circle cx="250" cy="242" r="2.5"/>
+        <circle cx="246" cy="252" r="2.5"/><circle cx="254" cy="254" r="2.5"/>
+        <circle cx="250" cy="262" r="2.5"/><circle cx="258" cy="264" r="2.5"/>
+      </g>
+      <!-- South America -->
+      <g fill="#C9A84C" opacity="0.35">
+        <circle cx="278" cy="280" r="2.5"/><circle cx="286" cy="282" r="2.5"/>
+        <circle cx="280" cy="290" r="2.5"/><circle cx="288" cy="292" r="2.5"/><circle cx="296" cy="290" r="2.5"/>
+        <circle cx="282" cy="300" r="2.5"/><circle cx="290" cy="302" r="2.5"/><circle cx="298" cy="300" r="2.5"/>
+        <circle cx="284" cy="310" r="2.5"/><circle cx="292" cy="312" r="2.5"/>
+        <circle cx="286" cy="320" r="2.5"/><circle cx="294" cy="322" r="2.5"/>
+        <circle cx="288" cy="330" r="2.5"/><circle cx="296" cy="332" r="2.5"/>
+        <circle cx="290" cy="340" r="2.5"/><circle cx="298" cy="338" r="2.5"/>
+        <circle cx="292" cy="350" r="2.5"/>
+        <circle cx="290" cy="360" r="2.5"/>
+        <circle cx="288" cy="370" r="2.5"/>
+      </g>
+      <!-- Europe -->
+      <g fill="#C9A84C" opacity="0.4">
+        <circle cx="370" cy="160" r="2.5"/><circle cx="378" cy="158" r="2.5"/><circle cx="386" cy="160" r="2.5"/>
+        <circle cx="365" cy="170" r="2.5"/><circle cx="373" cy="168" r="2.5"/><circle cx="381" cy="166" r="2.5"/><circle cx="389" cy="168" r="2.5"/><circle cx="397" cy="170" r="2.5"/>
+        <circle cx="360" cy="180" r="2.5"/><circle cx="368" cy="178" r="2.5"/><circle cx="376" cy="176" r="2.5"/><circle cx="384" cy="178" r="2.5"/><circle cx="392" cy="180" r="2.5"/><circle cx="400" cy="178" r="2.5"/>
+        <circle cx="365" cy="190" r="2.5"/><circle cx="373" cy="188" r="2.5"/><circle cx="381" cy="190" r="2.5"/><circle cx="389" cy="192" r="2.5"/><circle cx="397" cy="190" r="2.5"/>
+        <circle cx="370" cy="200" r="2.5"/><circle cx="378" cy="198" r="2.5"/><circle cx="386" cy="200" r="2.5"/><circle cx="394" cy="202" r="2.5"/>
+        <circle cx="375" cy="210" r="2.5"/><circle cx="383" cy="212" r="2.5"/>
+      </g>
+      <!-- Africa -->
+      <g fill="#C9A84C" opacity="0.45">
+        <circle cx="380" cy="225" r="2.5"/><circle cx="388" cy="223" r="2.5"/><circle cx="396" cy="225" r="2.5"/><circle cx="404" cy="223" r="2.5"/>
+        <circle cx="375" cy="235" r="2.5"/><circle cx="383" cy="233" r="2.5"/><circle cx="391" cy="235" r="2.5"/><circle cx="399" cy="237" r="2.5"/><circle cx="407" cy="235" r="2.5"/>
+        <circle cx="378" cy="245" r="2.5"/><circle cx="386" cy="243" r="2.5"/><circle cx="394" cy="245" r="2.5"/><circle cx="402" cy="247" r="2.5"/><circle cx="410" cy="245" r="2.5"/>
+        <circle cx="382" cy="255" r="2.5"/><circle cx="390" cy="253" r="2.5"/><circle cx="398" cy="255" r="2.5"/><circle cx="406" cy="257" r="2.5"/>
+        <circle cx="386" cy="265" r="2.5"/><circle cx="394" cy="263" r="2.5"/><circle cx="402" cy="265" r="2.5"/>
+        <circle cx="390" cy="275" r="2.5"/><circle cx="398" cy="273" r="2.5"/>
+        <circle cx="392" cy="285" r="2.5"/><circle cx="400" cy="283" r="2.5"/>
+        <circle cx="394" cy="295" r="2.5"/><circle cx="402" cy="293" r="2.5"/>
+        <circle cx="396" cy="305" r="2.5"/>
+        <circle cx="398" cy="315" r="2.5"/>
+        <circle cx="396" cy="325" r="2.5"/>
+        <circle cx="394" cy="335" r="2.5"/>
+      </g>
+      <!-- Asia / Middle East -->
+      <g fill="#C9A84C" opacity="0.4">
+        <circle cx="420" cy="170" r="2.5"/><circle cx="428" cy="168" r="2.5"/><circle cx="436" cy="170" r="2.5"/><circle cx="444" cy="168" r="2.5"/><circle cx="452" cy="170" r="2.5"/><circle cx="460" cy="172" r="2.5"/>
+        <circle cx="415" cy="180" r="2.5"/><circle cx="423" cy="178" r="2.5"/><circle cx="431" cy="180" r="2.5"/><circle cx="439" cy="178" r="2.5"/><circle cx="447" cy="180" r="2.5"/><circle cx="455" cy="182" r="2.5"/><circle cx="463" cy="180" r="2.5"/><circle cx="471" cy="182" r="2.5"/>
+        <circle cx="418" cy="190" r="2.5"/><circle cx="426" cy="188" r="2.5"/><circle cx="434" cy="190" r="2.5"/><circle cx="442" cy="188" r="2.5"/><circle cx="450" cy="190" r="2.5"/><circle cx="458" cy="192" r="2.5"/><circle cx="466" cy="190" r="2.5"/><circle cx="474" cy="192" r="2.5"/><circle cx="482" cy="190" r="2.5"/>
+        <circle cx="420" cy="200" r="2.5"/><circle cx="428" cy="198" r="2.5"/><circle cx="436" cy="200" r="2.5"/><circle cx="444" cy="202" r="2.5"/><circle cx="452" cy="200" r="2.5"/><circle cx="460" cy="202" r="2.5"/><circle cx="468" cy="200" r="2.5"/><circle cx="476" cy="202" r="2.5"/><circle cx="484" cy="200" r="2.5"/><circle cx="492" cy="198" r="2.5"/>
+        <circle cx="425" cy="210" r="2.5"/><circle cx="433" cy="208" r="2.5"/><circle cx="441" cy="210" r="2.5"/><circle cx="449" cy="212" r="2.5"/><circle cx="457" cy="210" r="2.5"/><circle cx="465" cy="212" r="2.5"/><circle cx="473" cy="210" r="2.5"/><circle cx="481" cy="212" r="2.5"/><circle cx="489" cy="210" r="2.5"/><circle cx="497" cy="208" r="2.5"/><circle cx="505" cy="210" r="2.5"/>
+        <circle cx="430" cy="220" r="2.5"/><circle cx="438" cy="218" r="2.5"/><circle cx="446" cy="220" r="2.5"/><circle cx="454" cy="222" r="2.5"/><circle cx="462" cy="220" r="2.5"/><circle cx="470" cy="222" r="2.5"/><circle cx="478" cy="220" r="2.5"/><circle cx="486" cy="222" r="2.5"/><circle cx="494" cy="220" r="2.5"/><circle cx="502" cy="218" r="2.5"/><circle cx="510" cy="220" r="2.5"/><circle cx="518" cy="222" r="2.5"/>
+        <circle cx="440" cy="230" r="2.5"/><circle cx="448" cy="228" r="2.5"/><circle cx="456" cy="230" r="2.5"/><circle cx="464" cy="232" r="2.5"/><circle cx="472" cy="230" r="2.5"/><circle cx="480" cy="232" r="2.5"/><circle cx="488" cy="230" r="2.5"/><circle cx="496" cy="228" r="2.5"/><circle cx="504" cy="230" r="2.5"/><circle cx="512" cy="228" r="2.5"/><circle cx="520" cy="230" r="2.5"/><circle cx="528" cy="232" r="2.5"/><circle cx="536" cy="230" r="2.5"/>
+        <circle cx="455" cy="240" r="2.5"/><circle cx="463" cy="238" r="2.5"/><circle cx="471" cy="240" r="2.5"/><circle cx="479" cy="238" r="2.5"/><circle cx="487" cy="240" r="2.5"/><circle cx="495" cy="238" r="2.5"/><circle cx="503" cy="240" r="2.5"/><circle cx="511" cy="238" r="2.5"/><circle cx="519" cy="240" r="2.5"/><circle cx="527" cy="238" r="2.5"/><circle cx="535" cy="240" r="2.5"/><circle cx="543" cy="242" r="2.5"/>
+        <circle cx="475" cy="250" r="2.5"/><circle cx="483" cy="248" r="2.5"/><circle cx="491" cy="250" r="2.5"/><circle cx="499" cy="248" r="2.5"/><circle cx="507" cy="250" r="2.5"/><circle cx="515" cy="248" r="2.5"/><circle cx="523" cy="250" r="2.5"/><circle cx="531" cy="248" r="2.5"/><circle cx="539" cy="250" r="2.5"/><circle cx="547" cy="252" r="2.5"/>
+        <circle cx="495" cy="260" r="2.5"/><circle cx="503" cy="258" r="2.5"/><circle cx="511" cy="260" r="2.5"/><circle cx="519" cy="258" r="2.5"/><circle cx="527" cy="260" r="2.5"/><circle cx="535" cy="258" r="2.5"/><circle cx="543" cy="260" r="2.5"/>
+        <circle cx="505" cy="270" r="2.5"/><circle cx="513" cy="268" r="2.5"/><circle cx="521" cy="270" r="2.5"/><circle cx="529" cy="268" r="2.5"/><circle cx="537" cy="270" r="2.5"/>
+      </g>
+      <!-- Australia -->
+      <g fill="#C9A84C" opacity="0.3">
+        <circle cx="530" cy="310" r="2.5"/><circle cx="538" cy="308" r="2.5"/><circle cx="546" cy="310" r="2.5"/><circle cx="554" cy="312" r="2.5"/>
+        <circle cx="525" cy="320" r="2.5"/><circle cx="533" cy="318" r="2.5"/><circle cx="541" cy="320" r="2.5"/><circle cx="549" cy="318" r="2.5"/><circle cx="557" cy="320" r="2.5"/>
+        <circle cx="528" cy="330" r="2.5"/><circle cx="536" cy="328" r="2.5"/><circle cx="544" cy="330" r="2.5"/><circle cx="552" cy="328" r="2.5"/>
+        <circle cx="532" cy="340" r="2.5"/><circle cx="540" cy="338" r="2.5"/><circle cx="548" cy="340" r="2.5"/>
+        <circle cx="538" cy="350" r="2.5"/><circle cx="546" cy="348" r="2.5"/>
+      </g>
+    </g>
+
+    <!-- Angular/Triangular Blue Shape Behind Camel -->
+    <path class="angular-shape"
+      d="M 310 170 L 420 140 L 490 165 L 480 200 L 440 250 L 380 300 L 310 330 L 285 290 L 290 230 Z"
+      fill="url(#navyGrad)" stroke="#1B3A5C" stroke-width="2"
+      filter="url(#glowNavy)"/>
+
+    <!-- Camel Body -->
+    <path class="camel-body"
+      d="M 330 380 
+         C 325 370 320 355 322 340 
+         L 325 320 
+         C 326 310 330 300 340 295 
+         L 355 285 
+         C 360 282 365 280 370 278 
+         L 380 275 
+         C 385 273 390 272 395 275 
+         L 405 280 
+         C 412 284 418 290 422 298 
+         L 430 315 
+         C 435 325 438 338 436 350 
+         L 434 365 
+         C 432 375 428 382 420 388 
+         L 415 392 
+         C 418 405 420 418 418 425 
+         L 415 440 
+         C 414 445 412 448 408 450 
+         L 402 452 
+         L 398 440 
+         L 396 425 
+         L 392 410 
+         C 388 405 382 402 378 405 
+         L 372 410 
+         L 368 425 
+         L 365 440 
+         L 362 452 
+         L 356 450 
+         C 354 448 352 445 352 440 
+         L 350 425 
+         L 348 410 
+         C 345 400 340 395 335 392 
+         L 332 395 
+         L 330 410 
+         L 328 425 
+         L 326 440 
+         L 324 452 
+         L 318 450 
+         C 316 448 315 445 315 440 
+         L 316 425 
+         L 318 410 
+         L 322 395 
+         L 325 385 
+         Z"
+      fill="#0A1628" stroke="#1B3A5C" stroke-width="1.5"
+      filter="url(#glowNavyStrong)"/>
+
+    <!-- Camel Neck and Head -->
+    <path class="camel-head"
+      d="M 340 295 
+         C 338 285 335 275 332 265 
+         L 328 250 
+         C 326 240 325 230 328 222 
+         L 332 212 
+         C 334 208 338 205 342 203 
+         L 350 200 
+         C 355 198 360 198 362 202 
+         L 358 210 
+         C 355 215 352 220 352 228 
+         L 354 240 
+         C 355 248 358 258 360 265 
+         L 365 278"
+      fill="#0A1628" stroke="#1B3A5C" stroke-width="1.5"
+      filter="url(#glowNavyStrong)"/>
+
+    <!-- Camel Ear -->
+    <path class="camel-head"
+      d="M 342 203 L 338 192 C 337 188 339 185 342 186 L 346 190 L 350 200"
+      fill="#0A1628" stroke="#1B3A5C" stroke-width="1.2"/>
+
+    <!-- Rider Silhouette on Camel -->
+    <g filter="url(#glowNavyStrong)">
+      <path class="rider"
+        d="M 365 270 
+           C 362 260 358 248 356 238 
+           L 354 225 
+           C 353 218 355 210 360 205 
+           L 368 198 
+           C 372 195 378 194 382 196 
+           L 388 200 
+           C 392 204 394 210 393 218 
+           L 390 230 
+           C 388 242 384 255 380 265 
+           Z"
+        fill="#0A1628" stroke="#1B3A5C" stroke-width="1.2"/>
+      <!-- Rider Head -->
+      <circle class="rider" cx="375" cy="188" r="12"
+        fill="#0A1628" stroke="#1B3A5C" stroke-width="1.2"/>
+    </g>
+
+    <!-- Airplane Fuselage -->
+    <path class="airplane-body"
+      d="M 310 340 
+         L 340 330 
+         L 380 320 
+         L 420 312 
+         L 460 308 
+         L 500 306 
+         L 530 305 
+         L 550 304 
+         C 558 304 565 306 568 310 
+         L 570 314 
+         C 570 318 567 322 560 324 
+         L 540 326 
+         L 510 328 
+         L 470 330 
+         L 430 334 
+         L 390 340 
+         L 350 348 
+         L 310 358 
+         Z"
+      fill="#0A1628" stroke="#1B3A5C" stroke-width="1.5"
+      filter="url(#glowNavyStrong)"/>
+
+    <!-- Airplane Nose Cone -->
+    <path class="airplane-body"
+      d="M 568 310 L 590 308 C 598 308 602 312 598 316 L 590 318 L 570 314"
+      fill="#0A1628" stroke="#1B3A5C" stroke-width="1"/>
+
+    <!-- Airplane Wings (swept back) -->
+    <path class="airplane-wings"
+      d="M 440 314 
+         L 445 290 L 455 275 L 465 268 L 470 270 L 462 285 L 455 305"
+      fill="#0A1628" stroke="#1B3A5C" stroke-width="1.2"/>
+
+    <path class="airplane-wings"
+      d="M 440 332 
+         L 445 350 L 452 360 L 460 364 L 464 362 L 458 350 L 450 335"
+      fill="#0A1628" stroke="#1B3A5C" stroke-width="1.2"/>
+
+    <!-- Airplane Tail -->
+    <path class="airplane-wings"
+      d="M 320 335 L 310 318 L 305 310 L 308 308 L 318 318 L 325 332"
+      fill="#0A1628" stroke="#1B3A5C" stroke-width="1.2"/>
+
+    <!-- Airplane Engine Nacelles -->
+    <ellipse class="airplane-body" cx="470" cy="308" rx="8" ry="4"
+      fill="#0A1628" stroke="#1B3A5C" stroke-width="0.8"/>
+    <ellipse class="airplane-body" cx="470" cy="332" rx="8" ry="4"
+      fill="#0A1628" stroke="#1B3A5C" stroke-width="0.8"/>
+
+    <!-- Ground Base Arc -->
+    <path class="ground-base"
+      d="M 270 458 Q 380 468 490 458"
+      fill="none" stroke="#0A1628" stroke-width="6" stroke-linecap="round"/>
+    <path class="ground-base"
+      d="M 290 462 Q 380 470 470 462"
+      fill="none" stroke="#1B3A5C" stroke-width="2" stroke-linecap="round" opacity="0.5"/>
+
+    <!-- Arabic Text: لمجيبة -->
+    <g transform="translate(400, 530)" filter="url(#glowNavyStrong)">
+      <!-- Lam ل -->
+      <path class="arabic-text"
+        d="M 115 0 L 115 -55 C 115 -62 112 -66 107 -66 L 100 -62 L 100 -10 C 100 -4 96 0 90 2"
+        fill="none" stroke="#0A1628" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+
+      <!-- Mim م -->
+      <path class="arabic-text"
+        d="M 85 2 C 78 5 70 6 62 4 C 55 2 50 -4 50 -12 C 50 -20 55 -26 62 -28 C 68 -30 75 -28 80 -24 L 82 -18 C 82 -12 78 -8 72 -8 C 68 -8 64 -10 62 -14"
+        fill="none" stroke="#0A1628" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+
+      <!-- Jim ج -->
+      <path class="arabic-text"
+        d="M 45 -2 C 38 2 28 4 18 2 C 8 -2 2 -10 2 -20 C 2 -30 8 -38 18 -40 C 28 -40 35 -36 40 -30 L 42 -22 C 42 -14 38 -8 32 -6"
+        fill="none" stroke="#0A1628" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Jim dot -->
+      <circle class="arabic-text" cx="22" cy="10" r="4"
+        fill="#0A1628" stroke="#0A1628" stroke-width="1"/>
+
+      <!-- Ya ي -->
+      <path class="arabic-text"
+        d="M -5 0 C -12 4 -22 6 -32 4 C -42 0 -48 -8 -48 -18 L -48 -30 C -48 -38 -44 -44 -38 -46 L -30 -44 L -28 -35 C -28 -28 -32 -22 -38 -20"
+        fill="none" stroke="#0A1628" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Ya dots -->
+      <circle class="arabic-text" cx="-35" cy="14" r="3.5"
+        fill="#0A1628" stroke="#0A1628" stroke-width="1"/>
+      <circle class="arabic-text" cx="-45" cy="14" r="3.5"
+        fill="#0A1628" stroke="#0A1628" stroke-width="1"/>
+
+      <!-- Ba ب -->
+      <path class="arabic-text"
+        d="M -55 -2 C -62 4 -72 6 -82 4 C -92 0 -98 -6 -100 -14 C -100 -22 -95 -28 -88 -30 L -78 -28 C -72 -24 -68 -18 -68 -10 L -70 -2"
+        fill="none" stroke="#0A1628" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Ba dot -->
+      <circle class="arabic-text" cx="-82" cy="14" r="4"
+        fill="#0A1628" stroke="#0A1628" stroke-width="1"/>
+
+      <!-- Ta Marbuta ة -->
+      <path class="arabic-text"
+        d="M -108 0 C -112 4 -120 6 -128 4 C -136 0 -140 -8 -140 -18 C -140 -28 -136 -36 -128 -38 C -120 -38 -114 -34 -110 -28 L -108 -18 C -108 -10 -112 -4 -118 -2"
+        fill="none" stroke="#0A1628" stroke-width="8" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- Ta Marbuta dots -->
+      <circle class="arabic-text" cx="-120" cy="-46" r="3.5"
+        fill="#0A1628" stroke="#0A1628" stroke-width="1"/>
+      <circle class="arabic-text" cx="-130" cy="-46" r="3.5"
+        fill="#0A1628" stroke="#0A1628" stroke-width="1"/>
+
+      <!-- Baseline connector -->
+      <path class="arabic-text"
+        d="M 90 2 L -108 0"
+        fill="none" stroke="#0A1628" stroke-width="7" stroke-linecap="round"/>
+    </g>
+
+    <!-- IMPORTING Text -->
+    <g transform="translate(400, 590)">
+      <!-- Stroke version for line-draw animation -->
+      <text class="importing-text"
+        x="0" y="0"
+        text-anchor="middle"
+        font-family="'Montserrat', 'Segoe UI', Arial, sans-serif"
+        font-size="28"
+        font-weight="700"
+        letter-spacing="12"
+        fill="url(#goldGrad)" stroke="#C9A84C" stroke-width="0.8"
+        filter="url(#glowGold)">IMPORTING</text>
+
+      <!-- Filled version that appears after stroke animation -->
+      <text class="importing-text-filled"
+        x="0" y="0"
+        text-anchor="middle"
+        font-family="'Montserrat', 'Segoe UI', Arial, sans-serif"
+        font-size="28"
+        font-weight="700"
+        letter-spacing="12"
+        fill="url(#goldGrad)"
+        filter="url(#glowGold)">IMPORTING</text>
+
+      <!-- Decorative dots -->
+      <circle class="importing-text-filled" cx="-115" cy="-4" r="3" fill="#C9A84C"/>
+      <circle class="importing-text-filled" cx="115" cy="-4" r="3" fill="#C9A84C"/>
+    </g>
+
+    <!-- Final ambient glow overlay -->
+    <ellipse class="final-glow" cx="400" cy="400" rx="250" ry="200"
+      fill="none" stroke="#C9A84C" stroke-width="0.5" opacity="0.15"/>
+
+  </g>
+
+</svg>
+</div>
+</body>
+</html>
