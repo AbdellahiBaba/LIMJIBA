@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { useCart } from "@/contexts/cart-context";
@@ -15,9 +15,18 @@ export default function StoreProducts() {
   const { addItem, getItemQuantity } = useCart();
   const { compareItems, addToCompare, removeFromCompare, isInCompare } = useComparison();
   const { t, lang } = useStoreLanguage();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
   const [search, setSearch] = useState("");
-  const [category, setCategory] = useState("all");
+  const [category, setCategory] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    return params.get("category") || "all";
+  });
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlCategory = params.get("category");
+    setCategory(urlCategory || "all");
+  }, [location]);
 
   const { data: products, isLoading } = useQuery<Product[]>({
     queryKey: ["/api/store/products"],

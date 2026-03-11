@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, X, Send, Loader2, Bot, User, Headset, ArrowLeft, Plus } from "lucide-react";
 import { useStoreLanguage } from "@/components/store-layout";
-import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
+import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18-removebg-preview_1773192470477.png";
 
 interface Message {
   role: "user" | "assistant";
@@ -578,7 +578,7 @@ export default function LimjibaChat() {
                 </button>
               )}
               {mode === "ai" ? (
-                <img src={logoImg} alt="LIMJIBA" className="h-8 w-8 rounded-full object-contain bg-white/10 p-0.5" />
+                <img src={logoImg} alt="LIMJIBA" className="h-8 w-8 rounded-full object-contain p-0.5" />
               ) : (
                 <div className="h-8 w-8 rounded-full flex items-center justify-center" style={{ backgroundColor: "rgba(201,168,76,0.2)" }}>
                   <Headset className="h-4 w-4" style={{ color: "#C9A84C" }} />

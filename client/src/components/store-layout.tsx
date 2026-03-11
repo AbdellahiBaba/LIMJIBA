@@ -11,7 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import type { StoreSettings, StoreNotification } from "@shared/schema";
 import { type StoreLanguage, getStoreTranslation } from "@/locales/store";
 import PwaInstallPrompt from "@/components/pwa-install-prompt";
-import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18_1773113178753.jpeg";
+import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18-removebg-preview_1773192470477.png";
 import aegisai360LogoPath from "@assets/aegisai360_logo.svg";
 
 interface StoreLanguageContextType {
@@ -131,7 +131,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           <div className="flex items-center justify-between h-16 md:h-18">
             <Link href="/store" className="flex items-center gap-3 text-white no-underline group" data-testid="link-store-home">
               <div className="relative">
-                <img src={logoImg} alt={storeName} className="h-10 w-10 md:h-11 md:w-11 rounded-lg object-contain bg-white/5 p-0.5 transition-transform group-hover:scale-105" style={{ boxShadow: "0 0 20px rgba(201,168,76,0.15)" }} />
+                <img src={logoImg} alt={storeName} className="h-10 w-10 md:h-11 md:w-11 rounded-lg object-contain p-0.5 transition-transform group-hover:scale-105" style={{ boxShadow: "0 0 20px rgba(201,168,76,0.15)" }} />
               </div>
               <div className="flex flex-col leading-tight">
                 <span className="text-lg md:text-xl font-extrabold tracking-[0.2em] uppercase brand-name" style={{ color: "#C9A84C" }}>{storeName}</span>
