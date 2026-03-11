@@ -96,11 +96,6 @@ export function CinematicLogoReveal({ width=500, height=500, onComplete }: Cinem
       ctx.clearRect(0,0,width,height);
       const lw=width*.6, lh=(img.height/img.width)*lw;
       ctx.drawImage(img,(width-lw)/2,(height-lh)/2-10,lw,lh);
-      ctx.fillStyle=NAVY; ctx.font=`bold ${Math.round(width*.09)}px 'Amiri',serif`;
-      ctx.textAlign="center"; ctx.textBaseline="middle";
-      ctx.fillText("لمجيبة",cx,cy+height*.32);
-      ctx.fillStyle=GOLD; ctx.font=`700 ${Math.round(width*.04)}px 'Montserrat',sans-serif`;
-      ctx.fillText("IMPORTING",cx,cy+height*.39);
       setDone(true); onComplete?.(); return;
     }
 
@@ -146,7 +141,6 @@ export function CinematicLogoReveal({ width=500, height=500, onComplete }: Cinem
     phaseExplosion(ctx,t,ms,cx,cy,st);
     phaseLogoReveal(ctx,t,ms,img,cx,cy,st);
     phaseMetalSheen(ctx,t,ms,cx,cy,st);
-    phaseTextReveal(ctx,t,ms,cx,cy);
     phaseFinalGlow(ctx,t,ms,cx,cy);
     drawSparks(ctx,t,ms,st);
   }, [width,height]);
@@ -443,109 +437,6 @@ export function CinematicLogoReveal({ width=500, height=500, onComplete }: Cinem
     doSheen(s1Start,s1End,0.5,60);
     doSheen(s2Start,s2End,0.3,40);
     doSheen(s3Start,s3End,0.15,30);
-  };
-
-  const phaseTextReveal = (ctx: CanvasRenderingContext2D, t: number, ms: number, cx: number, cy: number) => {
-    const arStart=0.62, arEnd=0.78;
-    if (t>=arStart) {
-      const p = clamp((t-arStart)/(arEnd-arStart));
-      const e = easeOut(p);
-
-      ctx.save();
-      const fSize = Math.round(width*0.095);
-      ctx.font = `bold ${fSize}px 'Amiri','Traditional Arabic',serif`;
-      ctx.textAlign="center"; ctx.textBaseline="middle";
-      const textY = cy+height*0.31;
-
-      const slideX = lerp(cx+50*1,cx,e);
-
-      ctx.globalAlpha = e*0.3;
-      ctx.fillStyle = GOLD_LIGHT;
-      ctx.fillText("لمجيبة",slideX+1,textY+2);
-
-      ctx.globalAlpha = e;
-      ctx.fillStyle = NAVY;
-      ctx.fillText("لمجيبة",slideX,textY);
-
-      if (p>0.5 && p<1) {
-        const shimP = (p-0.5)/0.5;
-        const shimE = ease(shimP);
-        const shimX = slideX-width*0.12+width*0.24*shimE;
-        ctx.globalAlpha = Math.sin(shimP*Math.PI)*0.2;
-        const sg = ctx.createLinearGradient(shimX-15,textY-fSize/2,shimX+15,textY+fSize/2);
-        sg.addColorStop(0,"transparent"); sg.addColorStop(0.5,GOLD_BRIGHT); sg.addColorStop(1,"transparent");
-        ctx.fillStyle=sg;
-        ctx.fillText("لمجيبة",slideX,textY);
-      }
-      ctx.restore();
-    }
-
-    const impStart=0.74, impEnd=0.88;
-    if (t>=impStart) {
-      const p = clamp((t-impStart)/(impEnd-impStart));
-      const text="IMPORTING";
-      const fSize=Math.round(width*0.04);
-      const textY=cy+height*0.39;
-
-      ctx.save();
-      ctx.font=`700 ${fSize}px 'Montserrat','Segoe UI',sans-serif`;
-      ctx.textAlign="left"; ctx.textBaseline="middle";
-
-      const totalW = ctx.measureText(text).width;
-      const spacing = width*0.006;
-      const totalSpacing = spacing*(text.length-1);
-      let sx = cx-(totalW+totalSpacing)/2;
-
-      for (let i=0;i<text.length;i++) {
-        const charP = clamp((p*text.length*1.3-i)/1.3);
-        if (charP<=0) { sx+=ctx.measureText(text[i]).width+spacing; continue; }
-        const ce = easeOut(charP);
-        const cw = ctx.measureText(text[i]).width;
-
-        ctx.save();
-        ctx.globalAlpha = ce;
-        const dropY = lerp(textY-8,textY,easeOut(Math.min(charP*2,1)));
-        const scale = lerp(1.4,1,easeOut(Math.min(charP*2,1)));
-
-        ctx.translate(sx+cw/2,dropY);
-        ctx.scale(scale,scale);
-
-        const cg = ctx.createLinearGradient(-cw/2,-fSize/2,cw/2,fSize/2);
-        cg.addColorStop(0,"#B8963F");
-        cg.addColorStop(0.3,GOLD_BRIGHT);
-        cg.addColorStop(0.5,GOLD);
-        cg.addColorStop(0.7,GOLD_BRIGHT);
-        cg.addColorStop(1,"#B8963F");
-        ctx.fillStyle=cg;
-        ctx.fillText(text[i],-cw/2,0);
-
-        if (charP<0.3) {
-          ctx.globalAlpha = (1-charP/0.3)*0.5;
-          ctx.shadowColor=GOLD_BRIGHT;
-          ctx.shadowBlur=12;
-          ctx.fillText(text[i],-cw/2,0);
-          ctx.shadowBlur=0;
-        }
-
-        ctx.restore();
-        sx+=cw+spacing;
-      }
-
-      if (p>0.8) {
-        const sheenP = (p-0.8)/0.2;
-        const sheenE = ease(sheenP);
-        ctx.textAlign="center"; ctx.textBaseline="middle";
-        const sw = totalW+totalSpacing;
-        const sheenX = cx-sw/2+sw*sheenE;
-        ctx.globalAlpha = Math.sin(sheenP*Math.PI)*0.2;
-        const sg=ctx.createLinearGradient(sheenX-20,textY-fSize,sheenX+20,textY+fSize);
-        sg.addColorStop(0,"transparent"); sg.addColorStop(0.5,"rgba(255,255,255,0.5)"); sg.addColorStop(1,"transparent");
-        ctx.fillStyle=sg;
-        ctx.fillRect(sheenX-20,textY-fSize,40,fSize*2);
-      }
-
-      ctx.restore();
-    }
   };
 
   const phaseFinalGlow = (ctx: CanvasRenderingContext2D, t: number, ms: number, cx: number, cy: number) => {
