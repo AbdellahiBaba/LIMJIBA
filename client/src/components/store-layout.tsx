@@ -134,8 +134,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                 <img src={logoImg} alt={storeName} className="h-10 w-10 md:h-11 md:w-11 rounded-lg object-contain p-0.5 transition-transform group-hover:scale-105" style={{ boxShadow: "0 0 20px rgba(201,168,76,0.15)" }} />
               </div>
               <div className="flex flex-col leading-tight">
-                <span className="text-lg md:text-xl font-extrabold tracking-[0.2em] uppercase brand-name" style={{ color: "#C9A84C" }}>{storeName}</span>
-                <span className="text-[10px] font-medium tracking-wide brand-name-ar" style={{ color: "rgba(201,168,76,0.6)" }}>لمجيبة</span>
+                <span className="text-lg md:text-xl brand-name">{storeName}</span>
+                <span className="text-[10px] brand-name-ar">لمجيبة</span>
               </div>
             </Link>
 
@@ -347,8 +347,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               <div className="flex items-center gap-3 mb-4">
                 <img src={logoImg} alt={storeName} className="h-10 w-10 rounded-lg object-contain" style={{ boxShadow: "0 0 20px rgba(201,168,76,0.1)" }} />
                 <div>
-                  <h3 className="text-lg font-extrabold tracking-[0.2em] uppercase brand-name" style={{ color: "#C9A84C" }}>{storeName}</h3>
-                  <p className="text-xs brand-name-ar" style={{ color: "rgba(201,168,76,0.5)" }}>لمجيبة</p>
+                  <h3 className="text-lg brand-name">{storeName}</h3>
+                  <p className="text-xs brand-name-ar">لمجيبة</p>
                 </div>
               </div>
               <p className="text-sm text-gray-500 leading-relaxed">{(() => {

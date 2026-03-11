@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;500;600;700&family=Tajawal:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Cairo:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400..900;1,400..900&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Tajawal:wght@400;500;700&family=Roboto:wght@400;500;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -261,16 +261,27 @@ html[dir="rtl"] .right-0 {
 }
 
 .brand-name {
-  font-family: 'Montserrat', sans-serif;
-  font-weight: 800;
-  letter-spacing: 0.2em;
+  font-family: 'Playfair Display', 'Libre Baskerville', Georgia, serif;
+  font-weight: 700;
+  letter-spacing: 0.32em;
   text-transform: uppercase;
+  color: transparent;
+  background: linear-gradient(135deg, #C9A84C 0%, #E8D48B 45%, #C9A84C 55%, #A68A3E 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  filter: drop-shadow(0 1px 2px rgba(201,168,76,0.3));
 }
 
 .brand-name-ar {
   font-family: 'Amiri', 'Cairo', 'Tajawal', serif;
   font-weight: 700;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
+  color: transparent;
+  background: linear-gradient(135deg, #C9A84C 0%, #E8D48B 50%, #C9A84C 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
 .store-heading-ar {
@@ -280,7 +291,7 @@ html[dir="rtl"] .right-0 {
 }
 
 .font-serif-brand {
-  font-family: Georgia, 'Times New Roman', serif;
+  font-family: 'Playfair Display', 'Libre Baskerville', Georgia, serif;
   font-style: italic;
 }
 

@@ -196,7 +196,7 @@ function AuthenticatedApp() {
             <div className="flex items-center gap-2">
               <SidebarTrigger data-testid="button-sidebar-toggle" />
               <div className="flex items-center gap-1.5 sm:hidden">
-                <span className="font-extrabold text-xs tracking-[0.1em] uppercase" style={{ color: "#C9A84C" }}>LIMJIBA</span>
+                <span className="text-xs brand-name">LIMJIBA</span>
               </div>
               {branding.logo && (
                 <img 
