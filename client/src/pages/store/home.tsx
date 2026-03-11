@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { ShoppingCart, ArrowRight, Star, Sparkles, Package, Shield, Truck, Award, ChevronRight, Clock, Flame, Eye, Heart, Zap, CheckCircle, Globe, Crown, Gift, Lock, Diamond, ThumbsUp, Medal, Gem, Quote } from "lucide-react";
 import type { Product, CmsBanner, StoreSettings, Category, StoreReview } from "@shared/schema";
 import { CinematicLogoReveal } from "@/components/cinematic-logo-reveal";
+import { StoreMarketingIntro, useMarketingIntro } from "@/components/store-marketing-intro";
 
 function getProductName(product: Product, lang: string): string {
   if (lang === "ar" && product.nameAr) return product.nameAr;
@@ -51,6 +52,7 @@ export default function StoreHome() {
   const { t, lang } = useStoreLanguage();
   const { customer } = useStoreAuth();
   const { recentlyViewed, getViewedCategories, getViewedIds } = useRecentlyViewed();
+  const { show: showIntro, handleDone: introHandleDone } = useMarketingIntro();
 
   const { data: products, isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/store/products"],
@@ -189,6 +191,8 @@ export default function StoreHome() {
   };
 
   return (
+    <>
+      {showIntro && <StoreMarketingIntro onDone={introHandleDone} />}
     <div className="store-page">
       <section className="relative overflow-hidden min-h-[85vh] flex items-center" style={{ background: `linear-gradient(160deg, ${primaryColor} 0%, #0D1520 50%, ${primaryColor} 100%)` }} data-testid="section-hero">
         <div className="hero-glow" style={{ width: "500px", height: "500px", background: accentColor, top: "-10%", left: "10%" }} />
@@ -494,5 +498,6 @@ export default function StoreHome() {
         </div>
       </section>
     </div>
+    </>
   );
 }
