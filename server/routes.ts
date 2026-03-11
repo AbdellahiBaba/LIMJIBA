@@ -2406,6 +2406,15 @@ export async function registerRoutes(
     }
   });
 
+  app.delete("/api/sales", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const count = await storage.deleteAllSales();
+      res.json({ success: true, deleted: count });
+    } catch (error) {
+      handleError(res, "deleteAllSales", error);
+    }
+  });
+
   app.put("/api/sales/:id/edit", async (req, res) => {
     try {
       const { items, discount, deliveryCost, customerName, customerPhone } = saleEditSchema.parse(req.body);
@@ -4460,6 +4469,15 @@ export async function registerRoutes(
   // ==========================================
   // ADMIN: Store Orders
   // ==========================================
+
+  app.delete("/api/store-orders", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const count = await storage.deleteAllStoreOrders();
+      res.json({ success: true, deleted: count });
+    } catch (error) {
+      handleError(res, "deleteAllStoreOrders", error);
+    }
+  });
 
   app.get("/api/store-orders", requireAuth, async (req: Request, res: Response) => {
     try {

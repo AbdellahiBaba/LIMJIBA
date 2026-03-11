@@ -169,6 +169,7 @@ export interface IStorage {
   createSale(sale: InsertSale, items: InsertSaleItem[]): Promise<SaleWithItems>;
   updateSaleStatus(id: string, status: string): Promise<Sale | undefined>;
   deleteSale(id: string): Promise<boolean>;
+  deleteAllSales(): Promise<number>;
 
   getResellers(): Promise<Reseller[]>;
   getReseller(id: string): Promise<Reseller | undefined>;
@@ -301,6 +302,7 @@ export interface IStorage {
   getStoreOrderByNumber(orderNumber: string): Promise<StoreOrder | undefined>;
   createStoreOrder(order: InsertStoreOrder): Promise<StoreOrder>;
   updateStoreOrderStatus(id: string, status: string): Promise<StoreOrder | undefined>;
+  deleteAllStoreOrders(): Promise<number>;
   confirmStoreOrderPayment(id: string): Promise<StoreOrder | undefined>;
   getNextOrderNumber(): Promise<string>;
 
@@ -780,6 +782,16 @@ export class DatabaseStorage implements IStorage {
     cache.delete(CACHE_KEYS.SALES);
     cache.delete(CACHE_KEYS.DASHBOARD_STATS);
     return result;
+  }
+
+  async deleteAllSales(): Promise<number> {
+    return await withRetry(async () => {
+      await db.delete(saleItems);
+      const deleted = await db.delete(sales).returning();
+      cache.delete(CACHE_KEYS.SALES);
+      cache.delete(CACHE_KEYS.DASHBOARD_STATS);
+      return deleted.length;
+    });
   }
 
   async getResellers(): Promise<Reseller[]> {
@@ -2642,6 +2654,13 @@ export class DatabaseStorage implements IStorage {
     return await withRetry(async () => {
       const [updated] = await db.update(storeOrders).set({ status }).where(eq(storeOrders.id, id)).returning();
       return updated || undefined;
+    });
+  }
+
+  async deleteAllStoreOrders(): Promise<number> {
+    return await withRetry(async () => {
+      const deleted = await db.delete(storeOrders).returning();
+      return deleted.length;
     });
   }
 

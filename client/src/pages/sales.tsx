@@ -58,6 +58,7 @@ import {
   Minus,
   X,
   Save,
+  AlertTriangle,
 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { ResellerAccountDialog } from "@/components/reseller-account-dialog";
@@ -127,6 +128,7 @@ export default function Sales() {
   const [editProductSearch, setEditProductSearch] = useState("");
   const [resellerDialogOpen, setResellerDialogOpen] = useState(false);
   const [selectedResellerId, setSelectedResellerId] = useState<string | null>(null);
+  const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
 
   const { data: sales, isLoading } = useQuery<Sale[]>({
     queryKey: ["/api/sales"],
@@ -158,6 +160,19 @@ export default function Sales() {
       toast({ title: t("sales.saleDeleted") });
       setDeleteDialogOpen(false);
       setSaleToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || t("common.error"), variant: "destructive" });
+    },
+  });
+
+  const clearAllMutation = useMutation({
+    mutationFn: () => apiRequest("DELETE", "/api/sales"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/sales"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/dashboard/stats"] });
+      toast({ title: t("sales.allSalesCleared") || "All sales cleared" });
+      setClearAllDialogOpen(false);
     },
     onError: (error: Error) => {
       toast({ title: error.message || t("common.error"), variant: "destructive" });
@@ -387,10 +402,16 @@ export default function Sales() {
             {t("sales.subtitle")}
           </p>
         </div>
-        <Button variant="outline" onClick={handleExportCSV} data-testid="button-export-csv">
-          <Download className="h-4 w-4 mr-2" />
-          {t("common.exportCsv")}
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleExportCSV} data-testid="button-export-csv">
+            <Download className="h-4 w-4 mr-2" />
+            {t("common.exportCsv")}
+          </Button>
+          <Button variant="destructive" onClick={() => setClearAllDialogOpen(true)} data-testid="button-clear-all-sales">
+            <Trash2 className="h-4 w-4 mr-2" />
+            {t("sales.clearAll") || "Clear All"}
+          </Button>
+        </div>
       </div>
 
       <Card>
@@ -657,6 +678,33 @@ export default function Sales() {
               data-testid="button-confirm-delete"
             >
               {deleteMutation.isPending ? t("common.loading") : t("common.delete")}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={clearAllDialogOpen} onOpenChange={setClearAllDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              {t("sales.clearAll") || "Clear All Sales"}
+            </DialogTitle>
+            <DialogDescription>
+              {t("sales.clearAllConfirm") || "This will permanently delete ALL sales records. This action cannot be undone."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setClearAllDialogOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => clearAllMutation.mutate()}
+              disabled={clearAllMutation.isPending}
+              data-testid="button-confirm-clear-all-sales"
+            >
+              {clearAllMutation.isPending ? t("common.loading") : (t("sales.clearAll") || "Clear All")}
             </Button>
           </DialogFooter>
         </DialogContent>

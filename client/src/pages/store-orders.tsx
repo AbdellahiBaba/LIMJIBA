@@ -6,10 +6,10 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { ShoppingBag, Loader2, Clock, CheckCircle2, Truck, PackageCheck, XCircle, ChevronDown, ChevronUp, CreditCard, Image, BadgeCheck, Bell, Mail, MessageCircle, Store } from "lucide-react";
+import { ShoppingBag, Loader2, Clock, CheckCircle2, Truck, PackageCheck, XCircle, ChevronDown, ChevronUp, CreditCard, Image, BadgeCheck, Bell, Mail, MessageCircle, Store, Trash2, AlertTriangle } from "lucide-react";
 import type { StoreOrder } from "@shared/schema";
 
 const STATUS_OPTIONS = [
@@ -34,8 +34,21 @@ export default function StoreOrdersAdmin() {
   const lang = language || "en";
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [proofDialogUrl, setProofDialogUrl] = useState<string | null>(null);
+  const [clearAllDialogOpen, setClearAllDialogOpen] = useState(false);
 
   const { data: orders, isLoading } = useQuery<StoreOrder[]>({ queryKey: ["/api/store-orders"] });
+
+  const clearAllMutation = useMutation({
+    mutationFn: () => apiRequest("DELETE", "/api/store-orders"),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/store-orders"] });
+      toast({ title: t("storeOrders.allOrdersCleared") || "All orders cleared" });
+      setClearAllDialogOpen(false);
+    },
+    onError: (error: Error) => {
+      toast({ title: error.message || "Error", variant: "destructive" });
+    },
+  });
 
   const updateStatus = useMutation({
     mutationFn: async ({ id, status }: { id: string; status: string }) => {
@@ -110,10 +123,18 @@ export default function StoreOrdersAdmin() {
 
   return (
     <div className="p-4 sm:p-6 max-w-5xl mx-auto">
-      <h1 className="text-2xl font-bold mb-6 flex items-center gap-2" data-testid="text-orders-title">
-        <ShoppingBag className="h-7 w-7" />
-        {t("sidebar.storeOrders")}
-      </h1>
+      <div className="flex items-center justify-between mb-6">
+        <h1 className="text-2xl font-bold flex items-center gap-2" data-testid="text-orders-title">
+          <ShoppingBag className="h-7 w-7" />
+          {t("sidebar.storeOrders")}
+        </h1>
+        {orders && orders.length > 0 && (
+          <Button variant="destructive" size="sm" onClick={() => setClearAllDialogOpen(true)} data-testid="button-clear-all-orders">
+            <Trash2 className="h-4 w-4 mr-2" />
+            {t("storeOrders.clearAll") || "Clear All"}
+          </Button>
+        )}
+      </div>
 
       {!orders || orders.length === 0 ? (
         <div className="text-center py-12 text-muted-foreground">
@@ -319,6 +340,33 @@ export default function StoreOrdersAdmin() {
               />
             </div>
           )}
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={clearAllDialogOpen} onOpenChange={setClearAllDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-destructive">
+              <AlertTriangle className="h-5 w-5" />
+              {t("storeOrders.clearAll") || "Clear All Orders"}
+            </DialogTitle>
+            <DialogDescription>
+              {t("storeOrders.clearAllConfirm") || "This will permanently delete ALL store orders. This action cannot be undone."}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setClearAllDialogOpen(false)}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => clearAllMutation.mutate()}
+              disabled={clearAllMutation.isPending}
+              data-testid="button-confirm-clear-all-orders"
+            >
+              {clearAllMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : (t("storeOrders.clearAll") || "Clear All")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
