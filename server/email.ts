@@ -396,6 +396,73 @@ export async function sendPasswordResetEmail(email: string, customerName: string
   return sendEmail({ to: email, subject: subjects[l], html: brandedHtml(bodies[l], dir) });
 }
 
+export async function sendPaymentConfirmedEmail(
+  email: string, customerName: string, orderNumber: string, total: number, trackingUrl: string, lang: string = "en"
+): Promise<boolean> {
+  const l = (lang === "ar" || lang === "fr") ? lang : "en";
+  const dir = l === "ar" ? "rtl" : "ltr";
+
+  const subjects: Record<string, string> = {
+    en: "Payment Confirmed",
+    fr: "Paiement Confirmé",
+    ar: "تم تأكيد الدفع",
+  };
+
+  const safeName = escHtml(customerName);
+  const safeOrder = escHtml(orderNumber);
+
+  const bodies: Record<string, string> = {
+    en: `
+      <h2 style="color:#0A1628;margin-top:0;">Payment Confirmed ✓</h2>
+      <p>Hello ${safeName},</p>
+      <p>We have received and confirmed your payment for order <strong style="color:#C9A84C;">${safeOrder}</strong>.</p>
+      <div style="background:#0A1628;color:#C9A84C;padding:20px;border-radius:10px;margin:20px 0;text-align:center;">
+        <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.6);">Amount Paid</p>
+        <p style="margin:6px 0 0;font-size:28px;font-weight:700;font-family:monospace;">${total.toLocaleString()} MRU</p>
+        <p style="margin:8px 0 0;font-size:12px;color:rgba(201,168,76,0.7);">Order ${safeOrder}</p>
+      </div>
+      <p>Your order is now being processed and will be prepared for delivery shortly.</p>
+      <div style="text-align:center;margin:28px 0;">
+        <a href="${trackingUrl}" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#B8963F);color:#0A1628;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.5px;">Track Your Order</a>
+      </div>
+      <p style="font-size:12px;color:#888;">If you have any questions, contact us at support@limjiba.com</p>`,
+    fr: `
+      <h2 style="color:#0A1628;margin-top:0;">Paiement Confirmé ✓</h2>
+      <p>Bonjour ${safeName},</p>
+      <p>Nous avons reçu et confirmé votre paiement pour la commande <strong style="color:#C9A84C;">${safeOrder}</strong>.</p>
+      <div style="background:#0A1628;color:#C9A84C;padding:20px;border-radius:10px;margin:20px 0;text-align:center;">
+        <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.6);">Montant Payé</p>
+        <p style="margin:6px 0 0;font-size:28px;font-weight:700;font-family:monospace;">${total.toLocaleString()} MRU</p>
+        <p style="margin:8px 0 0;font-size:12px;color:rgba(201,168,76,0.7);">Commande ${safeOrder}</p>
+      </div>
+      <p>Votre commande est en cours de traitement et sera bientôt préparée pour la livraison.</p>
+      <div style="text-align:center;margin:28px 0;">
+        <a href="${trackingUrl}" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#B8963F);color:#0A1628;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.5px;">Suivre Votre Commande</a>
+      </div>
+      <p style="font-size:12px;color:#888;">Pour toute question, contactez-nous à support@limjiba.com</p>`,
+    ar: `
+      <h2 style="color:#0A1628;margin-top:0;">تم تأكيد الدفع ✓</h2>
+      <p>مرحباً ${safeName}،</p>
+      <p>لقد استلمنا وأكدنا دفعتكم للطلب <strong style="color:#C9A84C;">${safeOrder}</strong>.</p>
+      <div style="background:#0A1628;color:#C9A84C;padding:20px;border-radius:10px;margin:20px 0;text-align:center;">
+        <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.6);">المبلغ المدفوع</p>
+        <p style="margin:6px 0 0;font-size:28px;font-weight:700;font-family:monospace;">${total.toLocaleString()} أوقية</p>
+        <p style="margin:8px 0 0;font-size:12px;color:rgba(201,168,76,0.7);">طلب ${safeOrder}</p>
+      </div>
+      <p>طلبكم قيد المعالجة وسيتم تجهيزه للتوصيل قريباً.</p>
+      <div style="text-align:center;margin:28px 0;">
+        <a href="${trackingUrl}" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#B8963F);color:#0A1628;padding:14px 32px;border-radius:8px;text-decoration:none;font-weight:700;font-size:14px;letter-spacing:0.5px;">تتبع طلبكم</a>
+      </div>
+      <p style="font-size:12px;color:#888;">لأي استفسار، تواصلوا معنا عبر support@limjiba.com</p>`,
+  };
+
+  return sendEmail({
+    to: email,
+    subject: `LIMJIBA — ${subjects[l]} — ${orderNumber}`,
+    html: brandedHtml(bodies[l], dir),
+  });
+}
+
 export async function sendMarketingEmail(
   email: string, customerName: string, subject: string, messageEn: string, messageFr: string, messageAr: string, lang: string = "en"
 ): Promise<boolean> {
