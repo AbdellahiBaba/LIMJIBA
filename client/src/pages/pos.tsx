@@ -529,8 +529,8 @@ export default function POS() {
   }, [handleKeyDown]);
 
   return (
-    <div className="h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] flex flex-col lg:flex-row gap-2 sm:gap-4 p-2 sm:p-4">
-      <div className="flex-1 flex flex-col min-w-0">
+    <div className="h-[calc(100vh-3.5rem)] sm:h-[calc(100vh-4rem)] flex flex-col lg:flex-row gap-2 sm:gap-4 p-2 sm:p-4 overflow-hidden">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0">
         <div className="mb-2 sm:mb-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -655,7 +655,7 @@ export default function POS() {
         </ScrollArea>
       </div>
 
-      <Card className="lg:w-96 flex flex-col max-h-[40vh] lg:max-h-none">
+      <Card className="lg:w-96 flex flex-col shrink-0 max-h-[45vh] lg:max-h-none overflow-hidden">
         <CardHeader className="p-3 sm:pb-3">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -685,7 +685,7 @@ export default function POS() {
             )}
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col min-h-0 p-3 pt-0">
+        <CardContent className="flex-1 flex flex-col min-h-0 p-3 pt-0 overflow-y-auto">
           <div className="mb-2">
             <div className="relative">
               <User className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
@@ -804,7 +804,7 @@ export default function POS() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              <div className="grid grid-cols-1 min-[400px]:grid-cols-2 sm:grid-cols-4 gap-2">
                 <div className="space-y-1.5">
                   <Label className="text-xs text-muted-foreground">{t("pos.discountPercent")}</Label>
                   <Input
@@ -881,13 +881,15 @@ export default function POS() {
                 <Button
                   variant="outline"
                   onClick={clearCart}
+                  className="text-xs sm:text-sm"
                   data-testid="button-clear-cart"
                 >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  {t("pos.clear")}
+                  <Trash2 className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
+                  <span className="truncate">{t("pos.clear")}</span>
                 </Button>
                 <Button
                   variant="outline"
+                  className="text-xs sm:text-sm"
                   onClick={() => {
                     setReturnDialogOpen(true);
                     setReturnTicketNumber("");
@@ -898,24 +900,26 @@ export default function POS() {
                   }}
                   data-testid="button-return"
                 >
-                  <RotateCcw className="h-4 w-4 mr-2" />
-                  {t("pos.return")}
+                  <RotateCcw className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
+                  <span className="truncate">{t("pos.return")}</span>
                 </Button>
                 <Button
                   variant="outline"
+                  className="text-xs sm:text-sm"
                   onClick={() => setParkDialogOpen(true)}
                   disabled={cart.length === 0}
                   data-testid="button-park-sale"
                 >
-                  <PauseCircle className="h-4 w-4 mr-2" />
-                  {t("pos.holdSaleBtn")}
+                  <PauseCircle className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
+                  <span className="truncate">{t("pos.holdSaleBtn")}</span>
                 </Button>
                 <Button
                   onClick={handleCheckout}
+                  className="text-xs sm:text-sm"
                   data-testid="button-checkout"
                 >
-                  <CreditCard className="h-4 w-4 mr-2" />
-                  {t("pos.checkout")}
+                  <CreditCard className="h-4 w-4 mr-1 sm:mr-2 shrink-0" />
+                  <span className="truncate">{t("pos.checkout")}</span>
                 </Button>
               </div>
             </div>
@@ -1036,7 +1040,7 @@ export default function POS() {
 
             <div className="space-y-2">
               <Label>{t("pos.paymentMethod")}</Label>
-              <div className="grid grid-cols-4 gap-2">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                 <Button
                   type="button"
                   variant={paymentMode === "CASH" ? "default" : "outline"}

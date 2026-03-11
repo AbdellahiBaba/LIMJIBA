@@ -332,17 +332,17 @@ export default function PurchaseOrders() {
               <TableRow>
                 <TableHead>{t("purchaseOrders.orderNumber")}</TableHead>
                 <TableHead>{t("purchaseOrders.supplier")}</TableHead>
-                <TableHead>{t("common.date")}</TableHead>
+                <TableHead className="hidden sm:table-cell">{t("common.date")}</TableHead>
                 <TableHead>{t("common.status")}</TableHead>
                 <TableHead className="text-right">{t("common.total")}</TableHead>
-                <TableHead className="text-right">{t("purchaseOrders.shippingCost")}</TableHead>
+                <TableHead className="text-right hidden md:table-cell">{t("purchaseOrders.shippingCost")}</TableHead>
                 <TableHead className="text-right">{t("common.actions")}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {filtered.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8">
+                  <TableCell colSpan={7} className="text-center text-muted-foreground py-8 sm:table-cell">
                     {t("purchaseOrders.noPurchaseOrders")}
                   </TableCell>
                 </TableRow>
@@ -351,14 +351,14 @@ export default function PurchaseOrders() {
                   <TableRow key={po.id} data-testid={`row-po-${po.id}`}>
                     <TableCell className="font-medium font-mono">{po.orderNumber}</TableCell>
                     <TableCell>{po.supplier?.name || "-"}</TableCell>
-                    <TableCell>{po.date}</TableCell>
+                    <TableCell className="hidden sm:table-cell">{po.date}</TableCell>
                     <TableCell>
                       <div className="flex items-center gap-1 flex-wrap">
                         <Badge className={statusColors[po.status] || ""} variant="secondary">
                           {statusLabel(po.status)}
                         </Badge>
                         {po.shippingCost && po.shippingCost > 0 && (
-                          <Badge variant="outline" className="text-xs" data-testid={`badge-shipping-${po.id}`}>
+                          <Badge variant="outline" className="text-xs hidden sm:inline-flex" data-testid={`badge-shipping-${po.id}`}>
                             <Truck className="h-3 w-3 mr-1" />
                             {t("purchaseOrders.shippingAdded")}
                           </Badge>
@@ -366,7 +366,7 @@ export default function PurchaseOrders() {
                       </div>
                     </TableCell>
                     <TableCell className="text-right font-mono">{po.totalAmount.toFixed(2)} MRU</TableCell>
-                    <TableCell className="text-right font-mono">
+                    <TableCell className="text-right font-mono hidden md:table-cell">
                       {po.shippingCost && po.shippingCost > 0
                         ? `${po.shippingCost.toFixed(2)} MRU`
                         : <span className="text-muted-foreground">-</span>
@@ -385,18 +385,20 @@ export default function PurchaseOrders() {
                         {po.status === "received" && (!po.shippingCost || po.shippingCost === 0) && (
                           <Button
                             variant="outline"
-                            size="sm"
+                            size="icon"
+                            className="sm:w-auto sm:px-3"
                             onClick={() => openShippingDialog(po)}
                             data-testid={`button-shipping-${po.id}`}
                           >
-                            <Truck className="h-4 w-4 mr-1" />
-                            {t("purchaseOrders.addShipping")}
+                            <Truck className="h-4 w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">{t("purchaseOrders.addShipping")}</span>
                           </Button>
                         )}
                         {(po.status === "draft" || po.status === "ordered") && (
                           <Button
                             variant="outline"
-                            size="sm"
+                            size="icon"
+                            className="sm:w-auto sm:px-3"
                             onClick={() => {
                               if (window.confirm(t("purchaseOrders.receiveConfirm"))) {
                                 receiveMutation.mutate(po.id);
@@ -405,8 +407,8 @@ export default function PurchaseOrders() {
                             disabled={receiveMutation.isPending}
                             data-testid={`button-receive-${po.id}`}
                           >
-                            <CheckCircle className="h-4 w-4 mr-1" />
-                            {t("purchaseOrders.receive")}
+                            <CheckCircle className="h-4 w-4 sm:mr-1" />
+                            <span className="hidden sm:inline">{t("purchaseOrders.receive")}</span>
                           </Button>
                         )}
                         {po.status === "draft" && (
@@ -441,7 +443,7 @@ export default function PurchaseOrders() {
             <DialogDescription>{t("purchaseOrders.createPO")}</DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="grid grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div>
                 <Label>{t("purchaseOrders.orderNumber")}</Label>
                 <Input value={orderNumber} onChange={e => setOrderNumber(e.target.value)} data-testid="input-order-number" />
@@ -488,11 +490,12 @@ export default function PurchaseOrders() {
                   <Plus className="h-4 w-4 mr-1" /> {t("common.add")}
                 </Button>
               </div>
-              <div className="space-y-2">
+              <div className="space-y-3 sm:space-y-2">
                 {items.map((item, idx) => (
-                  <div key={idx} className="grid grid-cols-12 gap-2 items-end">
-                    <div className="col-span-4">
-                      {idx === 0 && <Label className="text-xs">{t("purchaseOrders.product")}</Label>}
+                  <div key={idx} className="grid grid-cols-2 sm:grid-cols-12 gap-2 items-end border sm:border-0 rounded-md sm:rounded-none p-2 sm:p-0">
+                    <div className="col-span-2 sm:col-span-4">
+                      <Label className="text-xs sm:hidden">{t("purchaseOrders.product")}</Label>
+                      {idx === 0 && <Label className="text-xs hidden sm:block">{t("purchaseOrders.product")}</Label>}
                       <Select value={item.productId} onValueChange={v => updateItem(idx, "productId", v)}>
                         <SelectTrigger data-testid={`select-product-${idx}`}>
                           <SelectValue placeholder={t("purchaseOrders.productPlaceholder")} />
@@ -504,22 +507,26 @@ export default function PurchaseOrders() {
                         </SelectContent>
                       </Select>
                     </div>
-                    <div className="col-span-2">
-                      {idx === 0 && <Label className="text-xs">{t("purchaseOrders.designation")}</Label>}
+                    <div className="col-span-2 sm:col-span-2">
+                      <Label className="text-xs sm:hidden">{t("purchaseOrders.designation")}</Label>
+                      {idx === 0 && <Label className="text-xs hidden sm:block">{t("purchaseOrders.designation")}</Label>}
                       <Input value={item.productName} onChange={e => updateItem(idx, "productName", e.target.value)} placeholder={t("common.name")} />
                     </div>
-                    <div className="col-span-2">
-                      {idx === 0 && <Label className="text-xs">{t("purchaseOrders.qty")}</Label>}
+                    <div className="col-span-1 sm:col-span-2">
+                      <Label className="text-xs sm:hidden">{t("purchaseOrders.qty")}</Label>
+                      {idx === 0 && <Label className="text-xs hidden sm:block">{t("purchaseOrders.qty")}</Label>}
                       <Input type="number" min="1" value={item.quantity} onChange={e => updateItem(idx, "quantity", e.target.value === "" ? "" as any : parseInt(e.target.value))} />
                     </div>
-                    <div className="col-span-2">
-                      {idx === 0 && <Label className="text-xs">{t("purchaseOrders.unitCostLabel")}</Label>}
+                    <div className="col-span-1 sm:col-span-2">
+                      <Label className="text-xs sm:hidden">{t("purchaseOrders.unitCostLabel")}</Label>
+                      {idx === 0 && <Label className="text-xs hidden sm:block">{t("purchaseOrders.unitCostLabel")}</Label>}
                       <Input type="number" step="0.01" value={item.unitCost} onChange={e => updateItem(idx, "unitCost", e.target.value === "" ? "" as any : parseFloat(e.target.value))} />
                     </div>
-                    <div className="col-span-1 text-right font-mono text-sm pt-1">
+                    <div className="col-span-1 sm:col-span-1 text-right font-mono text-sm pt-1 flex sm:block items-end justify-end">
+                      <span className="text-xs text-muted-foreground sm:hidden mr-1">Total:</span>
                       {item.total.toFixed(2)}
                     </div>
-                    <div className="col-span-1">
+                    <div className="col-span-1 sm:col-span-1 flex items-end justify-end">
                       <Button variant="ghost" size="icon" onClick={() => removeItem(idx)} disabled={items.length <= 1}>
                         <Trash2 className="h-4 w-4" />
                       </Button>
