@@ -50,6 +50,7 @@ import {
   User,
   PauseCircle,
   PlayCircle,
+  Layers,
 } from "lucide-react";
 import {
   Tooltip,
@@ -58,7 +59,7 @@ import {
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
 import { UserPlus, Wallet } from "lucide-react";
-import type { Product, CartItem, Reseller, Sale, InsertSale, InsertSaleItem, InsertReseller, ParkedSale, PaymentWallet } from "@shared/schema";
+import type { Product, ProductVariant, CartItem, Reseller, Sale, InsertSale, InsertSaleItem, InsertReseller, ParkedSale, PaymentWallet } from "@shared/schema";
 
 export default function POS() {
   const { toast } = useToast();
@@ -91,6 +92,10 @@ export default function POS() {
   const [parkDialogOpen, setParkDialogOpen] = useState(false);
   const [parkLabel, setParkLabel] = useState("");
   const [parkedSalesOpen, setParkedSalesOpen] = useState(false);
+  const [variantPickerOpen, setVariantPickerOpen] = useState(false);
+  const [variantPickerProduct, setVariantPickerProduct] = useState<Product | null>(null);
+  const [variantPickerVariants, setVariantPickerVariants] = useState<ProductVariant[]>([]);
+  const [variantPickerLoading, setVariantPickerLoading] = useState(false);
 
   const { data: products, isLoading: productsLoading } = useQuery<Product[]>({
     queryKey: ["/api/products"],
@@ -316,13 +321,59 @@ export default function POS() {
            (product.barcode && product.barcode.toLowerCase().includes(searchLower));
   });
 
+  const openVariantPicker = async (product: Product) => {
+    setVariantPickerProduct(product);
+    setVariantPickerLoading(true);
+    setVariantPickerOpen(true);
+    try {
+      const res = await fetch(`/api/products/${product.id}/variants`);
+      const variants: ProductVariant[] = await res.json();
+      setVariantPickerVariants(variants.filter(v => v.isActive));
+    } catch {
+      setVariantPickerVariants([]);
+    }
+    setVariantPickerLoading(false);
+  };
+
+  const addVariantToCart = (product: Product, variant: ProductVariant) => {
+    if (variant.stockQuantity <= 0) {
+      toast({ title: t("pos.outOfStock"), variant: "destructive" });
+      return;
+    }
+    const matchKey = (item: CartItem) => item.productId === product.id && item.variantId === variant.id;
+    const existingItem = cart.find(matchKey);
+    if (existingItem) {
+      if (existingItem.quantity >= variant.stockQuantity) {
+        toast({ title: t("pos.cannotExceedStock"), variant: "destructive" });
+        return;
+      }
+      setCart(cart.map(item => matchKey(item) ? { ...item, quantity: item.quantity + 1, total: (item.quantity + 1) * item.unitPrice } : item));
+    } else {
+      setCart([...cart, {
+        productId: product.id,
+        productName: `${product.name} (${variant.variantLabel})`,
+        quantity: 1,
+        unitPrice: variant.unitPrice,
+        total: variant.unitPrice,
+        variantId: variant.id,
+        variantLabel: variant.variantLabel,
+      }]);
+    }
+    setVariantPickerOpen(false);
+  };
+
   const addToCart = (product: Product) => {
+    if (product.hasVariants) {
+      openVariantPicker(product);
+      return;
+    }
+
     if (product.stockQuantity <= 0) {
       toast({ title: t("pos.outOfStock"), variant: "destructive" });
       return;
     }
 
-    const existingItem = cart.find((item) => item.productId === product.id);
+    const existingItem = cart.find((item) => item.productId === product.id && !item.variantId);
     if (existingItem) {
       if (existingItem.quantity >= product.stockQuantity) {
         toast({ title: t("pos.cannotExceedStock"), variant: "destructive" });
@@ -330,7 +381,7 @@ export default function POS() {
       }
       setCart(
         cart.map((item) =>
-          item.productId === product.id
+          item.productId === product.id && !item.variantId
             ? {
                 ...item,
                 quantity: item.quantity + 1,
@@ -353,12 +404,15 @@ export default function POS() {
     }
   };
 
-  const updateQuantity = (productId: string, delta: number) => {
+  const cartItemKey = (item: CartItem) => item.variantId ? `${item.productId}::${item.variantId}` : item.productId;
+
+  const updateQuantity = (productId: string, delta: number, variantId?: string) => {
     const product = products?.find((p) => p.id === productId);
+    const key = variantId ? `${productId}::${variantId}` : productId;
     setCart(
       cart
         .map((item) => {
-          if (item.productId === productId) {
+          if (cartItemKey(item) === key) {
             const newQty = item.quantity + delta;
             if (newQty <= 0) return null;
             if (product && newQty > product.stockQuantity) {
@@ -377,8 +431,9 @@ export default function POS() {
     );
   };
 
-  const removeFromCart = (productId: string) => {
-    setCart(cart.filter((item) => item.productId !== productId));
+  const removeFromCart = (productId: string, variantId?: string) => {
+    const key = variantId ? `${productId}::${variantId}` : productId;
+    setCart(cart.filter((item) => cartItemKey(item) !== key));
   };
 
   const clearCart = () => {
@@ -518,7 +573,7 @@ export default function POS() {
     if (e.key === "Delete" && cart.length > 0 && !checkoutDialogOpen) {
       e.preventDefault();
       const lastItem = cart[cart.length - 1];
-      removeFromCart(lastItem.productId);
+      removeFromCart(lastItem.productId, lastItem.variantId);
       return;
     }
   }, [cart, checkoutDialogOpen, successDialogOpen, filteredProducts, toast]);
@@ -573,13 +628,13 @@ export default function POS() {
                     </div>
                     <div className="grid grid-cols-1 min-[400px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3 mb-3">
                       {favoriteProducts.map((product) => {
-                        const inCart = cart.find((item) => item.productId === product.id);
+                        const inCartQty = cart.filter((item) => item.productId === product.id).reduce((sum, i) => sum + i.quantity, 0);
                         return (
                           <button
                             key={product.id}
                             onClick={() => addToCart(product)}
                             className={`relative p-2 sm:p-4 rounded-md border-2 border-yellow-400/50 text-left hover-elevate active-elevate-2 min-h-[80px] ${
-                              inCart ? "border-primary bg-primary/5" : "bg-card"
+                              inCartQty > 0 ? "border-primary bg-primary/5" : "bg-card"
                             }`}
                             data-testid={`button-favorite-product-${product.id}`}
                           >
@@ -587,6 +642,7 @@ export default function POS() {
                               {product.stockQuantity}
                             </Badge>
                             <Star className="h-3 w-3 text-yellow-500 fill-yellow-500 absolute top-1 left-1" />
+                            {product.hasVariants && <Layers className="h-3 w-3 text-primary/60 absolute bottom-1 left-1" />}
                             <div className="flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded bg-muted mx-auto mb-1 sm:mb-2">
                               <Package className="h-4 w-4 sm:h-6 sm:w-6 text-muted-foreground" />
                             </div>
@@ -596,9 +652,9 @@ export default function POS() {
                             <p className="text-center font-mono text-[10px] sm:text-sm text-primary font-semibold">
                               {product.unitPrice.toLocaleString()} MRU
                             </p>
-                            {inCart && (
+                            {inCartQty > 0 && (
                               <div className="flex justify-center mt-1">
-                                <Badge className="text-[8px] sm:text-xs px-1 sm:px-2">{inCart.quantity}</Badge>
+                                <Badge className="text-[8px] sm:text-xs px-1 sm:px-2">{inCartQty}</Badge>
                               </div>
                             )}
                           </button>
@@ -610,20 +666,21 @@ export default function POS() {
                 );
               })()}
               <div className="grid grid-cols-1 min-[400px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-2 sm:gap-3">
-                {filteredProducts.filter(p => p.stockQuantity > 0).map((product) => {
-                  const inCart = cart.find((item) => item.productId === product.id);
+                {filteredProducts.filter(p => p.stockQuantity > 0 || p.hasVariants).map((product) => {
+                  const inCartQty = cart.filter((item) => item.productId === product.id).reduce((sum, i) => sum + i.quantity, 0);
                   return (
                     <button
                       key={product.id}
                       onClick={() => addToCart(product)}
                       className={`relative p-2 sm:p-4 rounded-md border text-left hover-elevate active-elevate-2 min-h-[80px] ${
-                        inCart ? "border-primary bg-primary/5" : "bg-card"
+                        inCartQty > 0 ? "border-primary bg-primary/5" : "bg-card"
                       }`}
                       data-testid={`button-product-${product.id}`}
                     >
                       <Badge variant="secondary" className="absolute top-1 right-1 text-[8px] sm:text-xs px-1 sm:px-2" data-testid={`badge-stock-${product.id}`}>
                         {product.stockQuantity}
                       </Badge>
+                      {product.hasVariants && <Layers className="h-3 w-3 text-primary/60 absolute bottom-1 left-1" />}
                       <div className="flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded bg-muted mx-auto mb-1 sm:mb-2">
                         <Package className="h-4 w-4 sm:h-6 sm:w-6 text-muted-foreground" />
                       </div>
@@ -633,9 +690,9 @@ export default function POS() {
                       <p className="text-center font-mono text-[10px] sm:text-sm text-primary font-semibold">
                         {product.unitPrice.toLocaleString()} MRU
                       </p>
-                      {inCart && (
+                      {inCartQty > 0 && (
                         <div className="flex justify-center mt-1">
-                          <Badge className="text-[8px] sm:text-xs px-1 sm:px-2">{inCart.quantity}</Badge>
+                          <Badge className="text-[8px] sm:text-xs px-1 sm:px-2">{inCartQty}</Badge>
                         </div>
                       )}
                     </button>
@@ -711,13 +768,18 @@ export default function POS() {
               <div className="space-y-2">
                 {cart.map((item, index) => (
                   <div
-                    key={item.productId}
+                    key={cartItemKey(item)}
                     className="relative p-3 rounded-lg border bg-card hover-elevate transition-colors"
-                    data-testid={`cart-item-${item.productId}`}
+                    data-testid={`cart-item-${cartItemKey(item)}`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm truncate leading-tight">{item.productName}</p>
+                        {item.variantLabel && (
+                          <p className="text-[10px] text-primary/70 mt-0.5 flex items-center gap-1">
+                            <Layers className="h-2.5 w-2.5" />{item.variantLabel}
+                          </p>
+                        )}
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {item.unitPrice.toLocaleString()} MRU
                         </p>
@@ -726,8 +788,8 @@ export default function POS() {
                         variant="ghost"
                         size="icon"
                         className="-mt-1 -mr-1"
-                        onClick={() => removeFromCart(item.productId)}
-                        data-testid={`button-remove-${item.productId}`}
+                        onClick={() => removeFromCart(item.productId, item.variantId)}
+                        data-testid={`button-remove-${cartItemKey(item)}`}
                       >
                         <Trash2 className="h-3 w-3 text-muted-foreground hover:text-destructive" />
                       </Button>
@@ -738,14 +800,14 @@ export default function POS() {
                           variant="outline"
                           size="icon"
                           className="rounded-full"
-                          onClick={() => updateQuantity(item.productId, -1)}
-                          data-testid={`button-decrease-${item.productId}`}
+                          onClick={() => updateQuantity(item.productId, -1, item.variantId)}
+                          data-testid={`button-decrease-${cartItemKey(item)}`}
                         >
                           <Minus className="h-3 w-3" />
                         </Button>
                         <span 
                           className="w-10 text-center font-mono text-sm font-semibold bg-muted rounded-md py-1"
-                          data-testid={`text-cart-quantity-${item.productId}`}
+                          data-testid={`text-cart-quantity-${cartItemKey(item)}`}
                         >
                           {item.quantity}
                         </span>
@@ -753,8 +815,8 @@ export default function POS() {
                           variant="outline"
                           size="icon"
                           className="rounded-full"
-                          onClick={() => updateQuantity(item.productId, 1)}
-                          data-testid={`button-increase-${item.productId}`}
+                          onClick={() => updateQuantity(item.productId, 1, item.variantId)}
+                          data-testid={`button-increase-${cartItemKey(item)}`}
                         >
                           <Plus className="h-3 w-3" />
                         </Button>
@@ -1471,6 +1533,60 @@ export default function POS() {
               </Button>
             )}
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={variantPickerOpen} onOpenChange={setVariantPickerOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Layers className="h-5 w-5 text-primary" />
+              {variantPickerProduct?.name}
+            </DialogTitle>
+            <DialogDescription>{t("pos.selectVariant")}</DialogDescription>
+          </DialogHeader>
+          {variantPickerLoading ? (
+            <div className="flex justify-center py-8">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+            </div>
+          ) : variantPickerVariants.length === 0 ? (
+            <div className="text-center py-6 text-muted-foreground text-sm">
+              {t("pos.noVariantsAvailable")}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-2 max-h-[50vh] overflow-y-auto">
+              {variantPickerVariants.map((variant) => {
+                const inCart = cart.find(i => i.productId === variantPickerProduct?.id && i.variantId === variant.id);
+                const outOfStock = variant.stockQuantity <= 0;
+                return (
+                  <button
+                    key={variant.id}
+                    onClick={() => variantPickerProduct && addVariantToCart(variantPickerProduct, variant)}
+                    disabled={outOfStock}
+                    className={`flex items-center justify-between p-3 rounded-lg border text-left transition-colors ${
+                      outOfStock ? "opacity-50 cursor-not-allowed bg-muted" :
+                      inCart ? "border-primary bg-primary/5 hover:bg-primary/10" : "bg-card hover:bg-accent"
+                    }`}
+                    data-testid={`button-variant-${variant.id}`}
+                  >
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm">{variant.variantLabel}</p>
+                      {variant.sku && <p className="text-[10px] text-muted-foreground">SKU: {variant.sku}</p>}
+                    </div>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <Badge variant={outOfStock ? "destructive" : "secondary"} className="text-xs">
+                        {outOfStock ? t("pos.outOfStock") : variant.stockQuantity}
+                      </Badge>
+                      <span className="font-mono text-sm font-semibold text-primary whitespace-nowrap">
+                        {variant.unitPrice.toLocaleString()} MRU
+                      </span>
+                      {inCart && <Badge className="text-xs">{inCart.quantity}</Badge>}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
 

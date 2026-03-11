@@ -457,7 +457,9 @@
     "wallet": "Wallet",
     "depositTo": "Deposit cash to",
     "selectWallet": "Select wallet",
-    "chooseWallet": "Choose wallet..."
+    "chooseWallet": "Choose wallet...",
+    "selectVariant": "Select a variant to add to cart",
+    "noVariantsAvailable": "No variants available for this product"
   },
   "sales": {
     "title": "Sales",

@@ -402,6 +402,8 @@ export interface CartItem {
   quantity: number;
   unitPrice: number;
   total: number;
+  variantId?: string;
+  variantLabel?: string;
 }
 
 export interface ProfitStats {

@@ -457,7 +457,9 @@
     "wallet": "المحفظة",
     "depositTo": "إيداع النقد في",
     "selectWallet": "اختر المحفظة",
-    "chooseWallet": "اختر محفظة..."
+    "chooseWallet": "اختر محفظة...",
+    "selectVariant": "اختر متغيراً لإضافته إلى السلة",
+    "noVariantsAvailable": "لا توجد متغيرات متاحة لهذا المنتج"
   },
   "sales": {
     "title": "المبيعات",

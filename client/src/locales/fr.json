@@ -457,7 +457,9 @@
     "wallet": "Portefeuille",
     "depositTo": "Déposer l'espèce dans",
     "selectWallet": "Sélectionner portefeuille",
-    "chooseWallet": "Choisir portefeuille..."
+    "chooseWallet": "Choisir portefeuille...",
+    "selectVariant": "Sélectionnez une variante à ajouter au panier",
+    "noVariantsAvailable": "Aucune variante disponible pour ce produit"
   },
   "sales": {
     "title": "Ventes",
