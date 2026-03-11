@@ -90,7 +90,7 @@ function buildSocialIconsHtml(): string {
     });
 
   if (icons.length === 0) return "";
-  return `<div style="margin-bottom:8px;">${icons.join("")}</div>`;
+  return `<p style="color:rgba(201,168,76,0.6);margin:0 0 10px;font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:600;">Follow Us</p><div style="margin-bottom:8px;">${icons.join("")}</div>`;
 }
 
 function brandedHtml(content: string, dir: string = "ltr"): string {
