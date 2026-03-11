@@ -69,8 +69,8 @@ function createSessionStore() {
     return new PgSessionStore({
       pool,
       tableName: "user_sessions",
-      createTableIfMissing: true,
-      pruneSessionInterval: 60 * 15,
+      createTableIfMissing: false,
+      pruneSessionInterval: false,
     });
   }
   return new MemoryStoreSession({ checkPeriod: 86400000 });
