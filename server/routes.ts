@@ -1360,12 +1360,17 @@ export async function registerRoutes(
         // Use defaults
       }
 
+      let storeSettings: any = null;
+      try {
+        storeSettings = await storage.getStoreSettings();
+      } catch (e) {}
+
       const queryParams = {
         logo: req.query.logo ? sanitizeUrl(req.query.logo as string) : (branding.logo ? sanitizeUrl(branding.logo) : ''),
         primaryColor: sanitizeColor((req.query.primaryColor as string) || branding.primaryColor || '#1976D2'),
       };
 
-      const html = generateReceiptHTML(sale, queryParams, reseller);
+      const html = generateReceiptHTML(sale, queryParams, reseller, storeSettings);
 
       let browser: any = null;
       try {
@@ -2129,11 +2134,16 @@ export async function registerRoutes(
         reseller = await storage.getReseller(sale.resellerId);
       }
 
+      let storeSettings: any = null;
+      try {
+        storeSettings = await storage.getStoreSettings();
+      } catch (e) {}
+
       const sanitizedQuery = {
         logo: req.query.logo ? sanitizeUrl(req.query.logo as string) : '',
         primaryColor: sanitizeColor((req.query.primaryColor as string) || '#1976D2'),
       };
-      const html = generateReceiptHTML(sale, sanitizedQuery, reseller);
+      const html = generateReceiptHTML(sale, sanitizedQuery, reseller, storeSettings);
       res.setHeader("Content-Type", "text/html");
       res.send(html);
     } catch (error) {
@@ -5318,12 +5328,13 @@ function generateDeliveryNotePDF(invoice: any, branding: { logo?: string; primar
   `;
 }
 
-function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null): string {
+function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null, storeSettings: any = null): string {
   const logo = query.logo ? sanitizeUrl(String(query.logo)) : '';
   const primaryColor = sanitizeColor(String(query.primaryColor || '#1976D2'));
-  const companyPhone = '+222 00 00 00 00';
-  const companyAddress = 'Nouakchott, Mauritania';
-  const companyName = 'LIMJIBA - لمجيبة';
+  const companyPhone = escapeHtml(storeSettings?.contactPhone || '');
+  const companyAddress = escapeHtml(storeSettings?.contactAddress || 'Nouakchott, Mauritania');
+  const companyEmail = escapeHtml(storeSettings?.contactEmail || '');
+  const companyName = escapeHtml(storeSettings?.storeName ? `${storeSettings.storeName} - لمجيبة` : 'LIMJIBA - لمجيبة');
   
   // Format date as DD/MM/YYYY
   const formatDate = (dateStr: string) => {
@@ -5559,7 +5570,8 @@ function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null): 
     ${logo ? `<div class="logo-container"><img src="${escapeHtml(logo)}" alt="Logo" class="logo" /></div>` : ''}
     <div class="company-name">${companyName}</div>
     <div class="company-info">${companyAddress}</div>
-    <div class="company-phone">Tel: ${companyPhone}</div>
+    ${companyPhone ? `<div class="company-phone">Tel: ${companyPhone}</div>` : ''}
+    ${companyEmail ? `<div class="company-info">${companyEmail}</div>` : ''}
   </div>
   
   <div class="receipt-title">Ticket de Caisse</div>
