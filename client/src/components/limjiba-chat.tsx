@@ -57,29 +57,87 @@ const SUPPORT_LABELS: Record<string, Record<string, string>> = {
   loginForHistory: { en: "Login to see your conversation history", fr: "Connectez-vous pour voir l'historique", ar: "سجل الدخول لعرض المحادثات" },
 };
 
+function isSafeUrl(url: string): boolean {
+  if (url.startsWith("/")) return true;
+  return /^https?:\/\//i.test(url);
+}
+
+function isInternalUrl(url: string): boolean {
+  if (url.startsWith("/")) return true;
+  try {
+    const parsed = new URL(url);
+    const host = parsed.hostname;
+    return host === "limjiba.com" || host.endsWith(".limjiba.com") || host === window.location.hostname;
+  } catch {
+    return false;
+  }
+}
+
+function toLocalPath(url: string): string {
+  if (url.startsWith("/")) return url;
+  try {
+    const parsed = new URL(url);
+    return parsed.pathname + parsed.search + parsed.hash;
+  } catch {
+    return url;
+  }
+}
+
 function renderMessageContent(content: string) {
-  const linkPattern = /((?:https?:\/\/[^\s]+)|(?:\/store\/[^\s,.)]+))/g;
-  const parts = content.split(linkPattern);
-  if (parts.length === 1) return content;
-  const checkLink = /^(?:https?:\/\/|\/store\/)/;
-  return parts.map((part, i) => {
-    if (checkLink.test(part)) {
-      const isExternal = part.startsWith("http");
-      return (
-        <a
-          key={i}
-          href={part}
-          target={isExternal ? "_blank" : "_self"}
-          rel={isExternal ? "noopener noreferrer" : undefined}
-          className="underline font-medium"
-          style={{ color: "#C9A84C" }}
-          data-testid={`chat-link-${i}`}
-        >
-          {part}
-        </a>
-      );
+  const mdLinkPattern = /\[([^\]]+)\]\((https?:\/\/[^)\s]+|\/[^)\s]*)\)/g;
+  const segments: (string | { label: string; href: string })[] = [];
+  let lastIndex = 0;
+  let match;
+  while ((match = mdLinkPattern.exec(content)) !== null) {
+    if (match.index > lastIndex) {
+      segments.push(content.slice(lastIndex, match.index));
     }
-    return part;
+    segments.push({ label: match[1], href: match[2] });
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < content.length) {
+    segments.push(content.slice(lastIndex));
+  }
+
+  const bareLinkPattern = /(https?:\/\/[^\s,)<>]+|\/store\/[^\s,)<>]+)/g;
+  const finalParts: (string | { label: string; href: string })[] = [];
+  for (const seg of segments) {
+    if (typeof seg !== "string") {
+      finalParts.push(seg);
+      continue;
+    }
+    const subParts = seg.split(bareLinkPattern);
+    const checkLink = /^(?:https?:\/\/|\/store\/)/;
+    for (const sp of subParts) {
+      if (checkLink.test(sp)) {
+        const cleaned = sp.replace(/[.,;:!?]+$/, "");
+        finalParts.push({ label: cleaned, href: cleaned });
+      } else {
+        finalParts.push(sp);
+      }
+    }
+  }
+
+  if (finalParts.length === 1 && typeof finalParts[0] === "string") return content;
+
+  return finalParts.map((part, i) => {
+    if (typeof part === "string") return part;
+    if (!isSafeUrl(part.href)) return part.label;
+    const internal = isInternalUrl(part.href);
+    const displayHref = internal ? toLocalPath(part.href) : part.href;
+    return (
+      <a
+        key={i}
+        href={displayHref}
+        target="_self"
+        rel={internal ? undefined : "noopener noreferrer"}
+        className="underline font-medium"
+        style={{ color: "#C9A84C" }}
+        data-testid={`chat-link-${i}`}
+      >
+        {part.label}
+      </a>
+    );
   });
 }
 
