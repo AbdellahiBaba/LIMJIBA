@@ -477,3 +477,82 @@ export async function sendMarketingEmail(
     html: brandedHtml(`<p>${greeting},</p><div>${message}</div>`, dir),
   });
 }
+
+export async function sendProductMarketingEmail(
+  email: string,
+  customerName: string,
+  lang: string,
+  product: { name: string; nameAr?: string | null; nameFr?: string | null; unitPrice: number; imageUrl?: string | null; dealDiscount?: number | null },
+  type: "new_arrival" | "flash_sale"
+): Promise<boolean> {
+  const l = (lang === "ar" || lang === "fr") ? lang : "en";
+  const dir = l === "ar" ? "rtl" : "ltr";
+  const pName = l === "ar" ? (product.nameAr || product.name) : l === "fr" ? (product.nameFr || product.name) : product.name;
+  const price = `${product.unitPrice.toLocaleString()} MRU`;
+  const discount = product.dealDiscount ? `${product.dealDiscount}%` : "";
+  const discountedPrice = product.dealDiscount ? `${Math.round(product.unitPrice * (1 - product.dealDiscount / 100)).toLocaleString()} MRU` : "";
+
+  const subjects: Record<string, string> = type === "new_arrival"
+    ? { en: `✨ New Arrival — ${pName}`, fr: `✨ Nouvelle Arrivée — ${pName}`, ar: `✨ وصول جديد — ${pName}` }
+    : { en: `🔥 Flash Sale — ${discount} OFF ${pName}`, fr: `🔥 Vente Flash — ${discount} de remise sur ${pName}`, ar: `🔥 تخفيض خاطف — ${discount} خصم على ${pName}` };
+
+  const safeName = escHtml(customerName);
+  const greetings: Record<string, string> = {
+    en: `Dear ${safeName}`,
+    fr: `Cher(e) ${safeName}`,
+    ar: `عزيزي/عزيزتي ${safeName}`
+  };
+
+  const poeticMessages: Record<string, Record<string, string>> = {
+    new_arrival: {
+      en: `<p style="font-style:italic;color:#5a4d3a;font-size:15px;line-height:1.7;">A new treasure has graced the halls of LIMJIBA — handpicked with devotion, wrapped in elegance, and destined for those who appreciate the finer things in life.</p>`,
+      fr: `<p style="font-style:italic;color:#5a4d3a;font-size:15px;line-height:1.7;">Un nouveau trésor vient d'embellir les salons de LIMJIBA — sélectionné avec passion, enveloppé d'élégance, et destiné à ceux qui savourent les plus belles choses de la vie.</p>`,
+      ar: `<p style="font-style:italic;color:#5a4d3a;font-size:15px;line-height:1.7;">كنزٌ جديد قد زيّن أروقة لمجيبة — مُنتقى بعناية فائقة، يلبسه الأناقة، ومُقدَّر لمن يُقدّرون أجمل ما في الحياة.</p>`
+    },
+    flash_sale: {
+      en: `<p style="font-style:italic;color:#5a4d3a;font-size:15px;line-height:1.7;">The golden hour has arrived — a rare moment where luxury meets opportunity. This exclusive offer is a whisper of fortune reserved for the discerning few. Seize it before the curtain falls.</p>`,
+      fr: `<p style="font-style:italic;color:#5a4d3a;font-size:15px;line-height:1.7;">L'heure dorée est arrivée — un moment rare où le luxe rencontre l'opportunité. Cette offre exclusive est un murmure de fortune réservé aux plus avisés. Saisissez-la avant que le rideau ne tombe.</p>`,
+      ar: `<p style="font-style:italic;color:#5a4d3a;font-size:15px;line-height:1.7;">حانت الساعة الذهبية — لحظة نادرة يلتقي فيها الفخامة بالفرصة. هذا العرض الحصري همسة حظٍّ لا تُمنح إلا للمُميّزين. اغتنموها قبل أن يُسدل الستار.</p>`
+    }
+  };
+
+  const ctaLabels: Record<string, string> = {
+    en: "Discover Now",
+    fr: "Découvrir Maintenant",
+    ar: "اكتشف الآن"
+  };
+
+  const safeImgUrl = product.imageUrl && /^https?:\/\//i.test(product.imageUrl) ? escHtml(product.imageUrl) : null;
+  const imgBlock = safeImgUrl
+    ? `<div style="text-align:center;margin:20px 0;"><img src="${safeImgUrl}" alt="${escHtml(pName)}" style="max-width:100%;max-height:320px;border-radius:12px;box-shadow:0 4px 20px rgba(10,22,40,0.15);" /></div>`
+    : "";
+
+  const priceBlock = type === "flash_sale" && product.dealDiscount
+    ? `<div style="text-align:center;margin:16px 0;padding:16px;background:linear-gradient(135deg,#0A1628,#132240);border-radius:10px;">
+        <span style="color:rgba(255,255,255,0.5);text-decoration:line-through;font-size:16px;">${price}</span>
+        <span style="color:#C9A84C;font-size:28px;font-weight:700;margin:0 12px;">${discountedPrice}</span>
+        <span style="background:#C9A84C;color:#0A1628;padding:4px 10px;border-radius:20px;font-size:13px;font-weight:700;">${discount} OFF</span>
+      </div>`
+    : `<div style="text-align:center;margin:16px 0;"><span style="color:#0A1628;font-size:24px;font-weight:700;">${price}</span></div>`;
+
+  const ctaBlock = `<div style="text-align:center;margin:24px 0;">
+    <a href="https://limjiba.com" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#B8963F);color:#0A1628;text-decoration:none;padding:14px 40px;border-radius:8px;font-weight:700;font-size:15px;letter-spacing:1px;">${ctaLabels[l]}</a>
+  </div>`;
+
+  const body = `
+    <p style="font-size:16px;color:#0A1628;font-weight:600;">${greetings[l]},</p>
+    ${poeticMessages[type][l]}
+    <h2 style="text-align:center;color:#0A1628;font-size:20px;margin:24px 0 8px;font-weight:700;">${escHtml(pName)}</h2>
+    ${imgBlock}
+    ${priceBlock}
+    ${ctaBlock}
+    <div style="width:60px;height:1px;background:linear-gradient(90deg,transparent,#C9A84C,transparent);margin:20px auto;"></div>
+    <p style="text-align:center;color:rgba(10,22,40,0.5);font-size:12px;">${l === "ar" ? "مع أطيب التحيات من فريق لمجيبة" : l === "fr" ? "Avec nos plus chaleureuses salutations, l'équipe LIMJIBA" : "With warmest regards, The LIMJIBA Team"}</p>
+  `;
+
+  return sendEmail({
+    to: email,
+    subject: `LIMJIBA — ${subjects[l]}`,
+    html: brandedHtml(body, dir),
+  });
+}

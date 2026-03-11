@@ -38,7 +38,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { handleCustomerChat, handleAdminChat, generatePromoCode, getCustomerGreeting, generateProductDescriptions, generateNotificationContent } from "./limjiba";
-import { sendOrderStatusEmail, sendOrderInvoiceEmail, sendPaymentConfirmedEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail } from "./email";
+import { sendOrderStatusEmail, sendOrderInvoiceEmail, sendPaymentConfirmedEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail, sendProductMarketingEmail } from "./email";
 
 function escapeHtml(str: string): string {
   return str
@@ -387,6 +387,114 @@ const productReviewSchema = z.object({
 const supportMessageSchema = z.object({
   content: z.string().min(1).max(5000),
 });
+
+async function notifyAllCustomers_NewArrival(product: any) {
+  try {
+    const customers = await storage.getAllStoreCustomers();
+    const active = customers.filter((c: any) => c.isActive !== false);
+    console.log(`[AUTO-NOTIFY] New arrival "${product.name}" — notifying ${active.length} customers`);
+
+    const titles: Record<string, string> = {
+      en: "✨ New Arrival at LIMJIBA",
+      fr: "✨ Nouvelle Arrivée chez LIMJIBA",
+      ar: "✨ وصول جديد في لمجيبة"
+    };
+    const pNameEn = product.name;
+    const pNameFr = product.nameFr || product.name;
+    const pNameAr = product.nameAr || product.name;
+    const price = `${product.unitPrice?.toLocaleString() || "0"} MRU`;
+
+    const messages: Record<string, string> = {
+      en: `A new treasure has arrived — ${pNameEn} (${price}). Handpicked with devotion, destined for those who appreciate elegance. Discover it now!`,
+      fr: `Un nouveau trésor est arrivé — ${pNameFr} (${price}). Sélectionné avec passion, destiné à ceux qui savourent l'élégance. Découvrez-le maintenant !`,
+      ar: `كنزٌ جديد قد وصل — ${pNameAr} (${price}). مُنتقى بعناية فائقة لمن يُقدّرون الأناقة. اكتشفوه الآن!`
+    };
+
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < active.length; i += BATCH_SIZE) {
+      const batch = active.slice(i, i + BATCH_SIZE);
+      await Promise.allSettled(batch.map(async (c: any) => {
+        try {
+          const lang = (c.language === "ar" || c.language === "fr") ? c.language : "en";
+          await storage.createStoreNotification({
+            customerId: c.id,
+            customerEmail: c.email,
+            type: "promotion",
+            title: titles.en,
+            titleAr: titles.ar,
+            titleFr: titles.fr,
+            message: messages.en,
+            messageAr: messages.ar,
+            messageFr: messages.fr,
+            isRead: false,
+          });
+          await sendProductMarketingEmail(c.email, c.fullName || "Valued Customer", lang, product, "new_arrival");
+        } catch (err: any) {
+          console.error(`[AUTO-NOTIFY] Failed for customer ${c.email}:`, err.message);
+        }
+      }));
+    }
+    console.log(`[AUTO-NOTIFY] New arrival notifications dispatched for "${product.name}"`);
+  } catch (err: any) {
+    console.error("[AUTO-NOTIFY] notifyAllCustomers_NewArrival error:", err.message);
+  }
+}
+
+async function notifyAllCustomers_FlashSale(product: any) {
+  try {
+    const customers = await storage.getAllStoreCustomers();
+    const active = customers.filter((c: any) => c.isActive !== false);
+    const discount = product.dealDiscount ? `${product.dealDiscount}%` : "";
+    console.log(`[AUTO-NOTIFY] Flash sale "${product.name}" ${discount} OFF — notifying ${active.length} customers`);
+
+    const pNameEn = product.name;
+    const pNameFr = product.nameFr || product.name;
+    const pNameAr = product.nameAr || product.name;
+    const discountedPrice = product.dealDiscount
+      ? `${Math.round(product.unitPrice * (1 - product.dealDiscount / 100)).toLocaleString()} MRU`
+      : `${product.unitPrice?.toLocaleString() || "0"} MRU`;
+
+    const titles: Record<string, string> = {
+      en: `🔥 Flash Sale — ${discount} OFF`,
+      fr: `🔥 Vente Flash — ${discount} de remise`,
+      ar: `🔥 تخفيض خاطف — خصم ${discount}`
+    };
+
+    const messages: Record<string, string> = {
+      en: `The golden hour has arrived! ${pNameEn} is now ${discountedPrice} (${discount} OFF). A rare moment where luxury meets opportunity — seize it before the curtain falls!`,
+      fr: `L'heure dorée est arrivée ! ${pNameFr} est maintenant à ${discountedPrice} (${discount} de remise). Un moment rare où le luxe rencontre l'opportunité — saisissez-la !`,
+      ar: `حانت الساعة الذهبية! ${pNameAr} الآن بسعر ${discountedPrice} (خصم ${discount}). لحظة نادرة يلتقي فيها الفخامة بالفرصة — اغتنموها!`
+    };
+
+    const BATCH_SIZE = 5;
+    for (let i = 0; i < active.length; i += BATCH_SIZE) {
+      const batch = active.slice(i, i + BATCH_SIZE);
+      await Promise.allSettled(batch.map(async (c: any) => {
+        try {
+          const lang = (c.language === "ar" || c.language === "fr") ? c.language : "en";
+          await storage.createStoreNotification({
+            customerId: c.id,
+            customerEmail: c.email,
+            type: "promotion",
+            title: titles.en,
+            titleAr: titles.ar,
+            titleFr: titles.fr,
+            message: messages.en,
+            messageAr: messages.ar,
+            messageFr: messages.fr,
+            isRead: false,
+          });
+          await sendProductMarketingEmail(c.email, c.fullName || "Valued Customer", lang, product, "flash_sale");
+        } catch (err: any) {
+          console.error(`[AUTO-NOTIFY] Failed for customer ${c.email}:`, err.message);
+        }
+      }));
+    }
+    console.log(`[AUTO-NOTIFY] Flash sale notifications dispatched for "${product.name}"`);
+  } catch (err: any) {
+    console.error("[AUTO-NOTIFY] notifyAllCustomers_FlashSale error:", err.message);
+  }
+}
 
 export async function registerRoutes(
   httpServer: Server,
@@ -1661,6 +1769,7 @@ export async function registerRoutes(
           createdAt: new Date().toISOString(),
         });
       } catch (e) {}
+      notifyAllCustomers_NewArrival(product).catch(console.error);
       res.status(201).json(product);
     } catch (error) {
       handleError(res, "create product", error);
@@ -1670,10 +1779,18 @@ export async function registerRoutes(
   app.patch("/api/products/:id", async (req, res) => {
     try {
       console.log("[PATCH /api/products] Received:", JSON.stringify(req.body));
+      const oldProduct = await storage.getProduct(req.params.id);
       const data = insertProductSchema.partial().parse(req.body);
       const product = await storage.updateProduct(req.params.id, data);
       if (!product) {
         return res.status(404).json({ error: "Product not found", id: req.params.id });
+      }
+      if (oldProduct && product.isDealOfDay && product.dealDiscount && product.dealDiscount > 0) {
+        const wasDeal = oldProduct.isDealOfDay && oldProduct.dealDiscount && oldProduct.dealDiscount > 0;
+        const discountChanged = wasDeal && oldProduct.dealDiscount !== product.dealDiscount;
+        if (!wasDeal || discountChanged) {
+          notifyAllCustomers_FlashSale(product).catch(console.error);
+        }
       }
       res.json(product);
     } catch (error) {
