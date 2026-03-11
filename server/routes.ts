@@ -433,11 +433,7 @@ export async function registerRoutes(
         return res.status(401).json({ error: "Account is deactivated" });
       }
 
-      req.session.regenerate((err) => {
-        if (err) {
-          return res.status(500).json({ error: "Session error" });
-        }
-        
+      const setSessionAndRespond = () => {
         req.session.userId = user.id;
         req.session.username = user.username;
         req.session.isAdmin = user.isAdmin;
@@ -448,6 +444,7 @@ export async function registerRoutes(
         
         req.session.save(async (saveErr) => {
           if (saveErr) {
+            console.error("[auth] Session save error:", saveErr.message);
             return res.status(500).json({ error: "Session save error" });
           }
 
@@ -476,6 +473,15 @@ export async function registerRoutes(
             } 
           });
         });
+      };
+
+      req.session.regenerate((err) => {
+        if (err) {
+          console.warn("[auth] Session regenerate failed, using direct session:", err.message);
+          setSessionAndRespond();
+          return;
+        }
+        setSessionAndRespond();
       });
     } catch (error) {
       handleError(res, "login", error);
