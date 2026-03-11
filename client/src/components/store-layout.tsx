@@ -1,13 +1,14 @@
-import { useState, createContext, useContext, useEffect } from "react";
+import { useState, useEffect, useCallback, createContext, useContext } from "react";
 import { Link, useLocation } from "wouter";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { useCart } from "@/contexts/cart-context";
 import { useStoreAuth } from "@/contexts/store-auth-context";
-import { ShoppingCart, Menu, X, Home, Package, Phone, Info, FileText, Globe, User, LogOut, Search, Bell, ChevronRight, Award } from "lucide-react";
+import { ShoppingCart, Menu, Home, Package, Phone, Info, FileText, Globe, User, LogOut, Search, Bell, ChevronRight, Award } from "lucide-react";
 import { SiWhatsapp, SiInstagram, SiFacebook, SiSnapchat, SiTiktok } from "react-icons/si";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import type { StoreSettings, StoreNotification } from "@shared/schema";
 import { type StoreLanguage, getStoreTranslation } from "@/locales/store";
 import PwaInstallPrompt from "@/components/pwa-install-prompt";
@@ -94,10 +95,20 @@ const LANG_OPTIONS: { code: StoreLanguage; label: string }[] = [
 export default function StoreLayout({ children }: { children: React.ReactNode }) {
   const [location] = useLocation();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const { itemCount } = useCart();
   const { lang, setLang, t } = useStoreLanguage();
   const { customer, isAuthenticated, logout } = useStoreAuth();
   const [notifOpen, setNotifOpen] = useState(false);
+
+  const handleScroll = useCallback(() => {
+    setScrolled(window.scrollY > 20);
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, [handleScroll]);
 
   const { data: settings } = useQuery<StoreSettings>({
     queryKey: ["/api/store/settings"],
@@ -126,9 +137,20 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
 
   return (
     <div className="min-h-screen flex flex-col store-theme" dir={lang === "ar" ? "rtl" : "ltr"} style={{ "--store-primary": primaryColor, "--store-accent": accentColor } as React.CSSProperties}>
-      <header className="store-header sticky top-0 z-50" style={{ background: `linear-gradient(135deg, rgba(10,22,40,0.97), rgba(6,11,20,0.98))`, borderBottom: "1px solid rgba(201,168,76,0.15)" }}>
+      <header
+        className="store-header sticky top-0 z-50 will-change-[backdrop-filter,box-shadow]"
+        style={{
+          background: scrolled
+            ? `linear-gradient(135deg, rgba(10,22,40,0.99), rgba(6,11,20,0.99))`
+            : `linear-gradient(135deg, rgba(10,22,40,0.97), rgba(6,11,20,0.98))`,
+          borderBottom: "1px solid rgba(201,168,76,0.15)",
+          backdropFilter: scrolled ? "blur(16px) saturate(180%)" : "none",
+          boxShadow: scrolled ? "0 4px 30px rgba(0,0,0,0.3), 0 1px 0 rgba(201,168,76,0.1)" : "none",
+          transition: "all 0.4s cubic-bezier(0.19, 1, 0.22, 1)",
+        }}
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 md:h-18">
+          <div className={`flex items-center justify-between transition-all duration-400 ${scrolled ? "h-14" : "h-16 md:h-18"}`}>
             <Link href="/store" className="flex items-center gap-3 text-white no-underline group" data-testid="link-store-home">
               <div className="relative">
                 <img src={logoImg} alt={storeName} className="h-10 w-10 md:h-11 md:w-11 rounded-lg object-contain p-0.5 transition-transform group-hover:scale-105" style={{ boxShadow: "0 0 20px rgba(201,168,76,0.15)" }} />
@@ -262,77 +284,89 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                   )}
                 </Button>
               </Link>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="lg:hidden text-white/60 hover:text-white hover:bg-white/5"
-                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-                data-testid="button-store-mobile-menu"
-              >
-                {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-              </Button>
+              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
+                <SheetTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="lg:hidden text-white/60 hover:text-white hover:bg-white/5"
+                    data-testid="button-store-mobile-menu"
+                  >
+                    <Menu className="h-5 w-5" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent
+                  side={lang === "ar" ? "left" : "right"}
+                  className="w-[300px] p-0 border-0"
+                  style={{ background: "linear-gradient(180deg, #0A1628, #060B14)" }}
+                  data-testid="nav-store-mobile"
+                >
+                  <div className="flex items-center gap-3 p-5 pb-4" style={{ borderBottom: "1px solid rgba(201,168,76,0.12)" }}>
+                    <img src={logoImg} alt={storeName} className="h-9 w-9 rounded-lg object-contain p-0.5" />
+                    <div className="flex flex-col leading-tight">
+                      <span className="text-sm brand-name">{storeName}</span>
+                      <span className="text-[9px] brand-name-ar" style={{ opacity: 0.65 }}>لمجيبة</span>
+                    </div>
+                  </div>
+                  <div className="px-3 py-4 space-y-1">
+                    {NAV_KEYS.map(item => (
+                      <Link key={item.path} href={item.path} onClick={() => setMobileMenuOpen(false)}>
+                        <Button
+                          variant="ghost"
+                          className={`w-full justify-start ${location === item.path ? "text-white" : "text-white/60 hover:text-white"}`}
+                          style={location === item.path ? { background: "rgba(201,168,76,0.1)", color: "#C9A84C" } : {}}
+                        >
+                          <item.icon className="h-4 w-4 mr-2" style={{ color: location === item.path ? "#C9A84C" : undefined }} />
+                          {t(item.key)}
+                          <ChevronRight className="h-4 w-4 ml-auto opacity-30" />
+                        </Button>
+                      </Link>
+                    ))}
+                    <div className="flex items-center gap-1 pt-4 mt-2" style={{ borderTop: "1px solid rgba(201,168,76,0.1)" }}>
+                      {LANG_OPTIONS.map(opt => (
+                        <button
+                          key={opt.code}
+                          onClick={() => { setLang(opt.code); setMobileMenuOpen(false); }}
+                          className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all ${lang === opt.code ? "text-gray-900" : "text-white/50 hover:text-white"}`}
+                          style={lang === opt.code ? { background: "#C9A84C" } : {}}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    {isAuthenticated ? (
+                      <div className="pt-4 space-y-1" style={{ borderTop: "1px solid rgba(201,168,76,0.1)" }}>
+                        <Link href="/store/profile" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start text-white/60 hover:text-white">
+                            <User className="h-4 w-4 mr-2" />
+                            {t("nav.profile")}
+                          </Button>
+                        </Link>
+                        <Button variant="ghost" className="w-full justify-start text-white/40 hover:text-white" onClick={() => { logout(); setMobileMenuOpen(false); }}>
+                          <LogOut className="h-4 w-4 mr-2" />
+                          {t("nav.logout")}
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="pt-4 space-y-1" style={{ borderTop: "1px solid rgba(201,168,76,0.1)" }}>
+                        <Link href="/store/login" onClick={() => setMobileMenuOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start text-white/60 hover:text-white">
+                            {t("nav.login")}
+                          </Button>
+                        </Link>
+                        <Link href="/store/signup" onClick={() => setMobileMenuOpen(false)}>
+                          <Button className="w-full store-btn-gold font-semibold" style={{ color: "#0A1628" }}>
+                            {t("nav.signup")}
+                          </Button>
+                        </Link>
+                      </div>
+                    )}
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
         </div>
-
-        {mobileMenuOpen && (
-          <div className="lg:hidden" style={{ background: "rgba(6,11,20,0.98)", borderTop: "1px solid rgba(201,168,76,0.1)" }} data-testid="nav-store-mobile">
-            <div className="px-4 py-3 space-y-1">
-              {NAV_KEYS.map(item => (
-                <Link key={item.path} href={item.path} onClick={() => setMobileMenuOpen(false)}>
-                  <Button
-                    variant="ghost"
-                    className={`w-full justify-start ${location === item.path ? "text-white" : "text-white/60 hover:text-white"}`}
-                    style={location === item.path ? { background: "rgba(201,168,76,0.1)", color: "#C9A84C" } : {}}
-                  >
-                    <item.icon className="h-4 w-4 mr-2" style={{ color: location === item.path ? "#C9A84C" : undefined }} />
-                    {t(item.key)}
-                    <ChevronRight className="h-4 w-4 ml-auto opacity-30" />
-                  </Button>
-                </Link>
-              ))}
-              <div className="flex items-center gap-1 pt-3" style={{ borderTop: "1px solid rgba(201,168,76,0.1)" }}>
-                {LANG_OPTIONS.map(opt => (
-                  <button
-                    key={opt.code}
-                    onClick={() => { setLang(opt.code); setMobileMenuOpen(false); }}
-                    className={`px-3 py-1.5 text-sm rounded-lg font-medium transition-all ${lang === opt.code ? "text-gray-900" : "text-white/50 hover:text-white"}`}
-                    style={lang === opt.code ? { background: "#C9A84C" } : {}}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-              {isAuthenticated ? (
-                <div className="pt-3 space-y-1" style={{ borderTop: "1px solid rgba(201,168,76,0.1)" }}>
-                  <Link href="/store/profile" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start text-white/60 hover:text-white">
-                      <User className="h-4 w-4 mr-2" />
-                      {t("nav.profile")}
-                    </Button>
-                  </Link>
-                  <Button variant="ghost" className="w-full justify-start text-white/40 hover:text-white" onClick={() => { logout(); setMobileMenuOpen(false); }}>
-                    <LogOut className="h-4 w-4 mr-2" />
-                    {t("nav.logout")}
-                  </Button>
-                </div>
-              ) : (
-                <div className="pt-3 space-y-1" style={{ borderTop: "1px solid rgba(201,168,76,0.1)" }}>
-                  <Link href="/store/login" onClick={() => setMobileMenuOpen(false)}>
-                    <Button variant="ghost" className="w-full justify-start text-white/60 hover:text-white">
-                      {t("nav.login")}
-                    </Button>
-                  </Link>
-                  <Link href="/store/signup" onClick={() => setMobileMenuOpen(false)}>
-                    <Button className="w-full store-btn-gold font-semibold" style={{ color: "#0A1628" }}>
-                      {t("nav.signup")}
-                    </Button>
-                  </Link>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
       </header>
 
       <main className="flex-1" style={{ background: "#FAF6EE" }}>
@@ -351,7 +385,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                   <p className="text-xs brand-name-ar" style={{ opacity: 0.65 }}>لمجيبة</p>
                 </div>
               </div>
-              <p className="text-sm text-gray-500 leading-relaxed">{(() => {
+              <p className="text-sm text-gray-400 leading-relaxed">{(() => {
                 try {
                   if (settings?.footerDescription) {
                     const fd = JSON.parse(settings.footerDescription);
@@ -366,29 +400,29 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               <h4 className="text-sm font-semibold mb-4 uppercase tracking-wider" style={{ color: "#C9A84C" }}>{t("footer.quickLinks")}</h4>
               <div className="space-y-2.5">
                 {NAV_KEYS.map(item => (
-                  <Link key={item.path} href={item.path} className="block text-sm text-gray-500 hover:text-white no-underline transition-colors">
+                  <Link key={item.path} href={item.path} className="block text-sm text-gray-400 hover:text-white no-underline transition-colors">
                     {t(item.key)}
                   </Link>
                 ))}
-                <Link href="/store/orders" className="block text-sm text-gray-500 hover:text-white no-underline transition-colors">{t("footer.trackOrder")}</Link>
+                <Link href="/store/orders" className="block text-sm text-gray-400 hover:text-white no-underline transition-colors">{t("footer.trackOrder")}</Link>
               </div>
             </div>
             <div>
               <h4 className="text-sm font-semibold mb-4 uppercase tracking-wider" style={{ color: "#C9A84C" }}>{t("footer.contact")}</h4>
-              <p className="text-sm text-gray-500 mb-1">
+              <p className="text-sm text-gray-400 mb-1">
                 <a href={`mailto:${settings?.contactEmail || "support@limjiba.com"}`} className="hover:text-white transition-colors">{settings?.contactEmail || "support@limjiba.com"}</a>
               </p>
-              {settings?.contactPhone && <p className="text-sm text-gray-500 mb-1">{settings.contactPhone}</p>}
-              {settings?.contactAddress && <p className="text-sm text-gray-500 mb-1">{settings.contactAddress}</p>}
+              {settings?.contactPhone && <p className="text-sm text-gray-400 mb-1">{settings.contactPhone}</p>}
+              {settings?.contactAddress && <p className="text-sm text-gray-400 mb-1">{settings.contactAddress}</p>}
               {(() => {
                 let socialLinks: Record<string, string> = {};
                 try { socialLinks = JSON.parse(settings?.socialLinks || "{}"); } catch { socialLinks = {}; }
                 const socialItems = [
-                  { key: "whatsapp", icon: SiWhatsapp, label: "WhatsApp" },
-                  { key: "instagram", icon: SiInstagram, label: "Instagram" },
-                  { key: "facebook", icon: SiFacebook, label: "Facebook" },
-                  { key: "snapchat", icon: SiSnapchat, label: "Snapchat" },
-                  { key: "tiktok", icon: SiTiktok, label: "TikTok" },
+                  { key: "whatsapp", icon: SiWhatsapp, label: "WhatsApp", hoverColor: "#25D366" },
+                  { key: "instagram", icon: SiInstagram, label: "Instagram", hoverColor: "#E4405F" },
+                  { key: "facebook", icon: SiFacebook, label: "Facebook", hoverColor: "#1877F2" },
+                  { key: "snapchat", icon: SiSnapchat, label: "Snapchat", hoverColor: "#FFFC00" },
+                  { key: "tiktok", icon: SiTiktok, label: "TikTok", hoverColor: "#FF0050" },
                 ].filter(item => {
                   const url = socialLinks[item.key]?.trim();
                   return url && (url.startsWith("https://") || url.startsWith("http://"));
@@ -402,10 +436,13 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                         href={socialLinks[item.key]}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="text-gray-500 hover:text-white transition-all duration-200 hover:scale-110"
-                        style={{ color: undefined }}
+                        className="text-gray-400 transition-all duration-300 hover:scale-110 hover:drop-shadow-lg focus-visible:scale-110 focus-visible:outline-none"
                         aria-label={item.label}
                         data-testid={`link-social-${item.key}`}
+                        onMouseEnter={e => (e.currentTarget.style.color = item.hoverColor)}
+                        onMouseLeave={e => (e.currentTarget.style.color = "")}
+                        onFocus={e => (e.currentTarget.style.color = item.hoverColor)}
+                        onBlur={e => (e.currentTarget.style.color = "")}
                       >
                         <item.icon className="h-5 w-5" />
                       </a>
@@ -415,10 +452,10 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
               })()}
             </div>
           </div>
-          <div className="mt-10 pt-8 text-center text-sm text-gray-600" style={{ borderTop: "1px solid rgba(201,168,76,0.1)" }}>
+          <div className="mt-10 pt-8 text-center text-sm text-gray-500" style={{ borderTop: "1px solid rgba(201,168,76,0.1)" }}>
             <div>&copy; {new Date().getFullYear()} {storeName} / لمجيبة. {t("footer.rights")}.</div>
             <div className="mt-3 flex items-center justify-center gap-1.5">
-              <span className="text-xs text-gray-500">Powered by</span>
+              <span className="text-xs text-gray-400">Powered by</span>
               <a href="https://aegisai360.com" target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-medium transition-opacity hover:opacity-80" style={{ color: "#d4a520" }} data-testid="link-aegisai360">
                 <img src={aegisai360LogoPath} alt="AegisAI360" className="h-4 w-4" />
                 AegisAI360

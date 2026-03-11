@@ -6,7 +6,6 @@ import { useStoreLanguage } from "@/components/store-layout";
 import { useStoreAuth } from "@/contexts/store-auth-context";
 import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { ShoppingCart, ArrowRight, Star, Sparkles, Package, Shield, Truck, Award, ChevronRight, Clock, Flame, Eye, Heart, Zap, CheckCircle, Globe, Crown, Gift, Lock, Diamond, ThumbsUp, Medal, Gem, Quote } from "lucide-react";
 import type { Product, CmsBanner, StoreSettings, Category, StoreReview } from "@shared/schema";
 import { CinematicLogoReveal } from "@/components/cinematic-logo-reveal";
@@ -371,7 +370,7 @@ export default function StoreHome() {
           {productsLoading ? (
             <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
               {Array.from({ length: 8 }).map((_, i) => (
-                <Skeleton key={i} className="h-80 rounded-2xl" />
+                <div key={i} className="skeleton-gold h-80 rounded-2xl" />
               ))}
             </div>
           ) : (
