@@ -90,6 +90,7 @@ interface VariantRow {
   stockQuantity: number;
   sku: string;
   imageUrl: string | null;
+  images: string[] | null;
   option1Name: string | null;
   option1Value: string | null;
   option2Name: string | null;
@@ -133,6 +134,7 @@ function generateVariantCombinations(options: OptionRow[], parentPrice: number):
     stockQuantity: 0,
     sku: "",
     imageUrl: null,
+    images: null,
     option1Name: combo.opts[0]?.name || null,
     option1Value: combo.opts[0]?.value || null,
     option2Name: combo.opts[1]?.name || null,
@@ -270,7 +272,7 @@ function OptionsAndVariantsSection({
     const merged = newVariants.map(nv => {
       const existing = variants.find(ev => ev.variantLabel === nv.variantLabel);
       if (existing) {
-        return { ...nv, unitPrice: existing.unitPrice, costPrice: existing.costPrice, stockQuantity: existing.stockQuantity, sku: existing.sku, imageUrl: existing.imageUrl, isActive: existing.isActive };
+        return { ...nv, unitPrice: existing.unitPrice, costPrice: existing.costPrice, stockQuantity: existing.stockQuantity, sku: existing.sku, imageUrl: existing.imageUrl, images: existing.images, isActive: existing.isActive };
       }
       return nv;
     });
@@ -316,11 +318,33 @@ function OptionsAndVariantsSection({
       toast({ title: "Image must be under 2MB", variant: "destructive" });
       return;
     }
+    const currentImages = variants[index].images || [];
+    if (currentImages.length >= 4) {
+      toast({ title: "Maximum 4 images per variant", variant: "destructive" });
+      return;
+    }
     const reader = new FileReader();
     reader.onload = () => {
-      updateVariant(index, "imageUrl", reader.result as string);
+      const img = reader.result as string;
+      const updated = [...variants];
+      const newImages = [...(updated[index].images || []), img];
+      updated[index] = { ...updated[index], images: newImages, imageUrl: newImages[0] };
+      onVariantsChange(updated);
     };
     reader.readAsDataURL(file);
+    if (e.target) e.target.value = "";
+  };
+
+  const removeVariantImage = (variantIndex: number, imageIndex: number) => {
+    const updated = [...variants];
+    const currentImages = [...(updated[variantIndex].images || [])];
+    currentImages.splice(imageIndex, 1);
+    updated[variantIndex] = {
+      ...updated[variantIndex],
+      images: currentImages.length > 0 ? currentImages : null,
+      imageUrl: currentImages[0] || null,
+    };
+    onVariantsChange(updated);
   };
 
   return (
@@ -420,28 +444,31 @@ function OptionsAndVariantsSection({
                         {variants.map((v, idx) => (
                           <TableRow key={idx} data-testid={`variant-row-${idx}`}>
                             <TableCell>
-                              {v.imageUrl ? (
-                                <div className="relative w-10 h-10 group">
-                                  <img src={v.imageUrl} alt="" className="w-10 h-10 rounded object-cover border" />
-                                  <button
-                                    type="button"
-                                    onClick={() => updateVariant(idx, "imageUrl", null)}
-                                    className="absolute -top-1.5 -right-1.5 h-4 w-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
-                                  >
-                                    <X className="h-2.5 w-2.5" />
-                                  </button>
-                                </div>
-                              ) : (
-                                <label className="w-10 h-10 border-2 border-dashed rounded flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors" data-testid={`button-variant-image-${idx}`}>
-                                  <ImagePlus className="h-4 w-4 text-muted-foreground" />
-                                  <input
-                                    type="file"
-                                    accept="image/*"
-                                    onChange={(e) => handleVariantImageUpload(idx, e)}
-                                    className="hidden"
-                                  />
-                                </label>
-                              )}
+                              <div className="flex items-center gap-1.5 flex-wrap">
+                                {(v.images || (v.imageUrl ? [v.imageUrl] : [])).map((img, imgIdx) => (
+                                  <div key={imgIdx} className="relative w-10 h-10 group flex-shrink-0">
+                                    <img src={img} alt="" className="w-10 h-10 rounded object-cover border" />
+                                    <button
+                                      type="button"
+                                      onClick={() => removeVariantImage(idx, imgIdx)}
+                                      className="absolute -top-1.5 -right-1.5 h-4 w-4 bg-destructive text-destructive-foreground rounded-full flex items-center justify-center sm:opacity-0 sm:group-hover:opacity-100 transition-opacity"
+                                    >
+                                      <X className="h-2.5 w-2.5" />
+                                    </button>
+                                  </div>
+                                ))}
+                                {(v.images || []).length < 4 && (
+                                  <label className="w-10 h-10 border-2 border-dashed rounded flex items-center justify-center cursor-pointer hover:border-primary/50 transition-colors flex-shrink-0" data-testid={`button-variant-image-${idx}`}>
+                                    <ImagePlus className="h-4 w-4 text-muted-foreground" />
+                                    <input
+                                      type="file"
+                                      accept="image/*"
+                                      onChange={(e) => handleVariantImageUpload(idx, e)}
+                                      className="hidden"
+                                    />
+                                  </label>
+                                )}
+                              </div>
                             </TableCell>
                             <TableCell>
                               <span className="text-sm font-medium">{v.variantLabel}</span>
@@ -650,6 +677,7 @@ export function ProductFormPage() {
         stockQuantity: v.stockQuantity,
         sku: v.sku || "",
         imageUrl: v.imageUrl,
+        images: v.images || (v.imageUrl ? [v.imageUrl] : null),
         option1Name: v.option1Name,
         option1Value: v.option1Value,
         option2Name: v.option2Name,

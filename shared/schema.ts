@@ -81,6 +81,7 @@ export const productVariants = pgTable("product_variants", {
   costPrice: real("cost_price").notNull().default(0),
   stockQuantity: integer("stock_quantity").notNull().default(0),
   imageUrl: text("image_url"),
+  images: text("images").array(),
   option1Name: text("option1_name"),
   option1Value: text("option1_value"),
   option2Name: text("option2_name"),

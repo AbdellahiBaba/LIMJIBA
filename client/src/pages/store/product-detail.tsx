@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useRoute, Link, useLocation } from "wouter";
 import { useCart } from "@/contexts/cart-context";
@@ -8,9 +8,10 @@ import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
-import { ShoppingCart, ArrowLeft, Minus, Plus, Check, Package, AlertCircle, Shield, Truck, CreditCard, Eye, Flame, Star, Loader2, Layers } from "lucide-react";
+import { ShoppingCart, ArrowLeft, Minus, Plus, Check, Package, AlertCircle, Shield, Truck, CreditCard, Eye, Flame, Star, Loader2, Layers, ChevronLeft, ChevronRight } from "lucide-react";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Product, StoreSettings, ProductReview, ProductVariant } from "@shared/schema";
+import useEmblaCarousel from "embla-carousel-react";
 
 function getProductName(product: Product, lang: string): string {
   if (lang === "ar" && product.nameAr) return product.nameAr;
@@ -34,6 +35,8 @@ export default function StoreProductDetail() {
   const [reviewText, setReviewText] = useState("");
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
+  const [activeImageIndex, setActiveImageIndex] = useState(0);
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, dragFree: false });
 
   const { data: product, isLoading } = useQuery<Product>({
     queryKey: ["/api/store/products", productId],
@@ -86,6 +89,39 @@ export default function StoreProductDetail() {
 
   const avgRating = reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
   const customerAlreadyReviewed = isAuthenticated && customer ? reviews.some(r => r.customerEmail === customer.email) : false;
+
+  const galleryImages: string[] = (() => {
+    if (selectedVariant) {
+      const variantImgs = selectedVariant.images?.filter(Boolean) || [];
+      if (variantImgs.length > 0) return variantImgs;
+      if (selectedVariant.imageUrl) return [selectedVariant.imageUrl];
+    }
+    const productImgs = product?.images?.filter(Boolean) || [];
+    if (productImgs.length > 0) {
+      if (product?.imageUrl && !productImgs.includes(product.imageUrl)) {
+        return [product.imageUrl, ...productImgs];
+      }
+      return productImgs;
+    }
+    if (product?.imageUrl) return [product.imageUrl];
+    return [];
+  })();
+
+  useEffect(() => {
+    setActiveImageIndex(0);
+    if (emblaApi) emblaApi.scrollTo(0);
+  }, [selectedVariantId, emblaApi]);
+
+  const onEmblaSelect = useCallback(() => {
+    if (!emblaApi) return;
+    setActiveImageIndex(emblaApi.selectedScrollSnap());
+  }, [emblaApi]);
+
+  useEffect(() => {
+    if (!emblaApi) return;
+    emblaApi.on("select", onEmblaSelect);
+    return () => { emblaApi.off("select", onEmblaSelect); };
+  }, [emblaApi, onEmblaSelect]);
 
   const submitReviewMutation = useMutation({
     mutationFn: async () => {
@@ -208,14 +244,70 @@ export default function StoreProductDetail() {
       </Link>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-14" data-testid={`detail-product-${product.id}`}>
-        <div className="store-card-premium rounded-2xl overflow-hidden">
-          <div className="h-[400px] md:h-[500px] flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${primaryColor}05, ${accentColor}08)` }}>
-            {(selectedVariant?.imageUrl || product.imageUrl) ? (
-              <img src={selectedVariant?.imageUrl || product.imageUrl!} alt={getProductName(product, lang)} className="h-full w-full object-cover" data-testid={`img-product-${product.id}`} />
+        <div className="space-y-3">
+          <div className="store-card-premium rounded-2xl overflow-hidden relative group">
+            {galleryImages.length > 0 ? (
+              <>
+                <div className="overflow-hidden" ref={emblaRef}>
+                  <div className="flex">
+                    {galleryImages.map((img, idx) => (
+                      <div key={idx} className="flex-[0_0_100%] min-w-0">
+                        <div className="h-[400px] md:h-[500px] flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${primaryColor}05, ${accentColor}08)` }}>
+                          <img src={img} alt={`${getProductName(product, lang)} ${idx + 1}`} className="h-full w-full object-cover" data-testid={`img-product-${product.id}-${idx}`} />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                {galleryImages.length > 1 && (
+                  <>
+                    <button
+                      onClick={() => emblaApi?.scrollPrev()}
+                      className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/60"
+                      data-testid="button-image-prev"
+                    >
+                      <ChevronLeft className="h-5 w-5" />
+                    </button>
+                    <button
+                      onClick={() => emblaApi?.scrollNext()}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/40 text-white flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-black/60"
+                      data-testid="button-image-next"
+                    >
+                      <ChevronRight className="h-5 w-5" />
+                    </button>
+                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex items-center gap-2">
+                      {galleryImages.map((_, idx) => (
+                        <button
+                          key={idx}
+                          onClick={() => emblaApi?.scrollTo(idx)}
+                          className={`w-2.5 h-2.5 rounded-full transition-all ${idx === activeImageIndex ? "scale-110" : "bg-white/50 hover:bg-white/80"}`}
+                          style={idx === activeImageIndex ? { background: accentColor, boxShadow: `0 0 6px ${accentColor}` } : {}}
+                          data-testid={`button-image-dot-${idx}`}
+                        />
+                      ))}
+                    </div>
+                  </>
+                )}
+              </>
             ) : (
-              <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100"><Package className="h-20 w-20 text-gray-200" /></div>
+              <div className="h-[400px] md:h-[500px] flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100"><Package className="h-20 w-20 text-gray-200" /></div>
             )}
           </div>
+          {galleryImages.length > 1 && (
+            <div className="flex gap-2 overflow-x-auto pb-1">
+              {galleryImages.map((img, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => { emblaApi?.scrollTo(idx); setActiveImageIndex(idx); }}
+                  className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 transition-all ${idx === activeImageIndex ? "ring-2 ring-offset-1" : "border-transparent opacity-60 hover:opacity-100"}`}
+                  style={idx === activeImageIndex ? { borderColor: accentColor, ringColor: accentColor } : {}}
+                  data-testid={`button-thumbnail-${idx}`}
+                >
+                  <img src={img} alt="" className="w-full h-full object-cover" />
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="space-y-6">

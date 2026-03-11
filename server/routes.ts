@@ -4344,23 +4344,27 @@ export async function registerRoutes(
       const variants: any[] = req.body.variants || [];
       if (variants.length > 100) return res.status(400).json({ error: "Too many variants (max 100)" });
 
-      const validatedVariants = variants.map((v: any, i: number) => ({
-        productId,
-        variantLabel: String(v.variantLabel || "").substring(0, 200),
-        sku: v.sku ? String(v.sku).substring(0, 100) : null,
-        unitPrice: Math.max(0, Number(v.unitPrice) || product.unitPrice),
-        costPrice: Math.max(0, Number(v.costPrice) || 0),
-        stockQuantity: Math.max(0, Math.floor(Number(v.stockQuantity) || 0)),
-        imageUrl: v.imageUrl || null,
-        option1Name: v.option1Name || null,
-        option1Value: v.option1Value || null,
-        option2Name: v.option2Name || null,
-        option2Value: v.option2Value || null,
-        option3Name: v.option3Name || null,
-        option3Value: v.option3Value || null,
-        sortOrder: i,
-        isActive: v.isActive !== false,
-      }));
+      const validatedVariants = variants.map((v: any, i: number) => {
+        const imgArr = Array.isArray(v.images) ? v.images.filter((img: any) => typeof img === "string" && img.length > 0).slice(0, 4) : null;
+        return {
+          productId,
+          variantLabel: String(v.variantLabel || "").substring(0, 200),
+          sku: v.sku ? String(v.sku).substring(0, 100) : null,
+          unitPrice: Math.max(0, Number(v.unitPrice) || product.unitPrice),
+          costPrice: Math.max(0, Number(v.costPrice) || 0),
+          stockQuantity: Math.max(0, Math.floor(Number(v.stockQuantity) || 0)),
+          imageUrl: v.imageUrl || (imgArr && imgArr.length > 0 ? imgArr[0] : null),
+          images: imgArr && imgArr.length > 0 ? imgArr : null,
+          option1Name: v.option1Name || null,
+          option1Value: v.option1Value || null,
+          option2Name: v.option2Name || null,
+          option2Value: v.option2Value || null,
+          option3Name: v.option3Name || null,
+          option3Value: v.option3Value || null,
+          sortOrder: i,
+          isActive: v.isActive !== false,
+        };
+      });
 
       const created = await storage.batchReplaceVariants(productId, validatedVariants);
       res.json(created);

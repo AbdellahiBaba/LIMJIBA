@@ -174,7 +174,6 @@ export default function StoreProducts() {
                       <GitCompareArrows className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                  <p className="text-xs text-gray-400 mb-3">{product.stockQuantity} {t("detail.available")}</p>
                   <div className="flex items-center justify-between gap-2">
                     <div>
                       <span className="text-lg md:text-xl font-bold gold-text">{effectivePrice.toFixed(2)}</span>
