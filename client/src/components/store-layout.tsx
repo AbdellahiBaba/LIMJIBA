@@ -152,8 +152,8 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className={`flex items-center justify-between transition-all duration-400 ${scrolled ? "h-14" : "h-16 md:h-18"}`}>
             <Link href="/store" className="flex items-center gap-3 text-white no-underline group" data-testid="link-store-home">
-              <div className="relative">
-                <img src={logoImg} alt={storeName} className="h-10 w-10 md:h-11 md:w-11 rounded-lg object-contain p-0.5 transition-transform group-hover:scale-105" style={{ boxShadow: "0 0 20px rgba(201,168,76,0.15)" }} />
+              <div className="relative" style={{ background: "radial-gradient(circle, rgba(201,168,76,0.12) 0%, transparent 70%)", borderRadius: "12px", padding: "2px" }}>
+                <img src={logoImg} alt={storeName} className="h-10 w-10 md:h-11 md:w-11 rounded-lg object-contain p-0.5 transition-transform group-hover:scale-105" style={{ boxShadow: "0 0 20px rgba(201,168,76,0.25), 0 0 40px rgba(201,168,76,0.08)", background: "rgba(201,168,76,0.06)" }} />
               </div>
               <div className="flex flex-col leading-tight">
                 <span className="text-lg md:text-xl brand-name brand-glow" data-text={storeName}>{storeName}</span>
@@ -379,7 +379,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10">
             <div>
               <div className="flex items-center gap-3 mb-4">
-                <img src={logoImg} alt={storeName} className="h-10 w-10 rounded-lg object-contain" style={{ boxShadow: "0 0 20px rgba(201,168,76,0.1)" }} />
+                <img src={logoImg} alt={storeName} className="h-10 w-10 rounded-lg object-contain" style={{ boxShadow: "0 0 20px rgba(201,168,76,0.25), 0 0 40px rgba(201,168,76,0.08)", background: "rgba(201,168,76,0.08)", padding: "2px" }} />
                 <div>
                   <h3 className="text-lg brand-name brand-glow" data-text={storeName}>{storeName}</h3>
                   <p className="text-xs brand-name-ar" style={{ opacity: 0.65 }}>لمجيبة</p>
