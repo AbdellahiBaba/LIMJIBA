@@ -85,7 +85,7 @@ export function CinematicLogoReveal({ width=500, height=500, onComplete }: Cinem
   useEffect(() => {
     if (loading||!imgRef.current||done) return;
     const canvas = canvasRef.current; if(!canvas) return;
-    const ctx = canvas.getContext("2d",{alpha:false}); if(!ctx) return;
+    const ctx = canvas.getContext("2d",{alpha:true}); if(!ctx) return;
     const dpr = window.devicePixelRatio||1;
     canvas.width=width*dpr; canvas.height=height*dpr;
     ctx.setTransform(1,0,0,1,0,0); ctx.scale(dpr,dpr);
@@ -93,7 +93,7 @@ export function CinematicLogoReveal({ width=500, height=500, onComplete }: Cinem
     const cx=width/2, cy=height/2-height*0.04;
 
     if (reduced) {
-      ctx.fillStyle=BLACK; ctx.fillRect(0,0,width,height);
+      ctx.clearRect(0,0,width,height);
       const lw=width*.6, lh=(img.height/img.width)*lw;
       ctx.drawImage(img,(width-lw)/2,(height-lh)/2-10,lw,lh);
       ctx.fillStyle=NAVY; ctx.font=`bold ${Math.round(width*.09)}px 'Amiri',serif`;
@@ -138,8 +138,7 @@ export function CinematicLogoReveal({ width=500, height=500, onComplete }: Cinem
     img: HTMLImageElement, cx: number, cy: number,
     st: NonNullable<typeof stateRef.current>
   ) => {
-    ctx.fillStyle = BLACK;
-    ctx.fillRect(0,0,width,height);
+    ctx.clearRect(0,0,width,height);
 
     phaseBlackout(ctx,t,ms,cx,cy);
     phaseEnergyBuild(ctx,t,ms,cx,cy);
