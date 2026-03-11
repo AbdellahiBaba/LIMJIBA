@@ -12,6 +12,12 @@ import { ShoppingCart, ArrowLeft, Minus, Plus, Check, Package, AlertCircle, Shie
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { Product, StoreSettings, ProductReview, ProductVariant } from "@shared/schema";
 
+function getProductName(product: Product, lang: string): string {
+  if (lang === "ar" && product.nameAr) return product.nameAr;
+  if (lang === "fr" && product.nameFr) return product.nameFr;
+  return product.name;
+}
+
 export default function StoreProductDetail() {
   const [, storeParams] = useRoute("/store/products/:id");
   const [, rootParams] = useRoute("/products/:id");
@@ -100,7 +106,7 @@ export default function StoreProductDetail() {
     if (product) {
       addViewed({
         productId: product.id,
-        productName: product.name,
+        productName: getProductName(product, lang),
         unitPrice: product.unitPrice,
         category: product.category,
         imageUrl: product.imageUrl,
@@ -132,7 +138,8 @@ export default function StoreProductDetail() {
 
   const handleAddToCart = () => {
     if (!product || !canAdd) return;
-    const cartItem: any = { productId: product.id, productName: selectedVariant ? `${product.name} (${selectedVariant.variantLabel})` : product.name, unitPrice: effectivePrice, category: product.category, imageUrl: selectedVariant?.imageUrl || product.imageUrl };
+    const pName = getProductName(product, lang);
+    const cartItem: any = { productId: product.id, productName: selectedVariant ? `${pName} (${selectedVariant.variantLabel})` : pName, unitPrice: effectivePrice, category: product.category, imageUrl: selectedVariant?.imageUrl || product.imageUrl };
     if (selectedVariant) { cartItem.variantId = selectedVariant.id; cartItem.variantLabel = selectedVariant.variantLabel; }
     addItem(cartItem, quantity, activeStock);
     setAdded(true);
@@ -142,7 +149,8 @@ export default function StoreProductDetail() {
 
   const handleBuyNow = () => {
     if (!product || !canAdd) return;
-    const cartItem: any = { productId: product.id, productName: selectedVariant ? `${product.name} (${selectedVariant.variantLabel})` : product.name, unitPrice: effectivePrice, category: product.category, imageUrl: selectedVariant?.imageUrl || product.imageUrl };
+    const pName = getProductName(product, lang);
+    const cartItem: any = { productId: product.id, productName: selectedVariant ? `${pName} (${selectedVariant.variantLabel})` : pName, unitPrice: effectivePrice, category: product.category, imageUrl: selectedVariant?.imageUrl || product.imageUrl };
     if (selectedVariant) { cartItem.variantId = selectedVariant.id; cartItem.variantLabel = selectedVariant.variantLabel; }
     addItem(cartItem, quantity, activeStock);
     setLocation("/store/checkout");
@@ -194,7 +202,7 @@ export default function StoreProductDetail() {
         <div className="store-card-premium rounded-2xl overflow-hidden">
           <div className="h-[400px] md:h-[500px] flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${primaryColor}05, ${accentColor}08)` }}>
             {(selectedVariant?.imageUrl || product.imageUrl) ? (
-              <img src={selectedVariant?.imageUrl || product.imageUrl!} alt={product.name} className="h-full w-full object-cover" data-testid={`img-product-${product.id}`} />
+              <img src={selectedVariant?.imageUrl || product.imageUrl!} alt={getProductName(product, lang)} className="h-full w-full object-cover" data-testid={`img-product-${product.id}`} />
             ) : (
               <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100"><Package className="h-20 w-20 text-gray-200" /></div>
             )}
@@ -204,7 +212,7 @@ export default function StoreProductDetail() {
         <div className="space-y-6">
           <div>
             <span className="text-xs font-semibold px-3 py-1 rounded-full premium-badge">{product.category}</span>
-            <h1 className="text-2xl md:text-3xl font-bold mt-4 mb-2" style={{ color: primaryColor }} data-testid="text-product-name">{product.name}</h1>
+            <h1 className="text-2xl md:text-3xl font-bold mt-4 mb-2" style={{ color: primaryColor }} data-testid="text-product-name">{getProductName(product, lang)}</h1>
             {reviews.length > 0 && (
               <div className="flex items-center gap-2 mb-2" data-testid="text-product-rating">
                 <div className="flex items-center gap-0.5">

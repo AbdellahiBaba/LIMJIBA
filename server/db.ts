@@ -250,6 +250,14 @@ async function runMigrations(): Promise<void> {
       await client.query(`ALTER TABLE products ADD COLUMN barcode text`);
       console.log('[DB] Added barcode column to products');
     }
+    if (!prodCols.includes('name_ar')) {
+      await client.query(`ALTER TABLE products ADD COLUMN name_ar text`);
+      console.log('[DB] Added name_ar column to products');
+    }
+    if (!prodCols.includes('name_fr')) {
+      await client.query(`ALTER TABLE products ADD COLUMN name_fr text`);
+      console.log('[DB] Added name_fr column to products');
+    }
     
     if (!prodCols.includes('is_favorite')) {
       await client.query(`ALTER TABLE products ADD COLUMN is_favorite BOOLEAN NOT NULL DEFAULT false`);

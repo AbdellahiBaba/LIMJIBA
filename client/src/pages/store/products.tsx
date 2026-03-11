@@ -11,6 +11,12 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { ShoppingCart, Search, Package, SlidersHorizontal, GitCompareArrows, X, ArrowRight } from "lucide-react";
 import type { Product, StoreSettings, Category } from "@shared/schema";
 
+function getProductName(product: Product, lang: string): string {
+  if (lang === "ar" && product.nameAr) return product.nameAr;
+  if (lang === "fr" && product.nameFr) return product.nameFr;
+  return product.name;
+}
+
 export default function StoreProducts() {
   const { addItem, getItemQuantity } = useCart();
   const { compareItems, addToCompare, removeFromCompare, isInCompare } = useComparison();
@@ -138,7 +144,7 @@ export default function StoreProducts() {
                 <Link href={`/store/products/${product.id}`}>
                   <div className="h-48 md:h-56 overflow-hidden relative cursor-pointer" style={{ background: `linear-gradient(135deg, ${primaryColor}05, ${accentColor}08)` }}>
                     {product.imageUrl ? (
-                      <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover card-image" data-testid={`img-product-${product.id}`} />
+                      <img src={product.imageUrl} alt={getProductName(product, lang)} className="h-full w-full object-cover card-image" data-testid={`img-product-${product.id}`} />
                     ) : (
                       <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100"><Package className="h-12 w-12 text-gray-300" /></div>
                     )}
@@ -157,7 +163,7 @@ export default function StoreProducts() {
                 <div className="p-4">
                   <div className="flex items-start justify-between gap-1 mb-1">
                     <Link href={`/store/products/${product.id}`}>
-                      <h3 className="font-semibold text-sm hover:underline cursor-pointer line-clamp-2" style={{ color: primaryColor }} data-testid={`link-product-${product.id}`}>{product.name}</h3>
+                      <h3 className="font-semibold text-sm hover:underline cursor-pointer line-clamp-2" style={{ color: primaryColor }} data-testid={`link-product-${product.id}`}>{getProductName(product, lang)}</h3>
                     </Link>
                     <button
                       onClick={() => inCompare ? removeFromCompare(product.id) : addToCompare(product)}
@@ -181,7 +187,7 @@ export default function StoreProducts() {
                       size="sm"
                       className={`rounded-full text-xs sm:text-sm h-11 min-w-[44px] px-3 sm:px-4 ${atMax ? "" : "store-btn-gold"}`}
                       style={atMax ? { backgroundColor: "#9ca3af", color: "#fff" } : { color: primaryColor }}
-                      onClick={() => addItem({ productId: product.id, productName: product.name, unitPrice: effectivePrice, category: product.category, imageUrl: product.imageUrl }, 1, product.stockQuantity)}
+                      onClick={() => addItem({ productId: product.id, productName: getProductName(product, lang), unitPrice: effectivePrice, category: product.category, imageUrl: product.imageUrl }, 1, product.stockQuantity)}
                       disabled={atMax}
                       data-testid={`button-add-cart-${product.id}`}
                     >

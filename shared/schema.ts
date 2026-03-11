@@ -44,6 +44,8 @@ export type Permission = typeof ALL_PERMISSIONS[number];
 export const products = pgTable("products", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   name: text("name").notNull(),
+  nameAr: text("name_ar"),
+  nameFr: text("name_fr"),
   category: text("category").notNull(),
   unitPrice: real("unit_price").notNull(),
   costPrice: real("cost_price").notNull().default(0),

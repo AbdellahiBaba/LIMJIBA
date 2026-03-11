@@ -553,6 +553,8 @@ export function ProductFormPage() {
 
   const [formData, setFormData] = useState<Partial<InsertProduct>>({
     name: "",
+    nameAr: "",
+    nameFr: "",
     category: "",
     unitPrice: 0,
     costPrice: 0,
@@ -588,6 +590,8 @@ export function ProductFormPage() {
     if (isEditing && existingProduct && !initialized) {
       setFormData({
         name: existingProduct.name,
+        nameAr: existingProduct.nameAr || "",
+        nameFr: existingProduct.nameFr || "",
         category: existingProduct.category,
         unitPrice: existingProduct.unitPrice,
         costPrice: existingProduct.costPrice,
@@ -867,15 +871,38 @@ export function ProductFormPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="name">{t("stock.productName")} *</Label>
+                <Label htmlFor="name">{t("stock.productName")} (EN) *</Label>
                 <Input
                   id="name"
                   value={formData.name}
                   onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
-                  placeholder={t("stock.productName")}
+                  placeholder="Product name in English"
                   required
                   data-testid="input-product-name"
                 />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-2">
+                  <Label htmlFor="nameFr">{t("stock.productName")} (FR)</Label>
+                  <Input
+                    id="nameFr"
+                    value={formData.nameFr || ""}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nameFr: e.target.value }))}
+                    placeholder="Nom du produit en français"
+                    data-testid="input-product-name-fr"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="nameAr">{t("stock.productName")} (AR)</Label>
+                  <Input
+                    id="nameAr"
+                    value={formData.nameAr || ""}
+                    onChange={(e) => setFormData(prev => ({ ...prev, nameAr: e.target.value }))}
+                    placeholder="اسم المنتج بالعربية"
+                    dir="rtl"
+                    data-testid="input-product-name-ar"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <Label className="text-sm font-medium">Description (EN)</Label>

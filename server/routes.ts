@@ -1369,6 +1369,8 @@ export async function registerRoutes(
       let logoDataUrl = '';
       if (req.query.logo) {
         logoDataUrl = sanitizeUrl(req.query.logo as string);
+      } else if (storeSettings?.logoUrl) {
+        logoDataUrl = storeSettings.logoUrl;
       } else if (branding.logo) {
         logoDataUrl = sanitizeUrl(branding.logo);
       } else {
@@ -2194,6 +2196,8 @@ export async function registerRoutes(
       let logoDataUrl = '';
       if (req.query.logo) {
         logoDataUrl = sanitizeUrl(req.query.logo as string);
+      } else if (storeSettings?.logoUrl) {
+        logoDataUrl = storeSettings.logoUrl;
       } else if (branding.logo) {
         logoDataUrl = sanitizeUrl(branding.logo);
       } else {
@@ -5453,6 +5457,10 @@ function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null, s
     }
     .logo-container {
       margin-bottom: 10px;
+      background: #0A1628;
+      border-radius: 12px;
+      padding: 10px;
+      display: inline-block;
     }
     .logo {
       max-width: 90px;
@@ -5683,7 +5691,7 @@ function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null, s
     ` : ''}
     <div class="info-row">
       <span class="info-label">Total Achats:</span>
-      <span class="info-value">${(reseller.totalPurchases || 0).toLocaleString('fr-FR')} DA</span>
+      <span class="info-value">${(reseller.totalPurchases || 0).toLocaleString('fr-FR')} MRU</span>
     </div>
     <div class="info-row">
       <span class="info-label">Progression:</span>
@@ -5705,7 +5713,7 @@ function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null, s
         <tr>
           <td class="item-name">${item.productName}</td>
           <td class="item-qty">${item.quantity}</td>
-          <td>${item.total.toLocaleString('fr-FR')} DA</td>
+          <td>${item.total.toLocaleString('fr-FR')} MRU</td>
         </tr>
       `).join('')}
     </tbody>
@@ -5714,17 +5722,17 @@ function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null, s
   <div class="totals">
     <div class="totals-row">
       <span>Sous-total:</span>
-      <span>${(sale.total + (sale.discount || 0)).toLocaleString('fr-FR')} DA</span>
+      <span>${(sale.total + (sale.discount || 0)).toLocaleString('fr-FR')} MRU</span>
     </div>
     ${sale.discount > 0 ? `
     <div class="totals-row discount">
       <span>Remise:</span>
-      <span>-${sale.discount.toLocaleString('fr-FR')} DA</span>
+      <span>-${sale.discount.toLocaleString('fr-FR')} MRU</span>
     </div>
     ` : ''}
     <div class="totals-row grand-total">
       <span>TOTAL:</span>
-      <span>${sale.total.toLocaleString('fr-FR')} DA</span>
+      <span>${sale.total.toLocaleString('fr-FR')} MRU</span>
     </div>
   </div>
   
@@ -5737,7 +5745,7 @@ function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null, s
       <div class="payment-section">
         <div class="payment-row paid">
           <span>Montant Payé:</span>
-          <span>${sale.total.toLocaleString('fr-FR')} DA</span>
+          <span>${sale.total.toLocaleString('fr-FR')} MRU</span>
         </div>
         <div class="payment-row paid" style="font-weight:700;">
           <span>Statut:</span>
@@ -5749,11 +5757,11 @@ function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null, s
       <div class="payment-section">
         <div class="payment-row paid">
           <span>Montant Payé:</span>
-          <span>${amountPaid.toLocaleString('fr-FR')} DA</span>
+          <span>${amountPaid.toLocaleString('fr-FR')} MRU</span>
         </div>
         <div class="payment-row remaining">
           <span>Reste à Payer:</span>
-          <span>${remaining.toLocaleString('fr-FR')} DA</span>
+          <span>${remaining.toLocaleString('fr-FR')} MRU</span>
         </div>
       </div>`;
     } else if (status === 'credit' || amountPaid === 0) {
@@ -5761,11 +5769,11 @@ function generateReceiptHTML(sale: any, query: any = {}, reseller: any = null, s
       <div class="payment-section">
         <div class="payment-row">
           <span>Montant Payé:</span>
-          <span>0 DA</span>
+          <span>0 MRU</span>
         </div>
         <div class="payment-row remaining">
           <span>Crédit Restant:</span>
-          <span>${sale.total.toLocaleString('fr-FR')} DA</span>
+          <span>${sale.total.toLocaleString('fr-FR')} MRU</span>
         </div>
       </div>`;
     }

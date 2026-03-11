@@ -11,6 +11,12 @@ import type { Product, CmsBanner, StoreSettings, Category, StoreReview } from "@
 import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18-removebg-preview_1773192470477.png";
 import { LogoAnimation } from "@/components/logo-animation";
 
+function getProductName(product: Product, lang: string): string {
+  if (lang === "ar" && product.nameAr) return product.nameAr;
+  if (lang === "fr" && product.nameFr) return product.nameFr;
+  return product.name;
+}
+
 function DealCountdown({ accentColor }: { accentColor: string }) {
   const { t } = useStoreLanguage();
   const [timeLeft, setTimeLeft] = useState({ hours: 0, minutes: 0, seconds: 0 });
@@ -134,7 +140,7 @@ export default function StoreHome() {
         <Link href={`/store/products/${product.id}`}>
           <div className="h-48 md:h-56 overflow-hidden relative cursor-pointer" style={{ background: `linear-gradient(135deg, ${primaryColor}05, ${accentColor}08)` }}>
             {product.imageUrl ? (
-              <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover card-image" data-testid={`img-product-${product.id}`} />
+              <img src={product.imageUrl} alt={getProductName(product, lang)} className="h-full w-full object-cover card-image" data-testid={`img-product-${product.id}`} />
             ) : (
               <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100"><Package className="h-12 w-12 text-gray-300" /></div>
             )}
@@ -150,7 +156,7 @@ export default function StoreHome() {
         </Link>
         <div className="p-4">
           <Link href={`/store/products/${product.id}`}>
-            <h3 className="font-semibold text-sm mb-2 hover:underline cursor-pointer line-clamp-2" style={{ color: primaryColor }} data-testid={`link-product-${product.id}`}>{product.name}</h3>
+            <h3 className="font-semibold text-sm mb-2 hover:underline cursor-pointer line-clamp-2" style={{ color: primaryColor }} data-testid={`link-product-${product.id}`}>{getProductName(product, lang)}</h3>
           </Link>
           <div className="flex items-center justify-between mt-3">
             <div>
@@ -162,7 +168,7 @@ export default function StoreHome() {
               size="sm"
               className="rounded-full h-11 min-w-[44px] px-3 store-btn-gold"
               style={{ color: primaryColor }}
-              onClick={() => addItem({ productId: product.id, productName: product.name, unitPrice: effectivePrice, category: product.category, imageUrl: product.imageUrl })}
+              onClick={() => addItem({ productId: product.id, productName: getProductName(product, lang), unitPrice: effectivePrice, category: product.category, imageUrl: product.imageUrl })}
               data-testid={`button-add-cart-${product.id}`}
             >
               <ShoppingCart className="h-4 w-4" />
@@ -273,7 +279,7 @@ export default function StoreHome() {
                     <Link href={`/store/products/${product.id}`}>
                       <div className="h-48 md:h-56 overflow-hidden relative cursor-pointer" style={{ background: `linear-gradient(135deg, ${primaryColor}05, ${accentColor}08)` }}>
                         {product.imageUrl ? (
-                          <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover card-image" />
+                          <img src={product.imageUrl} alt={getProductName(product, lang)} className="h-full w-full object-cover card-image" />
                         ) : (
                           <div className="h-full w-full flex items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100"><Package className="h-12 w-12 text-gray-300" /></div>
                         )}
@@ -281,7 +287,7 @@ export default function StoreHome() {
                     </Link>
                     <div className="p-4">
                       <Link href={`/store/products/${product.id}`}>
-                        <h3 className="font-semibold text-sm mb-2 hover:underline cursor-pointer line-clamp-2" style={{ color: primaryColor }}>{product.name}</h3>
+                        <h3 className="font-semibold text-sm mb-2 hover:underline cursor-pointer line-clamp-2" style={{ color: primaryColor }}>{getProductName(product, lang)}</h3>
                       </Link>
                       <div className="flex items-center justify-between mt-3">
                         <div>
@@ -293,7 +299,7 @@ export default function StoreHome() {
                           size="sm"
                           className="rounded-full h-11 min-w-[44px] px-3 store-btn-gold"
                           style={{ color: primaryColor }}
-                          onClick={() => addItem({ productId: product.id, productName: product.name, unitPrice: discountedPrice, category: product.category, imageUrl: product.imageUrl })}
+                          onClick={() => addItem({ productId: product.id, productName: getProductName(product, lang), unitPrice: discountedPrice, category: product.category, imageUrl: product.imageUrl })}
                           data-testid={`button-add-deal-${product.id}`}
                         >
                           <ShoppingCart className="h-4 w-4" />

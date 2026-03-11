@@ -216,8 +216,43 @@ function SettingsTab() {
               <Input value={form.storeName || ""} onChange={e => setForm(f => ({ ...f, storeName: e.target.value }))} className="mt-1" data-testid="input-store-name" />
             </div>
             <div>
-              <Label>Logo URL</Label>
-              <Input value={form.logoUrl || ""} onChange={e => setForm(f => ({ ...f, logoUrl: e.target.value }))} className="mt-1" />
+              <Label>Logo</Label>
+              <div className="mt-1 space-y-2">
+                {form.logoUrl && (
+                  <div className="flex items-center gap-3">
+                    <div className="w-16 h-16 rounded-lg border flex items-center justify-center p-1" style={{ background: "#0A1628" }}>
+                      <img src={form.logoUrl} alt="Logo" className="max-w-full max-h-full object-contain" />
+                    </div>
+                    <Button variant="ghost" size="sm" onClick={() => setForm(f => ({ ...f, logoUrl: null }))} data-testid="button-remove-logo">
+                      <X className="h-4 w-4" />
+                    </Button>
+                  </div>
+                )}
+                <div className="flex gap-2">
+                  <Button variant="outline" size="sm" className="relative" data-testid="button-upload-logo">
+                    <Upload className="h-4 w-4 mr-1" /> Upload Logo
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="absolute inset-0 opacity-0 cursor-pointer"
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        if (file.size > 2 * 1024 * 1024) {
+                          toast({ title: "File too large (max 2MB)", variant: "destructive" });
+                          return;
+                        }
+                        const reader = new FileReader();
+                        reader.onload = (ev) => {
+                          const dataUrl = ev.target?.result as string;
+                          setForm(f => ({ ...f, logoUrl: dataUrl }));
+                        };
+                        reader.readAsDataURL(file);
+                      }}
+                    />
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
           <div>

@@ -5,12 +5,18 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, X, Package, ShoppingCart } from "lucide-react";
 import { useCart } from "@/contexts/cart-context";
-import type { StoreSettings } from "@shared/schema";
+import type { StoreSettings, Product } from "@shared/schema";
+
+function getProductName(product: Product, lang: string): string {
+  if (lang === "ar" && (product as any).nameAr) return (product as any).nameAr;
+  if (lang === "fr" && (product as any).nameFr) return (product as any).nameFr;
+  return product.name;
+}
 
 export default function StoreCompare() {
   const { compareItems, removeFromCompare, clearCompare } = useComparison();
   const { addItem } = useCart();
-  const { t } = useStoreLanguage();
+  const { t, lang } = useStoreLanguage();
 
   const { data: settings } = useQuery<StoreSettings>({
     queryKey: ["/api/store/settings"],
@@ -83,7 +89,7 @@ export default function StoreCompare() {
                   <Link href={`/store/products/${product.id}`}>
                     <div className="h-40 rounded-xl overflow-hidden store-card-premium cursor-pointer" style={{ background: `linear-gradient(135deg, ${primaryColor}05, ${accentColor}08)` }}>
                       {product.imageUrl ? (
-                        <img src={product.imageUrl} alt={product.name} className="h-full w-full object-cover card-image" />
+                        <img src={product.imageUrl} alt={getProductName(product, lang)} className="h-full w-full object-cover card-image" />
                       ) : (
                         <div className="h-full w-full flex items-center justify-center"><Package className="h-10 w-10 text-gray-300" /></div>
                       )}
@@ -97,7 +103,7 @@ export default function StoreCompare() {
               {compareItems.map(product => (
                 <td key={product.id} className="p-3">
                   <Link href={`/store/products/${product.id}`}>
-                    <h3 className="font-semibold text-sm hover:underline cursor-pointer" style={{ color: primaryColor }} data-testid={`text-compare-name-${product.id}`}>{product.name}</h3>
+                    <h3 className="font-semibold text-sm hover:underline cursor-pointer" style={{ color: primaryColor }} data-testid={`text-compare-name-${product.id}`}>{getProductName(product, lang)}</h3>
                   </Link>
                 </td>
               ))}
@@ -145,7 +151,7 @@ export default function StoreCompare() {
                     size="sm"
                     className="rounded-full store-btn-gold w-full"
                     style={{ color: primaryColor }}
-                    onClick={() => addItem({ productId: product.id, productName: product.name, unitPrice: product.unitPrice, category: product.category, imageUrl: product.imageUrl }, 1, product.stockQuantity)}
+                    onClick={() => addItem({ productId: product.id, productName: getProductName(product, lang), unitPrice: product.unitPrice, category: product.category, imageUrl: product.imageUrl }, 1, product.stockQuantity)}
                     disabled={product.stockQuantity === 0}
                     data-testid={`button-add-compare-${product.id}`}
                   >
