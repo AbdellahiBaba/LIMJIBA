@@ -484,7 +484,7 @@ export default function StoreHome() {
           <h2 className={`text-3xl md:text-4xl mb-4 ${lang === "ar" ? "brand-name-ar" : "brand-name-hero brand-glow"}`} data-text={lang === "ar" ? "لمجيبة" : "LIMJIBA"}>
             {lang === "ar" ? "لمجيبة" : "LIMJIBA"}
           </h2>
-          <p className="text-lg text-gray-300 mb-8 max-w-2xl mx-auto font-serif-brand" style={{ color: `${accentColor}cc` }}>
+          <p className={`text-lg text-gray-300 mb-8 max-w-2xl mx-auto ${lang === "ar" ? "brand-name-ar" : "font-serif-brand"}`} style={{ color: `${accentColor}cc` }}>
             {ctaSubtitle}
           </p>
           <Link href="/store/products">

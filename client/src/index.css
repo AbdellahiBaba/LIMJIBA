@@ -368,6 +368,13 @@ html[dir="rtl"] .right-0 {
   50% { opacity: 0.45; filter: blur(18px); }
 }
 
+.font-serif-brand-ar {
+  font-family: 'Amiri', 'Cairo', 'Tajawal', serif;
+  font-weight: 500;
+  font-style: italic;
+  line-height: 1.6;
+}
+
 .store-heading-ar {
   font-family: 'Amiri', 'Cairo', serif;
   font-weight: 700;
