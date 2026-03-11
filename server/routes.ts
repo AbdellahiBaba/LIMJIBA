@@ -38,7 +38,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { handleCustomerChat, handleAdminChat, generatePromoCode, getCustomerGreeting, generateProductDescriptions, generateNotificationContent } from "./limjiba";
-import { sendOrderStatusEmail, sendOrderInvoiceEmail, sendPaymentConfirmedEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail, sendProductMarketingEmail, sendAbandonedCartReminderEmail } from "./email";
+import { sendOrderStatusEmail, sendOrderInvoiceEmail, sendPaymentConfirmedEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail, sendProductMarketingEmail, sendAbandonedCartReminderEmail, setEmailSocialLinks } from "./email";
 
 function escapeHtml(str: string): string {
   return str
@@ -500,6 +500,19 @@ export async function registerRoutes(
   httpServer: Server,
   app: Express
 ): Promise<Server> {
+
+  (async () => {
+    try {
+      const settings = await storage.getStoreSettings();
+      if (settings?.socialLinks) {
+        try {
+          const links = JSON.parse(settings.socialLinks);
+          setEmailSocialLinks(links, "https://limjiba.com");
+          console.log("[EMAIL] Social links loaded for email footer");
+        } catch {}
+      }
+    } catch {}
+  })();
 
   // Health check endpoint for monitoring - ALWAYS returns 200
   // Reports DB status in body but never affects server availability
@@ -5351,6 +5364,12 @@ export async function registerRoutes(
     try {
       const data = insertStoreSettingsSchema.partial().parse(req.body);
       const updated = await storage.updateStoreSettings(data);
+      try {
+        const links = updated?.socialLinks ? JSON.parse(updated.socialLinks) : {};
+        setEmailSocialLinks(links);
+      } catch {
+        setEmailSocialLinks(null);
+      }
       res.json(updated);
     } catch (error) {
       handleError(res, "updateStoreSettings", error);

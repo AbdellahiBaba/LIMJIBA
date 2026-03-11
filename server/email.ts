@@ -4,6 +4,24 @@ function escHtml(str: string): string {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 }
 
+let _cachedSocialLinks: Record<string, string> = {};
+let _cachedWebsiteUrl = "https://limjiba.com";
+
+export function setEmailSocialLinks(socialLinks: Record<string, string> | null, websiteUrl?: string) {
+  if (!socialLinks || typeof socialLinks !== "object") {
+    _cachedSocialLinks = {};
+  } else {
+    const safe: Record<string, string> = {};
+    for (const [key, val] of Object.entries(socialLinks)) {
+      if (typeof val === "string" && /^https?:\/\//i.test(val.trim())) {
+        safe[key] = val.trim();
+      }
+    }
+    _cachedSocialLinks = safe;
+  }
+  if (websiteUrl) _cachedWebsiteUrl = websiteUrl;
+}
+
 const SMTP_HOST = process.env.SMTP_HOST || "smtp.zoho.com";
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || "465", 10);
 const SMTP_USER = process.env.SMTP_USER || "";
@@ -55,6 +73,26 @@ async function sendEmail(options: EmailOptions): Promise<boolean> {
   }
 }
 
+function buildSocialIconsHtml(): string {
+  const socials: Array<{ key: string; label: string; icon: string; color: string }> = [
+    { key: "whatsapp", label: "WhatsApp", icon: "W", color: "#25D366" },
+    { key: "instagram", label: "Instagram", icon: "I", color: "#E4405F" },
+    { key: "facebook", label: "Facebook", icon: "f", color: "#1877F2" },
+    { key: "snapchat", label: "Snapchat", icon: "S", color: "#FFFC00" },
+    { key: "tiktok", label: "TikTok", icon: "T", color: "#FF0050" },
+  ];
+
+  const icons = socials
+    .filter(s => _cachedSocialLinks[s.key]?.trim())
+    .map(s => {
+      const url = escHtml(_cachedSocialLinks[s.key].trim());
+      return `<a href="${url}" target="_blank" title="${s.label}" style="display:inline-block;width:36px;height:36px;line-height:36px;border-radius:50%;background:rgba(201,168,76,0.15);color:#C9A84C;text-decoration:none;font-size:14px;font-weight:700;margin:0 5px;border:1px solid rgba(201,168,76,0.25);">${s.icon}</a>`;
+    });
+
+  if (icons.length === 0) return "";
+  return `<div style="margin-bottom:8px;">${icons.join("")}</div>`;
+}
+
 function brandedHtml(content: string, dir: string = "ltr"): string {
   return `<!DOCTYPE html>
 <html dir="${dir}" lang="${dir === "rtl" ? "ar" : "en"}">
@@ -69,10 +107,19 @@ function brandedHtml(content: string, dir: string = "ltr"): string {
   <div style="padding:32px 28px;color:#0A1628;line-height:1.6;direction:${dir};">
     ${content}
   </div>
-  <div style="background:#0A1628;padding:24px;text-align:center;">
+  <div style="background:#0A1628;padding:32px 24px;text-align:center;">
+    <div style="width:60px;height:2px;background:linear-gradient(90deg,transparent,#C9A84C,transparent);margin:0 auto 20px;"></div>
+    ${buildSocialIconsHtml()}
+    <div style="margin:20px 0;">
+      <a href="${_cachedWebsiteUrl}" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#B8963F);color:#0A1628;text-decoration:none;padding:10px 28px;border-radius:6px;font-weight:700;font-size:13px;letter-spacing:1px;">limjiba.com</a>
+    </div>
+    <div style="width:40px;height:1px;background:rgba(201,168,76,0.2);margin:16px auto;"></div>
     <p style="color:rgba(201,168,76,0.8);margin:0;font-size:13px;font-weight:600;">LIMJIBA — IMPORTING</p>
-    <p style="color:rgba(255,255,255,0.4);margin:8px 0 0;font-size:11px;">© ${new Date().getFullYear()} LIMJIBA. All rights reserved.</p>
-    <p style="color:rgba(201,168,76,0.5);margin:4px 0 0;font-size:11px;">support@limjiba.com</p>
+    <p style="color:rgba(201,168,76,0.5);margin:6px 0 0;font-size:12px;">لمجيبة</p>
+    <p style="color:rgba(255,255,255,0.35);margin:10px 0 0;font-size:11px;">© ${new Date().getFullYear()} LIMJIBA. All rights reserved.</p>
+    <p style="color:rgba(201,168,76,0.4);margin:4px 0 0;font-size:11px;">
+      <a href="mailto:support@limjiba.com" style="color:rgba(201,168,76,0.5);text-decoration:none;">support@limjiba.com</a>
+    </p>
   </div>
 </div>
 </body></html>`;
