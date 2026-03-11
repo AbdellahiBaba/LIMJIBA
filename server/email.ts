@@ -103,11 +103,11 @@ function buildSocialIconsHtml(): string {
       const url = escHtml(_cachedSocialLinks[key].trim());
       const label = key.charAt(0).toUpperCase() + key.slice(1);
       const encodedSvg = Buffer.from(svg).toString("base64");
-      return `<a href="${url}" target="_blank" title="${label}" style="display:inline-block;width:38px;height:38px;border-radius:50%;background:${bg};margin:0 6px;text-decoration:none;text-align:center;line-height:38px;"><img src="data:image/svg+xml;base64,${encodedSvg}" alt="${label}" width="18" height="18" style="display:inline-block;vertical-align:middle;margin-top:10px;" /></a>`;
+      return `<a href="${url}" target="_blank" title="${label}" style="display:inline-block;width:40px;height:40px;border-radius:50%;background:${bg};margin:0 5px;text-decoration:none;overflow:hidden;"><table role="presentation" width="40" height="40" cellpadding="0" cellspacing="0" border="0"><tr><td align="center" valign="middle" style="padding:0;"><img src="data:image/svg+xml;base64,${encodedSvg}" alt="${label}" width="20" height="20" style="display:block;border:0;" /></td></tr></table></a>`;
     });
 
   if (icons.length === 0) return "";
-  return `<p style="color:rgba(201,168,76,0.6);margin:0 0 12px;font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:600;">Follow Us</p><div style="margin-bottom:8px;">${icons.join("")}</div>`;
+  return `<p style="color:rgba(201,168,76,0.6);margin:0 0 14px;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:600;">Follow Us</p><table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 8px;"><tr><td align="center" style="padding:0;">${icons.join("")}</td></tr></table>`;
 }
 
 function brandedHtml(content: string, dir: string = "ltr"): string {
@@ -127,8 +127,14 @@ function brandedHtml(content: string, dir: string = "ltr"): string {
   <div style="background:#0A1628;padding:32px 24px;text-align:center;">
     <div style="width:60px;height:2px;background:linear-gradient(90deg,transparent,#C9A84C,transparent);margin:0 auto 20px;"></div>
     ${buildSocialIconsHtml()}
-    <div style="margin:20px 0;">
-      <a href="${escHtml(_cachedWebsiteUrl)}" style="display:inline-block;background:#C9A84C;color:#0A1628;text-decoration:none;padding:12px 32px;border-radius:6px;font-weight:700;font-size:14px;letter-spacing:1px;">limjiba.com</a>
+    <div style="margin:24px 0;">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+        <tr>
+          <td align="center" style="background:#C9A84C;border-radius:8px;padding:0;">
+            <a href="${escHtml(_cachedWebsiteUrl)}" target="_blank" style="display:inline-block;color:#0A1628;text-decoration:none;padding:14px 44px;font-weight:700;font-size:14px;letter-spacing:2px;text-transform:uppercase;font-family:'Segoe UI',Arial,sans-serif;">&#10022; Visit Our Store &#10022;</a>
+          </td>
+        </tr>
+      </table>
     </div>
     <div style="width:40px;height:1px;background:rgba(201,168,76,0.2);margin:16px auto;"></div>
     <p style="color:rgba(201,168,76,0.8);margin:0;font-size:13px;font-weight:600;">LIMJIBA — IMPORTING</p>
