@@ -1,371 +1,327 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 
-const STORAGE_KEY = "limjiba_intro_seen_v2";
-const TOTAL_DURATION = 11500;
-
+/* ─── Keyframe styles injected once ─────────────────────────────── */
 function injectStyles() {
-  if (document.getElementById("limjiba-intro-styles")) return;
+  if (document.getElementById("lmj-mkt-styles")) return;
   const el = document.createElement("style");
-  el.id = "limjiba-intro-styles";
+  el.id = "lmj-mkt-styles";
   el.textContent = `
-    @keyframes li-fadein { from { opacity:0 } to { opacity:1 } }
-    @keyframes li-fadeout { from { opacity:1 } to { opacity:0 } }
-    @keyframes li-slideup { from { opacity:0; transform:translateY(40px) } to { opacity:1; transform:translateY(0) } }
-    @keyframes li-slidedown { from { opacity:0; transform:translateY(-40px) } to { opacity:1; transform:translateY(0) } }
-    @keyframes li-slideleft { from { opacity:0; transform:translateX(80px) } to { opacity:1; transform:translateX(0) } }
-    @keyframes li-slideright { from { opacity:0; transform:translateX(-80px) } to { opacity:1; transform:translateX(0) } }
-    @keyframes li-scalein { from { opacity:0; transform:scale(0.5) } to { opacity:1; transform:scale(1) } }
-    @keyframes li-pulse { 0%,100% { box-shadow:0 0 0 0 rgba(201,168,76,0.7) } 50% { box-shadow:0 0 0 18px rgba(201,168,76,0) } }
-    @keyframes li-glow { 0%,100% { text-shadow:0 0 20px #C9A84C,0 0 40px #C9A84C } 50% { text-shadow:0 0 60px #C9A84C,0 0 100px #C9A84C80 } }
-    @keyframes li-float { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-12px) } }
-    @keyframes li-particle { 0% { transform:translateY(0) rotate(0deg); opacity:1 } 100% { transform:translateY(120px) rotate(720deg); opacity:0 } }
-    @keyframes li-btnclick { 0%,100% { transform:scale(1) } 40% { transform:scale(0.92) } 60% { transform:scale(1.06) } }
-    @keyframes li-flyarc {
-      0% { transform:translate(0,0) scale(1); opacity:1 }
-      50% { transform:translate(120px,-80px) scale(0.6); opacity:0.8 }
-      100% { transform:translate(220px,40px) scale(0.2); opacity:0 }
+    @keyframes lmj-fadein  { from{opacity:0} to{opacity:1} }
+    @keyframes lmj-slideup { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+    @keyframes lmj-slideleft  { from{opacity:0;transform:translateX(30px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes lmj-slideright { from{opacity:0;transform:translateX(-30px)} to{opacity:1;transform:translateX(0)} }
+    @keyframes lmj-scalein { from{opacity:0;transform:scale(0.6)} to{opacity:1;transform:scale(1)} }
+    @keyframes lmj-float { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-6px)} }
+    @keyframes lmj-pulse  { 0%,100%{box-shadow:0 0 0 0 rgba(201,168,76,0.6)} 50%{box-shadow:0 0 0 10px rgba(201,168,76,0)} }
+    @keyframes lmj-glow   { 0%,100%{text-shadow:0 0 8px #C9A84C} 50%{text-shadow:0 0 20px #C9A84C,0 0 40px rgba(201,168,76,0.5)} }
+    @keyframes lmj-spin   { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+    @keyframes lmj-shimmer {
+      0%  { background-position:-200% center }
+      100%{ background-position: 200% center }
     }
-    @keyframes li-cartbounce { 0%,100% { transform:scale(1) } 50% { transform:scale(1.25) } }
-    @keyframes li-checkdraw { 0% { stroke-dashoffset:100 } 100% { stroke-dashoffset:0 } }
-    @keyframes li-circledraw { 0% { stroke-dashoffset:283 } 100% { stroke-dashoffset:0 } }
-    @keyframes li-confetti { 0% { transform:translateY(0) rotate(0deg) scale(1); opacity:1 } 100% { transform:translateY(160px) rotate(1080deg) scale(0); opacity:0 } }
-    @keyframes li-road { 0% { transform:translateX(0) } 100% { transform:translateX(-50%) } }
-    @keyframes li-bikespeed { 0% { transform:translateX(110vw) } 60% { transform:translateX(30vw) } 80% { transform:translateX(20vw) } 100% { transform:translateX(-120vw) } }
-    @keyframes li-speedline { 0% { transform:scaleX(0); opacity:0 } 30% { transform:scaleX(1); opacity:0.7 } 100% { transform:scaleX(1.5); opacity:0 } }
-    @keyframes li-star { 0%,100% { opacity:0.3 } 50% { opacity:1 } }
-    @keyframes li-exhaust { 0% { transform:scaleX(0); opacity:0.8 } 100% { transform:scaleX(3); opacity:0 } }
-    @keyframes li-shake { 0%,100% { transform:translateY(0) } 25% { transform:translateY(-3px) } 75% { transform:translateY(3px) } }
-    @keyframes li-spin { from { transform:rotate(0deg) } to { transform:rotate(360deg) } }
-    @keyframes li-wheelroll { from { transform:rotate(0deg) } to { transform:rotate(-1440deg) } }
-    @keyframes li-packagebounce { 0%,100% { transform:translateY(0) } 50% { transform:translateY(-5px) } }
-    @keyframes li-countdown { 0% { width:100% } 100% { width:0% } }
-    @keyframes li-shimmer { 0% { background-position:-200% center } 100% { background-position:200% center } }
-    .li-shimmer-text {
-      background: linear-gradient(90deg, #C9A84C 0%, #ffe9a0 40%, #C9A84C 60%, #B8963F 100%);
+    @keyframes lmj-particle {
+      0%  { transform:translateY(0) rotate(0deg); opacity:.9 }
+      100%{ transform:translateY(60px) rotate(540deg); opacity:0 }
+    }
+    @keyframes lmj-flyarc {
+      0%  { transform:translate(0,0) scale(1); opacity:1 }
+      50% { transform:translate(70px,-50px) scale(.55); opacity:.8 }
+      100%{ transform:translate(130px,20px) scale(.15); opacity:0 }
+    }
+    @keyframes lmj-cartbounce { 0%,100%{transform:scale(1)} 50%{transform:scale(1.3)} }
+    @keyframes lmj-btnclick   { 0%,100%{transform:scale(1)} 40%{transform:scale(.9)} 70%{transform:scale(1.08)} }
+    @keyframes lmj-checkdraw  { from{stroke-dashoffset:80} to{stroke-dashoffset:0} }
+    @keyframes lmj-circledraw { from{stroke-dashoffset:160} to{stroke-dashoffset:0} }
+    @keyframes lmj-confetti {
+      0%  { transform:translateY(0) rotate(0deg) scale(1); opacity:1 }
+      100%{ transform:translateY(90px) rotate(720deg) scale(0); opacity:0 }
+    }
+    @keyframes lmj-bike {
+      0%  { transform:translateX(380px) }
+      55% { transform:translateX(60px)  }
+      75% { transform:translateX(40px)  }
+      100%{ transform:translateX(-420px)}
+    }
+    @keyframes lmj-road { 0%{transform:translateX(0)} 100%{transform:translateX(-50%)} }
+    @keyframes lmj-speedline {
+      0%  { transform:scaleX(0); opacity:0 }
+      35% { transform:scaleX(1); opacity:.7 }
+      100%{ transform:scaleX(1.6); opacity:0 }
+    }
+    @keyframes lmj-star { 0%,100%{opacity:.2} 50%{opacity:.9} }
+    @keyframes lmj-exhaust { 0%{transform:scaleX(0);opacity:.6} 100%{transform:scaleX(2.5);opacity:0} }
+    @keyframes lmj-pkgbounce { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+    @keyframes lmj-countdown { 0%{width:100%} 100%{width:0%} }
+    @keyframes lmj-ripple { 0%{transform:scale(0);opacity:.6} 100%{transform:scale(3);opacity:0} }
+    @keyframes lmj-badge { 0%{transform:scale(0) rotate(-10deg)} 70%{transform:scale(1.1)} 100%{transform:scale(1) rotate(0)} }
+
+    .lmj-shimmer {
+      background: linear-gradient(90deg,#C9A84C 0%,#fff5cc 40%,#C9A84C 60%,#B8963F 100%);
       background-size: 200% auto;
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
       background-clip: text;
-      animation: li-shimmer 2s linear infinite;
+      animation: lmj-shimmer 2.5s linear infinite;
     }
+    .lmj-widget * { box-sizing: border-box; }
   `;
   document.head.appendChild(el);
 }
 
-function Particles() {
-  const particles = Array.from({ length: 22 }, (_, i) => ({
+/* ─── Mini particles ─────────────────────────────────────────────── */
+function MiniParticles({ count = 10 }: { count?: number }) {
+  const pts = Array.from({ length: count }, (_, i) => ({
     id: i,
-    left: `${Math.random() * 100}%`,
-    top: `${Math.random() * 60}%`,
-    size: Math.random() * 6 + 3,
+    left: `${5 + Math.random() * 90}%`,
+    top:  `${5 + Math.random() * 80}%`,
+    size: Math.random() * 4 + 2,
     delay: Math.random() * 2,
-    dur: Math.random() * 2 + 1.5,
+    dur:   Math.random() * 1.5 + 1,
     shape: i % 3,
   }));
   return (
     <div style={{ position:"absolute", inset:0, pointerEvents:"none", overflow:"hidden" }}>
-      {particles.map(p => (
+      {pts.map(p => (
         <div key={p.id} style={{
-          position:"absolute",
-          left:p.left,
-          top:p.top,
-          width:p.size,
-          height:p.size,
-          background: p.shape === 0 ? "#C9A84C" : p.shape === 1 ? "#FAF6EE" : "rgba(201,168,76,0.5)",
-          borderRadius: p.shape === 1 ? "0" : "50%",
-          transform: p.shape === 1 ? "rotate(45deg)" : "none",
-          animation:`li-particle ${p.dur}s ${p.delay}s ease-in infinite`,
-          opacity:0.8,
+          position:"absolute", left:p.left, top:p.top,
+          width:p.size, height:p.size,
+          background: p.shape===1 ? "#FAF6EE" : "#C9A84C",
+          borderRadius: p.shape===2 ? "0" : "50%",
+          transform: p.shape===2 ? "rotate(45deg)" : undefined,
+          animation:`lmj-particle ${p.dur}s ${p.delay}s ease-in infinite`,
+          opacity:0,
         }} />
       ))}
     </div>
   );
 }
 
-function Scene1Brand() {
+/* ─── SCENE 1: Brand reveal ─────────────────────────────────────── */
+function Scene1() {
   return (
-    <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", zIndex:1 }}>
-      <Particles />
-      <div style={{ animation:"li-scalein 0.7s cubic-bezier(0.34,1.56,0.64,1) both", marginBottom:24 }}>
+    <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
+      <MiniParticles count={12} />
+      <div style={{ animation:"lmj-scalein .5s cubic-bezier(.34,1.56,.64,1) both", marginBottom:10 }}>
         <div style={{
-          width:100, height:100, borderRadius:"50%",
-          background:"linear-gradient(135deg,#0A1628,#132240)",
-          border:"3px solid #C9A84C",
+          width:52, height:52, borderRadius:"50%",
+          background:"linear-gradient(135deg,#0A1628,#152338)",
+          border:"2px solid #C9A84C",
           display:"flex", alignItems:"center", justifyContent:"center",
-          boxShadow:"0 0 40px rgba(201,168,76,0.5), 0 0 80px rgba(201,168,76,0.2)",
-          animation:"li-pulse 2s ease-in-out infinite",
+          animation:"lmj-pulse 2s ease-in-out infinite",
+          boxShadow:"0 0 20px rgba(201,168,76,0.4)",
         }}>
-          <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
-            <polygon points="28,4 52,48 4,48" fill="none" stroke="#C9A84C" strokeWidth="3" strokeLinejoin="round" />
-            <circle cx="28" cy="34" r="6" fill="#C9A84C" />
-            <line x1="28" y1="18" x2="28" y2="28" stroke="#C9A84C" strokeWidth="3" strokeLinecap="round" />
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <polygon points="14,2 26,24 2,24" fill="none" stroke="#C9A84C" strokeWidth="2" strokeLinejoin="round"/>
+            <circle cx="14" cy="18" r="3" fill="#C9A84C"/>
+            <line x1="14" y1="9" x2="14" y2="14" stroke="#C9A84C" strokeWidth="2" strokeLinecap="round"/>
           </svg>
         </div>
       </div>
-      <div style={{ animation:"li-slideup 0.8s 0.4s both" }}>
-        <h1 className="li-shimmer-text" style={{ fontSize:"clamp(2.5rem,7vw,4.5rem)", fontWeight:900, letterSpacing:"0.15em", margin:0, lineHeight:1 }}>
+      <div style={{ animation:"lmj-slideup .5s .3s both" }}>
+        <h2 className="lmj-shimmer" style={{ fontSize:"1.6rem", fontWeight:900, letterSpacing:".15em", margin:0, lineHeight:1 }}>
           LIMJIBA
-        </h1>
+        </h2>
       </div>
-      <div style={{ animation:"li-slideup 0.6s 0.9s both", marginTop:8 }}>
-        <p style={{ color:"rgba(201,168,76,0.7)", fontSize:"clamp(0.75rem,2vw,1rem)", letterSpacing:"0.35em", textTransform:"uppercase", margin:0 }}>
-          لمجيبة &nbsp;•&nbsp; Premium Imports &nbsp;•&nbsp; Mauritania
+      <div style={{ animation:"lmj-fadein .5s .6s both", textAlign:"center", marginTop:6 }}>
+        <p style={{ color:"rgba(201,168,76,.65)", fontSize:".6rem", letterSpacing:".25em", margin:0, textTransform:"uppercase" }}>
+          لمجيبة · Premium Imports
         </p>
       </div>
-      <div style={{ animation:"li-slideup 0.6s 1.4s both", marginTop:32, display:"flex", gap:32 }}>
-        {["Free Delivery","Premium Quality","Trusted Store"].map((v,i) => (
-          <div key={i} style={{ textAlign:"center" }}>
-            <div style={{ width:36, height:36, borderRadius:"50%", background:"rgba(201,168,76,0.15)", border:"1px solid rgba(201,168,76,0.4)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 6px" }}>
-              {i===0 && <svg width="18" height="18" fill="none" stroke="#C9A84C" strokeWidth="2"><path d="M3 8.5L8 14l7-9"/></svg>}
-              {i===1 && <svg width="18" height="18" fill="none" stroke="#C9A84C" strokeWidth="2"><polygon points="9,2 11,7 17,7 12,11 14,16 9,13 4,16 6,11 1,7 7,7"/></svg>}
-              {i===2 && <svg width="18" height="18" fill="none" stroke="#C9A84C" strokeWidth="2"><path d="M9 2l1.5 4h4l-3.5 2.5 1.5 4L9 10l-3.5 2.5 1.5-4L3.5 6h4z"/></svg>}
-            </div>
-            <span style={{ color:"rgba(250,246,238,0.7)", fontSize:"0.65rem", letterSpacing:"0.1em" }}>{v}</span>
-          </div>
+      <div style={{ animation:"lmj-fadein .5s .9s both", marginTop:14, display:"flex", gap:12 }}>
+        {["🛍 500+ Products","⚡ Fast Delivery","🌟 Premium"].map((v,i) => (
+          <span key={i} style={{ color:"rgba(201,168,76,.6)", fontSize:".55rem", whiteSpace:"nowrap" }}>{v}</span>
         ))}
       </div>
     </div>
   );
 }
 
-function Scene2Cart() {
-  const [clicked, setClicked] = useState(false);
-  const [flying, setFlying] = useState(false);
-  const [cartBounce, setCartBounce] = useState(false);
-  const [count, setCount] = useState(0);
+/* ─── SCENE 2: Add to cart ──────────────────────────────────────── */
+function Scene2() {
+  const [clicked, setClicked]     = useState(false);
+  const [flying,  setFlying]      = useState(false);
+  const [bounce,  setBounce]      = useState(false);
+  const [count,   setCount]       = useState(0);
 
   useEffect(() => {
-    const t1 = setTimeout(() => { setClicked(true); }, 800);
-    const t2 = setTimeout(() => { setFlying(true); }, 1000);
-    const t3 = setTimeout(() => { setCartBounce(true); setCount(1); }, 1400);
-    const t4 = setTimeout(() => { setFlying(false); setClicked(false); }, 1800);
-    const t5 = setTimeout(() => { setCartBounce(false); }, 1900);
-    return () => { [t1,t2,t3,t4,t5].forEach(clearTimeout); };
+    const ts = [
+      setTimeout(() => setClicked(true),  900),
+      setTimeout(() => setFlying(true),   1050),
+      setTimeout(() => { setBounce(true); setCount(1); }, 1400),
+      setTimeout(() => { setFlying(false); setClicked(false); }, 1750),
+      setTimeout(() => setBounce(false),  1850),
+    ];
+    return () => ts.forEach(clearTimeout);
   }, []);
 
   return (
-    <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", zIndex:1 }}>
-      <div style={{ display:"flex", gap:"clamp(24px,5vw,60px)", alignItems:"center", padding:"0 24px", width:"100%", maxWidth:640, justifyContent:"center" }}>
-        {/* Product Card */}
-        <div style={{ animation:"li-slideright 0.6s 0.2s cubic-bezier(0.34,1.56,0.64,1) both", position:"relative" }}>
+    <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", gap:16, padding:"0 14px" }}>
+      {/* Product card */}
+      <div style={{ animation:"lmj-slideright .5s .2s cubic-bezier(.34,1.56,.64,1) both", position:"relative", flexShrink:0 }}>
+        <div style={{
+          background:"linear-gradient(135deg,#0d1e3a,#182d52)",
+          border:"1.5px solid rgba(201,168,76,.35)",
+          borderRadius:12, padding:"12px 12px 10px",
+          width:118, boxShadow:"0 12px 40px rgba(0,0,0,.5)",
+        }}>
           <div style={{
-            background:"linear-gradient(135deg,#0f2040,#1a3a6e)",
-            border:"1.5px solid rgba(201,168,76,0.4)",
-            borderRadius:16,
-            padding:"20px 20px 16px",
-            width:"clamp(150px,35vw,200px)",
-            boxShadow:"0 20px 60px rgba(0,0,0,0.5)",
+            height:58, background:"rgba(201,168,76,.1)", borderRadius:8, marginBottom:8,
+            display:"flex", alignItems:"center", justifyContent:"center", position:"relative",
           }}>
-            <div style={{
-              height:"clamp(90px,18vw,110px)",
-              background:"linear-gradient(135deg,rgba(201,168,76,0.1),rgba(201,168,76,0.2))",
-              borderRadius:10, marginBottom:12,
-              display:"flex", alignItems:"center", justifyContent:"center",
-              position:"relative", overflow:"hidden",
-            }}>
-              <svg width="60" height="60" viewBox="0 0 60 60" fill="none">
-                <rect x="10" y="15" width="40" height="32" rx="4" fill="rgba(201,168,76,0.3)" stroke="#C9A84C" strokeWidth="1.5"/>
-                <rect x="18" y="22" width="24" height="18" rx="2" fill="rgba(201,168,76,0.15)" stroke="#C9A84C" strokeWidth="1"/>
-                <circle cx="30" cy="31" r="5" fill="#C9A84C" opacity="0.7"/>
-                <line x1="10" y1="47" x2="50" y2="47" stroke="#C9A84C" strokeWidth="1" opacity="0.4"/>
-              </svg>
-              <div style={{ position:"absolute", top:6, right:6, background:"#C9A84C", borderRadius:4, padding:"2px 6px" }}>
-                <span style={{ color:"#0A1628", fontSize:"0.6rem", fontWeight:700 }}>NEW</span>
-              </div>
-            </div>
-            <div style={{ marginBottom:4 }}>
-              <p style={{ color:"#FAF6EE", fontSize:"clamp(0.7rem,2vw,0.85rem)", fontWeight:700, margin:0, whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>Premium Product</p>
-              <p style={{ color:"rgba(250,246,238,0.5)", fontSize:"0.65rem", margin:"2px 0 0" }}>LIMJIBA Store</p>
-            </div>
-            <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:8 }}>
-              <span style={{ color:"#C9A84C", fontWeight:800, fontSize:"clamp(0.85rem,2.5vw,1.1rem)" }}>850 MRU</span>
-              <button
-                style={{
-                  background: clicked ? "linear-gradient(135deg,#C9A84C,#B8963F)" : "rgba(201,168,76,0.15)",
-                  border:"1px solid #C9A84C",
-                  color: clicked ? "#0A1628" : "#C9A84C",
-                  borderRadius:8, padding:"5px 10px",
-                  fontSize:"0.65rem", fontWeight:700, cursor:"pointer",
-                  animation: clicked ? "li-btnclick 0.4s ease" : "none",
-                  transition:"background 0.2s, color 0.2s",
-                  position:"relative", zIndex:2,
-                }}
-              >
-                + Cart
-              </button>
+            <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+              <rect x="5" y="8" width="24" height="18" rx="3" fill="rgba(201,168,76,.25)" stroke="#C9A84C" strokeWidth="1.2"/>
+              <rect x="10" y="13" width="14" height="10" rx="1.5" fill="rgba(201,168,76,.1)" stroke="#C9A84C" strokeWidth=".8"/>
+              <circle cx="17" cy="18" r="3" fill="#C9A84C" opacity=".7"/>
+            </svg>
+            <div style={{ position:"absolute", top:4, right:4, background:"#C9A84C", borderRadius:3, padding:"1px 5px" }}>
+              <span style={{ color:"#0A1628", fontSize:".5rem", fontWeight:700 }}>NEW</span>
             </div>
           </div>
+          <p style={{ color:"#FAF6EE", fontSize:".65rem", fontWeight:700, margin:"0 0 2px", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>Premium Product</p>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:6 }}>
+            <span style={{ color:"#C9A84C", fontWeight:800, fontSize:".72rem" }}>850 MRU</span>
+            <button style={{
+              background: clicked ? "linear-gradient(135deg,#C9A84C,#B8963F)" : "rgba(201,168,76,.15)",
+              border:"1px solid #C9A84C", color: clicked ? "#0A1628" : "#C9A84C",
+              borderRadius:6, padding:"3px 7px", fontSize:".55rem", fontWeight:700,
+              animation: clicked ? "lmj-btnclick .35s ease" : "none",
+              transition:"background .2s, color .2s", cursor:"pointer",
+            }}>+ Cart</button>
+          </div>
+        </div>
+        {/* Flying dot */}
+        {flying && (
+          <div style={{
+            position:"absolute", top:"40%", right:"5%",
+            width:12, height:12, borderRadius:"50%", background:"#C9A84C",
+            animation:"lmj-flyarc .7s cubic-bezier(.25,.46,.45,.94) forwards", zIndex:10,
+          }} />
+        )}
+      </div>
 
-          {/* Flying item */}
-          {flying && (
+      {/* Cart */}
+      <div style={{ animation:"lmj-slideleft .5s .35s cubic-bezier(.34,1.56,.64,1) both", flexShrink:0, textAlign:"center" }}>
+        <div style={{
+          width:58, height:58,
+          background:"rgba(201,168,76,.1)", border:"2px solid rgba(201,168,76,.45)",
+          borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center",
+          position:"relative",
+          animation: bounce ? "lmj-cartbounce .35s ease" : "none",
+          boxShadow: bounce ? "0 0 18px rgba(201,168,76,.5)" : "none",
+          transition:"box-shadow .3s",
+        }}>
+          <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
+            <path d="M2 2h4l4 14h12l3-10H8" stroke="#C9A84C" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+            <circle cx="11" cy="24" r="2" fill="#C9A84C"/>
+            <circle cx="20" cy="24" r="2" fill="#C9A84C"/>
+          </svg>
+          {count > 0 && (
             <div style={{
-              position:"absolute", top:"40%", right:"10%",
-              width:20, height:20,
-              background:"linear-gradient(135deg,#C9A84C,#B8963F)",
-              borderRadius:"50%",
-              animation:"li-flyarc 0.8s cubic-bezier(0.25,0.46,0.45,0.94) forwards",
-              zIndex:10,
-            }} />
+              position:"absolute", top:-7, right:-7, width:16, height:16, borderRadius:"50%",
+              background:"#C9A84C", color:"#0A1628", fontSize:".55rem", fontWeight:900,
+              display:"flex", alignItems:"center", justifyContent:"center",
+              animation:"lmj-scalein .3s cubic-bezier(.34,1.56,.64,1)",
+            }}>{count}</div>
           )}
         </div>
-
-        {/* Cart */}
-        <div style={{ animation:"li-slideleft 0.6s 0.4s cubic-bezier(0.34,1.56,0.64,1) both", textAlign:"center" }}>
-          <div style={{
-            width:"clamp(80px,18vw,110px)", height:"clamp(80px,18vw,110px)",
-            background:"linear-gradient(135deg,rgba(201,168,76,0.15),rgba(201,168,76,0.05))",
-            border:"2px solid rgba(201,168,76,0.5)",
-            borderRadius:20,
-            display:"flex", alignItems:"center", justifyContent:"center",
-            position:"relative",
-            animation: cartBounce ? "li-cartbounce 0.4s ease" : "none",
-            boxShadow: cartBounce ? "0 0 30px rgba(201,168,76,0.5)" : "0 0 0 rgba(0,0,0,0)",
-            transition:"box-shadow 0.3s",
-          }}>
-            <svg width="44" height="44" viewBox="0 0 44 44" fill="none">
-              <path d="M4 4h5l6 20h18l4-14H12" stroke="#C9A84C" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
-              <circle cx="18" cy="38" r="3" fill="#C9A84C"/>
-              <circle cx="32" cy="38" r="3" fill="#C9A84C"/>
-            </svg>
-            {count > 0 && (
-              <div style={{
-                position:"absolute", top:-8, right:-8,
-                width:22, height:22, borderRadius:"50%",
-                background:"#C9A84C", color:"#0A1628",
-                fontSize:"0.7rem", fontWeight:900,
-                display:"flex", alignItems:"center", justifyContent:"center",
-                animation:"li-scalein 0.3s cubic-bezier(0.34,1.56,0.64,1)",
-              }}>{count}</div>
-            )}
-          </div>
-          <p style={{ color:"rgba(250,246,238,0.6)", fontSize:"0.7rem", marginTop:8, letterSpacing:"0.1em" }}>YOUR CART</p>
-        </div>
+        <p style={{ color:"rgba(201,168,76,.55)", fontSize:".55rem", margin:"5px 0 0", letterSpacing:".1em" }}>YOUR CART</p>
       </div>
-      <div style={{ position:"absolute", bottom:"12%", left:"50%", transform:"translateX(-50%)", animation:"li-slideup 0.6s 1.2s both", textAlign:"center" }}>
-        <p style={{ color:"#C9A84C", fontSize:"clamp(1.1rem,3vw,1.6rem)", fontWeight:800, margin:0 }}>Shop Anything. Anytime.</p>
-        <p style={{ color:"rgba(250,246,238,0.5)", fontSize:"clamp(0.7rem,1.8vw,0.85rem)", margin:"6px 0 0" }}>Thousands of premium products at your fingertips</p>
+
+      {/* Label */}
+      <div style={{ position:"absolute", bottom:8, left:0, right:0, textAlign:"center", animation:"lmj-fadein .5s 1s both" }}>
+        <p style={{ color:"#C9A84C", fontSize:".65rem", fontWeight:700, margin:0 }}>Shop Anything. Anytime.</p>
       </div>
     </div>
   );
 }
 
-function Confetti() {
-  const pieces = Array.from({ length: 24 }, (_, i) => ({
-    id: i,
-    left: `${20 + Math.random() * 60}%`,
-    color: ["#C9A84C","#FAF6EE","#0A1628","#B8963F","#ffe9a0"][i % 5],
-    size: Math.random() * 8 + 5,
-    delay: Math.random() * 0.5,
-    dur: Math.random() * 1 + 0.8,
-    rotation: Math.random() * 360,
+/* ─── SCENE 3: Checkout confirmed ───────────────────────────────── */
+function MiniConfetti() {
+  const pcs = Array.from({ length: 18 }, (_,i) => ({
+    id:i, left:`${15+Math.random()*70}%`,
+    color:["#C9A84C","#FAF6EE","#B8963F","#ffe9a0","#0A1628"][i%5],
+    size:Math.random()*7+4, delay:Math.random()*.4, dur:Math.random()*.8+.7,
   }));
   return (
-    <div style={{ position:"absolute", top:"30%", left:0, right:0, height:"70%", pointerEvents:"none", overflow:"hidden" }}>
-      {pieces.map(p => (
+    <div style={{ position:"absolute", top:"25%", left:0, right:0, height:"75%", pointerEvents:"none", overflow:"hidden" }}>
+      {pcs.map(p => (
         <div key={p.id} style={{
           position:"absolute", left:p.left,
-          width:p.size, height:p.size,
-          background:p.color,
-          borderRadius: p.id % 3 === 0 ? "50%" : p.id % 3 === 1 ? "2px" : "0",
-          transform:`rotate(${p.rotation}deg)`,
-          animation:`li-confetti ${p.dur}s ${p.delay}s ease-in forwards`,
+          width:p.size, height:p.size, background:p.color,
+          borderRadius:p.id%3===0?"50%":"2px",
+          animation:`lmj-confetti ${p.dur}s ${p.delay}s ease-in forwards`,
         }} />
       ))}
     </div>
   );
 }
 
-function Scene3Checkout() {
-  const [showCheck, setShowCheck] = useState(false);
-  const [showConfetti, setShowConfetti] = useState(false);
+function Scene3() {
   const [btnPressed, setBtnPressed] = useState(false);
-  const [showSpinner, setShowSpinner] = useState(false);
+  const [spinner,    setSpinner]    = useState(false);
+  const [done,       setDone]       = useState(false);
+  const [confetti,   setConfetti]   = useState(false);
 
   useEffect(() => {
-    const t1 = setTimeout(() => { setBtnPressed(true); }, 700);
-    const t2 = setTimeout(() => { setShowSpinner(true); setBtnPressed(false); }, 900);
-    const t3 = setTimeout(() => { setShowSpinner(false); setShowCheck(true); }, 1700);
-    const t4 = setTimeout(() => { setShowConfetti(true); }, 1800);
-    return () => { [t1,t2,t3,t4].forEach(clearTimeout); };
+    const ts = [
+      setTimeout(() => setBtnPressed(true),  700),
+      setTimeout(() => { setSpinner(true); setBtnPressed(false); }, 900),
+      setTimeout(() => { setSpinner(false); setDone(true); }, 1650),
+      setTimeout(() => setConfetti(true),    1750),
+    ];
+    return () => ts.forEach(clearTimeout);
   }, []);
 
   return (
-    <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", zIndex:1 }}>
-      {showConfetti && <Confetti />}
-      <div style={{ animation:"li-slideup 0.5s cubic-bezier(0.34,1.56,0.64,1) both", width:"90%", maxWidth:360 }}>
+    <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 12px" }}>
+      {confetti && <MiniConfetti />}
+      <div style={{ animation:"lmj-slideup .5s cubic-bezier(.34,1.56,.64,1) both", width:"100%" }}>
         <div style={{
-          background:"linear-gradient(135deg,#0f2040,#1a3a6e)",
-          border:"1.5px solid rgba(201,168,76,0.4)",
-          borderRadius:20,
-          padding:"24px 24px 20px",
-          boxShadow:"0 30px 80px rgba(0,0,0,0.6)",
+          background:"linear-gradient(135deg,#0d1e3a,#182d52)",
+          border:"1.5px solid rgba(201,168,76,.35)",
+          borderRadius:14, padding:"14px 14px 12px",
+          boxShadow:"0 16px 50px rgba(0,0,0,.55)",
         }}>
-          {/* Order summary header */}
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:16, paddingBottom:12, borderBottom:"1px solid rgba(201,168,76,0.2)" }}>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10, paddingBottom:8, borderBottom:"1px solid rgba(201,168,76,.15)" }}>
             <div>
-              <p style={{ color:"rgba(250,246,238,0.5)", fontSize:"0.65rem", letterSpacing:"0.15em", margin:0 }}>ORDER SUMMARY</p>
-              <p style={{ color:"#FAF6EE", fontWeight:800, fontSize:"1rem", margin:"2px 0 0" }}>LIMJIBA #8942</p>
+              <p style={{ color:"rgba(250,246,238,.45)", fontSize:".52rem", letterSpacing:".15em", margin:0 }}>ORDER SUMMARY</p>
+              <p style={{ color:"#FAF6EE", fontWeight:800, fontSize:".78rem", margin:"1px 0 0" }}>LIMJIBA #8942</p>
             </div>
-            <div style={{ background:"rgba(201,168,76,0.15)", border:"1px solid rgba(201,168,76,0.3)", borderRadius:8, padding:"4px 10px" }}>
-              <span style={{ color:"#C9A84C", fontSize:"0.65rem", fontWeight:700 }}>1 ITEM</span>
-            </div>
+            <span style={{ background:"rgba(201,168,76,.15)", border:"1px solid rgba(201,168,76,.3)", borderRadius:6, padding:"2px 7px", color:"#C9A84C", fontSize:".5rem", fontWeight:700 }}>1 ITEM</span>
           </div>
-          {/* Item */}
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:8 }}>
-            <div style={{ display:"flex", gap:10, alignItems:"center" }}>
-              <div style={{ width:36, height:36, borderRadius:8, background:"rgba(201,168,76,0.15)", display:"flex", alignItems:"center", justifyContent:"center" }}>
-                <svg width="18" height="18" fill="none" stroke="#C9A84C" strokeWidth="1.5"><rect x="2" y="4" width="14" height="11" rx="2"/><path d="M6 4V3a2 2 0 014 0v1"/></svg>
-              </div>
-              <div>
-                <p style={{ color:"#FAF6EE", fontSize:"0.75rem", fontWeight:600, margin:0 }}>Premium Product</p>
-                <p style={{ color:"rgba(250,246,238,0.4)", fontSize:"0.65rem", margin:0 }}>Qty: 1</p>
-              </div>
-            </div>
-            <span style={{ color:"#C9A84C", fontWeight:700, fontSize:"0.85rem" }}>850 MRU</span>
+          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
+            <span style={{ color:"rgba(250,246,238,.7)", fontSize:".65rem" }}>Premium Product</span>
+            <span style={{ color:"#C9A84C", fontWeight:700, fontSize:".65rem" }}>850 MRU</span>
           </div>
-          {/* Total */}
-          <div style={{ background:"rgba(201,168,76,0.08)", borderRadius:10, padding:"10px 14px", margin:"12px 0", display:"flex", justifyContent:"space-between" }}>
-            <span style={{ color:"rgba(250,246,238,0.7)", fontSize:"0.8rem" }}>Total</span>
-            <span style={{ color:"#C9A84C", fontWeight:900, fontSize:"1.1rem" }}>850 MRU</span>
+          <div style={{ background:"rgba(201,168,76,.08)", borderRadius:8, padding:"7px 10px", marginBottom:10, display:"flex", justifyContent:"space-between" }}>
+            <span style={{ color:"rgba(250,246,238,.6)", fontSize:".62rem" }}>Total</span>
+            <span style={{ color:"#C9A84C", fontWeight:900, fontSize:".85rem" }}>850 MRU</span>
           </div>
-          {/* Confirm Button or Checkmark */}
-          {!showCheck ? (
+          {!done ? (
             <button style={{
-              width:"100%",
-              background: btnPressed ? "linear-gradient(135deg,#B8963F,#9a7d35)" : "linear-gradient(135deg,#C9A84C,#B8963F)",
-              border:"none", borderRadius:12, padding:"13px",
-              color:"#0A1628", fontWeight:800, fontSize:"0.9rem",
-              cursor:"pointer", letterSpacing:"0.08em",
-              transform: btnPressed ? "scale(0.97)" : "scale(1)",
-              transition:"all 0.15s",
-              display:"flex", alignItems:"center", justifyContent:"center", gap:8,
+              width:"100%", background: btnPressed ? "linear-gradient(135deg,#B8963F,#9a7d35)" : "linear-gradient(135deg,#C9A84C,#B8963F)",
+              border:"none", borderRadius:8, padding:"9px",
+              color:"#0A1628", fontWeight:800, fontSize:".65rem", letterSpacing:".08em",
+              transform: btnPressed ? "scale(.96)" : "scale(1)", transition:"all .15s",
+              display:"flex", alignItems:"center", justifyContent:"center", gap:6,
             }}>
-              {showSpinner ? (
-                <svg width="20" height="20" viewBox="0 0 20 20" style={{ animation:"li-spin 0.8s linear infinite" }}>
-                  <circle cx="10" cy="10" r="8" stroke="rgba(10,22,40,0.3)" strokeWidth="2" fill="none"/>
-                  <path d="M10 2 A8 8 0 0 1 18 10" stroke="#0A1628" strokeWidth="2" fill="none" strokeLinecap="round"/>
-                </svg>
-              ) : (
-                <>
-                  <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M2 8l4 4 8-8"/></svg>
-                  CONFIRM ORDER
-                </>
-              )}
+              {spinner
+                ? <svg width="14" height="14" viewBox="0 0 14 14" style={{ animation:"lmj-spin .7s linear infinite" }}><circle cx="7" cy="7" r="5" stroke="rgba(10,22,40,.3)" strokeWidth="2" fill="none"/><path d="M7 2 A5 5 0 0 1 12 7" stroke="#0A1628" strokeWidth="2" fill="none" strokeLinecap="round"/></svg>
+                : <><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M1 6l3.5 3.5L11 2"/></svg> CONFIRM ORDER</>
+              }
             </button>
           ) : (
-            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", animation:"li-scalein 0.5s cubic-bezier(0.34,1.56,0.64,1)" }}>
-              <div style={{ width:60, height:60, position:"relative", marginBottom:8 }}>
-                <svg width="60" height="60" viewBox="0 0 60 60">
-                  <circle cx="30" cy="30" r="27" stroke="#C9A84C" strokeWidth="3" fill="none"
-                    strokeDasharray="283" strokeDashoffset="0"
-                    style={{ animation:"li-circledraw 0.5s ease forwards" }}/>
-                  <polyline points="17,30 26,39 44,21" stroke="#C9A84C" strokeWidth="4" fill="none" strokeLinecap="round" strokeLinejoin="round"
-                    strokeDasharray="100" strokeDashoffset="0"
-                    style={{ animation:"li-checkdraw 0.4s 0.3s ease forwards" }}/>
-                </svg>
-              </div>
-              <p style={{ color:"#C9A84C", fontWeight:800, fontSize:"1rem", margin:0 }}>Order Confirmed!</p>
-              <p style={{ color:"rgba(250,246,238,0.5)", fontSize:"0.7rem", margin:"4px 0 0" }}>Get ready for lightning delivery ⚡</p>
+            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", animation:"lmj-scalein .45s cubic-bezier(.34,1.56,.64,1)" }}>
+              <svg width="40" height="40" viewBox="0 0 40 40">
+                <circle cx="20" cy="20" r="17" stroke="#C9A84C" strokeWidth="2.5" fill="none"
+                  strokeDasharray="107" strokeDashoffset="0"
+                  style={{ animation:"lmj-circledraw .45s ease forwards" }}/>
+                <polyline points="11,20 17,26 29,13" stroke="#C9A84C" strokeWidth="3" fill="none"
+                  strokeLinecap="round" strokeLinejoin="round"
+                  strokeDasharray="80" strokeDashoffset="0"
+                  style={{ animation:"lmj-checkdraw .35s .3s ease forwards" }}/>
+              </svg>
+              <p style={{ color:"#C9A84C", fontWeight:800, fontSize:".7rem", margin:"4px 0 0" }}>Order Confirmed! ✨</p>
             </div>
           )}
         </div>
@@ -374,183 +330,132 @@ function Scene3Checkout() {
   );
 }
 
-function DeliveryBike({ active }: { active: boolean }) {
-  return (
-    <div style={{
-      position:"absolute", bottom:"28%", left:0, width:"100%",
-      animation: active ? "li-bikespeed 3.8s cubic-bezier(0.2,0,0.8,1) forwards" : "none",
-      pointerEvents:"none",
-    }}>
-      {/* Speed lines */}
-      {active && Array.from({length: 6}, (_,i) => (
-        <div key={i} style={{
-          position:"absolute",
-          right:`calc(100% + ${10 + i*15}px)`,
-          top:`${20 + i*12}%`,
-          width:`${60 + i*20}px`,
-          height:2,
-          background:"linear-gradient(90deg,transparent,rgba(201,168,76,0.8))",
-          borderRadius:2,
-          transformOrigin:"right center",
-          animation:`li-speedline 0.4s ${i*0.05}s ease-out infinite`,
-        }} />
-      ))}
-
-      {/* Exhaust puff */}
-      {active && (
-        <div style={{
-          position:"absolute", right:"calc(100% + 5px)", top:"40%",
-          width:30, height:14,
-          background:"rgba(250,246,238,0.15)",
-          borderRadius:"50%",
-          animation:"li-exhaust 0.5s ease-out infinite",
-          transformOrigin:"left center",
-        }} />
-      )}
-
-      {/* Motorbike SVG */}
-      <svg width="200" height="110" viewBox="0 0 200 110" fill="none" xmlns="http://www.w3.org/2000/svg"
-        style={{ filter:"drop-shadow(0 10px 30px rgba(0,0,0,0.7))", display:"block" }}>
-        {/* Rear wheel */}
-        <circle cx="42" cy="80" r="26" stroke="#C9A84C" strokeWidth="4" fill="#060B14"/>
-        <circle cx="42" cy="80" r="12" stroke="rgba(201,168,76,0.5)" strokeWidth="2" fill="none"/>
-        <circle cx="42" cy="80" r="3" fill="#C9A84C"/>
-        {/* Spokes */}
-        {[0,45,90,135].map(a => (
-          <line key={a}
-            x1={42 + 12*Math.cos(a*Math.PI/180)} y1={80 + 12*Math.sin(a*Math.PI/180)}
-            x2={42 + 23*Math.cos(a*Math.PI/180)} y2={80 + 23*Math.sin(a*Math.PI/180)}
-            stroke="rgba(201,168,76,0.6)" strokeWidth="1.5"
-            style={{ animation:"li-wheelroll 0.6s linear infinite" }}
-          />
-        ))}
-        {/* Rear wheel */}
-        <circle cx="158" cy="80" r="26" stroke="#C9A84C" strokeWidth="4" fill="#060B14"/>
-        <circle cx="158" cy="80" r="12" stroke="rgba(201,168,76,0.5)" strokeWidth="2" fill="none"/>
-        <circle cx="158" cy="80" r="3" fill="#C9A84C"/>
-        {[0,45,90,135].map(a => (
-          <line key={a}
-            x1={158 + 12*Math.cos(a*Math.PI/180)} y1={80 + 12*Math.sin(a*Math.PI/180)}
-            x2={158 + 23*Math.cos(a*Math.PI/180)} y2={80 + 23*Math.sin(a*Math.PI/180)}
-            stroke="rgba(201,168,76,0.6)" strokeWidth="1.5"
-            style={{ animation:"li-wheelroll 0.6s linear infinite" }}
-          />
-        ))}
-        {/* Frame body */}
-        <path d="M42 56 L80 44 L140 44 L158 56 L158 80 L42 80 Z" fill="#0A1628" stroke="#C9A84C" strokeWidth="2"/>
-        {/* Engine block */}
-        <rect x="75" y="52" width="50" height="24" rx="4" fill="#132240" stroke="rgba(201,168,76,0.4)" strokeWidth="1"/>
-        {/* Exhaust pipe */}
-        <path d="M42 70 L20 70 L16 78" stroke="#C9A84C" strokeWidth="2" strokeLinecap="round"/>
-        {/* Front fork */}
-        <path d="M150 56 L165 68 L158 80" stroke="#C9A84C" strokeWidth="3" strokeLinecap="round"/>
-        {/* Handlebar */}
-        <path d="M140 44 L148 32 L158 34" stroke="#C9A84C" strokeWidth="2.5" strokeLinecap="round"/>
-        {/* Seat */}
-        <path d="M80 44 L120 44 L118 36 L82 36 Z" fill="#C9A84C" opacity="0.8"/>
-        {/* Rider body */}
-        <path d="M100 36 L110 16 L125 20 L118 36 Z" fill="#0A1628" stroke="#C9A84C" strokeWidth="1.5"/>
-        {/* Rider helmet */}
-        <circle cx="113" cy="13" r="12" fill="#C9A84C"/>
-        <ellipse cx="113" cy="16" rx="10" ry="7" fill="#0A1628"/>
-        <path d="M105 12 Q113 6 121 12" stroke="#C9A84C" strokeWidth="1" fill="none"/>
-        {/* Rider arm */}
-        <path d="M118 24 L148 32" stroke="#C9A84C" strokeWidth="2.5" strokeLinecap="round"/>
-        {/* Headlight */}
-        <ellipse cx="164" cy="58" rx="6" ry="4" fill="#C9A84C" opacity="0.9"/>
-        <path d="M170 54 L186 50 M170 58 L190 58 M170 62 L186 66" stroke="#C9A84C" strokeWidth="1.5" strokeLinecap="round" opacity="0.6"/>
-      </svg>
-
-      {/* Package on back */}
-      <div style={{
-        position:"absolute", right:68, bottom:30,
-        animation:"li-packagebounce 0.3s ease-in-out infinite",
-      }}>
-        <svg width="44" height="40" viewBox="0 0 44 40" fill="none">
-          <rect x="2" y="8" width="40" height="30" rx="4" fill="#C9A84C"/>
-          <rect x="2" y="8" width="40" height="10" rx="4" fill="#B8963F"/>
-          <line x1="22" y1="8" x2="22" y2="38" stroke="#0A1628" strokeWidth="2"/>
-          <line x1="2" y1="20" x2="42" y2="20" stroke="#0A1628" strokeWidth="2"/>
-          <text x="22" y="34" textAnchor="middle" fill="#0A1628" fontSize="8" fontWeight="bold">LMJ</text>
-        </svg>
-      </div>
-    </div>
-  );
-}
-
-function Scene4Delivery() {
-  const [bikeActive, setBikeActive] = useState(false);
-  const stars = Array.from({length:30}, (_,i) => ({
-    id:i, x:`${Math.random()*100}%`, y:`${Math.random()*50}%`,
-    size: Math.random()*3+1,
-    delay: Math.random()*3, dur: Math.random()*2+1,
+/* ─── SCENE 4: Motorbike delivery ───────────────────────────────── */
+function Scene4() {
+  const [active, setActive] = useState(false);
+  const stars = Array.from({ length:20 }, (_,i) => ({
+    id:i, x:`${Math.random()*100}%`, y:`${5+Math.random()*45}%`,
+    s:Math.random()*2.5+.8, delay:Math.random()*3, dur:Math.random()*2+1,
   }));
 
   useEffect(() => {
-    const t = setTimeout(() => setBikeActive(true), 300);
+    const t = setTimeout(() => setActive(true), 250);
     return () => clearTimeout(t);
   }, []);
 
   return (
-    <div style={{ position:"absolute", inset:0, overflow:"hidden", zIndex:1 }}>
+    <div style={{ position:"absolute", inset:0, overflow:"hidden" }}>
       {/* Night sky */}
-      <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg,#02060e 0%,#0A1628 60%,#0d1e3a 100%)" }}>
+      <div style={{ position:"absolute", inset:0, background:"linear-gradient(180deg,#020810 0%,#0A1628 55%,#0d1e3a 100%)" }}>
         {stars.map(s => (
           <div key={s.id} style={{
             position:"absolute", left:s.x, top:s.y,
-            width:s.size, height:s.size, borderRadius:"50%",
-            background:"#FAF6EE",
-            animation:`li-star ${s.dur}s ${s.delay}s ease-in-out infinite`,
+            width:s.s, height:s.s, borderRadius:"50%", background:"#FAF6EE",
+            animation:`lmj-star ${s.dur}s ${s.delay}s ease-in-out infinite`,
           }} />
         ))}
-        {/* Moon */}
-        <div style={{ position:"absolute", top:"8%", right:"12%", width:44, height:44 }}>
-          <svg width="44" height="44"><circle cx="22" cy="22" r="20" fill="rgba(201,168,76,0.15)" stroke="rgba(201,168,76,0.4)" strokeWidth="1.5"/><circle cx="28" cy="18" r="14" fill="#02060e"/></svg>
+        <div style={{ position:"absolute", top:"6%", right:"10%", width:28, height:28 }}>
+          <svg width="28" height="28"><circle cx="14" cy="14" r="12" fill="rgba(201,168,76,.12)" stroke="rgba(201,168,76,.35)" strokeWidth="1"/><circle cx="17" cy="11" r="8" fill="#020810"/></svg>
         </div>
       </div>
 
       {/* Road */}
-      <div style={{ position:"absolute", bottom:0, left:0, right:0, height:"32%", background:"linear-gradient(180deg,#0d1e3a,#060B14)", borderTop:"2px solid rgba(201,168,76,0.3)" }}>
-        {/* Road markings */}
-        <div style={{ position:"absolute", top:"50%", left:0, right:0, height:3, overflow:"hidden" }}>
-          <div style={{ display:"flex", gap:40, animation:"li-road 1s linear infinite", whiteSpace:"nowrap" }}>
-            {Array.from({length:20}, (_,i) => (
-              <div key={i} style={{ width:60, height:3, background:"rgba(201,168,76,0.4)", flexShrink:0 }} />
+      <div style={{ position:"absolute", bottom:0, left:0, right:0, height:"35%", background:"linear-gradient(180deg,#0d1e3a,#060B14)", borderTop:"1.5px solid rgba(201,168,76,.25)" }}>
+        <div style={{ position:"absolute", top:"48%", left:0, right:0, height:2, overflow:"hidden" }}>
+          <div style={{ display:"flex", gap:24, animation:"lmj-road .9s linear infinite" }}>
+            {Array.from({length:30},(_,i)=>(
+              <div key={i} style={{ width:36, height:2, background:"rgba(201,168,76,.35)", flexShrink:0 }} />
             ))}
           </div>
         </div>
-        {/* City silhouette */}
-        <div style={{ position:"absolute", top:-60, left:0, right:0, height:60, overflow:"hidden" }}>
-          <svg width="100%" height="60" viewBox="0 0 800 60" preserveAspectRatio="none">
-            <path d="M0 60 L0 40 L30 40 L30 20 L50 20 L50 10 L60 10 L60 20 L80 20 L80 30 L100 30 L100 10 L110 10 L110 0 L120 0 L120 10 L130 10 L130 30 L160 30 L160 40 L180 40 L180 20 L190 20 L190 15 L200 15 L200 20 L220 20 L220 40 L250 40 L250 25 L260 25 L260 5 L270 5 L270 25 L280 25 L280 40 L310 40 L310 30 L330 30 L330 20 L350 20 L350 15 L360 15 L360 20 L380 20 L380 30 L400 30 L400 40 L430 40 L430 20 L440 20 L440 10 L450 10 L450 20 L470 20 L470 35 L500 35 L500 25 L520 25 L520 15 L530 15 L530 25 L550 25 L550 40 L580 40 L580 30 L600 30 L600 20 L610 20 L610 10 L620 10 L620 20 L640 20 L640 30 L660 30 L660 40 L700 40 L700 20 L720 20 L720 5 L730 5 L730 20 L750 20 L750 40 L800 40 L800 60 Z"
-              fill="rgba(10,22,40,0.8)" stroke="rgba(201,168,76,0.15)" strokeWidth="0.5"/>
-            {/* Windows */}
-            {[55,115,195,265,345,445,525,615,725].map((x,i) => (
-              <rect key={i} x={x} y={i%2===0?15:5} width="5" height="5" fill="rgba(201,168,76,0.4)"/>
+        {/* City skyline */}
+        <svg style={{ position:"absolute", top:-50, left:0, width:"100%", height:50 }} viewBox="0 0 320 50" preserveAspectRatio="none">
+          <path d="M0 50 L0 34 L12 34 L12 20 L18 20 L18 12 L22 12 L22 20 L30 20 L30 28 L38 28 L38 8 L42 8 L42 2 L46 2 L46 8 L50 8 L50 28 L60 28 L60 34 L72 34 L72 22 L76 22 L76 16 L80 16 L80 22 L88 22 L88 34 L100 34 L100 26 L106 26 L106 14 L110 14 L110 26 L118 26 L118 34 L130 34 L130 28 L140 28 L140 18 L144 18 L144 10 L148 10 L148 18 L156 18 L156 28 L168 28 L168 34 L180 34 L180 20 L186 20 L186 12 L190 12 L190 20 L200 20 L200 34 L214 34 L214 26 L220 26 L220 16 L224 16 L224 26 L234 26 L234 34 L248 34 L248 22 L254 22 L254 8 L258 8 L258 22 L268 22 L268 34 L282 34 L282 28 L290 28 L290 18 L294 18 L294 28 L304 28 L304 34 L320 34 L320 50 Z"
+            fill="rgba(10,22,40,.85)" stroke="rgba(201,168,76,.12)" strokeWidth=".5"/>
+        </svg>
+      </div>
+
+      {/* Header text */}
+      <div style={{ position:"absolute", top:8, left:0, right:0, textAlign:"center", animation:"lmj-fadeIn .5s .3s both" }}>
+        <p style={{ color:"#C9A84C", fontSize:".68rem", fontWeight:800, margin:0, letterSpacing:".08em" }}>⚡ Express Delivery ⚡</p>
+        <p style={{ color:"rgba(250,246,238,.45)", fontSize:".52rem", margin:"2px 0 0" }}>Racing to your door</p>
+      </div>
+
+      {/* Bike */}
+      {active && (
+        <div style={{ position:"absolute", bottom:"29%", left:0, width:"100%", animation:"lmj-bike 3.6s cubic-bezier(.18,0,.82,1) forwards" }}>
+          {/* Speed lines */}
+          {[0,1,2,3].map(i => (
+            <div key={i} style={{
+              position:"absolute", right:`calc(100% + ${8+i*12}px)`, top:`${22+i*14}%`,
+              width:30+i*14, height:1.5,
+              background:"linear-gradient(90deg,transparent,rgba(201,168,76,.75))",
+              transformOrigin:"right center",
+              animation:`lmj-speedline .4s ${i*.04}s ease-out infinite`,
+            }} />
+          ))}
+          {/* Exhaust */}
+          <div style={{
+            position:"absolute", right:"calc(100% + 2px)", top:"42%",
+            width:20, height:10, background:"rgba(250,246,238,.12)", borderRadius:"50%",
+            animation:"lmj-exhaust .5s ease-out infinite", transformOrigin:"left center",
+          }} />
+
+          {/* Bike SVG */}
+          <svg width="130" height="72" viewBox="0 0 130 72" fill="none" style={{ filter:"drop-shadow(0 6px 18px rgba(0,0,0,.7))" }}>
+            {/* Rear wheel */}
+            <circle cx="26" cy="54" r="16" stroke="#C9A84C" strokeWidth="2.5" fill="#060B14"/>
+            <circle cx="26" cy="54" r="7"  stroke="rgba(201,168,76,.4)" strokeWidth="1.5" fill="none"/>
+            <circle cx="26" cy="54" r="2.5" fill="#C9A84C"/>
+            {[0,60,120,180,240,300].map(a=>(
+              <line key={a}
+                x1={26+7*Math.cos(a*Math.PI/180)} y1={54+7*Math.sin(a*Math.PI/180)}
+                x2={26+14*Math.cos(a*Math.PI/180)} y2={54+14*Math.sin(a*Math.PI/180)}
+                stroke="rgba(201,168,76,.55)" strokeWidth="1"/>
             ))}
+            {/* Front wheel */}
+            <circle cx="104" cy="54" r="16" stroke="#C9A84C" strokeWidth="2.5" fill="#060B14"/>
+            <circle cx="104" cy="54" r="7"  stroke="rgba(201,168,76,.4)" strokeWidth="1.5" fill="none"/>
+            <circle cx="104" cy="54" r="2.5" fill="#C9A84C"/>
+            {[0,60,120,180,240,300].map(a=>(
+              <line key={a}
+                x1={104+7*Math.cos(a*Math.PI/180)} y1={54+7*Math.sin(a*Math.PI/180)}
+                x2={104+14*Math.cos(a*Math.PI/180)} y2={54+14*Math.sin(a*Math.PI/180)}
+                stroke="rgba(201,168,76,.55)" strokeWidth="1"/>
+            ))}
+            {/* Frame */}
+            <path d="M26 38 L52 30 L90 30 L104 38 L104 54 L26 54 Z" fill="#0A1628" stroke="#C9A84C" strokeWidth="1.5"/>
+            {/* Engine */}
+            <rect x="50" y="34" width="34" height="16" rx="3" fill="#132240" stroke="rgba(201,168,76,.35)" strokeWidth="1"/>
+            {/* Exhaust pipe */}
+            <path d="M26 46 L12 46 L10 52" stroke="#C9A84C" strokeWidth="1.5" strokeLinecap="round"/>
+            {/* Front fork */}
+            <path d="M96 38 L108 48 L104 54" stroke="#C9A84C" strokeWidth="2" strokeLinecap="round"/>
+            {/* Handlebar */}
+            <path d="M90 30 L96 22 L104 23" stroke="#C9A84C" strokeWidth="2" strokeLinecap="round"/>
+            {/* Seat */}
+            <path d="M52 30 L80 30 L78 24 L54 24 Z" fill="#C9A84C" opacity=".8"/>
+            {/* Rider body */}
+            <path d="M64 24 L72 10 L82 13 L76 24 Z" fill="#0A1628" stroke="#C9A84C" strokeWidth="1.2"/>
+            {/* Rider arm */}
+            <path d="M76 16 L96 22" stroke="#C9A84C" strokeWidth="1.8" strokeLinecap="round"/>
+            {/* Helmet */}
+            <circle cx="73" cy="8" r="8" fill="#C9A84C"/>
+            <ellipse cx="73" cy="10" rx="6.5" ry="4.5" fill="#0A1628"/>
+            {/* Headlight */}
+            <ellipse cx="108" cy="40" rx="4" ry="2.5" fill="#C9A84C" opacity=".9"/>
+            <path d="M112 37.5 L122 35 M112 40 L124 40 M112 42.5 L122 45" stroke="#C9A84C" strokeWidth="1" strokeLinecap="round" opacity=".5"/>
           </svg>
-        </div>
-      </div>
 
-      <DeliveryBike active={bikeActive} />
-
-      {/* Text overlay */}
-      <div style={{ position:"absolute", top:"8%", left:"50%", transform:"translateX(-50%)", textAlign:"center", animation:"li-slidedown 0.6s 0.3s both", whiteSpace:"nowrap" }}>
-        <div style={{ display:"flex", alignItems:"center", justifyContent:"center", gap:8, marginBottom:4 }}>
-          <span style={{ fontSize:"1.5rem" }}>⚡</span>
-          <h2 style={{ color:"#C9A84C", fontSize:"clamp(1.2rem,3.5vw,2rem)", fontWeight:900, margin:0, letterSpacing:"0.05em" }}>Express Delivery</h2>
-          <span style={{ fontSize:"1.5rem" }}>⚡</span>
-        </div>
-        <p style={{ color:"rgba(250,246,238,0.6)", fontSize:"clamp(0.7rem,1.8vw,0.9rem)", margin:0 }}>Your order races to your door at lightning speed</p>
-      </div>
-
-      {/* Speed indicator */}
-      {bikeActive && (
-        <div style={{ position:"absolute", bottom:"36%", left:"50%", transform:"translateX(-50%)", animation:"li-fadein 0.4s 1.5s both" }}>
-          <div style={{ display:"flex", gap:6 }}>
-            {["🏁","🚀","⚡"].map((e,i) => (
-              <span key={i} style={{ fontSize:"1.4rem", animation:`li-float ${0.8 + i*0.2}s ${i*0.1}s ease-in-out infinite` }}>{e}</span>
-            ))}
+          {/* Package */}
+          <div style={{ position:"absolute", right:44, bottom:18, animation:"lmj-pkgbounce .35s ease-in-out infinite" }}>
+            <svg width="30" height="27" viewBox="0 0 30 27" fill="none">
+              <rect x="1" y="6" width="28" height="20" rx="3" fill="#C9A84C"/>
+              <rect x="1" y="6" width="28" height="7" rx="3" fill="#B8963F"/>
+              <line x1="15" y1="6" x2="15" y2="26" stroke="#0A1628" strokeWidth="1.5"/>
+              <line x1="1" y1="13" x2="29" y2="13" stroke="#0A1628" strokeWidth="1.5"/>
+              <text x="15" y="23" textAnchor="middle" fill="#0A1628" fontSize="5" fontWeight="bold">LMJ</text>
+            </svg>
           </div>
         </div>
       )}
@@ -558,186 +463,158 @@ function Scene4Delivery() {
   );
 }
 
-function Scene5Welcome() {
-  return (
-    <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", zIndex:1 }}>
-      <Particles />
-      <div style={{ animation:"li-scalein 0.6s cubic-bezier(0.34,1.56,0.64,1) both", textAlign:"center" }}>
-        <div style={{ marginBottom:16 }}>
-          <span style={{ color:"rgba(201,168,76,0.6)", fontSize:"clamp(0.7rem,1.5vw,0.85rem)", letterSpacing:"0.3em", textTransform:"uppercase" }}>Welcome to</span>
-        </div>
-        <h1 className="li-shimmer-text" style={{ fontSize:"clamp(3rem,9vw,6rem)", fontWeight:900, letterSpacing:"0.15em", margin:0, lineHeight:1 }}>
-          LIMJIBA
-        </h1>
-        <p style={{ color:"rgba(250,246,238,0.6)", fontSize:"clamp(0.75rem,1.8vw,1rem)", letterSpacing:"0.2em", margin:"10px 0 0" }}>
-          لمجيبة &nbsp;·&nbsp; Mauritania's Premium Store
-        </p>
-      </div>
-      <div style={{ animation:"li-slideup 0.5s 0.4s both", marginTop:36 }}>
-        <div style={{
-          background:"linear-gradient(135deg,#C9A84C,#B8963F)",
-          borderRadius:14, padding:"14px 48px",
-          color:"#0A1628", fontWeight:900, fontSize:"clamp(0.9rem,2.5vw,1.1rem)",
-          letterSpacing:"0.12em", textTransform:"uppercase",
-          boxShadow:"0 0 40px rgba(201,168,76,0.5)",
-          animation:"li-pulse 1.5s ease-in-out infinite",
-        }}>
-          Discover Now →
-        </div>
-      </div>
-      <div style={{ animation:"li-fadein 0.5s 0.8s both", marginTop:24, display:"flex", gap:20, flexWrap:"wrap", justifyContent:"center" }}>
-        {["🛍️ 500+ Products","⚡ Fast Delivery","🌟 Premium Quality","🔒 Secure Payment"].map((v,i) => (
-          <span key={i} style={{ color:"rgba(201,168,76,0.7)", fontSize:"clamp(0.65rem,1.5vw,0.78rem)" }}>{v}</span>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-const SCENES: Array<{ id:number; label:string; duration:number; Component: React.FC }> = [
-  { id:0, label:"Brand",    duration:2400,  Component:Scene1Brand    },
-  { id:1, label:"Cart",     duration:3000,  Component:Scene2Cart     },
-  { id:2, label:"Checkout", duration:2600,  Component:Scene3Checkout },
-  { id:3, label:"Delivery", duration:4200,  Component:Scene4Delivery },
-  { id:4, label:"Welcome",  duration:2000,  Component:Scene5Welcome  },
+/* ─── Scene config ──────────────────────────────────────────────── */
+const SCENES: Array<{ id: number; label: string; dur: number; C: React.FC }> = [
+  { id:0, label:"Brand",    dur:2800,  C:Scene1 },
+  { id:1, label:"Cart",     dur:3000,  C:Scene2 },
+  { id:2, label:"Checkout", dur:2800,  C:Scene3 },
+  { id:3, label:"Delivery", dur:4000,  C:Scene4 },
 ];
 
-export function StoreMarketingIntro({ onDone }: { onDone: () => void }) {
-  const [scene, setScene] = useState(0);
-  const [fading, setFading] = useState(false);
-  const [closing, setClosing] = useState(false);
-  const timeouts = useRef<NodeJS.Timeout[]>([]);
+/* ─── Main widget ───────────────────────────────────────────────── */
+export function StoreMarketingIntro() {
+  const [scene,      setScene]      = useState(0);
+  const [fading,     setFading]     = useState(false);
+  const [minimized,  setMinimized]  = useState(false);
+  const [visible,    setVisible]    = useState(false);
+  const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
-  const dismiss = () => {
-    setClosing(true);
-    localStorage.setItem(STORAGE_KEY, "1");
-    setTimeout(onDone, 600);
-  };
+  /* Inject CSS once */
+  useEffect(() => { injectStyles(); }, []);
 
+  /* Fade in widget after short delay so page loads first */
   useEffect(() => {
-    injectStyles();
-    let accumulated = 0;
-    SCENES.forEach((s, i) => {
-      if (i === SCENES.length - 1) {
-        const t = setTimeout(() => { dismiss(); }, accumulated + s.duration);
-        timeouts.current.push(t);
-      } else {
-        const fadeAt = accumulated + s.duration - 350;
-        const nextAt = accumulated + s.duration;
-        const t1 = setTimeout(() => setFading(true), fadeAt);
-        const t2 = setTimeout(() => { setScene(i + 1); setFading(false); }, nextAt);
-        timeouts.current.push(t1, t2);
-        accumulated += s.duration;
-      }
-    });
-    return () => timeouts.current.forEach(clearTimeout);
+    const t = setTimeout(() => setVisible(true), 800);
+    return () => clearTimeout(t);
   }, []);
 
-  const CurrentScene = SCENES[scene].Component;
-  const totalScene = SCENES.reduce((a, s) => a + s.duration, 0);
-  const elapsed = SCENES.slice(0, scene).reduce((a, s) => a + s.duration, 0);
-  const progress = (elapsed / totalScene) * 100;
+  /* Advance scenes, loop forever */
+  const scheduleNext = useCallback((cur: number) => {
+    const dur = SCENES[cur].dur;
+    const fadeT = setTimeout(() => setFading(true), dur - 400);
+    const nextT = setTimeout(() => {
+      const next = (cur + 1) % SCENES.length;
+      setScene(next);
+      setFading(false);
+      scheduleNext(next);
+    }, dur);
+    timers.current.push(fadeT, nextT);
+  }, []);
+
+  useEffect(() => {
+    scheduleNext(0);
+    return () => timers.current.forEach(clearTimeout);
+  }, [scheduleNext]);
+
+  if (!visible) return null;
+
+  const CurrentScene = SCENES[scene].C;
+  const WIDGET_W = 310;
+  const WIDGET_H = 200;
 
   return (
-    <div style={{
-      position:"fixed", inset:0, zIndex:99999,
-      background:"#02060e",
-      display:"flex", flexDirection:"column",
-      overflow:"hidden",
-      opacity: closing ? 0 : 1,
-      transition: closing ? "opacity 0.6s ease" : "none",
-    }}>
-      {/* Animated grid overlay */}
-      <div style={{
-        position:"absolute", inset:0, pointerEvents:"none",
-        backgroundImage:"linear-gradient(rgba(201,168,76,0.03) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,0.03) 1px,transparent 1px)",
-        backgroundSize:"40px 40px",
-      }} />
-
-      {/* Gold vignette corners */}
-      <div style={{ position:"absolute", top:0, left:0, width:200, height:200, background:"radial-gradient(circle at 0 0,rgba(201,168,76,0.08),transparent 70%)", pointerEvents:"none" }} />
-      <div style={{ position:"absolute", bottom:0, right:0, width:200, height:200, background:"radial-gradient(circle at 100% 100%,rgba(201,168,76,0.08),transparent 70%)", pointerEvents:"none" }} />
-
-      {/* Scene with fade transition */}
-      <div style={{
-        flex:1, position:"relative",
-        opacity: fading ? 0 : 1,
-        transition:"opacity 0.35s ease",
-      }}>
-        <CurrentScene />
-      </div>
-
-      {/* Bottom bar: scene dots + progress + skip */}
-      <div style={{ padding:"12px 20px 16px", display:"flex", alignItems:"center", justifyContent:"space-between", gap:12, zIndex:2 }}>
-        {/* Scene indicators */}
-        <div style={{ display:"flex", gap:6 }}>
-          {SCENES.map((s, i) => (
-            <div key={s.id} style={{
-              height:3,
-              width: i === scene ? 24 : 8,
-              borderRadius:2,
-              background: i <= scene ? "#C9A84C" : "rgba(201,168,76,0.25)",
-              transition:"width 0.3s ease, background 0.3s ease",
-              position:"relative", overflow:"hidden",
-            }}>
-              {i === scene && (
-                <div style={{
-                  position:"absolute", inset:0,
-                  background:"linear-gradient(90deg,#C9A84C,#FAF6EE)",
-                  animation:`li-countdown ${SCENES[scene].duration}ms linear forwards`,
-                }} />
-              )}
-            </div>
-          ))}
+    <div
+      className="lmj-widget"
+      style={{
+        position:"fixed",
+        bottom:24,
+        left:24,
+        width:WIDGET_W,
+        zIndex:9000,
+        fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+        animation:"lmj-fadein .6s ease both",
+        filter:"drop-shadow(0 8px 32px rgba(0,0,0,.65))",
+        userSelect:"none",
+      }}
+    >
+      {/* ── Header bar ── */}
+      <div
+        onClick={() => setMinimized(m => !m)}
+        style={{
+          background:"linear-gradient(135deg,#0A1628,#152338)",
+          border:"1.5px solid rgba(201,168,76,.5)",
+          borderBottom: minimized ? "1.5px solid rgba(201,168,76,.5)" : "none",
+          borderRadius: minimized ? 12 : "12px 12px 0 0",
+          padding:"7px 12px",
+          display:"flex", alignItems:"center", justifyContent:"space-between",
+          cursor:"pointer",
+          transition:"border-radius .25s",
+        }}
+      >
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          {/* Pulsing dot */}
+          <div style={{ width:8, height:8, borderRadius:"50%", background:"#C9A84C", animation:"lmj-pulse 1.5s ease-in-out infinite", flexShrink:0 }} />
+          <span className="lmj-shimmer" style={{ fontSize:".72rem", fontWeight:900, letterSpacing:".12em" }}>LIMJIBA</span>
+          <span style={{ color:"rgba(201,168,76,.55)", fontSize:".55rem", letterSpacing:".1em" }}>· STORE</span>
         </div>
-
-        {/* Label */}
-        <span style={{ color:"rgba(201,168,76,0.5)", fontSize:"0.65rem", letterSpacing:"0.15em", flex:1, textAlign:"center" }}>
-          {SCENES[scene].label.toUpperCase()}
-        </span>
-
-        {/* Skip */}
-        <button
-          onClick={dismiss}
-          style={{
-            background:"rgba(201,168,76,0.1)",
-            border:"1px solid rgba(201,168,76,0.3)",
-            color:"rgba(201,168,76,0.8)",
-            borderRadius:8, padding:"6px 14px",
-            fontSize:"0.72rem", cursor:"pointer", letterSpacing:"0.08em",
-            transition:"background 0.2s, color 0.2s",
-          }}
-          onMouseEnter={e => { (e.target as HTMLElement).style.background="rgba(201,168,76,0.2)"; (e.target as HTMLElement).style.color="#C9A84C"; }}
-          onMouseLeave={e => { (e.target as HTMLElement).style.background="rgba(201,168,76,0.1)"; (e.target as HTMLElement).style.color="rgba(201,168,76,0.8)"; }}
-        >
-          SKIP →
-        </button>
+        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
+          {/* Scene dots */}
+          <div style={{ display:"flex", gap:4 }}>
+            {SCENES.map((s,i) => (
+              <div key={s.id} style={{
+                width: i===scene ? 14 : 5,
+                height:5, borderRadius:3,
+                background: i===scene ? "#C9A84C" : "rgba(201,168,76,.25)",
+                overflow:"hidden", transition:"width .3s ease",
+                position:"relative",
+              }}>
+                {i===scene && (
+                  <div style={{
+                    position:"absolute", inset:0, background:"linear-gradient(90deg,#B8963F,#ffe9a0)",
+                    animation:`lmj-countdown ${SCENES[scene].dur}ms linear forwards`,
+                  }} />
+                )}
+              </div>
+            ))}
+          </div>
+          {/* Minimize chevron */}
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
+            style={{ transform: minimized ? "rotate(0deg)" : "rotate(180deg)", transition:"transform .3s", opacity:.7 }}>
+            <path d="M3 5l4 4 4-4" stroke="#C9A84C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
       </div>
 
-      {/* Top border glow */}
-      <div style={{ position:"absolute", top:0, left:0, right:0, height:2, background:"linear-gradient(90deg,transparent,#C9A84C,transparent)", pointerEvents:"none" }} />
+      {/* ── Scene body ── */}
+      {!minimized && (
+        <div style={{
+          width:WIDGET_W, height:WIDGET_H,
+          background:"linear-gradient(160deg,#060B14 0%,#0A1628 60%,#0d1e3a 100%)",
+          border:"1.5px solid rgba(201,168,76,.4)",
+          borderTop:"none",
+          borderRadius:"0 0 12px 12px",
+          position:"relative",
+          overflow:"hidden",
+          opacity: fading ? 0 : 1,
+          transition:"opacity .35s ease",
+        }}>
+          {/* Grid overlay */}
+          <div style={{
+            position:"absolute", inset:0, pointerEvents:"none",
+            backgroundImage:"linear-gradient(rgba(201,168,76,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.025) 1px,transparent 1px)",
+            backgroundSize:"20px 20px",
+          }} />
+          {/* Corner glows */}
+          <div style={{ position:"absolute", top:0, left:0, width:80, height:80, background:"radial-gradient(circle at 0 0,rgba(201,168,76,.07),transparent 70%)", pointerEvents:"none" }} />
+          <div style={{ position:"absolute", bottom:0, right:0, width:80, height:80, background:"radial-gradient(circle at 100% 100%,rgba(201,168,76,.07),transparent 70%)", pointerEvents:"none" }} />
+          {/* Top gold line */}
+          <div style={{ position:"absolute", top:0, left:0, right:0, height:1.5, background:"linear-gradient(90deg,transparent,rgba(201,168,76,.4),transparent)" }} />
+
+          <CurrentScene />
+
+          {/* Scene label */}
+          <div style={{ position:"absolute", bottom:6, right:10 }}>
+            <span style={{ color:"rgba(201,168,76,.3)", fontSize:".48rem", letterSpacing:".15em", textTransform:"uppercase" }}>
+              {SCENES[scene].label}
+            </span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
 
+/* ─── Hook (always show, no localStorage) ───────────────────────── */
 export function useMarketingIntro() {
-  const [show, setShow] = useState(false);
-  const [done, setDone] = useState(false);
-
-  useEffect(() => {
-    const seen = localStorage.getItem(STORAGE_KEY);
-    if (!seen) {
-      setShow(true);
-    } else {
-      setDone(true);
-    }
-  }, []);
-
-  const handleDone = () => {
-    setShow(false);
-    setDone(true);
-    localStorage.setItem(STORAGE_KEY, "1");
-  };
-
-  return { show, done, handleDone };
+  return { show: true, handleDone: () => {} };
 }
