@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, type CSSProperties } from "react";
 
 /* ─── Keyframe styles injected once ─────────────────────────────── */
 function injectStyles() {
@@ -644,19 +644,31 @@ export function StoreMarketingIntro() {
     return () => timers.current.forEach(clearTimeout);
   }, [scheduleNext]);
 
+  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+
   if (!visible) return null;
 
   const CurrentScene = SCENES[scene].C;
-  const WIDGET_W = 310;
-  const WIDGET_H = 200;
+  /* Mobile: wide-short horizontal at bottom-center */
+  /* Desktop/Tablet: narrow-tall vertical at top-right */
+  const WIDGET_W = isMobile ? 292 : 218;
+  const WIDGET_H = isMobile ? 186 : 310;
+
+  const posStyle: CSSProperties = isMobile
+    ? { bottom: 18, left: "50%", transform: "translateX(-50%)" }
+    : { top: 24, right: 24 };
 
   return (
     <div
       className="lmj-widget"
       style={{
         position:"fixed",
-        bottom:24,
-        left:24,
+        ...posStyle,
         width:WIDGET_W,
         zIndex:9000,
         fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
