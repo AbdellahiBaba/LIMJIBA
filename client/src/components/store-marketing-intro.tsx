@@ -283,80 +283,93 @@ function Scene1() {
   );
 }
 
-/* ─── SCENE 2: Add to cart ──────────────────────────────────────── */
+/* ─── SCENE 2: Add to cart (real product + image) ───────────────── */
 function Scene2() {
   const lang = useContext(LangCtx);
   const t = TR[lang];
-  const [clicked, setClicked]     = useState(false);
-  const [flying,  setFlying]      = useState(false);
-  const [bounce,  setBounce]      = useState(false);
-  const [count,   setCount]       = useState(0);
+  const { product } = useContext(ScenarioCtx);
+  const [clicked, setClicked] = useState(false);
+  const [flying,  setFlying]  = useState(false);
+  const [bounce,  setBounce]  = useState(false);
+  const [count,   setCount]   = useState(0);
+  const [added,   setAdded]   = useState(false);
 
   useEffect(() => {
     const ts = [
-      setTimeout(() => setClicked(true),  900),
-      setTimeout(() => setFlying(true),   1050),
-      setTimeout(() => { setBounce(true); setCount(1); }, 1400),
-      setTimeout(() => { setFlying(false); setClicked(false); }, 1750),
-      setTimeout(() => setBounce(false),  1850),
+      setTimeout(() => setClicked(true),  1200),
+      setTimeout(() => setFlying(true),   1400),
+      setTimeout(() => { setBounce(true); setCount(1); setAdded(true); }, 1900),
+      setTimeout(() => { setFlying(false); setClicked(false); }, 2300),
+      setTimeout(() => setBounce(false),  2500),
     ];
     return () => ts.forEach(clearTimeout);
-  }, []);
+  }, [product.id]);
+
+  const productName = lang === "ar" ? (product.nameAr || product.name) : lang === "fr" ? (product.nameFr || product.name) : product.name;
+  const imgSrc = product.imageUrl || (product.images && product.images[0]);
+  const addLabel = lang === "ar" ? "أضف" : lang === "fr" ? "+ Panier" : "+ Cart";
+  const addedLabel = lang === "ar" ? "✓ أُضيف" : lang === "fr" ? "✓ Ajouté" : "✓ Added";
 
   return (
-    <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", gap:16, padding:"0 14px" }}>
+    <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", gap:12, padding:"0 12px" }}>
       {/* Product card */}
       <div style={{ animation:"lmj-slideright .5s .2s cubic-bezier(.34,1.56,.64,1) both", position:"relative", flexShrink:0 }}>
         <div style={{
           background:"linear-gradient(135deg,#0d1e3a,#182d52)",
           border:"1.5px solid rgba(201,168,76,.35)",
-          borderRadius:12, padding:"12px 12px 10px",
-          width:118, boxShadow:"0 12px 40px rgba(0,0,0,.5)",
+          borderRadius:12, padding:"10px 10px 9px",
+          width:128, boxShadow:"0 12px 40px rgba(0,0,0,.5)",
         }}>
+          {/* Product image */}
           <div style={{
-            height:58, background:"rgba(201,168,76,.1)", borderRadius:8, marginBottom:8,
-            display:"flex", alignItems:"center", justifyContent:"center", position:"relative",
+            height:68, background:"rgba(201,168,76,.07)", borderRadius:8, marginBottom:8,
+            display:"flex", alignItems:"center", justifyContent:"center", position:"relative", overflow:"hidden",
           }}>
-            <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
-              <rect x="5" y="8" width="24" height="18" rx="3" fill="rgba(201,168,76,.25)" stroke="#C9A84C" strokeWidth="1.2"/>
-              <rect x="10" y="13" width="14" height="10" rx="1.5" fill="rgba(201,168,76,.1)" stroke="#C9A84C" strokeWidth=".8"/>
-              <circle cx="17" cy="18" r="3" fill="#C9A84C" opacity=".7"/>
-            </svg>
+            {imgSrc
+              ? <img src={imgSrc} alt={productName} style={{ width:"100%", height:"100%", objectFit:"cover", borderRadius:8 }} />
+              : <svg width="34" height="34" viewBox="0 0 34 34" fill="none">
+                  <rect x="5" y="8" width="24" height="18" rx="3" fill="rgba(201,168,76,.25)" stroke="#C9A84C" strokeWidth="1.2"/>
+                  <rect x="10" y="13" width="14" height="10" rx="1.5" fill="rgba(201,168,76,.1)" stroke="#C9A84C" strokeWidth=".8"/>
+                  <circle cx="17" cy="18" r="3" fill="#C9A84C" opacity=".7"/>
+                </svg>
+            }
             <div style={{ position:"absolute", top:4, right:4, background:"#C9A84C", borderRadius:3, padding:"1px 5px" }}>
-              <span style={{ color:"#0A1628", fontSize:".5rem", fontWeight:700 }}>NEW</span>
+              <span style={{ color:"#0A1628", fontSize:".48rem", fontWeight:700 }}>NEW</span>
             </div>
           </div>
-          <p style={{ color:"#FAF6EE", fontSize:".65rem", fontWeight:700, margin:"0 0 2px", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>Premium Product</p>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:6 }}>
-            <span style={{ color:"#C9A84C", fontWeight:800, fontSize:".72rem" }}>850 MRU</span>
+          <p style={{ color:"#FAF6EE", fontSize:".62rem", fontWeight:700, margin:"0 0 3px", whiteSpace:"nowrap", overflow:"hidden", textOverflow:"ellipsis" }}>{productName}</p>
+          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginTop:5 }}>
+            <span style={{ color:"#C9A84C", fontWeight:800, fontSize:".7rem" }}>{product.price} MRU</span>
             <button style={{
-              background: clicked ? "linear-gradient(135deg,#C9A84C,#B8963F)" : "rgba(201,168,76,.15)",
-              border:"1px solid #C9A84C", color: clicked ? "#0A1628" : "#C9A84C",
-              borderRadius:6, padding:"3px 7px", fontSize:".55rem", fontWeight:700,
-              animation: clicked ? "lmj-btnclick .35s ease" : "none",
-              transition:"background .2s, color .2s", cursor:"pointer",
-            }}>+ Cart</button>
+              background: added ? "linear-gradient(135deg,#22c55e,#16a34a)" : clicked ? "linear-gradient(135deg,#C9A84C,#B8963F)" : "rgba(201,168,76,.15)",
+              border: `1px solid ${added ? "#22c55e" : "#C9A84C"}`,
+              color: (clicked || added) ? "#fff" : "#C9A84C",
+              borderRadius:6, padding:"3px 7px", fontSize:".52rem", fontWeight:700,
+              animation: clicked && !added ? "lmj-btnclick .35s ease" : "none",
+              transition:"all .2s", cursor:"pointer", whiteSpace:"nowrap",
+            }}>{added ? addedLabel : addLabel}</button>
           </div>
         </div>
-        {/* Flying dot */}
+        {/* Flying item to cart */}
         {flying && (
           <div style={{
-            position:"absolute", top:"40%", right:"5%",
-            width:12, height:12, borderRadius:"50%", background:"#C9A84C",
-            animation:"lmj-flyarc .7s cubic-bezier(.25,.46,.45,.94) forwards", zIndex:10,
+            position:"absolute", top:"35%", right:"5%",
+            width:14, height:14, borderRadius:"50%", background:"#C9A84C",
+            boxShadow:"0 0 8px rgba(201,168,76,.8)",
+            animation:"lmj-flyarc .75s cubic-bezier(.25,.46,.45,.94) forwards", zIndex:10,
           }} />
         )}
       </div>
 
-      {/* Cart */}
+      {/* Cart icon */}
       <div style={{ animation:"lmj-slideleft .5s .35s cubic-bezier(.34,1.56,.64,1) both", flexShrink:0, textAlign:"center" }}>
         <div style={{
-          width:58, height:58,
+          width:60, height:60,
           background:"rgba(201,168,76,.1)", border:"2px solid rgba(201,168,76,.45)",
           borderRadius:14, display:"flex", alignItems:"center", justifyContent:"center",
           position:"relative",
           animation: bounce ? "lmj-cartbounce .35s ease" : "none",
-          boxShadow: bounce ? "0 0 18px rgba(201,168,76,.5)" : "none",
+          boxShadow: bounce ? "0 0 20px rgba(201,168,76,.6)" : "none",
           transition:"box-shadow .3s",
         }}>
           <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
@@ -366,19 +379,19 @@ function Scene2() {
           </svg>
           {count > 0 && (
             <div style={{
-              position:"absolute", top:-7, right:-7, width:16, height:16, borderRadius:"50%",
+              position:"absolute", top:-8, right:-8, width:18, height:18, borderRadius:"50%",
               background:"#C9A84C", color:"#0A1628", fontSize:".55rem", fontWeight:900,
               display:"flex", alignItems:"center", justifyContent:"center",
               animation:"lmj-scalein .3s cubic-bezier(.34,1.56,.64,1)",
             }}>{count}</div>
           )}
         </div>
-        <p style={{ color:"rgba(201,168,76,.55)", fontSize:".55rem", margin:"5px 0 0", letterSpacing:".1em" }}>{t.yourCart}</p>
+        <p style={{ color:"rgba(201,168,76,.55)", fontSize:".52rem", margin:"5px 0 0", letterSpacing:".08em" }}>{t.yourCart}</p>
       </div>
 
-      {/* Label */}
-      <div style={{ position:"absolute", bottom:8, left:0, right:0, textAlign:"center", animation:"lmj-fadein .5s 1s both" }}>
-        <p style={{ color:"#C9A84C", fontSize:".65rem", fontWeight:700, margin:0 }}>{t.shopAny}</p>
+      {/* Bottom tagline */}
+      <div style={{ position:"absolute", bottom:8, left:0, right:0, textAlign:"center", animation:"lmj-fadein .5s 1.5s both" }}>
+        <p style={{ color:"#C9A84C", fontSize:".62rem", fontWeight:700, margin:0 }}>{t.shopAny}</p>
       </div>
     </div>
   );
@@ -405,8 +418,52 @@ function MiniConfetti() {
   );
 }
 
+/* ─── Product data type + fetch ──────────────────────────────────── */
+type ProductData = {
+  id: number; name: string; nameAr?: string; nameFr?: string;
+  price: number; imageUrl?: string; images?: string[];
+};
+const STATIC_PRODUCTS: ProductData[] = [
+  { id:1, name:"Premium Product", nameAr:"منتج مميز",       nameFr:"Produit Premium",       price:850  },
+  { id:2, name:"Luxury Edition",  nameAr:"إصدار فاخر",       nameFr:"Édition Luxe",          price:1200 },
+  { id:3, name:"Special Collection", nameAr:"مجموعة خاصة", nameFr:"Collection Spéciale",   price:650  },
+];
+let _productCache: ProductData[] | null = null;
+async function fetchProducts(): Promise<ProductData[]> {
+  if (_productCache) return _productCache;
+  try {
+    const res = await fetch("/api/store/products");
+    if (res.ok) {
+      const all: ProductData[] = await res.json();
+      const withImg = all.filter(p => p.imageUrl || (p.images && p.images.length > 0));
+      _productCache = withImg.length >= 3 ? withImg.slice(0, 6) : all.slice(0, 6);
+    }
+  } catch {}
+  return _productCache || STATIC_PRODUCTS;
+}
+
+/* ─── Scenario context (product + wallet per loop) ───────────────── */
+type ScenarioData = {
+  product: ProductData;
+  products: ProductData[];
+  wallet: WalletData;
+  wallets: WalletData[];
+  walletIndex: number;
+  isFullscreen: boolean;
+};
 /* Wallet data type */
 type WalletData = { name:string; nameAr?:string; walletNumber:string; iconType:string; iconUrl?:string; bg:string };
+
+const STATIC_WALLETS_DEF: WalletData[] = [
+  { name:"Bankily", walletNumber:"49399170", iconType:"bankily", bg:"#16a34a" },
+  { name:"Masrivi", walletNumber:"49399170", iconType:"masrivi", bg:"#2563eb" },
+  { name:"Sedad",   walletNumber:"49399170", iconType:"sedad",   bg:"#ea580c" },
+];
+const ScenarioCtx = createContext<ScenarioData>({
+  product:STATIC_PRODUCTS[0], products:STATIC_PRODUCTS,
+  wallet:STATIC_WALLETS_DEF[0], wallets:STATIC_WALLETS_DEF,
+  walletIndex:0, isFullscreen:false,
+});
 
 const WALLET_BG: Record<string,string> = { bankily:"#16a34a", masrivi:"#2563eb", sedad:"#ea580c" };
 const WALLET_LABEL: Record<string,string> = { bankily:"B", masrivi:"M", sedad:"S" };
@@ -458,7 +515,7 @@ type CheckoutStep = "wallets" | "number" | "upload" | "done";
 function Scene3() {
   const lang = useContext(LangCtx);
   const t = TR[lang];
-  const [wallets,     setWallets]     = useState<WalletData[]>(STATIC_WALLETS);
+  const { wallets, walletIndex, product } = useContext(ScenarioCtx);
   const [step,        setStep]        = useState<CheckoutStep>("wallets");
   const [selected,    setSelected]    = useState<number | null>(null);
   const [uploadClick, setUploadClick] = useState(false);
@@ -466,24 +523,23 @@ function Scene3() {
   const [confetti,    setConfetti]    = useState(false);
   const [copied,      setCopied]      = useState(false);
 
-  useEffect(() => { fetchWallets().then(setWallets); }, []);
-
   useEffect(() => {
     const ts = [
-      setTimeout(() => setSelected(0),                       650),
-      setTimeout(() => setStep("number"),                   1150),
-      setTimeout(() => setCopied(true),                     1650),
-      setTimeout(() => setCopied(false),                    1950),
-      setTimeout(() => setStep("upload"),                   2100),
-      setTimeout(() => setUploadClick(true),                2450),
-      setTimeout(() => { setUploadClick(false); setSpinner(true); }, 2650),
-      setTimeout(() => { setSpinner(false); setStep("done"); }, 3250),
-      setTimeout(() => setConfetti(true),                   3350),
+      setTimeout(() => setSelected(walletIndex),              750),
+      setTimeout(() => setStep("number"),                    1500),
+      setTimeout(() => setCopied(true),                      2200),
+      setTimeout(() => setCopied(false),                     2600),
+      setTimeout(() => setStep("upload"),                    2900),
+      setTimeout(() => setUploadClick(true),                 3300),
+      setTimeout(() => { setUploadClick(false); setSpinner(true); }, 3700),
+      setTimeout(() => { setSpinner(false); setStep("done"); }, 4600),
+      setTimeout(() => setConfetti(true),                    4700),
     ];
     return () => ts.forEach(clearTimeout);
-  }, []);
+  }, [walletIndex]);
 
   const selWallet = selected !== null ? wallets[selected] : null;
+  const productName = lang === "ar" ? (product.nameAr || product.name) : lang === "fr" ? (product.nameFr || product.name) : product.name;
 
   return (
     <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", padding:"10px 12px 8px", overflow:"hidden" }}>
@@ -501,7 +557,7 @@ function Scene3() {
             </p>
           </div>
           <div style={{ background:"rgba(201,168,76,.12)", border:"1px solid rgba(201,168,76,.3)", borderRadius:6, padding:"2px 8px" }}>
-            <span style={{ color:"#C9A84C", fontWeight:900, fontSize:".65rem" }}>850 MRU</span>
+            <span style={{ color:"#C9A84C", fontWeight:900, fontSize:".65rem" }}>{product.price} MRU</span>
           </div>
         </div>
       </div>
@@ -624,24 +680,23 @@ type AdminStep = "review" | "verifying" | "verified" | "confirming" | "done";
 function SceneAdmin() {
   const lang = useContext(LangCtx);
   const t = TR[lang];
-  const [wallets,  setWallets]  = useState<WalletData[]>(STATIC_WALLETS);
+  const { wallet, product } = useContext(ScenarioCtx);
   const [step,     setStep]     = useState<AdminStep>("review");
   const [pulse,    setPulse]    = useState(false);
 
-  useEffect(() => { fetchWallets().then(setWallets); }, []);
-
   useEffect(() => {
     const ts = [
-      setTimeout(() => setPulse(true),                         400),
-      setTimeout(() => setStep("verifying"),                   900),
-      setTimeout(() => setStep("verified"),                   1700),
-      setTimeout(() => setStep("confirming"),                 2400),
-      setTimeout(() => setStep("done"),                       3200),
+      setTimeout(() => setPulse(true),                          400),
+      setTimeout(() => setStep("verifying"),                   1200),
+      setTimeout(() => setStep("verified"),                    2400),
+      setTimeout(() => setStep("confirming"),                  3400),
+      setTimeout(() => setStep("done"),                        4400),
     ];
     return () => ts.forEach(clearTimeout);
   }, []);
 
-  const w0 = wallets[0];
+  const w0 = wallet;
+  const productName = lang === "ar" ? (product.nameAr || product.name) : lang === "fr" ? (product.nameFr || product.name) : product.name;
 
   return (
     <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", padding:"10px 12px 8px", overflow:"hidden" }}>
@@ -669,8 +724,8 @@ function SceneAdmin() {
       {/* Order card */}
       <div style={{ animation:"lmj-slideup .4s .15s both", background:"rgba(255,255,255,.04)", border:"1px solid rgba(201,168,76,.15)", borderRadius:10, padding:"8px 10px", marginBottom:8 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-          <span style={{ color:"rgba(250,246,238,.6)", fontSize:".52rem" }}>{t.premiumProduct}</span>
-          <span style={{ color:"#C9A84C", fontWeight:800, fontSize:".62rem" }}>850 MRU</span>
+          <span style={{ color:"rgba(250,246,238,.6)", fontSize:".52rem" }}>{productName} × 1</span>
+          <span style={{ color:"#C9A84C", fontWeight:800, fontSize:".62rem" }}>{product.price} MRU</span>
         </div>
         {/* Payment proof thumbnail */}
         <div style={{ display:"flex", alignItems:"center", gap:7 }}>
@@ -775,17 +830,20 @@ type EmailStep = "compose" | "sending" | "sent";
 function SceneEmail() {
   const lang = useContext(LangCtx);
   const t = TR[lang];
+  const { product } = useContext(ScenarioCtx);
   const [step,     setStep]     = useState<EmailStep>("compose");
   const [dotCount, setDotCount] = useState(0);
 
   useEffect(() => {
     const ts = [
-      setTimeout(() => setStep("sending"),  900),
-      setTimeout(() => setStep("sent"),    2200),
+      setTimeout(() => setStep("sending"), 1400),
+      setTimeout(() => setStep("sent"),    3200),
     ];
     const interval = setInterval(() => setDotCount(d => (d + 1) % 4), 350);
     return () => { ts.forEach(clearTimeout); clearInterval(interval); };
   }, []);
+
+  const productName = lang === "ar" ? (product.nameAr || product.name) : lang === "fr" ? (product.nameFr || product.name) : product.name;
 
   const dots = ".".repeat(dotCount);
 
@@ -843,7 +901,7 @@ function SceneEmail() {
               </svg>
             </div>
             <p style={{ color:"#FAF6EE", fontWeight:800, fontSize:".62rem", margin:"0 0 2px" }}>{t.orderConfirmedTitle}</p>
-            <p style={{ color:"rgba(250,246,238,.45)", fontSize:".5rem", margin:0 }}>Order #8942 · 850 MRU</p>
+            <p style={{ color:"rgba(250,246,238,.45)", fontSize:".5rem", margin:0 }}>{productName} · {product.price} MRU</p>
           </div>
 
           {/* Info row */}
@@ -1027,28 +1085,38 @@ function Scene4() {
 
 /* ─── Scene config ──────────────────────────────────────────────── */
 const SCENES: Array<{ id: number; label: string; dur: number; C: FC }> = [
-  { id:0, label:"Brand",    dur:2800,  C:Scene1    },
-  { id:1, label:"Cart",     dur:3000,  C:Scene2    },
-  { id:2, label:"Checkout", dur:4200,  C:Scene3    },
-  { id:3, label:"Admin",    dur:3800,  C:SceneAdmin },
-  { id:4, label:"Email",    dur:3400,  C:SceneEmail },
-  { id:5, label:"Delivery", dur:4000,  C:Scene4    },
+  { id:0, label:"Brand",    dur:4500,  C:Scene1    },
+  { id:1, label:"Cart",     dur:6000,  C:Scene2    },
+  { id:2, label:"Checkout", dur:7500,  C:Scene3    },
+  { id:3, label:"Admin",    dur:7000,  C:SceneAdmin },
+  { id:4, label:"Email",    dur:6500,  C:SceneEmail },
+  { id:5, label:"Delivery", dur:6000,  C:Scene4    },
 ];
 
 /* ─── Main widget ───────────────────────────────────────────────── */
 export function StoreMarketingIntro() {
   const [scene,      setScene]      = useState(0);
+  const [scenario,   setScenario]   = useState(0);
   const [fading,     setFading]     = useState(false);
   const [visible,    setVisible]    = useState(false);
+  const [fullscreen, setFullscreen] = useState(false);
   const [closed,     setClosed]     = useState(() => sessionStorage.getItem("lmj-widget-closed") === "1");
   const [isMobile,   setIsMobile]   = useState(() => window.innerWidth < 768);
   const [lang,       setLang]       = useState<Lang>(() => detectLang());
+  const [products,   setProducts]   = useState<ProductData[]>(STATIC_PRODUCTS);
+  const [wallets,    setWallets]    = useState<WalletData[]>(STATIC_WALLETS_DEF);
   /* Mobile starts minimized, desktop starts expanded */
   const [minimized,  setMinimized]  = useState(() => window.innerWidth < 768);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   /* Inject CSS once */
   useEffect(() => { injectStyles(); }, []);
+
+  /* Fetch real products and wallets once */
+  useEffect(() => {
+    fetchProducts().then(p => { if (p.length > 0) setProducts(p); });
+    fetchWallets().then(w => { if (w.length > 0) setWallets(w); });
+  }, []);
 
   /* Re-detect language if it changes in localStorage */
   useEffect(() => {
@@ -1065,20 +1133,21 @@ export function StoreMarketingIntro() {
     return () => window.removeEventListener("resize", handler);
   }, []);
 
-  /* Fade in widget after short delay so page loads first */
+  /* Fade in widget after short delay */
   useEffect(() => {
-    const tid = setTimeout(() => setVisible(true), 800);
+    const tid = setTimeout(() => setVisible(true), 1000);
     return () => clearTimeout(tid);
   }, []);
 
-  /* Advance scenes, loop forever */
+  /* Advance scenes; increment scenario each full loop */
   const scheduleNext = useCallback((cur: number) => {
     const dur = SCENES[cur].dur;
-    const fadeT = setTimeout(() => setFading(true), dur - 400);
+    const fadeT = setTimeout(() => setFading(true), dur - 500);
     const nextT = setTimeout(() => {
       const next = (cur + 1) % SCENES.length;
       setScene(next);
       setFading(false);
+      if (next === 0) setScenario(s => (s + 1) % 3);
       scheduleNext(next);
     }, dur);
     timers.current.push(fadeT, nextT);
@@ -1094,10 +1163,17 @@ export function StoreMarketingIntro() {
   const t = TR[lang];
   const isRtl = lang === "ar";
   const CurrentScene = SCENES[scene].C;
-  /* Desktop: narrow tall vertical at top-right */
-  /* Mobile: compact at bottom-right corner */
-  const WIDGET_W = isMobile ? 260 : 218;
-  const WIDGET_H = isMobile ? 170 : 310;
+
+  /* Scenario-specific product and wallet */
+  const numScenarios = Math.min(products.length, wallets.length, 3);
+  const scenarioIdx = scenario % Math.max(numScenarios, 1);
+  const scenarioProduct = products[scenarioIdx] || products[0] || STATIC_PRODUCTS[0];
+  const scenarioWalletIndex = scenarioIdx % Math.max(wallets.length, 1);
+  const scenarioWallet = wallets[scenarioWalletIndex] || wallets[0] || STATIC_WALLETS_DEF[0];
+
+  /* Dimensions */
+  const WIDGET_W = fullscreen ? Math.min(window.innerWidth * 0.92, 420) : isMobile ? 268 : 218;
+  const WIDGET_H = fullscreen ? Math.min(window.innerHeight * 0.82, 580) : isMobile ? 290 : 360;
 
   /* Close entirely for this session */
   const handleClose = (e: { stopPropagation: () => void }) => {
@@ -1106,23 +1182,46 @@ export function StoreMarketingIntro() {
     setClosed(true);
   };
 
+  /* Toggle fullscreen */
+  const handleFullscreen = (e: { stopPropagation: () => void }) => {
+    e.stopPropagation();
+    setFullscreen(f => !f);
+    if (minimized) setMinimized(false);
+  };
+
   /* Toggle minimized when header clicked */
-  const handleHeaderClick = () => setMinimized(m => !m);
+  const handleHeaderClick = () => { if (!fullscreen) setMinimized(m => !m); };
 
-  /* Backdrop click collapses widget */
-  const handleBackdrop = () => setMinimized(true);
+  /* Backdrop click collapses or exits fullscreen */
+  const handleBackdrop = () => { fullscreen ? setFullscreen(false) : setMinimized(true); };
 
-  const posStyle: CSSProperties = isMobile
-    ? { bottom: 16, right: 16 }
-    : { top: 24, right: 24 };
+  const posStyle: CSSProperties = fullscreen
+    ? { top:"50%", left:"50%", transform:"translate(-50%,-50%)" }
+    : isMobile
+      ? { bottom: 16, right: 16 }
+      : { top: 24, right: 24 };
+
+  const scenarioCtxValue: ScenarioData = {
+    product: scenarioProduct,
+    products,
+    wallet: scenarioWallet,
+    wallets,
+    walletIndex: scenarioWalletIndex,
+    isFullscreen: fullscreen,
+  };
 
   return (
+    <ScenarioCtx.Provider value={scenarioCtxValue}>
     <LangCtx.Provider value={lang}>
-      {/* Transparent backdrop on mobile when expanded */}
-      {isMobile && !minimized && (
+      {/* Backdrop: semi-dark for fullscreen, transparent for mobile expanded */}
+      {(fullscreen || (isMobile && !minimized)) && (
         <div
           onClick={handleBackdrop}
-          style={{ position:"fixed", inset:0, zIndex:8999, background:"transparent" }}
+          style={{
+            position:"fixed", inset:0, zIndex:8999,
+            background: fullscreen ? "rgba(0,0,0,.65)" : "transparent",
+            backdropFilter: fullscreen ? "blur(2px)" : "none",
+          }}
         />
       )}
       <div
@@ -1135,8 +1234,9 @@ export function StoreMarketingIntro() {
           zIndex:9000,
           fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
           animation:"lmj-fadein .6s ease both",
-          filter:"drop-shadow(0 8px 32px rgba(0,0,0,.65))",
+          filter:"drop-shadow(0 12px 40px rgba(0,0,0,.75))",
           userSelect:"none",
+          transition:"width .35s ease, top .35s ease, right .35s ease, bottom .35s ease, left .35s ease, transform .35s ease",
         }}
       >
       {/* ── Header bar ── */}
@@ -1149,18 +1249,17 @@ export function StoreMarketingIntro() {
           borderRadius: minimized ? 12 : "12px 12px 0 0",
           padding:"7px 10px",
           display:"flex", alignItems:"center", justifyContent:"space-between",
-          cursor:"pointer",
+          cursor: fullscreen ? "default" : "pointer",
           transition:"border-radius .25s",
         }}
       >
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          {/* Pulsing dot */}
           <div style={{ width:8, height:8, borderRadius:"50%", background:"#C9A84C", animation:"lmj-pulse 1.5s ease-in-out infinite", flexShrink:0 }} />
           <span className="lmj-shimmer" style={{ fontSize:".72rem", fontWeight:900, letterSpacing:".12em" }}>LIMJIBA</span>
           <span style={{ color:"rgba(201,168,76,.55)", fontSize:".55rem", letterSpacing:".1em" }}>{t.store}</span>
         </div>
-        <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-          {/* Scene dots */}
+        <div style={{ display:"flex", alignItems:"center", gap:6 }}>
+          {/* Scene progress dots */}
           <div style={{ display:"flex", gap:4 }}>
             {SCENES.map((s,i) => (
               <div key={s.id} style={{
@@ -1179,12 +1278,31 @@ export function StoreMarketingIntro() {
               </div>
             ))}
           </div>
-          {/* Minimize chevron */}
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
-            style={{ transform: minimized ? "rotate(0deg)" : "rotate(180deg)", transition:"transform .3s", opacity:.7 }}>
-            <path d="M3 5l4 4 4-4" stroke="#C9A84C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-          {/* Close X button */}
+          {/* Minimize chevron (hidden in fullscreen) */}
+          {!fullscreen && (
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none"
+              style={{ transform: minimized ? "rotate(0deg)" : "rotate(180deg)", transition:"transform .3s", opacity:.7 }}>
+              <path d="M3 5l4 4 4-4" stroke="#C9A84C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
+            </svg>
+          )}
+          {/* Fullscreen toggle */}
+          <div
+            onClick={handleFullscreen}
+            title={fullscreen ? "Exit fullscreen" : "Fullscreen"}
+            style={{
+              width:18, height:18, borderRadius:"50%",
+              background:"rgba(201,168,76,.1)", border:"1px solid rgba(201,168,76,.3)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              cursor:"pointer", flexShrink:0,
+              transition:"background .15s",
+            }}
+          >
+            {fullscreen
+              ? <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 3H3V1M5 1V3H7M7 5H5V7M3 7V5H1" stroke="#C9A84C" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+              : <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 3V1H3M5 1H7V3M7 5V7H5M3 7H1V5" stroke="#C9A84C" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>
+            }
+          </div>
+          {/* Close X */}
           <div
             onClick={handleClose}
             title="Close"
@@ -1214,23 +1332,19 @@ export function StoreMarketingIntro() {
           position:"relative",
           overflow:"hidden",
           opacity: fading ? 0 : 1,
-          transition:"opacity .35s ease",
+          transition:"opacity .4s ease, width .35s ease, height .35s ease",
         }}>
-          {/* Grid overlay */}
           <div style={{
             position:"absolute", inset:0, pointerEvents:"none",
             backgroundImage:"linear-gradient(rgba(201,168,76,.025) 1px,transparent 1px),linear-gradient(90deg,rgba(201,168,76,.025) 1px,transparent 1px)",
             backgroundSize:"20px 20px",
           }} />
-          {/* Corner glows */}
-          <div style={{ position:"absolute", top:0, left:0, width:80, height:80, background:"radial-gradient(circle at 0 0,rgba(201,168,76,.07),transparent 70%)", pointerEvents:"none" }} />
-          <div style={{ position:"absolute", bottom:0, right:0, width:80, height:80, background:"radial-gradient(circle at 100% 100%,rgba(201,168,76,.07),transparent 70%)", pointerEvents:"none" }} />
-          {/* Top gold line */}
+          <div style={{ position:"absolute", top:0, left:0, width:100, height:100, background:"radial-gradient(circle at 0 0,rgba(201,168,76,.07),transparent 70%)", pointerEvents:"none" }} />
+          <div style={{ position:"absolute", bottom:0, right:0, width:100, height:100, background:"radial-gradient(circle at 100% 100%,rgba(201,168,76,.07),transparent 70%)", pointerEvents:"none" }} />
           <div style={{ position:"absolute", top:0, left:0, right:0, height:1.5, background:"linear-gradient(90deg,transparent,rgba(201,168,76,.4),transparent)" }} />
 
           <CurrentScene />
 
-          {/* Scene label */}
           <div style={{ position:"absolute", bottom:6, right:10 }}>
             <span style={{ color:"rgba(201,168,76,.3)", fontSize:".48rem", letterSpacing:".15em", textTransform:"uppercase" }}>
               {t.scenes[scene]}
@@ -1240,6 +1354,7 @@ export function StoreMarketingIntro() {
       )}
       </div>
     </LangCtx.Provider>
+    </ScenarioCtx.Provider>
   );
 }
 
