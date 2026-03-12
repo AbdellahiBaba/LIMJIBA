@@ -771,7 +771,7 @@ export default function POS() {
         </ScrollArea>
       </div>
 
-      <Card className="lg:w-96 flex flex-col shrink-0 h-[58vh] lg:h-auto overflow-hidden">
+      <Card className="lg:w-96 flex flex-col shrink-0 h-[58vh] lg:h-full overflow-hidden">
         <CardHeader className="p-3 sm:pb-3">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -1226,8 +1226,8 @@ export default function POS() {
 
             <div className="space-y-2">
               <Label className="flex items-center gap-1">
-                {t("pos.customerEmail") || "Customer Email"}
-                <span className="text-xs text-muted-foreground font-normal">({t("common.optional") || "optional"})</span>
+                {t("pos.customerEmail")}
+                <span className="text-xs text-muted-foreground font-normal">({t("common.optional")})</span>
               </Label>
               <Input
                 type="email"
@@ -1239,7 +1239,7 @@ export default function POS() {
               {customerEmail.trim() && (
                 <p className="text-xs text-muted-foreground flex items-center gap-1">
                   <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
-                  {t("pos.emailConfirmationWillBeSent") || "Receipt & account confirmation will be emailed"}
+                  {t("pos.emailConfirmationWillBeSent")}
                 </p>
               )}
             </div>

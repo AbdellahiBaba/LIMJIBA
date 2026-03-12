@@ -18,6 +18,7 @@
     "quantity": "Quantité",
     "price": "Prix",
     "name": "Nom",
+    "optional": "facultatif",
     "description": "Description",
     "phone": "Téléphone",
     "email": "Email",
@@ -459,7 +460,9 @@
     "selectWallet": "Sélectionner portefeuille",
     "chooseWallet": "Choisir portefeuille...",
     "selectVariant": "Sélectionnez une variante à ajouter au panier",
-    "noVariantsAvailable": "Aucune variante disponible pour ce produit"
+    "noVariantsAvailable": "Aucune variante disponible pour ce produit",
+    "customerEmail": "Email Client",
+    "emailConfirmationWillBeSent": "Un email de confirmation sera envoyé"
   },
   "sales": {
     "title": "Ventes",

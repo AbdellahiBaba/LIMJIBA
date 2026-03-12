@@ -18,6 +18,7 @@
     "quantity": "Quantity",
     "price": "Price",
     "name": "Name",
+    "optional": "optional",
     "description": "Description",
     "phone": "Phone",
     "email": "Email",
@@ -459,7 +460,9 @@
     "selectWallet": "Select wallet",
     "chooseWallet": "Choose wallet...",
     "selectVariant": "Select a variant to add to cart",
-    "noVariantsAvailable": "No variants available for this product"
+    "noVariantsAvailable": "No variants available for this product",
+    "customerEmail": "Customer Email",
+    "emailConfirmationWillBeSent": "A confirmation email will be sent"
   },
   "sales": {
     "title": "Sales",

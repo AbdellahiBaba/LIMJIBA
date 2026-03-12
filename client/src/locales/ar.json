@@ -18,6 +18,7 @@
     "quantity": "الكمية",
     "price": "السعر",
     "name": "الاسم",
+    "optional": "اختياري",
     "description": "الوصف",
     "phone": "الهاتف",
     "email": "البريد الإلكتروني",
@@ -459,7 +460,9 @@
     "selectWallet": "اختر المحفظة",
     "chooseWallet": "اختر محفظة...",
     "selectVariant": "اختر متغيراً لإضافته إلى السلة",
-    "noVariantsAvailable": "لا توجد متغيرات متاحة لهذا المنتج"
+    "noVariantsAvailable": "لا توجد متغيرات متاحة لهذا المنتج",
+    "customerEmail": "البريد الإلكتروني للعميل",
+    "emailConfirmationWillBeSent": "سيتم إرسال بريد إلكتروني للتأكيد"
   },
   "sales": {
     "title": "المبيعات",
