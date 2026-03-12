@@ -408,6 +408,7 @@ export interface CartItem {
   total: number;
   variantId?: string;
   variantLabel?: string;
+  stockQuantity?: number;
 }
 
 export interface ProfitStats {

@@ -371,7 +371,7 @@ export default function StoreProductDetail() {
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {variants.map(v => (
+                {variants.filter(v => v.stockQuantity > 0).map(v => (
                   <button
                     key={v.id}
                     onClick={() => { setSelectedVariantId(v.id); setQuantity(1); }}
@@ -385,7 +385,6 @@ export default function StoreProductDetail() {
                     data-testid={`button-variant-${v.id}`}
                   >
                     {v.variantLabel}
-                    {v.stockQuantity <= 0 && <span className="ml-1 text-xs text-red-400">({lang === "ar" ? "نفذ" : lang === "fr" ? "Épuisé" : "Out"})</span>}
                   </button>
                 ))}
               </div>

@@ -330,7 +330,7 @@ export default function POS() {
     try {
       const res = await fetch(`/api/products/${product.id}/variants`);
       const variants: ProductVariant[] = await res.json();
-      setVariantPickerVariants(variants.filter(v => v.isActive));
+      setVariantPickerVariants(variants.filter(v => v.isActive && v.stockQuantity > 0));
     } catch {
       setVariantPickerVariants([]);
     }
@@ -359,6 +359,7 @@ export default function POS() {
         total: variant.unitPrice,
         variantId: variant.id,
         variantLabel: variant.variantLabel,
+        stockQuantity: variant.stockQuantity,
       }]);
     }
     setVariantPickerOpen(false);
@@ -401,6 +402,7 @@ export default function POS() {
           quantity: 1,
           unitPrice: product.unitPrice,
           total: product.unitPrice,
+          stockQuantity: product.stockQuantity,
         },
       ]);
     }
@@ -409,7 +411,6 @@ export default function POS() {
   const cartItemKey = (item: CartItem) => item.variantId ? `${item.productId}::${item.variantId}` : item.productId;
 
   const updateQuantity = (productId: string, delta: number, variantId?: string) => {
-    const product = products?.find((p) => p.id === productId);
     const key = variantId ? `${productId}::${variantId}` : productId;
     setCart(
       cart
@@ -417,7 +418,8 @@ export default function POS() {
           if (cartItemKey(item) === key) {
             const newQty = item.quantity + delta;
             if (newQty <= 0) return null;
-            if (product && newQty > product.stockQuantity) {
+            const maxStock = item.stockQuantity;
+            if (maxStock !== undefined && newQty > maxStock) {
               toast({ title: t("pos.cannotExceedStock"), variant: "destructive" });
               return item;
             }
@@ -633,10 +635,13 @@ export default function POS() {
                       {favoriteProducts.map((product) => {
                         const inCartQty = cart.filter((item) => item.productId === product.id).reduce((sum, i) => sum + i.quantity, 0);
                         return (
-                          <button
+                          <div
                             key={product.id}
+                            role="button"
+                            tabIndex={0}
                             onClick={() => addToCart(product)}
-                            className={`relative p-2 sm:p-4 rounded-md border-2 border-yellow-400/50 text-left hover-elevate active-elevate-2 min-h-[80px] ${
+                            onKeyDown={(e) => e.key === "Enter" && addToCart(product)}
+                            className={`relative p-2 sm:p-4 rounded-md border-2 border-yellow-400/50 text-left hover-elevate active-elevate-2 min-h-[80px] cursor-pointer select-none ${
                               inCartQty > 0 ? "border-primary bg-primary/5" : "bg-card"
                             }`}
                             data-testid={`button-favorite-product-${product.id}`}
@@ -655,12 +660,26 @@ export default function POS() {
                             <p className="text-center font-mono text-[10px] sm:text-sm text-primary font-semibold">
                               {product.unitPrice.toLocaleString()} MRU
                             </p>
-                            {inCartQty > 0 && (
+                            {inCartQty > 0 && !product.hasVariants ? (
+                              <div className="flex items-center justify-center gap-1 mt-1" onClick={(e) => e.stopPropagation()}>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); updateQuantity(product.id, -1); }}
+                                  className="w-6 h-6 rounded-full border border-primary/40 bg-background flex items-center justify-center text-primary hover:bg-primary/10 active:scale-90 transition-all"
+                                  data-testid={`button-fav-decrease-${product.id}`}
+                                ><Minus className="h-2.5 w-2.5" /></button>
+                                <span className="font-mono text-[10px] sm:text-xs font-bold text-primary min-w-[14px] text-center">{inCartQty}</span>
+                                <button
+                                  onClick={(e) => { e.stopPropagation(); updateQuantity(product.id, 1); }}
+                                  className="w-6 h-6 rounded-full border border-primary/40 bg-background flex items-center justify-center text-primary hover:bg-primary/10 active:scale-90 transition-all"
+                                  data-testid={`button-fav-increase-${product.id}`}
+                                ><Plus className="h-2.5 w-2.5" /></button>
+                              </div>
+                            ) : inCartQty > 0 ? (
                               <div className="flex justify-center mt-1">
                                 <Badge className="text-[8px] sm:text-xs px-1 sm:px-2">{inCartQty}</Badge>
                               </div>
-                            )}
-                          </button>
+                            ) : null}
+                          </div>
                         );
                       })}
                     </div>
@@ -672,10 +691,13 @@ export default function POS() {
                 {filteredProducts.filter(p => p.stockQuantity > 0 || p.hasVariants).map((product) => {
                   const inCartQty = cart.filter((item) => item.productId === product.id).reduce((sum, i) => sum + i.quantity, 0);
                   return (
-                    <button
+                    <div
                       key={product.id}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => addToCart(product)}
-                      className={`relative p-2 sm:p-4 rounded-md border text-left hover-elevate active-elevate-2 min-h-[80px] ${
+                      onKeyDown={(e) => e.key === "Enter" && addToCart(product)}
+                      className={`relative p-2 sm:p-4 rounded-md border text-left hover-elevate active-elevate-2 min-h-[80px] cursor-pointer select-none ${
                         inCartQty > 0 ? "border-primary bg-primary/5" : "bg-card"
                       }`}
                       data-testid={`button-product-${product.id}`}
@@ -693,12 +715,26 @@ export default function POS() {
                       <p className="text-center font-mono text-[10px] sm:text-sm text-primary font-semibold">
                         {product.unitPrice.toLocaleString()} MRU
                       </p>
-                      {inCartQty > 0 && (
+                      {inCartQty > 0 && !product.hasVariants ? (
+                        <div className="flex items-center justify-center gap-1 mt-1" onClick={(e) => e.stopPropagation()}>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); updateQuantity(product.id, -1); }}
+                            className="w-6 h-6 rounded-full border border-primary/40 bg-background flex items-center justify-center text-primary hover:bg-primary/10 active:scale-90 transition-all"
+                            data-testid={`button-decrease-${product.id}`}
+                          ><Minus className="h-2.5 w-2.5" /></button>
+                          <span className="font-mono text-[10px] sm:text-xs font-bold text-primary min-w-[14px] text-center">{inCartQty}</span>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); updateQuantity(product.id, 1); }}
+                            className="w-6 h-6 rounded-full border border-primary/40 bg-background flex items-center justify-center text-primary hover:bg-primary/10 active:scale-90 transition-all"
+                            data-testid={`button-increase-${product.id}`}
+                          ><Plus className="h-2.5 w-2.5" /></button>
+                        </div>
+                      ) : inCartQty > 0 ? (
                         <div className="flex justify-center mt-1">
                           <Badge className="text-[8px] sm:text-xs px-1 sm:px-2">{inCartQty}</Badge>
                         </div>
-                      )}
-                    </button>
+                      ) : null}
+                    </div>
                   );
                 })}
               </div>
@@ -1580,14 +1616,11 @@ export default function POS() {
             <div className="grid grid-cols-1 gap-2 max-h-[50vh] overflow-y-auto">
               {variantPickerVariants.map((variant) => {
                 const inCart = cart.find(i => i.productId === variantPickerProduct?.id && i.variantId === variant.id);
-                const outOfStock = variant.stockQuantity <= 0;
                 return (
                   <button
                     key={variant.id}
                     onClick={() => variantPickerProduct && addVariantToCart(variantPickerProduct, variant)}
-                    disabled={outOfStock}
                     className={`flex items-center justify-between p-3 rounded-lg border text-left transition-colors ${
-                      outOfStock ? "opacity-50 cursor-not-allowed bg-muted" :
                       inCart ? "border-primary bg-primary/5 hover:bg-primary/10" : "bg-card hover:bg-accent"
                     }`}
                     data-testid={`button-variant-${variant.id}`}
@@ -1597,9 +1630,7 @@ export default function POS() {
                       {variant.sku && <p className="text-[10px] text-muted-foreground">SKU: {variant.sku}</p>}
                     </div>
                     <div className="flex items-center gap-3 shrink-0">
-                      <Badge variant={outOfStock ? "destructive" : "secondary"} className="text-xs">
-                        {outOfStock ? t("pos.outOfStock") : variant.stockQuantity}
-                      </Badge>
+                      <Badge variant="secondary" className="text-xs">{variant.stockQuantity}</Badge>
                       <span className="font-mono text-sm font-semibold text-primary whitespace-nowrap">
                         {variant.unitPrice.toLocaleString()} MRU
                       </span>
