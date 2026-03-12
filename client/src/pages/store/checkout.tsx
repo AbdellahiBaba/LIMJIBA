@@ -14,7 +14,7 @@ import type { StoreSettings, PaymentWallet } from "@shared/schema";
 export default function StoreCheckout() {
   const { items, subtotal, clearCart } = useCart();
   const { t, lang } = useStoreLanguage();
-  const { customer, isAuthenticated } = useStoreAuth();
+  const { customer, isAuthenticated, isLoading: authLoading } = useStoreAuth();
   const [, setLocation] = useLocation();
   const [orderPlaced, setOrderPlaced] = useState<{ orderNumber: string; total: number; pointsEarned: number } | null>(null);
   const [form, setForm] = useState({ customerName: "", customerEmail: "", customerPhone: "", customerAddress: "", notes: "" });
@@ -158,6 +158,14 @@ export default function StoreCheckout() {
             <Button className="rounded-full" style={{ backgroundColor: accentColor, color: primaryColor }} data-testid="button-continue-shopping">{t("checkout.continueShopping")}</Button>
           </Link>
         </div>
+      </div>
+    );
+  }
+
+  if (authLoading) {
+    return (
+      <div className="max-w-2xl mx-auto px-4 py-20 flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" style={{ color: accentColor }} />
       </div>
     );
   }

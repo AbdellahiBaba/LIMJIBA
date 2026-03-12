@@ -33,7 +33,7 @@ export default function StoreLogin() {
     try {
       await login(email, password);
       if (redirectParam === "checkout") {
-        setLocation("/store/checkout");
+        setLocation("/store/cart");
       } else {
         setLocation("/store");
       }

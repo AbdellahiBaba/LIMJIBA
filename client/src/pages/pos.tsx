@@ -651,8 +651,18 @@ export default function POS() {
                             </Badge>
                             <Star className="h-3 w-3 text-yellow-500 fill-yellow-500 absolute top-1 left-1" />
                             {product.hasVariants && <Layers className="h-3 w-3 text-primary/60 absolute bottom-1 left-1" />}
-                            <div className="flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded bg-muted mx-auto mb-1 sm:mb-2">
-                              <Package className="h-4 w-4 sm:h-6 sm:w-6 text-muted-foreground" />
+                            <div className="flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded overflow-hidden bg-muted mx-auto mb-1 sm:mb-2">
+                              {(product.imageUrl || (product.images && product.images[0])) ? (
+                                <img
+                                  src={product.imageUrl || product.images![0]}
+                                  alt={product.name}
+                                  className="w-full h-full object-cover"
+                                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; (e.currentTarget.nextSibling as HTMLElement).style.display = "flex"; }}
+                                />
+                              ) : null}
+                              <span className={`items-center justify-center w-full h-full ${(product.imageUrl || (product.images && product.images[0])) ? "hidden" : "flex"}`}>
+                                <Package className="h-4 w-4 sm:h-6 sm:w-6 text-muted-foreground" />
+                              </span>
                             </div>
                             <h3 className="font-medium text-[10px] sm:text-sm text-center line-clamp-2 mb-0.5 sm:mb-1">
                               {product.name}
@@ -706,8 +716,18 @@ export default function POS() {
                         {product.stockQuantity}
                       </Badge>
                       {product.hasVariants && <Layers className="h-3 w-3 text-primary/60 absolute bottom-1 left-1" />}
-                      <div className="flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded bg-muted mx-auto mb-1 sm:mb-2">
-                        <Package className="h-4 w-4 sm:h-6 sm:w-6 text-muted-foreground" />
+                      <div className="flex items-center justify-center w-8 h-8 sm:w-12 sm:h-12 rounded overflow-hidden bg-muted mx-auto mb-1 sm:mb-2">
+                        {(product.imageUrl || (product.images && product.images[0])) ? (
+                          <img
+                            src={product.imageUrl || product.images![0]}
+                            alt={product.name}
+                            className="w-full h-full object-cover"
+                            onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; (e.currentTarget.nextSibling as HTMLElement).style.display = "flex"; }}
+                          />
+                        ) : null}
+                        <span className={`items-center justify-center w-full h-full ${(product.imageUrl || (product.images && product.images[0])) ? "hidden" : "flex"}`}>
+                          <Package className="h-4 w-4 sm:h-6 sm:w-6 text-muted-foreground" />
+                        </span>
                       </div>
                       <h3 className="font-medium text-[10px] sm:text-sm text-center line-clamp-2 mb-0.5 sm:mb-1">
                         {product.name}

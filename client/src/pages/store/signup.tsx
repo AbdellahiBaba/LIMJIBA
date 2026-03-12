@@ -40,7 +40,7 @@ export default function StoreSignup() {
     try {
       await signup({ email: form.email, password: form.password, fullName: form.fullName, phone: form.phone || undefined });
       if (redirectParam === "checkout") {
-        setLocation("/store/checkout");
+        setLocation("/store/cart");
       } else {
         setLocation("/store");
       }
