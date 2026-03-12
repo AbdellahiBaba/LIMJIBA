@@ -1,4 +1,149 @@
-import { useState, useEffect, useRef, useCallback, type CSSProperties, type FC } from "react";
+import { useState, useEffect, useRef, useCallback, createContext, useContext, type CSSProperties, type FC } from "react";
+
+/* ─── Language detection ─────────────────────────────────────────── */
+type Lang = "en" | "fr" | "ar";
+function detectLang(): Lang {
+  const s = localStorage.getItem("store-language");
+  if (s === "fr" || s === "ar") return s;
+  return "en";
+}
+const LangCtx = createContext<Lang>("en");
+
+/* ─── All translations ───────────────────────────────────────────── */
+const TR = {
+  en: {
+    store: "· STORE",
+    scenes: ["Brand","Cart","Checkout","Admin","Email","Delivery"],
+    shopAny: "Shop Anything. Anytime.",
+    yourCart: "YOUR CART",
+    choosePayment: "Choose Payment Method",
+    transferToWallet: "Transfer to Wallet",
+    uploadProof: "Upload Payment Proof",
+    proofUploaded: "Proof Uploaded!",
+    awaiting: "Awaiting admin verification",
+    copy: "Copy", copied: "Copied!",
+    transferTo: "Transfer to",
+    adminPanel: "Admin Panel",
+    orderReview: "Order Review",
+    pending: "PENDING",
+    premiumProduct: "Premium Product × 1",
+    paymentVia: "Payment via",
+    verifyPayment: "Verify Payment",
+    verifying: "Verifying…",
+    paymentVerified: "Payment Verified ✓",
+    confirmOrder: "Confirm Order",
+    confirming: "Confirming…",
+    orderConfirmed: "Order Confirmed ✓",
+    orderInProgress: "✦ Order status → In Progress",
+    notifSystem: "Notification System",
+    emailConfirm: "Order Confirmation Email",
+    emailFrom: "From:",
+    emailSubject: "Subject:",
+    emailSubjectVal: "Your Order is Confirmed ✓",
+    premiumStore: "Premium Store",
+    orderConfirmedTitle: "Order Confirmed!",
+    statusLabel: "Status",
+    inProgress: "In Progress",
+    deliveryLabel: "Delivery",
+    days13: "1–3 days",
+    preparingEmail: "Preparing email…",
+    sending: "Sending",
+    emailDelivered: "Email delivered to customer!",
+    expressDelivery: "⚡ Express Delivery ⚡",
+    racingToDoor: "Racing to your door",
+    brandSub: "لمجيبة · Premium Imports",
+    brandFeatures: ["🛍 500+ Products","⚡ Fast Delivery","🌟 Premium"],
+    close: "×",
+  },
+  fr: {
+    store: "· BOUTIQUE",
+    scenes: ["Marque","Panier","Paiement","Admin","Email","Livraison"],
+    shopAny: "Achetez tout. N'importe quand.",
+    yourCart: "VOTRE PANIER",
+    choosePayment: "Mode de paiement",
+    transferToWallet: "Virement vers le portefeuille",
+    uploadProof: "Preuve de paiement",
+    proofUploaded: "Preuve envoyée !",
+    awaiting: "En attente de vérification",
+    copy: "Copier", copied: "Copié !",
+    transferTo: "Transférer à",
+    adminPanel: "Panneau Admin",
+    orderReview: "Révision commande",
+    pending: "EN ATTENTE",
+    premiumProduct: "Produit Premium × 1",
+    paymentVia: "Paiement via",
+    verifyPayment: "Vérifier le paiement",
+    verifying: "Vérification…",
+    paymentVerified: "Paiement vérifié ✓",
+    confirmOrder: "Confirmer la commande",
+    confirming: "Confirmation…",
+    orderConfirmed: "Commande confirmée ✓",
+    orderInProgress: "✦ Statut → En cours",
+    notifSystem: "Système de notification",
+    emailConfirm: "Email de confirmation",
+    emailFrom: "De :",
+    emailSubject: "Objet :",
+    emailSubjectVal: "Votre commande est confirmée ✓",
+    premiumStore: "Boutique Premium",
+    orderConfirmedTitle: "Commande confirmée !",
+    statusLabel: "Statut",
+    inProgress: "En cours",
+    deliveryLabel: "Livraison",
+    days13: "1–3 jours",
+    preparingEmail: "Préparation de l'email…",
+    sending: "Envoi",
+    emailDelivered: "Email livré au client !",
+    expressDelivery: "⚡ Livraison Express ⚡",
+    racingToDoor: "En route vers chez vous",
+    brandSub: "لمجيبة · Importations Premium",
+    brandFeatures: ["🛍 500+ Produits","⚡ Livraison rapide","🌟 Premium"],
+    close: "×",
+  },
+  ar: {
+    store: "· المتجر",
+    scenes: ["العلامة","السلة","الدفع","الإدارة","البريد","التوصيل"],
+    shopAny: "تسوّق أي شيء. في أي وقت.",
+    yourCart: "سلّتك",
+    choosePayment: "طريقة الدفع",
+    transferToWallet: "تحويل إلى المحفظة",
+    uploadProof: "رفع إثبات الدفع",
+    proofUploaded: "تم رفع الإثبات!",
+    awaiting: "بانتظار التحقق من الإدارة",
+    copy: "نسخ", copied: "تم النسخ!",
+    transferTo: "حوّل إلى",
+    adminPanel: "لوحة الإدارة",
+    orderReview: "مراجعة الطلب",
+    pending: "قيد الانتظار",
+    premiumProduct: "منتج مميز × 1",
+    paymentVia: "الدفع عبر",
+    verifyPayment: "التحقق من الدفع",
+    verifying: "جارٍ التحقق…",
+    paymentVerified: "تم التحقق ✓",
+    confirmOrder: "تأكيد الطلب",
+    confirming: "جارٍ التأكيد…",
+    orderConfirmed: "تم تأكيد الطلب ✓",
+    orderInProgress: "✦ الحالة → قيد التنفيذ",
+    notifSystem: "نظام الإشعارات",
+    emailConfirm: "بريد تأكيد الطلب",
+    emailFrom: "من:",
+    emailSubject: "الموضوع:",
+    emailSubjectVal: "طلبك تم تأكيده ✓",
+    premiumStore: "متجر فاخر",
+    orderConfirmedTitle: "تم تأكيد الطلب!",
+    statusLabel: "الحالة",
+    inProgress: "قيد التنفيذ",
+    deliveryLabel: "التوصيل",
+    days13: "١–٣ أيام",
+    preparingEmail: "جارٍ التحضير…",
+    sending: "جارٍ الإرسال",
+    emailDelivered: "تم إرسال البريد للعميل!",
+    expressDelivery: "⚡ توصيل سريع ⚡",
+    racingToDoor: "في طريقه إليك",
+    brandSub: "لمجيبة · استيراد فاخر",
+    brandFeatures: ["🛍 +500 منتج","⚡ توصيل سريع","🌟 فاخر"],
+    close: "×",
+  },
+} as const;
 
 /* ─── Keyframe styles injected once ─────────────────────────────── */
 function injectStyles() {
@@ -98,6 +243,8 @@ function MiniParticles({ count = 10 }: { count?: number }) {
 
 /* ─── SCENE 1: Brand reveal ─────────────────────────────────────── */
 function Scene1() {
+  const lang = useContext(LangCtx);
+  const t = TR[lang];
   return (
     <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center" }}>
       <MiniParticles count={12} />
@@ -124,11 +271,11 @@ function Scene1() {
       </div>
       <div style={{ animation:"lmj-fadein .5s .6s both", textAlign:"center", marginTop:6 }}>
         <p style={{ color:"rgba(201,168,76,.65)", fontSize:".6rem", letterSpacing:".25em", margin:0, textTransform:"uppercase" }}>
-          لمجيبة · Premium Imports
+          {t.brandSub}
         </p>
       </div>
       <div style={{ animation:"lmj-fadein .5s .9s both", marginTop:14, display:"flex", gap:12 }}>
-        {["🛍 500+ Products","⚡ Fast Delivery","🌟 Premium"].map((v,i) => (
+        {(t.brandFeatures as readonly string[]).map((v,i) => (
           <span key={i} style={{ color:"rgba(201,168,76,.6)", fontSize:".55rem", whiteSpace:"nowrap" }}>{v}</span>
         ))}
       </div>
@@ -138,6 +285,8 @@ function Scene1() {
 
 /* ─── SCENE 2: Add to cart ──────────────────────────────────────── */
 function Scene2() {
+  const lang = useContext(LangCtx);
+  const t = TR[lang];
   const [clicked, setClicked]     = useState(false);
   const [flying,  setFlying]      = useState(false);
   const [bounce,  setBounce]      = useState(false);
@@ -224,12 +373,12 @@ function Scene2() {
             }}>{count}</div>
           )}
         </div>
-        <p style={{ color:"rgba(201,168,76,.55)", fontSize:".55rem", margin:"5px 0 0", letterSpacing:".1em" }}>YOUR CART</p>
+        <p style={{ color:"rgba(201,168,76,.55)", fontSize:".55rem", margin:"5px 0 0", letterSpacing:".1em" }}>{t.yourCart}</p>
       </div>
 
       {/* Label */}
       <div style={{ position:"absolute", bottom:8, left:0, right:0, textAlign:"center", animation:"lmj-fadein .5s 1s both" }}>
-        <p style={{ color:"#C9A84C", fontSize:".65rem", fontWeight:700, margin:0 }}>Shop Anything. Anytime.</p>
+        <p style={{ color:"#C9A84C", fontSize:".65rem", fontWeight:700, margin:0 }}>{t.shopAny}</p>
       </div>
     </div>
   );
@@ -307,6 +456,8 @@ function fetchWallets(): Promise<WalletData[]> {
 type CheckoutStep = "wallets" | "number" | "upload" | "done";
 
 function Scene3() {
+  const lang = useContext(LangCtx);
+  const t = TR[lang];
   const [wallets,     setWallets]     = useState<WalletData[]>(STATIC_WALLETS);
   const [step,        setStep]        = useState<CheckoutStep>("wallets");
   const [selected,    setSelected]    = useState<number | null>(null);
@@ -344,9 +495,9 @@ function Scene3() {
           <div>
             <p style={{ color:"rgba(201,168,76,.5)", fontSize:".5rem", letterSpacing:".15em", margin:0, textTransform:"uppercase" }}>Checkout · LIMJIBA #8942</p>
             <p style={{ color:"#C9A84C", fontWeight:800, fontSize:".7rem", margin:"1px 0 0" }}>
-              {step === "wallets" ? "Choose Payment Method" :
-               step === "number"  ? "Transfer to Wallet" :
-               step === "upload"  ? "Upload Payment Proof" : "Order Confirmed!"}
+              {step === "wallets" ? t.choosePayment :
+               step === "number"  ? t.transferToWallet :
+               step === "upload"  ? t.uploadProof : t.orderConfirmedTitle}
             </p>
           </div>
           <div style={{ background:"rgba(201,168,76,.12)", border:"1px solid rgba(201,168,76,.3)", borderRadius:6, padding:"2px 8px" }}>
@@ -401,7 +552,7 @@ function Scene3() {
             ))}
           </div>
           <div style={{ background:`${selWallet.bg}18`, border:`1px solid ${selWallet.bg}55`, borderRadius:10, padding:"10px 12px" }}>
-            <p style={{ color:"rgba(250,246,238,.5)", fontSize:".5rem", margin:"0 0 4px", letterSpacing:".1em", textTransform:"uppercase" }}>Transfer to · {selWallet.name}</p>
+            <p style={{ color:"rgba(250,246,238,.5)", fontSize:".5rem", margin:"0 0 4px", letterSpacing:".1em", textTransform:"uppercase" }}>{t.transferTo} · {selWallet.name}</p>
             <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
               <span style={{ color:"#FAF6EE", fontFamily:"monospace", fontWeight:900, fontSize:"1rem", letterSpacing:".12em" }}>
                 {selWallet.walletNumber}
@@ -412,7 +563,7 @@ function Scene3() {
                   : <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="rgba(201,168,76,.8)" strokeWidth="1.2"><rect x="3" y="3" width="6" height="6" rx="1"/><path d="M1 7V1h6"/></svg>
                 }
                 <span style={{ color: copied ? "#0A1628" : "rgba(201,168,76,.8)", fontSize:".48rem", fontWeight:700 }}>
-                  {copied ? "Copied!" : "Copy"}
+                  {copied ? t.copied : t.copy}
                 </span>
               </div>
             </div>
@@ -442,7 +593,7 @@ function Scene3() {
                     <circle cx="6" cy="6" r="4.5" stroke="rgba(201,168,76,.3)" strokeWidth="1.5" fill="none"/>
                     <path d="M6 1.5 A4.5 4.5 0 0 1 10.5 6" stroke="#C9A84C" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
                   </svg>
-                : <><svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2 9v2h9V9M6.5 2v6M4 4.5l2.5-2.5L9 4.5" strokeLinecap="round" strokeLinejoin="round"/></svg> Upload Payment Proof</>
+                : <><svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8"><path d="M2 9v2h9V9M6.5 2v6M4 4.5l2.5-2.5L9 4.5" strokeLinecap="round" strokeLinejoin="round"/></svg> {t.uploadProof}</>
               }
             </button>
           </div>
@@ -459,8 +610,8 @@ function Scene3() {
               strokeLinecap="round" strokeLinejoin="round"
               strokeDasharray="80" strokeDashoffset="0" style={{ animation:"lmj-checkdraw .4s .35s ease forwards" }}/>
           </svg>
-          <p style={{ color:"#C9A84C", fontWeight:900, fontSize:".75rem", margin:"6px 0 2px" }}>Proof Uploaded!</p>
-          <p style={{ color:"rgba(250,246,238,.45)", fontSize:".55rem", margin:0 }}>Awaiting admin verification</p>
+          <p style={{ color:"#C9A84C", fontWeight:900, fontSize:".75rem", margin:"6px 0 2px" }}>{t.proofUploaded}</p>
+          <p style={{ color:"rgba(250,246,238,.45)", fontSize:".55rem", margin:0 }}>{t.awaiting}</p>
         </div>
       )}
     </div>
@@ -471,6 +622,8 @@ function Scene3() {
 type AdminStep = "review" | "verifying" | "verified" | "confirming" | "done";
 
 function SceneAdmin() {
+  const lang = useContext(LangCtx);
+  const t = TR[lang];
   const [wallets,  setWallets]  = useState<WalletData[]>(STATIC_WALLETS);
   const [step,     setStep]     = useState<AdminStep>("review");
   const [pulse,    setPulse]    = useState(false);
@@ -503,12 +656,12 @@ function SceneAdmin() {
               </svg>
             </div>
             <div>
-              <p style={{ color:"rgba(201,168,76,.5)", fontSize:".48rem", letterSpacing:".1em", margin:0, textTransform:"uppercase" }}>Admin Panel</p>
-              <p style={{ color:"#C9A84C", fontWeight:800, fontSize:".68rem", margin:0 }}>Order Review #8942</p>
+              <p style={{ color:"rgba(201,168,76,.5)", fontSize:".48rem", letterSpacing:".1em", margin:0, textTransform:"uppercase" }}>{t.adminPanel}</p>
+              <p style={{ color:"#C9A84C", fontWeight:800, fontSize:".68rem", margin:0 }}>{t.orderReview} #8942</p>
             </div>
           </div>
           <span style={{ background:"rgba(234,88,12,.15)", border:"1px solid rgba(234,88,12,.4)", borderRadius:5, padding:"2px 7px", color:"#fb923c", fontSize:".48rem", fontWeight:700 }}>
-            PENDING
+            {t.pending}
           </span>
         </div>
       </div>
@@ -516,7 +669,7 @@ function SceneAdmin() {
       {/* Order card */}
       <div style={{ animation:"lmj-slideup .4s .15s both", background:"rgba(255,255,255,.04)", border:"1px solid rgba(201,168,76,.15)", borderRadius:10, padding:"8px 10px", marginBottom:8 }}>
         <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:6 }}>
-          <span style={{ color:"rgba(250,246,238,.6)", fontSize:".52rem" }}>Premium Product × 1</span>
+          <span style={{ color:"rgba(250,246,238,.6)", fontSize:".52rem" }}>{t.premiumProduct}</span>
           <span style={{ color:"#C9A84C", fontWeight:800, fontSize:".62rem" }}>850 MRU</span>
         </div>
         {/* Payment proof thumbnail */}
@@ -527,7 +680,7 @@ function SceneAdmin() {
             </svg>
           </div>
           <div style={{ flex:1, minWidth:0 }}>
-            <p style={{ color:"rgba(250,246,238,.5)", fontSize:".48rem", margin:"0 0 2px" }}>Payment via</p>
+            <p style={{ color:"rgba(250,246,238,.5)", fontSize:".48rem", margin:"0 0 2px" }}>{t.paymentVia}</p>
             <div style={{ display:"flex", alignItems:"center", gap:5 }}>
               {w0 && <WalletIcon wallet={w0} size={16} />}
               <span style={{ color:"#FAF6EE", fontSize:".55rem", fontWeight:700 }}>{w0?.name}</span>
@@ -558,18 +711,18 @@ function SceneAdmin() {
         }}>
           {step === "review" && (
             <><svg width="11" height="11" fill="none" stroke="#fff" strokeWidth="2"><path d="M2 6l2.5 2.5L9 3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            <span style={{ color:"#fff", fontWeight:700, fontSize:".58rem" }}>Verify Payment</span></>
+            <span style={{ color:"#fff", fontWeight:700, fontSize:".58rem" }}>{t.verifyPayment}</span></>
           )}
           {step === "verifying" && (
             <><svg width="11" height="11" viewBox="0 0 11 11" style={{ animation:"lmj-spin .6s linear infinite" }}>
               <circle cx="5.5" cy="5.5" r="4" stroke="rgba(201,168,76,.3)" strokeWidth="1.5" fill="none"/>
               <path d="M5.5 1.5 A4 4 0 0 1 9.5 5.5" stroke="#C9A84C" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
             </svg>
-            <span style={{ color:"#C9A84C", fontWeight:700, fontSize:".58rem" }}>Verifying…</span></>
+            <span style={{ color:"#C9A84C", fontWeight:700, fontSize:".58rem" }}>{t.verifying}</span></>
           )}
           {(step === "verified" || step === "confirming" || step === "done") && (
             <><svg width="11" height="11" fill="none" stroke="#4ade80" strokeWidth="2"><path d="M2 6l2.5 2.5L9 3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-            <span style={{ color:"#4ade80", fontWeight:700, fontSize:".58rem" }}>Payment Verified ✓</span></>
+            <span style={{ color:"#4ade80", fontWeight:700, fontSize:".58rem" }}>{t.paymentVerified}</span></>
           )}
         </button>
 
@@ -587,18 +740,18 @@ function SceneAdmin() {
           }}>
             {step === "verified" && (
               <><svg width="11" height="11" fill="none" stroke="#0A1628" strokeWidth="2"><rect x="2" y="2" width="7" height="8" rx="1"/><path d="M4 5.5l1.5 1.5L8 4" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              <span style={{ color:"#0A1628", fontWeight:700, fontSize:".58rem" }}>Confirm Order</span></>
+              <span style={{ color:"#0A1628", fontWeight:700, fontSize:".58rem" }}>{t.confirmOrder}</span></>
             )}
             {step === "confirming" && (
               <><svg width="11" height="11" viewBox="0 0 11 11" style={{ animation:"lmj-spin .6s linear infinite" }}>
                 <circle cx="5.5" cy="5.5" r="4" stroke="rgba(201,168,76,.3)" strokeWidth="1.5" fill="none"/>
                 <path d="M5.5 1.5 A4 4 0 0 1 9.5 5.5" stroke="#C9A84C" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
               </svg>
-              <span style={{ color:"#C9A84C", fontWeight:700, fontSize:".58rem" }}>Confirming…</span></>
+              <span style={{ color:"#C9A84C", fontWeight:700, fontSize:".58rem" }}>{t.confirming}</span></>
             )}
             {step === "done" && (
               <><svg width="11" height="11" fill="none" stroke="#C9A84C" strokeWidth="2"><path d="M2 6l2.5 2.5L9 3" strokeLinecap="round" strokeLinejoin="round"/></svg>
-              <span style={{ color:"#C9A84C", fontWeight:700, fontSize:".58rem" }}>Order Confirmed ✓</span></>
+              <span style={{ color:"#C9A84C", fontWeight:700, fontSize:".58rem" }}>{t.orderConfirmed}</span></>
             )}
           </button>
         )}
@@ -607,7 +760,7 @@ function SceneAdmin() {
         {step === "done" && (
           <div style={{ textAlign:"center", animation:"lmj-fadein .5s both" }}>
             <span style={{ background:"rgba(201,168,76,.15)", border:"1px solid rgba(201,168,76,.35)", borderRadius:6, padding:"3px 10px", color:"#C9A84C", fontSize:".52rem", fontWeight:700 }}>
-              ✦ Order status → In Progress
+              {t.orderInProgress}
             </span>
           </div>
         )}
@@ -620,6 +773,8 @@ function SceneAdmin() {
 type EmailStep = "compose" | "sending" | "sent";
 
 function SceneEmail() {
+  const lang = useContext(LangCtx);
+  const t = TR[lang];
   const [step,     setStep]     = useState<EmailStep>("compose");
   const [dotCount, setDotCount] = useState(0);
 
@@ -647,8 +802,8 @@ function SceneEmail() {
             </svg>
           </div>
           <div>
-            <p style={{ color:"rgba(201,168,76,.5)", fontSize:".48rem", letterSpacing:".1em", margin:0, textTransform:"uppercase" }}>Notification System</p>
-            <p style={{ color:"#C9A84C", fontWeight:800, fontSize:".68rem", margin:0 }}>Order Confirmation Email</p>
+            <p style={{ color:"rgba(201,168,76,.5)", fontSize:".48rem", letterSpacing:".1em", margin:0, textTransform:"uppercase" }}>{t.notifSystem}</p>
+            <p style={{ color:"#C9A84C", fontWeight:800, fontSize:".68rem", margin:0 }}>{t.emailConfirm}</p>
           </div>
         </div>
       </div>
@@ -663,12 +818,12 @@ function SceneEmail() {
         {/* Email header bar */}
         <div style={{ background:"linear-gradient(135deg,#0A1628,#152338)", borderBottom:"1px solid rgba(201,168,76,.15)", padding:"7px 10px" }}>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:3 }}>
-            <span style={{ color:"rgba(250,246,238,.4)", fontSize:".48rem" }}>From:</span>
+            <span style={{ color:"rgba(250,246,238,.4)", fontSize:".48rem" }}>{t.emailFrom}</span>
             <span style={{ color:"rgba(201,168,76,.7)", fontSize:".48rem", fontWeight:700 }}>noreply@limjiba.com</span>
           </div>
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-            <span style={{ color:"rgba(250,246,238,.4)", fontSize:".48rem" }}>Subject:</span>
-            <span style={{ color:"#FAF6EE", fontSize:".5rem", fontWeight:600 }}>Your Order #8942 is Confirmed ✓</span>
+            <span style={{ color:"rgba(250,246,238,.4)", fontSize:".48rem" }}>{t.emailSubject}</span>
+            <span style={{ color:"#FAF6EE", fontSize:".5rem", fontWeight:600 }}>{t.emailSubjectVal}</span>
           </div>
         </div>
 
@@ -677,7 +832,7 @@ function SceneEmail() {
           {/* LIMJIBA logo bar */}
           <div style={{ textAlign:"center", paddingBottom:6, borderBottom:"1px solid rgba(201,168,76,.1)" }}>
             <span style={{ color:"#C9A84C", fontWeight:900, fontSize:".7rem", letterSpacing:".2em" }}>LIMJIBA</span>
-            <span style={{ color:"rgba(201,168,76,.4)", fontSize:".42rem", display:"block", letterSpacing:".1em" }}>لمجيبة · Premium Store</span>
+            <span style={{ color:"rgba(201,168,76,.4)", fontSize:".42rem", display:"block", letterSpacing:".1em" }}>لمجيبة · {t.premiumStore}</span>
           </div>
 
           {/* Main message */}
@@ -687,19 +842,19 @@ function SceneEmail() {
                 <path d="M2 7l3.5 3.5L12 3" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </div>
-            <p style={{ color:"#FAF6EE", fontWeight:800, fontSize:".62rem", margin:"0 0 2px" }}>Order Confirmed!</p>
+            <p style={{ color:"#FAF6EE", fontWeight:800, fontSize:".62rem", margin:"0 0 2px" }}>{t.orderConfirmedTitle}</p>
             <p style={{ color:"rgba(250,246,238,.45)", fontSize:".5rem", margin:0 }}>Order #8942 · 850 MRU</p>
           </div>
 
           {/* Info row */}
           <div style={{ background:"rgba(201,168,76,.06)", borderRadius:7, padding:"6px 8px", display:"flex", justifyContent:"space-between" }}>
             <div>
-              <p style={{ color:"rgba(250,246,238,.4)", fontSize:".44rem", margin:"0 0 1px" }}>Status</p>
-              <p style={{ color:"#4ade80", fontSize:".52rem", fontWeight:700, margin:0 }}>In Progress</p>
+              <p style={{ color:"rgba(250,246,238,.4)", fontSize:".44rem", margin:"0 0 1px" }}>{t.statusLabel}</p>
+              <p style={{ color:"#4ade80", fontSize:".52rem", fontWeight:700, margin:0 }}>{t.inProgress}</p>
             </div>
             <div style={{ textAlign:"right" }}>
-              <p style={{ color:"rgba(250,246,238,.4)", fontSize:".44rem", margin:"0 0 1px" }}>Delivery</p>
-              <p style={{ color:"rgba(250,246,238,.7)", fontSize:".52rem", fontWeight:600, margin:0 }}>1–3 days</p>
+              <p style={{ color:"rgba(250,246,238,.4)", fontSize:".44rem", margin:"0 0 1px" }}>{t.deliveryLabel}</p>
+              <p style={{ color:"rgba(250,246,238,.7)", fontSize:".52rem", fontWeight:600, margin:0 }}>{t.days13}</p>
             </div>
           </div>
         </div>
@@ -710,7 +865,7 @@ function SceneEmail() {
         {step === "compose" && (
           <div style={{ display:"flex", alignItems:"center", gap:6 }}>
             <div style={{ width:6, height:6, borderRadius:"50%", background:"rgba(201,168,76,.4)" }} />
-            <span style={{ color:"rgba(250,246,238,.4)", fontSize:".52rem" }}>Preparing email…</span>
+            <span style={{ color:"rgba(250,246,238,.4)", fontSize:".52rem" }}>{t.preparingEmail}</span>
           </div>
         )}
         {step === "sending" && (
@@ -719,7 +874,7 @@ function SceneEmail() {
               <circle cx="5" cy="5" r="3.5" stroke="rgba(201,168,76,.3)" strokeWidth="1.5" fill="none"/>
               <path d="M5 1.5 A3.5 3.5 0 0 1 8.5 5" stroke="#C9A84C" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
             </svg>
-            <span style={{ color:"#C9A84C", fontSize:".52rem", fontWeight:600 }}>Sending{dots}</span>
+            <span style={{ color:"#C9A84C", fontSize:".52rem", fontWeight:600 }}>{t.sending}{dots}</span>
           </div>
         )}
         {step === "sent" && (
@@ -727,7 +882,7 @@ function SceneEmail() {
             <svg width="14" height="14" fill="none" stroke="#4ade80" strokeWidth="2.2">
               <path d="M2 7l3.5 3.5L12 3" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
-            <span style={{ color:"#4ade80", fontSize:".6rem", fontWeight:700 }}>Email delivered to customer!</span>
+            <span style={{ color:"#4ade80", fontSize:".6rem", fontWeight:700 }}>{t.emailDelivered}</span>
           </div>
         )}
       </div>
@@ -735,8 +890,10 @@ function SceneEmail() {
   );
 }
 
-/* ─── SCENE 4: Motorbike delivery ───────────────────────────────── */
+/* ─── SCENE 6: Motorbike delivery ───────────────────────────────── */
 function Scene4() {
+  const lang = useContext(LangCtx);
+  const t = TR[lang];
   const [active, setActive] = useState(false);
   const stars = Array.from({ length:20 }, (_,i) => ({
     id:i, x:`${Math.random()*100}%`, y:`${5+Math.random()*45}%`,
@@ -782,8 +939,8 @@ function Scene4() {
 
       {/* Header text */}
       <div style={{ position:"absolute", top:8, left:0, right:0, textAlign:"center", animation:"lmj-fadeIn .5s .3s both" }}>
-        <p style={{ color:"#C9A84C", fontSize:".68rem", fontWeight:800, margin:0, letterSpacing:".08em" }}>⚡ Express Delivery ⚡</p>
-        <p style={{ color:"rgba(250,246,238,.45)", fontSize:".52rem", margin:"2px 0 0" }}>Racing to your door</p>
+        <p style={{ color:"#C9A84C", fontSize:".68rem", fontWeight:800, margin:0, letterSpacing:".08em" }}>{t.expressDelivery}</p>
+        <p style={{ color:"rgba(250,246,238,.45)", fontSize:".52rem", margin:"2px 0 0" }}>{t.racingToDoor}</p>
       </div>
 
       {/* Bike */}
@@ -882,17 +1039,36 @@ const SCENES: Array<{ id: number; label: string; dur: number; C: FC }> = [
 export function StoreMarketingIntro() {
   const [scene,      setScene]      = useState(0);
   const [fading,     setFading]     = useState(false);
-  const [minimized,  setMinimized]  = useState(false);
   const [visible,    setVisible]    = useState(false);
+  const [closed,     setClosed]     = useState(() => sessionStorage.getItem("lmj-widget-closed") === "1");
+  const [isMobile,   setIsMobile]   = useState(() => window.innerWidth < 768);
+  const [lang,       setLang]       = useState<Lang>(() => detectLang());
+  /* Mobile starts minimized, desktop starts expanded */
+  const [minimized,  setMinimized]  = useState(() => window.innerWidth < 768);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   /* Inject CSS once */
   useEffect(() => { injectStyles(); }, []);
 
+  /* Re-detect language if it changes in localStorage */
+  useEffect(() => {
+    const check = () => setLang(detectLang());
+    window.addEventListener("storage", check);
+    const poll = setInterval(check, 1500);
+    return () => { window.removeEventListener("storage", check); clearInterval(poll); };
+  }, []);
+
+  /* Responsive listener */
+  useEffect(() => {
+    const handler = () => setIsMobile(window.innerWidth < 768);
+    window.addEventListener("resize", handler);
+    return () => window.removeEventListener("resize", handler);
+  }, []);
+
   /* Fade in widget after short delay so page loads first */
   useEffect(() => {
-    const t = setTimeout(() => setVisible(true), 800);
-    return () => clearTimeout(t);
+    const tid = setTimeout(() => setVisible(true), 800);
+    return () => clearTimeout(tid);
   }, []);
 
   /* Advance scenes, loop forever */
@@ -913,48 +1089,65 @@ export function StoreMarketingIntro() {
     return () => timers.current.forEach(clearTimeout);
   }, [scheduleNext]);
 
-  const [isMobile, setIsMobile] = useState(() => window.innerWidth < 768);
-  useEffect(() => {
-    const handler = () => setIsMobile(window.innerWidth < 768);
-    window.addEventListener("resize", handler);
-    return () => window.removeEventListener("resize", handler);
-  }, []);
+  if (!visible || closed) return null;
 
-  if (!visible) return null;
-
+  const t = TR[lang];
+  const isRtl = lang === "ar";
   const CurrentScene = SCENES[scene].C;
-  /* Mobile: wide-short horizontal at bottom-center */
-  /* Desktop/Tablet: narrow-tall vertical at top-right */
-  const WIDGET_W = isMobile ? 292 : 218;
-  const WIDGET_H = isMobile ? 186 : 310;
+  /* Desktop: narrow tall vertical at top-right */
+  /* Mobile: compact at bottom-right corner */
+  const WIDGET_W = isMobile ? 260 : 218;
+  const WIDGET_H = isMobile ? 170 : 310;
+
+  /* Close entirely for this session */
+  const handleClose = (e: { stopPropagation: () => void }) => {
+    e.stopPropagation();
+    sessionStorage.setItem("lmj-widget-closed", "1");
+    setClosed(true);
+  };
+
+  /* Toggle minimized when header clicked */
+  const handleHeaderClick = () => setMinimized(m => !m);
+
+  /* Backdrop click collapses widget */
+  const handleBackdrop = () => setMinimized(true);
 
   const posStyle: CSSProperties = isMobile
-    ? { bottom: 18, left: "50%", transform: "translateX(-50%)" }
+    ? { bottom: 16, right: 16 }
     : { top: 24, right: 24 };
 
   return (
-    <div
-      className="lmj-widget"
-      style={{
-        position:"fixed",
-        ...posStyle,
-        width:WIDGET_W,
-        zIndex:9000,
-        fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
-        animation:"lmj-fadein .6s ease both",
-        filter:"drop-shadow(0 8px 32px rgba(0,0,0,.65))",
-        userSelect:"none",
-      }}
-    >
+    <LangCtx.Provider value={lang}>
+      {/* Transparent backdrop on mobile when expanded */}
+      {isMobile && !minimized && (
+        <div
+          onClick={handleBackdrop}
+          style={{ position:"fixed", inset:0, zIndex:8999, background:"transparent" }}
+        />
+      )}
+      <div
+        className="lmj-widget"
+        dir={isRtl ? "rtl" : "ltr"}
+        style={{
+          position:"fixed",
+          ...posStyle,
+          width:WIDGET_W,
+          zIndex:9000,
+          fontFamily:"-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif",
+          animation:"lmj-fadein .6s ease both",
+          filter:"drop-shadow(0 8px 32px rgba(0,0,0,.65))",
+          userSelect:"none",
+        }}
+      >
       {/* ── Header bar ── */}
       <div
-        onClick={() => setMinimized(m => !m)}
+        onClick={handleHeaderClick}
         style={{
           background:"linear-gradient(135deg,#0A1628,#152338)",
           border:"1.5px solid rgba(201,168,76,.5)",
           borderBottom: minimized ? "1.5px solid rgba(201,168,76,.5)" : "none",
           borderRadius: minimized ? 12 : "12px 12px 0 0",
-          padding:"7px 12px",
+          padding:"7px 10px",
           display:"flex", alignItems:"center", justifyContent:"space-between",
           cursor:"pointer",
           transition:"border-radius .25s",
@@ -964,7 +1157,7 @@ export function StoreMarketingIntro() {
           {/* Pulsing dot */}
           <div style={{ width:8, height:8, borderRadius:"50%", background:"#C9A84C", animation:"lmj-pulse 1.5s ease-in-out infinite", flexShrink:0 }} />
           <span className="lmj-shimmer" style={{ fontSize:".72rem", fontWeight:900, letterSpacing:".12em" }}>LIMJIBA</span>
-          <span style={{ color:"rgba(201,168,76,.55)", fontSize:".55rem", letterSpacing:".1em" }}>· STORE</span>
+          <span style={{ color:"rgba(201,168,76,.55)", fontSize:".55rem", letterSpacing:".1em" }}>{t.store}</span>
         </div>
         <div style={{ display:"flex", alignItems:"center", gap:8 }}>
           {/* Scene dots */}
@@ -991,6 +1184,22 @@ export function StoreMarketingIntro() {
             style={{ transform: minimized ? "rotate(0deg)" : "rotate(180deg)", transition:"transform .3s", opacity:.7 }}>
             <path d="M3 5l4 4 4-4" stroke="#C9A84C" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"/>
           </svg>
+          {/* Close X button */}
+          <div
+            onClick={handleClose}
+            title="Close"
+            style={{
+              width:18, height:18, borderRadius:"50%",
+              background:"rgba(201,168,76,.1)", border:"1px solid rgba(201,168,76,.3)",
+              display:"flex", alignItems:"center", justifyContent:"center",
+              cursor:"pointer", flexShrink:0, lineHeight:1,
+              transition:"background .15s",
+            }}
+          >
+            <svg width="8" height="8" viewBox="0 0 8 8" fill="none">
+              <path d="M1 1l6 6M7 1l-6 6" stroke="#C9A84C" strokeWidth="1.5" strokeLinecap="round"/>
+            </svg>
+          </div>
         </div>
       </div>
 
@@ -1024,12 +1233,13 @@ export function StoreMarketingIntro() {
           {/* Scene label */}
           <div style={{ position:"absolute", bottom:6, right:10 }}>
             <span style={{ color:"rgba(201,168,76,.3)", fontSize:".48rem", letterSpacing:".15em", textTransform:"uppercase" }}>
-              {SCENES[scene].label}
+              {t.scenes[scene]}
             </span>
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </LangCtx.Provider>
   );
 }
 
