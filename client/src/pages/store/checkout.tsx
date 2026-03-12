@@ -90,7 +90,12 @@ export default function StoreCheckout() {
     setProofFileName(file.name);
     const reader = new FileReader();
     reader.onload = () => {
-      setPaymentProof(reader.result as string);
+      const proof = reader.result as string;
+      setPaymentProof(proof);
+      const otherFieldsReady = form.customerName && form.customerPhone && form.customerAddress && selectedWallet;
+      if (otherFieldsReady) {
+        placeOrder.mutate(proof);
+      }
     };
     reader.readAsDataURL(file);
   };
@@ -109,7 +114,7 @@ export default function StoreCheckout() {
   };
 
   const placeOrder = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (proof: string) => {
       const res = await fetch("/api/store/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -118,7 +123,7 @@ export default function StoreCheckout() {
           items: items.map(i => ({ productId: i.productId, productName: i.productName, quantity: i.quantity, unitPrice: i.unitPrice })),
           promoCode: promoCode || undefined,
           paymentMethod: selectedWallet?.name || null,
-          paymentProof: paymentProof || null,
+          paymentProof: proof,
           pointsToRedeem: usePoints ? pointsToRedeem : 0,
         }),
       });
@@ -436,16 +441,24 @@ export default function StoreCheckout() {
                 data-testid="input-payment-proof"
               />
               {paymentProof ? (
-                <div className="rounded-lg border overflow-hidden">
+                <div className="rounded-lg border overflow-hidden relative">
                   <img src={paymentProof} alt="Payment proof" className="w-full max-h-48 object-contain bg-gray-50" data-testid="img-payment-proof" />
-                  <div className="p-2 flex items-center justify-between bg-gray-50 border-t">
-                    <span className="text-xs text-green-600 flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3" /> {t("payment.proofUploaded")}
-                    </span>
-                    <Button variant="ghost" size="sm" className="text-xs h-6" onClick={() => fileInputRef.current?.click()} data-testid="button-change-proof">
-                      {t("payment.changeProof")}
-                    </Button>
-                  </div>
+                  {placeOrder.isPending && (
+                    <div className="absolute inset-0 bg-white/80 flex flex-col items-center justify-center gap-2">
+                      <Loader2 className="h-8 w-8 animate-spin" style={{ color: accentColor }} />
+                      <span className="text-sm font-medium" style={{ color: primaryColor }}>{t("checkout.placing")}</span>
+                    </div>
+                  )}
+                  {!placeOrder.isPending && (
+                    <div className="p-2 flex items-center justify-between bg-gray-50 border-t">
+                      <span className="text-xs text-green-600 flex items-center gap-1">
+                        <CheckCircle2 className="h-3 w-3" /> {t("payment.proofUploaded")}
+                      </span>
+                      <Button variant="ghost" size="sm" className="text-xs h-6" onClick={() => fileInputRef.current?.click()} data-testid="button-change-proof">
+                        {t("payment.changeProof")}
+                      </Button>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <button
@@ -525,7 +538,7 @@ export default function StoreCheckout() {
               className="w-full rounded-full font-semibold"
               size="lg"
               style={{ backgroundColor: canSubmit ? accentColor : "#ccc", color: canSubmit ? primaryColor : "#666" }}
-              onClick={() => placeOrder.mutate()}
+              onClick={() => paymentProof && placeOrder.mutate(paymentProof)}
               disabled={placeOrder.isPending || !canSubmit}
               data-testid="button-place-order"
             >
