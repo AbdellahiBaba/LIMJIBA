@@ -771,7 +771,7 @@ export default function POS() {
         </ScrollArea>
       </div>
 
-      <Card className="lg:w-96 flex flex-col shrink-0 max-h-[45vh] lg:max-h-none overflow-hidden">
+      <Card className="lg:w-96 flex flex-col shrink-0 h-[58vh] lg:h-auto overflow-hidden">
         <CardHeader className="p-3 sm:pb-3">
           <CardTitle className="flex items-center gap-2 text-base sm:text-lg">
             <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5" />
@@ -801,8 +801,8 @@ export default function POS() {
             )}
           </CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 flex flex-col min-h-0 p-3 pt-0 overflow-y-auto">
-          <div className="mb-2">
+        <CardContent className="flex-1 flex flex-col min-h-0 p-3 pt-0 overflow-hidden">
+          <div className="mb-2 shrink-0">
             <div className="relative">
               <User className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
@@ -823,9 +823,9 @@ export default function POS() {
               </div>
             </div>
           ) : (
-            <ScrollArea className="flex-1 -mx-4 px-4">
-              <div className="space-y-2">
-                {cart.map((item, index) => (
+            <div className="flex-1 overflow-y-auto -mx-3 px-3 pb-2">
+              <div className="space-y-2 mb-4">
+                {cart.map((item) => (
                   <div
                     key={cartItemKey(item)}
                     className="relative p-3 rounded-lg border bg-card hover-elevate transition-colors"
@@ -854,17 +854,17 @@ export default function POS() {
                       </Button>
                     </div>
                     <div className="flex items-center justify-between mt-2 pt-2 border-t border-dashed">
-                      <div className="flex items-center gap-1.5">
+                      <div className="flex items-center gap-2">
                         <Button
                           variant="outline"
                           size="icon"
-                          className="rounded-full"
+                          className="h-9 w-9 rounded-full shrink-0"
                           onClick={() => updateQuantity(item.productId, -1, item.variantId)}
                           data-testid={`button-decrease-${cartItemKey(item)}`}
                         >
-                          <Minus className="h-3 w-3" />
+                          <Minus className="h-4 w-4" />
                         </Button>
-                        <span 
+                        <span
                           className="w-10 text-center font-mono text-sm font-semibold bg-muted rounded-md py-1"
                           data-testid={`text-cart-quantity-${cartItemKey(item)}`}
                         >
@@ -873,11 +873,11 @@ export default function POS() {
                         <Button
                           variant="outline"
                           size="icon"
-                          className="rounded-full"
+                          className="h-9 w-9 rounded-full shrink-0"
                           onClick={() => updateQuantity(item.productId, 1, item.variantId)}
                           data-testid={`button-increase-${cartItemKey(item)}`}
                         >
-                          <Plus className="h-3 w-3" />
+                          <Plus className="h-4 w-4" />
                         </Button>
                       </div>
                       <div className="text-right">
@@ -889,12 +889,9 @@ export default function POS() {
                   </div>
                 ))}
               </div>
-            </ScrollArea>
-          )}
 
-          {cart.length > 0 && (
-            <div className="mt-4 space-y-4 border-t pt-4">
-              <div className="bg-muted/50 rounded-lg p-3 space-y-2">
+              <div className="space-y-4 border-t pt-4">
+                <div className="bg-muted/50 rounded-lg p-3 space-y-2">
                 <div className="flex justify-between text-sm">
                   <span className="text-muted-foreground">{t("pos.subtotal")}</span>
                   <span className="font-mono font-medium">{subtotal.toLocaleString()} MRU</span>
@@ -1044,11 +1041,9 @@ export default function POS() {
                 </Button>
               </div>
             </div>
-          )}
-
-          {parkedSales && parkedSales.length > 0 && (
-            <div className="mt-3 border-t pt-2">
-              <Collapsible open={parkedSalesOpen} onOpenChange={setParkedSalesOpen}>
+              {parkedSales && parkedSales.length > 0 && (
+                <div className="mt-3 border-t pt-2">
+                  <Collapsible open={parkedSalesOpen} onOpenChange={setParkedSalesOpen}>
                 <CollapsibleTrigger asChild>
                   <Button variant="ghost" className="w-full justify-between" data-testid="button-toggle-parked-sales">
                     <span className="flex items-center gap-2 text-sm">
@@ -1096,46 +1091,48 @@ export default function POS() {
                     })}
                   </div>
                 </CollapsibleContent>
-              </Collapsible>
-            </div>
-          )}
+                  </Collapsible>
+                </div>
+              )}
 
-          {recentSales && recentSales.length > 0 && (
-            <div className="mt-3 border-t pt-2">
-              <Collapsible open={recentSalesOpen} onOpenChange={setRecentSalesOpen}>
-                <CollapsibleTrigger asChild>
-                  <Button variant="ghost" className="w-full justify-between" data-testid="button-toggle-recent-sales">
-                    <span className="flex items-center gap-2 text-sm">
-                      <Clock className="h-4 w-4" />
-                      {t("pos.recentSales")}
-                    </span>
-                    <ChevronDown className={`h-4 w-4 transition-transform ${recentSalesOpen ? "rotate-180" : ""}`} />
-                  </Button>
-                </CollapsibleTrigger>
-                <CollapsibleContent>
-                  <div className="space-y-2 pt-2">
-                    {recentSales.map((sale) => (
-                      <div key={sale.id} className="flex items-center justify-between gap-2 p-2 rounded-md border text-sm" data-testid={`recent-sale-${sale.id}`}>
-                        <div className="min-w-0">
-                          <p className="font-medium truncate">{sale.saleNumber}</p>
-                          <p className="text-xs text-muted-foreground">{sale.date}</p>
-                        </div>
-                        <div className="flex items-center gap-2 flex-shrink-0">
-                          <span className="font-mono font-semibold text-xs">{sale.total.toLocaleString()} MRU</span>
-                          <Button
-                            size="icon"
-                            variant="ghost"
-                            onClick={() => window.open(`/public/sales/${sale.id}/ticket-pdf`, '_blank')}
-                            data-testid={`button-reprint-${sale.id}`}
-                          >
-                            <Printer className="h-4 w-4" />
-                          </Button>
-                        </div>
+              {recentSales && recentSales.length > 0 && (
+                <div className="mt-3 border-t pt-2">
+                  <Collapsible open={recentSalesOpen} onOpenChange={setRecentSalesOpen}>
+                    <CollapsibleTrigger asChild>
+                      <Button variant="ghost" className="w-full justify-between" data-testid="button-toggle-recent-sales">
+                        <span className="flex items-center gap-2 text-sm">
+                          <Clock className="h-4 w-4" />
+                          {t("pos.recentSales")}
+                        </span>
+                        <ChevronDown className={`h-4 w-4 transition-transform ${recentSalesOpen ? "rotate-180" : ""}`} />
+                      </Button>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="space-y-2 pt-2">
+                        {recentSales.map((sale) => (
+                          <div key={sale.id} className="flex items-center justify-between gap-2 p-2 rounded-md border text-sm" data-testid={`recent-sale-${sale.id}`}>
+                            <div className="min-w-0">
+                              <p className="font-medium truncate">{sale.saleNumber}</p>
+                              <p className="text-xs text-muted-foreground">{sale.date}</p>
+                            </div>
+                            <div className="flex items-center gap-2 flex-shrink-0">
+                              <span className="font-mono font-semibold text-xs">{sale.total.toLocaleString()} MRU</span>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                onClick={() => window.open(`/public/sales/${sale.id}/ticket-pdf`, '_blank')}
+                                data-testid={`button-reprint-${sale.id}`}
+                              >
+                                <Printer className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                </CollapsibleContent>
-              </Collapsible>
+                    </CollapsibleContent>
+                  </Collapsible>
+                </div>
+              )}
             </div>
           )}
         </CardContent>
