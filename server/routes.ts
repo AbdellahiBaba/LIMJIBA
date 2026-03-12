@@ -7,7 +7,7 @@ import fs from "fs";
 import path from "path";
 import { storage } from "./storage";
 import { isTransientError, isCapacityLimitError, checkDatabaseHealth, getPoolStats, db } from "./db";
-import { storeOrders, storeNotifications, productReviews, storeReviews } from "@shared/schema";
+import { storeOrders, storeNotifications, productReviews, storeReviews, loyaltyTransactions } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import { cache } from "./cache";
 import { 
@@ -3773,8 +3773,9 @@ export async function registerRoutes(
         notes: z.string().max(2000).nullable().optional(),
         paymentMethod: z.string().max(100).nullable().optional(),
         paymentProof: z.string().max(8_000_000).nullable().optional(),
+        pointsToRedeem: z.number().int().min(0).optional(),
       });
-      const { customerName, customerEmail, customerPhone, customerAddress, items, promoCode, deliveryCost, notes, paymentMethod, paymentProof } = storeOrderInputSchema.parse(req.body);
+      const { customerName, customerEmail, customerPhone, customerAddress, items, promoCode, deliveryCost, notes, paymentMethod, paymentProof, pointsToRedeem } = storeOrderInputSchema.parse(req.body);
 
       let subtotal = 0;
       const validatedItems: { productId: string; productName: string; quantity: number; unitPrice: number }[] = [];
@@ -3810,7 +3811,23 @@ export async function registerRoutes(
         }
       }
 
-      const total = Math.max(0, subtotal - discount + (deliveryCost || 0));
+      let loyaltyPointsRedeemed = 0;
+      let loyaltyDiscount = 0;
+      let loyaltyCustomer: any = null;
+      if ((pointsToRedeem || 0) > 0 && customerEmail) {
+        try {
+          loyaltyCustomer = await storage.getStoreCustomerByEmail(customerEmail);
+          if (loyaltyCustomer) {
+            const loyaltySettings = await storage.getStoreSettings();
+            const pv = (loyaltySettings as any)?.pointsValue ?? 1;
+            const availablePoints = (loyaltyCustomer as any).loyaltyPoints || 0;
+            loyaltyPointsRedeemed = Math.min(pointsToRedeem!, availablePoints);
+            loyaltyDiscount = Math.round(loyaltyPointsRedeemed * pv * 100) / 100;
+          }
+        } catch {}
+      }
+
+      const total = Math.max(0, subtotal - discount - loyaltyDiscount + (deliveryCost || 0));
       const orderNumber = await storage.getNextOrderNumber();
 
       const order = await storage.createStoreOrder({
@@ -3829,7 +3846,28 @@ export async function registerRoutes(
         notes: notes || null,
         paymentMethod: paymentMethod || null,
         paymentProof: paymentProof || null,
+        pointsRedeemed: loyaltyPointsRedeemed,
+        loyaltyDiscount,
       });
+
+      if (loyaltyPointsRedeemed > 0 && customerEmail) {
+        try {
+          const lc = loyaltyCustomer || await storage.getStoreCustomerByEmail(customerEmail);
+          if (lc) {
+            const currentPts = (lc as any).loyaltyPoints || 0;
+            await storage.updateStoreCustomer(lc.id, { loyaltyPoints: Math.max(0, currentPts - loyaltyPointsRedeemed) } as any);
+            await db.insert(loyaltyTransactions).values({
+              customerId: lc.id,
+              customerEmail,
+              customerName,
+              type: "redeemed",
+              points: -loyaltyPointsRedeemed,
+              orderNumber,
+              note: `Redeemed ${loyaltyPointsRedeemed} pts for ${loyaltyDiscount.toFixed(2)} MRU discount`,
+            });
+          }
+        } catch {}
+      }
 
       if (customerEmail) {
         try {
@@ -4256,6 +4294,18 @@ export async function registerRoutes(
     }
   });
 
+  app.get("/api/store/auth/loyalty-transactions", async (req: Request, res: Response) => {
+    try {
+      const sc = (req.session as any).storeCustomer;
+      if (!sc) return res.status(401).json({ error: "Not authenticated" });
+      const all = await db.select().from(loyaltyTransactions).orderBy(loyaltyTransactions.createdAt);
+      const mine = all.filter(t => t.customerEmail?.toLowerCase() === sc.email.toLowerCase()).reverse();
+      res.json(mine);
+    } catch (error) {
+      handleError(res, "getMyLoyaltyTransactions", error);
+    }
+  });
+
   app.post("/api/store/auth/forgot-password", async (req: Request, res: Response) => {
     try {
       const { email } = z.object({ email: z.string().email().max(200) }).parse(req.body);
@@ -4650,12 +4700,23 @@ export async function registerRoutes(
       if (status === "delivered" && previousStatus !== "delivered") {
         try {
           if (order.customerEmail) {
-            const customer = await storage.getStoreCustomerByEmail(order.customerEmail);
-            if (customer) {
-              const pointsToAdd = Math.floor((order.total || 0) / 10);
+            const deliveryCustomer = await storage.getStoreCustomerByEmail(order.customerEmail);
+            if (deliveryCustomer) {
+              const loyaltySettings = await storage.getStoreSettings();
+              const pr = (loyaltySettings as any)?.pointsRate ?? 0.1;
+              const pointsToAdd = Math.floor((order.total || 0) * pr);
               if (pointsToAdd > 0) {
-                const currentPoints = (customer as any).loyaltyPoints || 0;
-                await storage.updateStoreCustomer(customer.id, { loyaltyPoints: currentPoints + pointsToAdd } as any);
+                const currentPoints = (deliveryCustomer as any).loyaltyPoints || 0;
+                await storage.updateStoreCustomer(deliveryCustomer.id, { loyaltyPoints: currentPoints + pointsToAdd } as any);
+                await db.insert(loyaltyTransactions).values({
+                  customerId: deliveryCustomer.id,
+                  customerEmail: order.customerEmail,
+                  customerName: order.customerName,
+                  type: "earned",
+                  points: pointsToAdd,
+                  orderNumber: order.orderNumber,
+                  note: `Earned ${pointsToAdd} pts on delivery of order ${order.orderNumber}`,
+                });
               }
             }
           }
@@ -5576,6 +5637,71 @@ export async function registerRoutes(
   setTimeout(() => {
     processAbandonedCartReminders().catch(console.error);
   }, 60 * 1000);
+
+  app.get("/api/admin/loyalty/customers", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const customers = await storage.getAllStoreCustomers();
+      const withPoints = customers
+        .map(c => ({
+          id: c.id,
+          email: c.email,
+          fullName: c.fullName,
+          loyaltyPoints: (c as any).loyaltyPoints || 0,
+          phone: c.phone,
+          createdAt: c.createdAt,
+        }))
+        .sort((a, b) => b.loyaltyPoints - a.loyaltyPoints);
+      res.json(withPoints);
+    } catch (error) { handleError(res, "getLoyaltyCustomers", error); }
+  });
+
+  app.get("/api/admin/loyalty/transactions", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const rows = await db.select().from(loyaltyTransactions).orderBy(loyaltyTransactions.createdAt);
+      res.json(rows.reverse());
+    } catch (error) { handleError(res, "getLoyaltyTransactions", error); }
+  });
+
+  app.post("/api/admin/loyalty/customers/:id/adjust", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { points, note } = z.object({
+        points: z.number().int(),
+        note: z.string().max(500).optional(),
+      }).parse(req.body);
+      const customer = await storage.getStoreCustomerById(req.params.id);
+      if (!customer) return res.status(404).json({ error: "Customer not found" });
+      const currentPoints = (customer as any).loyaltyPoints || 0;
+      const newPoints = Math.max(0, currentPoints + points);
+      await storage.updateStoreCustomer(customer.id, { loyaltyPoints: newPoints } as any);
+      await db.insert(loyaltyTransactions).values({
+        customerId: customer.id,
+        customerEmail: customer.email,
+        customerName: (customer as any).fullName || customer.email,
+        type: "manual",
+        points,
+        note: note || `Manual adjustment by admin`,
+      });
+      res.json({ success: true, newPoints });
+    } catch (error) { handleError(res, "adjustLoyaltyPoints", error); }
+  });
+
+  app.get("/api/admin/loyalty/settings", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const settings = await storage.getStoreSettings();
+      res.json({ pointsRate: (settings as any)?.pointsRate ?? 0.1, pointsValue: (settings as any)?.pointsValue ?? 1 });
+    } catch (error) { handleError(res, "getLoyaltySettings", error); }
+  });
+
+  app.patch("/api/admin/loyalty/settings", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { pointsRate, pointsValue } = z.object({
+        pointsRate: z.number().min(0).max(10).optional(),
+        pointsValue: z.number().min(0).max(1000).optional(),
+      }).parse(req.body);
+      await storage.updateStoreSettings({ pointsRate, pointsValue } as any);
+      res.json({ success: true });
+    } catch (error) { handleError(res, "updateLoyaltySettings", error); }
+  });
 
   return httpServer;
 }

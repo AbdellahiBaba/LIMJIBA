@@ -63,6 +63,7 @@ import StoreForgotPassword from "@/pages/store/forgot-password";
 import StoreResetPassword from "@/pages/store/reset-password";
 import StoreProfile from "@/pages/store/profile";
 import StoreCompare from "@/pages/store/compare";
+import LoyaltyDashboard from "@/pages/loyalty-dashboard";
 import Login from "@/pages/login";
 import NotFound from "@/pages/not-found";
 
@@ -96,6 +97,7 @@ function Router() {
       <Route path="/emanager-portal/promo-codes" component={PromoCodesPage} />
       <Route path="/emanager-portal/store-orders" component={StoreOrdersAdmin} />
       <Route path="/emanager-portal/store-customers" component={StoreCustomers} />
+      <Route path="/emanager-portal/loyalty" component={LoyaltyDashboard} />
       <Route path="/emanager-portal/support-chat" component={SupportChat} />
       <Route path="/emanager-portal/limjiba" component={LimjibaAdmin} />
       <Route component={NotFound} />

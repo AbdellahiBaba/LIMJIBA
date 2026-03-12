@@ -9,7 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
-import { User, Save, Loader2, Award, Package, Clock, CheckCircle2, Truck, PackageCheck, XCircle, ChevronDown, ChevronUp, ShoppingBag, Star, Check } from "lucide-react";
+import { User, Save, Loader2, Award, Package, Clock, CheckCircle2, Truck, PackageCheck, XCircle, ChevronDown, ChevronUp, ShoppingBag, Star, Check, TrendingUp, Gift } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import type { StoreSettings, StoreOrder, StoreReview } from "@shared/schema";
@@ -39,6 +39,11 @@ export default function StoreProfile() {
 
   const { data: storeReviews = [] } = useQuery<StoreReview[]>({
     queryKey: ["/api/store/reviews"],
+    enabled: isAuthenticated,
+  });
+
+  const { data: loyaltyHistory = [] } = useQuery<any[]>({
+    queryKey: ["/api/store/auth/loyalty-transactions"],
     enabled: isAuthenticated,
   });
 
@@ -118,18 +123,46 @@ export default function StoreProfile() {
         {t("profile.title")}
       </h1>
 
-      {(customer?.loyaltyPoints ?? 0) > 0 && (
+      {((customer?.loyaltyPoints ?? 0) > 0 || loyaltyHistory.length > 0) && (
         <div className="rounded-xl border bg-white shadow-sm p-6 mb-6" style={{ borderColor: "rgba(201,168,76,0.2)" }} data-testid="section-loyalty-points">
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-4 mb-4">
             <div className="h-14 w-14 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05))" }}>
               <Award className="h-7 w-7" style={{ color: accentColor }} />
             </div>
             <div>
               <p className="text-sm text-gray-500">{t("loyalty.yourPoints")}</p>
-              <p className="text-3xl font-bold" style={{ color: accentColor }}>{customer?.loyaltyPoints}</p>
+              <p className="text-3xl font-bold" style={{ color: accentColor }}>{customer?.loyaltyPoints ?? 0}</p>
               <p className="text-xs text-gray-400">{t("loyalty.earnInfo")}</p>
             </div>
           </div>
+          {loyaltyHistory.length > 0 && (
+            <div className="border-t pt-4">
+              <p className="text-sm font-semibold mb-3" style={{ color: primaryColor }}>{t("loyalty.history")}</p>
+              <div className="space-y-2 max-h-48 overflow-y-auto">
+                {loyaltyHistory.slice(0, 10).map((tx: any) => (
+                  <div key={tx.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg" style={{ backgroundColor: `${primaryColor}04` }} data-testid={`tx-loyalty-${tx.id}`}>
+                    <div className="flex items-center gap-2">
+                      <div className="h-6 w-6 rounded-full flex items-center justify-center" style={{ backgroundColor: tx.points >= 0 ? "rgba(22,163,74,0.12)" : "rgba(220,38,38,0.1)" }}>
+                        {tx.points >= 0 ? <TrendingUp className="h-3 w-3 text-green-600" /> : <Gift className="h-3 w-3 text-red-500" />}
+                      </div>
+                      <div>
+                        <p className="text-xs font-medium" style={{ color: primaryColor }}>
+                          {tx.type === "earned" ? t("loyalty.txEarned") : tx.type === "redeemed" ? t("loyalty.txRedeemed") : tx.type === "manual" ? t("loyalty.txManual") : t("loyalty.txRefund")}
+                        </p>
+                        {tx.orderNumber && <p className="text-xs text-gray-400">#{tx.orderNumber}</p>}
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <span className="text-sm font-bold" style={{ color: tx.points >= 0 ? "#16a34a" : "#dc2626" }}>
+                        {tx.points >= 0 ? "+" : ""}{tx.points}
+                      </span>
+                      {tx.createdAt && <p className="text-xs text-gray-400">{new Date(tx.createdAt).toLocaleDateString()}</p>}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

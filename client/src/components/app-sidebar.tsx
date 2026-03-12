@@ -45,6 +45,7 @@ import {
   ExternalLink,
   UsersRound,
   Headset,
+  Award,
 } from "lucide-react";
 
 export function AppSidebar() {
@@ -82,6 +83,7 @@ export function AppSidebar() {
     { title: "Support Chat", url: "/emanager-portal/support-chat", icon: Headset, testId: "nav-support-chat", permission: "dashboard" },
     { title: "LIMJIBA Agent", url: "/emanager-portal/limjiba", icon: Bot, testId: "nav-limjiba", permission: "dashboard" },
     { title: "Store Customers", url: "/emanager-portal/store-customers", icon: UsersRound, testId: "nav-store-customers", permission: "dashboard" },
+    { title: "Loyalty Program", url: "/emanager-portal/loyalty", icon: Award, testId: "nav-loyalty", permission: "dashboard" },
   ];
 
   const { data: supportUnread } = useQuery<{ count: number }>({

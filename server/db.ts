@@ -1214,6 +1214,33 @@ async function runMigrations(): Promise<void> {
     } catch {}
     console.log('[DB] Ensured user_sessions table exists');
 
+    try {
+      await client.query(`ALTER TABLE store_orders ADD COLUMN points_redeemed INTEGER NOT NULL DEFAULT 0`);
+      await client.query(`ALTER TABLE store_orders ADD COLUMN loyalty_discount REAL NOT NULL DEFAULT 0`);
+      console.log('[DB] Added loyalty redemption columns to store_orders');
+    } catch {}
+
+    try {
+      await client.query(`ALTER TABLE store_settings ADD COLUMN points_rate REAL NOT NULL DEFAULT 0.1`);
+      await client.query(`ALTER TABLE store_settings ADD COLUMN points_value REAL NOT NULL DEFAULT 1`);
+      console.log('[DB] Added loyalty rate columns to store_settings');
+    } catch {}
+
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS loyalty_transactions (
+        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+        customer_id VARCHAR,
+        customer_email TEXT NOT NULL,
+        customer_name TEXT,
+        type TEXT NOT NULL,
+        points INTEGER NOT NULL,
+        order_number TEXT,
+        note TEXT,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    console.log('[DB] Ensured loyalty_transactions table exists');
+
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);

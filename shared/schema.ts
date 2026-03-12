@@ -709,6 +709,8 @@ export const storeOrders = pgTable("store_orders", {
   paymentProof: text("payment_proof"),
   paymentConfirmed: boolean("payment_confirmed").notNull().default(false),
   paymentConfirmedAt: text("payment_confirmed_at"),
+  pointsRedeemed: integer("points_redeemed").notNull().default(0),
+  loyaltyDiscount: real("loyalty_discount").notNull().default(0),
   createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
 });
 
@@ -836,6 +838,8 @@ export const storeSettings = pgTable("store_settings", {
   ctaText: text("cta_text"),
   footerDescription: text("footer_description"),
   openingBalance: real("opening_balance").notNull().default(0),
+  pointsRate: real("points_rate").notNull().default(0.1),
+  pointsValue: real("points_value").notNull().default(1),
   autoEmailInvoice: boolean("auto_email_invoice").notNull().default(true),
   updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });
@@ -889,3 +893,18 @@ export const abandonedCarts = pgTable("abandoned_carts", {
 export const insertAbandonedCartSchema = createInsertSchema(abandonedCarts).omit({ id: true, createdAt: true });
 export type InsertAbandonedCart = z.infer<typeof insertAbandonedCartSchema>;
 export type AbandonedCart = typeof abandonedCarts.$inferSelect;
+
+export const loyaltyTransactions = pgTable("loyalty_transactions", {
+  id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
+  customerId: varchar("customer_id"),
+  customerEmail: text("customer_email").notNull(),
+  customerName: text("customer_name"),
+  type: text("type").notNull(),
+  points: integer("points").notNull(),
+  orderNumber: text("order_number"),
+  note: text("note"),
+  createdAt: text("created_at").default(sql`CURRENT_TIMESTAMP`),
+});
+
+export type LoyaltyTransaction = typeof loyaltyTransactions.$inferSelect;
+export type InsertLoyaltyTransaction = typeof loyaltyTransactions.$inferInsert;
