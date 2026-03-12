@@ -235,7 +235,7 @@ function Scene2() {
   );
 }
 
-/* ─── SCENE 3: Checkout confirmed ───────────────────────────────── */
+/* ─── SCENE 3: Real checkout — wallet select → number → proof → confirmed ── */
 function MiniConfetti() {
   const pcs = Array.from({ length: 18 }, (_,i) => ({
     id:i, left:`${15+Math.random()*70}%`,
@@ -256,76 +256,214 @@ function MiniConfetti() {
   );
 }
 
+/* Brand-colored wallet icon badges */
+function WalletIcon({ type, size = 28 }: { type: "bankily"|"masrivi"|"sedad"; size?: number }) {
+  const cfg = {
+    bankily: { bg:"#16a34a", label:"B",  text:"Bankily",  ar:"بنكيلي" },
+    masrivi: { bg:"#2563eb", label:"M",  text:"Masrivi",  ar:"مصرفي"  },
+    sedad:   { bg:"#ea580c", label:"S",  text:"Sedad",    ar:"سداد"   },
+  }[type];
+  return (
+    <div style={{
+      width:size, height:size, borderRadius:"50%",
+      background:cfg.bg, display:"flex", alignItems:"center", justifyContent:"center",
+      flexShrink:0, boxShadow:`0 2px 8px ${cfg.bg}60`,
+    }}>
+      <span style={{ color:"#fff", fontWeight:900, fontSize:size*.38, lineHeight:1 }}>{cfg.label}</span>
+    </div>
+  );
+}
+
+const WALLETS = [
+  { type:"bankily" as const, name:"Bankily", ar:"بنكيلي", number:"49399170", bg:"#16a34a" },
+  { type:"masrivi" as const, name:"Masrivi", ar:"مصرفي",  number:"49399170", bg:"#2563eb" },
+  { type:"sedad"   as const, name:"Sedad",   ar:"سداد",   number:"49399170", bg:"#ea580c" },
+];
+
+type CheckoutStep = "wallets" | "number" | "upload" | "done";
+
 function Scene3() {
-  const [btnPressed, setBtnPressed] = useState(false);
-  const [spinner,    setSpinner]    = useState(false);
-  const [done,       setDone]       = useState(false);
-  const [confetti,   setConfetti]   = useState(false);
+  const [step,        setStep]        = useState<CheckoutStep>("wallets");
+  const [selected,    setSelected]    = useState<number | null>(null);
+  const [uploadClick, setUploadClick] = useState(false);
+  const [spinner,     setSpinner]     = useState(false);
+  const [confetti,    setConfetti]    = useState(false);
+  const [copied,      setCopied]      = useState(false);
 
   useEffect(() => {
     const ts = [
-      setTimeout(() => setBtnPressed(true),  700),
-      setTimeout(() => { setSpinner(true); setBtnPressed(false); }, 900),
-      setTimeout(() => { setSpinner(false); setDone(true); }, 1650),
-      setTimeout(() => setConfetti(true),    1750),
+      /* select Bankily */
+      setTimeout(() => setSelected(0),           650),
+      /* show wallet number */
+      setTimeout(() => setStep("number"),         1150),
+      /* copy flash */
+      setTimeout(() => setCopied(true),           1650),
+      setTimeout(() => setCopied(false),          1950),
+      /* move to upload */
+      setTimeout(() => setStep("upload"),         2100),
+      /* click upload button */
+      setTimeout(() => setUploadClick(true),      2450),
+      setTimeout(() => { setUploadClick(false); setSpinner(true); }, 2650),
+      /* confirmed */
+      setTimeout(() => { setSpinner(false); setStep("done"); }, 3250),
+      setTimeout(() => setConfetti(true),         3350),
     ];
     return () => ts.forEach(clearTimeout);
   }, []);
 
+  const selWallet = selected !== null ? WALLETS[selected] : null;
+
   return (
-    <div style={{ position:"absolute", inset:0, display:"flex", alignItems:"center", justifyContent:"center", padding:"0 12px" }}>
+    <div style={{ position:"absolute", inset:0, display:"flex", flexDirection:"column", padding:"10px 12px 8px", overflow:"hidden" }}>
       {confetti && <MiniConfetti />}
-      <div style={{ animation:"lmj-slideup .5s cubic-bezier(.34,1.56,.64,1) both", width:"100%" }}>
-        <div style={{
-          background:"linear-gradient(135deg,#0d1e3a,#182d52)",
-          border:"1.5px solid rgba(201,168,76,.35)",
-          borderRadius:14, padding:"14px 14px 12px",
-          boxShadow:"0 16px 50px rgba(0,0,0,.55)",
-        }}>
-          <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:10, paddingBottom:8, borderBottom:"1px solid rgba(201,168,76,.15)" }}>
-            <div>
-              <p style={{ color:"rgba(250,246,238,.45)", fontSize:".52rem", letterSpacing:".15em", margin:0 }}>ORDER SUMMARY</p>
-              <p style={{ color:"#FAF6EE", fontWeight:800, fontSize:".78rem", margin:"1px 0 0" }}>LIMJIBA #8942</p>
-            </div>
-            <span style={{ background:"rgba(201,168,76,.15)", border:"1px solid rgba(201,168,76,.3)", borderRadius:6, padding:"2px 7px", color:"#C9A84C", fontSize:".5rem", fontWeight:700 }}>1 ITEM</span>
+
+      {/* Header */}
+      <div style={{ animation:"lmj-slideup .4s both", marginBottom:8 }}>
+        <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+          <div>
+            <p style={{ color:"rgba(201,168,76,.5)", fontSize:".5rem", letterSpacing:".15em", margin:0, textTransform:"uppercase" }}>Checkout · LIMJIBA #8942</p>
+            <p style={{ color:"#C9A84C", fontWeight:800, fontSize:".7rem", margin:"1px 0 0" }}>
+              {step === "wallets" ? "Choose Payment Method" :
+               step === "number"  ? "Transfer to Wallet" :
+               step === "upload"  ? "Upload Payment Proof" : "Order Confirmed!"}
+            </p>
           </div>
-          <div style={{ display:"flex", justifyContent:"space-between", marginBottom:8 }}>
-            <span style={{ color:"rgba(250,246,238,.7)", fontSize:".65rem" }}>Premium Product</span>
-            <span style={{ color:"#C9A84C", fontWeight:700, fontSize:".65rem" }}>850 MRU</span>
+          <div style={{ background:"rgba(201,168,76,.12)", border:"1px solid rgba(201,168,76,.3)", borderRadius:6, padding:"2px 8px" }}>
+            <span style={{ color:"#C9A84C", fontWeight:900, fontSize:".65rem" }}>850 MRU</span>
           </div>
-          <div style={{ background:"rgba(201,168,76,.08)", borderRadius:8, padding:"7px 10px", marginBottom:10, display:"flex", justifyContent:"space-between" }}>
-            <span style={{ color:"rgba(250,246,238,.6)", fontSize:".62rem" }}>Total</span>
-            <span style={{ color:"#C9A84C", fontWeight:900, fontSize:".85rem" }}>850 MRU</span>
-          </div>
-          {!done ? (
-            <button style={{
-              width:"100%", background: btnPressed ? "linear-gradient(135deg,#B8963F,#9a7d35)" : "linear-gradient(135deg,#C9A84C,#B8963F)",
-              border:"none", borderRadius:8, padding:"9px",
-              color:"#0A1628", fontWeight:800, fontSize:".65rem", letterSpacing:".08em",
-              transform: btnPressed ? "scale(.96)" : "scale(1)", transition:"all .15s",
-              display:"flex", alignItems:"center", justifyContent:"center", gap:6,
-            }}>
-              {spinner
-                ? <svg width="14" height="14" viewBox="0 0 14 14" style={{ animation:"lmj-spin .7s linear infinite" }}><circle cx="7" cy="7" r="5" stroke="rgba(10,22,40,.3)" strokeWidth="2" fill="none"/><path d="M7 2 A5 5 0 0 1 12 7" stroke="#0A1628" strokeWidth="2" fill="none" strokeLinecap="round"/></svg>
-                : <><svg width="12" height="12" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M1 6l3.5 3.5L11 2"/></svg> CONFIRM ORDER</>
-              }
-            </button>
-          ) : (
-            <div style={{ display:"flex", flexDirection:"column", alignItems:"center", animation:"lmj-scalein .45s cubic-bezier(.34,1.56,.64,1)" }}>
-              <svg width="40" height="40" viewBox="0 0 40 40">
-                <circle cx="20" cy="20" r="17" stroke="#C9A84C" strokeWidth="2.5" fill="none"
-                  strokeDasharray="107" strokeDashoffset="0"
-                  style={{ animation:"lmj-circledraw .45s ease forwards" }}/>
-                <polyline points="11,20 17,26 29,13" stroke="#C9A84C" strokeWidth="3" fill="none"
-                  strokeLinecap="round" strokeLinejoin="round"
-                  strokeDasharray="80" strokeDashoffset="0"
-                  style={{ animation:"lmj-checkdraw .35s .3s ease forwards" }}/>
-              </svg>
-              <p style={{ color:"#C9A84C", fontWeight:800, fontSize:".7rem", margin:"4px 0 0" }}>Order Confirmed! ✨</p>
-            </div>
-          )}
         </div>
       </div>
+
+      {/* ── Step: wallet selection ── */}
+      {step === "wallets" && (
+        <div style={{ display:"flex", gap:6, animation:"lmj-slideup .4s .2s both" }}>
+          {WALLETS.map((w, i) => (
+            <button key={w.type} style={{
+              flex:1, background: selected===i ? `${w.bg}22` : "rgba(255,255,255,.04)",
+              border:`1.5px solid ${selected===i ? w.bg : "rgba(255,255,255,.08)"}`,
+              borderRadius:10, padding:"8px 4px",
+              display:"flex", flexDirection:"column", alignItems:"center", gap:4,
+              cursor:"pointer",
+              transform: selected===i ? "scale(1.04)" : "scale(1)",
+              transition:"all .25s cubic-bezier(.34,1.56,.64,1)",
+              boxShadow: selected===i ? `0 0 12px ${w.bg}40` : "none",
+            }}>
+              <WalletIcon type={w.type} size={26} />
+              <span style={{ color: selected===i ? "#FAF6EE" : "rgba(250,246,238,.45)", fontSize:".55rem", fontWeight:700 }}>{w.name}</span>
+              <span style={{ color: selected===i ? "rgba(201,168,76,.7)" : "rgba(250,246,238,.25)", fontSize:".48rem" }}>{w.ar}</span>
+              {selected===i && (
+                <svg width="10" height="10" viewBox="0 0 10 10" style={{ marginTop:1 }}>
+                  <circle cx="5" cy="5" r="4.5" stroke="#C9A84C" strokeWidth="1" fill="none"/>
+                  <circle cx="5" cy="5" r="2.5" fill="#C9A84C"/>
+                </svg>
+              )}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── Step: wallet number (transfer to) ── */}
+      {step === "number" && selWallet && (
+        <div style={{ animation:"lmj-slideup .4s both", flex:1 }}>
+          <div style={{ display:"flex", gap:6, marginBottom:8 }}>
+            {WALLETS.map((w,i) => (
+              <button key={w.type} style={{
+                flex:1, background: i===0 ? `${w.bg}22` : "rgba(255,255,255,.04)",
+                border:`1.5px solid ${i===0 ? w.bg : "rgba(255,255,255,.08)"}`,
+                borderRadius:10, padding:"6px 4px",
+                display:"flex", flexDirection:"column", alignItems:"center", gap:3,
+                cursor:"pointer",
+                boxShadow: i===0 ? `0 0 10px ${w.bg}40` : "none",
+              }}>
+                <WalletIcon type={w.type} size={22} />
+                <span style={{ color: i===0 ? "#FAF6EE" : "rgba(250,246,238,.35)", fontSize:".52rem", fontWeight:700 }}>{w.name}</span>
+              </button>
+            ))}
+          </div>
+          <div style={{
+            background:`${selWallet.bg}18`, border:`1px solid ${selWallet.bg}55`,
+            borderRadius:10, padding:"10px 12px",
+          }}>
+            <p style={{ color:"rgba(250,246,238,.5)", fontSize:".5rem", margin:"0 0 4px", letterSpacing:".1em", textTransform:"uppercase" }}>Transfer to · {selWallet.name}</p>
+            <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between" }}>
+              <span style={{ color:"#FAF6EE", fontFamily:"monospace", fontWeight:900, fontSize:"1rem", letterSpacing:".12em" }}>
+                {selWallet.number}
+              </span>
+              <div style={{
+                background: copied ? "#C9A84C" : "rgba(201,168,76,.15)",
+                border:"1px solid rgba(201,168,76,.4)",
+                borderRadius:6, padding:"3px 8px",
+                display:"flex", alignItems:"center", gap:4,
+                transition:"background .2s",
+              }}>
+                {copied ? (
+                  <svg width="10" height="10" fill="none" stroke="#0A1628" strokeWidth="2"><path d="M1.5 5.5l2.5 2.5L9 2"/></svg>
+                ) : (
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="rgba(201,168,76,.8)" strokeWidth="1.2">
+                    <rect x="3" y="3" width="6" height="6" rx="1"/><path d="M1 7V1h6"/>
+                  </svg>
+                )}
+                <span style={{ color: copied ? "#0A1628" : "rgba(201,168,76,.8)", fontSize:".48rem", fontWeight:700 }}>
+                  {copied ? "Copied!" : "Copy"}
+                </span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step: upload proof ── */}
+      {step === "upload" && (
+        <div style={{ animation:"lmj-slideup .4s both", flex:1, display:"flex", flexDirection:"column", gap:8 }}>
+          <div style={{
+            background:"rgba(255,255,255,.04)", border:"1px dashed rgba(201,168,76,.3)",
+            borderRadius:10, padding:"10px", textAlign:"center",
+          }}>
+            <p style={{ color:"rgba(250,246,238,.5)", fontSize:".52rem", margin:"0 0 6px" }}>Transfer to <strong style={{ color:"#16a34a" }}>Bankily</strong> · <span style={{ fontFamily:"monospace", color:"#FAF6EE" }}>49399170</span></p>
+            <button style={{
+              width:"100%",
+              background: uploadClick ? "rgba(201,168,76,.3)" : "rgba(201,168,76,.1)",
+              border:"1.5px solid rgba(201,168,76,.45)",
+              borderRadius:8, padding:"9px",
+              color:"#C9A84C", fontWeight:700, fontSize:".6rem",
+              display:"flex", alignItems:"center", justifyContent:"center", gap:6,
+              transform: uploadClick ? "scale(.96)" : "scale(1)",
+              transition:"all .15s", cursor:"pointer",
+            }}>
+              {spinner ? (
+                <svg width="12" height="12" viewBox="0 0 12 12" style={{ animation:"lmj-spin .6s linear infinite" }}>
+                  <circle cx="6" cy="6" r="4.5" stroke="rgba(201,168,76,.3)" strokeWidth="1.5" fill="none"/>
+                  <path d="M6 1.5 A4.5 4.5 0 0 1 10.5 6" stroke="#C9A84C" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
+                </svg>
+              ) : (
+                <>
+                  <svg width="13" height="13" fill="none" stroke="currentColor" strokeWidth="1.8">
+                    <path d="M2 9v2h9V9M6.5 2v6M4 4.5l2.5-2.5L9 4.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  </svg>
+                  Upload Payment Proof
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── Step: confirmed ── */}
+      {step === "done" && (
+        <div style={{ flex:1, display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", animation:"lmj-scalein .5s cubic-bezier(.34,1.56,.64,1)" }}>
+          <svg width="46" height="46" viewBox="0 0 46 46">
+            <circle cx="23" cy="23" r="20" stroke="#C9A84C" strokeWidth="2.5" fill="rgba(201,168,76,.08)"
+              strokeDasharray="126" strokeDashoffset="0"
+              style={{ animation:"lmj-circledraw .5s ease forwards" }}/>
+            <polyline points="13,23 20,30 33,15" stroke="#C9A84C" strokeWidth="3.5" fill="none"
+              strokeLinecap="round" strokeLinejoin="round"
+              strokeDasharray="80" strokeDashoffset="0"
+              style={{ animation:"lmj-checkdraw .4s .35s ease forwards" }}/>
+          </svg>
+          <p style={{ color:"#C9A84C", fontWeight:900, fontSize:".75rem", margin:"6px 0 2px" }}>Order Confirmed! ✨</p>
+          <p style={{ color:"rgba(250,246,238,.45)", fontSize:".55rem", margin:0 }}>Payment verified · Preparing your order</p>
+        </div>
+      )}
     </div>
   );
 }
@@ -467,7 +605,7 @@ function Scene4() {
 const SCENES: Array<{ id: number; label: string; dur: number; C: React.FC }> = [
   { id:0, label:"Brand",    dur:2800,  C:Scene1 },
   { id:1, label:"Cart",     dur:3000,  C:Scene2 },
-  { id:2, label:"Checkout", dur:2800,  C:Scene3 },
+  { id:2, label:"Checkout", dur:4200,  C:Scene3 },
   { id:3, label:"Delivery", dur:4000,  C:Scene4 },
 ];
 
