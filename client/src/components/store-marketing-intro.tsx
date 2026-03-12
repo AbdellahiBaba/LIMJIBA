@@ -13,7 +13,22 @@ const LangCtx = createContext<Lang>("en");
 const TR = {
   en: {
     store: "· STORE",
-    scenes: ["Brand","Cart","Checkout","Admin","Email","Delivery"],
+    scenes: ["Brand","Cart","Account","Checkout","Admin","Email","Delivery"],
+    authTitle: "Your Account",
+    createAccount: "Create Account",
+    continueGuest: "Continue as Guest",
+    loginAccount: "Log In",
+    fullName: "Full Name",
+    email: "Email",
+    password: "Password",
+    phone: "Phone",
+    address: "Delivery Address",
+    accountCreated: "Account Created! ✓",
+    guestReady: "Continuing as Guest ✓",
+    loginSuccess: "Welcome Back! ✓",
+    accountWelcome: "Welcome to LIMJIBA",
+    guestWelcome: "Quick Checkout Ready",
+    loginWelcome: "Logged In Successfully",
     shopAny: "Shop Anything. Anytime.",
     yourCart: "YOUR CART",
     choosePayment: "Choose Payment Method",
@@ -57,7 +72,22 @@ const TR = {
   },
   fr: {
     store: "· BOUTIQUE",
-    scenes: ["Marque","Panier","Paiement","Admin","Email","Livraison"],
+    scenes: ["Marque","Panier","Compte","Paiement","Admin","Email","Livraison"],
+    authTitle: "Votre Compte",
+    createAccount: "Créer un compte",
+    continueGuest: "Continuer en invité",
+    loginAccount: "Se connecter",
+    fullName: "Nom complet",
+    email: "Email",
+    password: "Mot de passe",
+    phone: "Téléphone",
+    address: "Adresse de livraison",
+    accountCreated: "Compte créé ! ✓",
+    guestReady: "Continuer en invité ✓",
+    loginSuccess: "Bienvenue ! ✓",
+    accountWelcome: "Bienvenue chez LIMJIBA",
+    guestWelcome: "Paiement rapide prêt",
+    loginWelcome: "Connexion réussie",
     shopAny: "Achetez tout. N'importe quand.",
     yourCart: "VOTRE PANIER",
     choosePayment: "Mode de paiement",
@@ -101,7 +131,22 @@ const TR = {
   },
   ar: {
     store: "· المتجر",
-    scenes: ["العلامة","السلة","الدفع","الإدارة","البريد","التوصيل"],
+    scenes: ["العلامة","السلة","الحساب","الدفع","الإدارة","البريد","التوصيل"],
+    authTitle: "حسابك",
+    createAccount: "إنشاء حساب",
+    continueGuest: "المتابعة كضيف",
+    loginAccount: "تسجيل الدخول",
+    fullName: "الاسم الكامل",
+    email: "البريد الإلكتروني",
+    password: "كلمة المرور",
+    phone: "الهاتف",
+    address: "عنوان التوصيل",
+    accountCreated: "تم إنشاء الحساب! ✓",
+    guestReady: "متابعة كضيف ✓",
+    loginSuccess: "أهلاً بعودتك! ✓",
+    accountWelcome: "مرحباً في لمجيبة",
+    guestWelcome: "الدفع السريع جاهز",
+    loginWelcome: "تم تسجيل الدخول",
     shopAny: "تسوّق أي شيء. في أي وقت.",
     yourCart: "سلّتك",
     choosePayment: "طريقة الدفع",
@@ -508,6 +553,182 @@ function fetchWallets(): Promise<WalletData[]> {
       return _walletCache;
     })
     .catch(() => STATIC_WALLETS);
+}
+
+/* ─── SCENE AUTH: Account / Guest / Login ───────────────────────── */
+type AuthStep = "choice" | "form" | "success";
+
+const AUTH_DATA: Record<"en"|"fr"|"ar", Record<"create"|"guest"|"login", string[]>> = {
+  en: {
+    create: ["Ahmed Mohamed", "ahmed@limjiba.com", "••••••••"],
+    guest:  ["guest@email.com", "+222 46 12 34 56", "Nouakchott, MR"],
+    login:  ["ahmed@limjiba.com", "••••••••"],
+  },
+  fr: {
+    create: ["Marie Dupont", "marie@limjiba.com", "••••••••"],
+    guest:  ["client@email.fr", "+222 46 12 34 56", "Nouakchott, MR"],
+    login:  ["marie@limjiba.com", "••••••••"],
+  },
+  ar: {
+    create: ["أحمد محمد", "ahmed@limjiba.com", "••••••••"],
+    guest:  ["ضيف@بريد.com", "+٢٢٢ ٤٦ ١٢ ٣٤ ٥٦", "نواكشوط، موريتانيا"],
+    login:  ["ahmed@limjiba.com", "••••••••"],
+  },
+};
+
+function SceneAuth() {
+  const lang = useContext(LangCtx);
+  const t = TR[lang];
+  const { walletIndex } = useContext(ScenarioCtx);
+  const isRtl = lang === "ar";
+  const mode = walletIndex === 0 ? "create" : walletIndex === 1 ? "guest" : "login";
+  const [step, setStep] = useState<AuthStep>("choice");
+  const [fieldValues, setFieldValues] = useState<string[]>(["", "", ""]);
+  const [btnClick, setBtnClick] = useState(false);
+
+  useEffect(() => {
+    setStep("choice");
+    setFieldValues(["", "", ""]);
+    setBtnClick(false);
+    const demo = AUTH_DATA[lang][mode];
+    const ts: ReturnType<typeof setTimeout>[] = [];
+    ts.push(setTimeout(() => setStep("form"), 1300));
+    ts.push(setTimeout(() => setFieldValues(p => { const n=[...p]; n[0]=demo[0]; return n; }), 2100));
+    ts.push(setTimeout(() => setFieldValues(p => { const n=[...p]; n[1]=demo[1]; return n; }), 3000));
+    if (mode !== "login") {
+      ts.push(setTimeout(() => setFieldValues(p => { const n=[...p]; n[2]=demo[2]; return n; }), 3900));
+    }
+    const successAt = mode === "login" ? 4200 : 5100;
+    ts.push(setTimeout(() => setBtnClick(true), successAt - 400));
+    ts.push(setTimeout(() => setStep("success"), successAt));
+    return () => ts.forEach(clearTimeout);
+  }, [walletIndex, lang]);
+
+  const modeColors = { create: "#22c55e", guest: "#C9A84C", login: "#3b82f6" };
+  const activeColor = modeColors[mode];
+
+  const OptionBtn = ({ m, icon, label }: { m: string; icon: string; label: string }) => {
+    const active = mode === m;
+    return (
+      <div style={{
+        padding: "6px 8px", borderRadius: 8, border: `1.5px solid ${active ? modeColors[m as keyof typeof modeColors] : "rgba(255,255,255,0.1)"}`,
+        background: active ? `${modeColors[m as keyof typeof modeColors]}18` : "rgba(255,255,255,0.03)",
+        display: "flex", flexDirection: "column", alignItems: "center", gap: 3, flex: 1,
+        animation: active ? "lmj-pulse 2s ease-in-out infinite" : undefined,
+        transition: "all .3s",
+      }}>
+        <span style={{ fontSize: ".9rem" }}>{icon}</span>
+        <span style={{ fontSize: ".42rem", fontWeight: 700, color: active ? modeColors[m as keyof typeof modeColors] : "rgba(255,255,255,0.4)", textAlign: "center", lineHeight: 1.2 }}>{label}</span>
+        {active && <div style={{ width: 14, height: 2, borderRadius: 1, background: modeColors[m as keyof typeof modeColors], marginTop: 1 }} />}
+      </div>
+    );
+  };
+
+  const fieldDefs = mode === "create"
+    ? [{ lbl: t.fullName, icon: "👤" }, { lbl: t.email, icon: "✉️" }, { lbl: t.password, icon: "🔒" }]
+    : mode === "guest"
+    ? [{ lbl: t.email, icon: "✉️" }, { lbl: t.phone, icon: "📞" }, { lbl: t.address, icon: "📍" }]
+    : [{ lbl: t.email, icon: "✉️" }, { lbl: t.password, icon: "🔒" }];
+
+  const successMsg = mode === "create" ? t.accountCreated : mode === "guest" ? t.guestReady : t.loginSuccess;
+  const successSub = mode === "create" ? t.accountWelcome : mode === "guest" ? t.guestWelcome : t.loginWelcome;
+
+  return (
+    <div style={{ position: "absolute", inset: 0, display: "flex", flexDirection: "column", padding: "10px 12px", gap: 6 }} dir={isRtl ? "rtl" : "ltr"}>
+      <MiniParticles count={6} />
+
+      {/* Header */}
+      <div style={{ display: "flex", alignItems: "center", gap: 6, animation: "lmj-slideup .4s both" }}>
+        <div style={{ width: 22, height: 22, borderRadius: "50%", background: "#0A1628", border: "1.5px solid #C9A84C", display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <svg width="11" height="11" viewBox="0 0 28 28" fill="none"><polygon points="14,2 26,24 2,24" fill="none" stroke="#C9A84C" strokeWidth="2.5"/></svg>
+        </div>
+        <span style={{ fontSize: ".58rem", fontWeight: 800, letterSpacing: ".12em", color: "#C9A84C" }}>LIMJIBA</span>
+        <span style={{ fontSize: ".5rem", color: "rgba(201,168,76,.5)", marginLeft: "auto" }}>{t.authTitle}</span>
+      </div>
+
+      {/* Choice step */}
+      {step === "choice" && (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", justifyContent: "center", gap: 8, animation: "lmj-fadein .4s both" }}>
+          <p style={{ fontSize: ".55rem", color: "rgba(255,255,255,0.5)", textAlign: "center", margin: 0, letterSpacing: ".1em" }}>
+            {isRtl ? "كيف تريد المتابعة؟" : lang === "fr" ? "Comment souhaitez-vous continuer ?" : "How would you like to continue?"}
+          </p>
+          <div style={{ display: "flex", gap: 6 }}>
+            <OptionBtn m="create" icon="✨" label={t.createAccount} />
+            <OptionBtn m="guest"  icon="⚡" label={t.continueGuest} />
+            <OptionBtn m="login"  icon="🔑" label={t.loginAccount} />
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <div style={{ display: "inline-block", padding: "3px 10px", borderRadius: 20, background: `${activeColor}22`, border: `1px solid ${activeColor}66`, fontSize: ".45rem", color: activeColor, fontWeight: 700 }}>
+              {isRtl ? "الاختيار:" : lang === "fr" ? "Choix :" : "Selected:"} {mode === "create" ? t.createAccount : mode === "guest" ? t.continueGuest : t.loginAccount}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Form step */}
+      {step === "form" && (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 5, animation: "lmj-slideup .35s both" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 5, marginBottom: 2 }}>
+            <div style={{ width: 16, height: 16, borderRadius: 4, background: `${activeColor}22`, border: `1.5px solid ${activeColor}`, display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".6rem" }}>
+              {mode === "create" ? "✨" : mode === "guest" ? "⚡" : "🔑"}
+            </div>
+            <span style={{ fontSize: ".52rem", fontWeight: 700, color: activeColor }}>{mode === "create" ? t.createAccount : mode === "guest" ? t.continueGuest : t.loginAccount}</span>
+          </div>
+
+          {fieldDefs.map((f, i) => (
+            <div key={i} style={{ animation: `lmj-slideup .3s ${i * 0.1}s both` }}>
+              <div style={{ fontSize: ".42rem", color: "rgba(255,255,255,0.45)", marginBottom: 2, display: "flex", alignItems: "center", gap: 3 }}>
+                <span>{f.icon}</span><span>{f.lbl}</span>
+              </div>
+              <div style={{
+                height: 24, borderRadius: 6, border: `1.5px solid ${fieldValues[i] ? activeColor + "88" : "rgba(255,255,255,0.15)"}`,
+                background: fieldValues[i] ? `${activeColor}0a` : "rgba(255,255,255,0.04)",
+                display: "flex", alignItems: "center", padding: "0 8px", gap: 4, transition: "all .4s",
+              }}>
+                <span style={{ fontSize: ".5rem", color: fieldValues[i] ? (i === 2 ? "rgba(255,255,255,0.5)" : "rgba(255,255,255,0.85)") : "rgba(255,255,255,0.2)", flex: 1, fontFamily: i === 2 ? "monospace" : undefined, letterSpacing: i === 2 ? ".15em" : undefined, direction: "ltr" }}>
+                  {fieldValues[i] || (isRtl ? "..." : "...")}
+                </span>
+                {fieldValues[i] && <span style={{ fontSize: ".55rem", color: activeColor }}>✓</span>}
+              </div>
+            </div>
+          ))}
+
+          <div style={{ marginTop: 4 }}>
+            <div style={{
+              height: 24, borderRadius: 6, background: activeColor, display: "flex", alignItems: "center", justifyContent: "center",
+              animation: btnClick ? "lmj-btnclick .4s both" : undefined, cursor: "pointer",
+              boxShadow: `0 0 12px ${activeColor}55`,
+            }}>
+              <span style={{ fontSize: ".52rem", fontWeight: 700, color: "#fff", letterSpacing: ".08em" }}>
+                {btnClick ? "..." : (mode === "create" ? t.createAccount : mode === "guest" ? t.continueGuest : t.loginAccount)}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success step */}
+      {step === "success" && (
+        <div style={{ flex: 1, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: 8, animation: "lmj-scalein .5s cubic-bezier(.34,1.56,.64,1) both" }}>
+          <div style={{ width: 52, height: 52, borderRadius: "50%", background: `${activeColor}22`, border: `2px solid ${activeColor}`, display: "flex", alignItems: "center", justifyContent: "center", animation: "lmj-pulse 2s ease-in-out infinite" }}>
+            <svg width="28" height="28" viewBox="0 0 56 56" fill="none">
+              <circle cx="28" cy="28" r="24" stroke={activeColor} strokeWidth="3" strokeDasharray="160" strokeDashoffset="0" style={{ animation: "lmj-circledraw .6s both" }} />
+              <polyline points="16,28 24,36 40,20" stroke={activeColor} strokeWidth="3.5" strokeLinecap="round" strokeLinejoin="round" strokeDasharray="80" strokeDashoffset="0" style={{ animation: "lmj-checkdraw .5s .3s both" }} />
+            </svg>
+          </div>
+          <div style={{ textAlign: "center" }}>
+            <p style={{ fontSize: ".65rem", fontWeight: 800, color: activeColor, margin: 0, letterSpacing: ".05em" }}>{successMsg}</p>
+            <p style={{ fontSize: ".5rem", color: "rgba(255,255,255,0.5)", margin: "4px 0 0", letterSpacing: ".08em" }}>{successSub}</p>
+          </div>
+          <div style={{ display: "flex", gap: 6, animation: "lmj-fadein .4s .5s both" }}>
+            {["🛡","✨","⚡"].map((ic, i) => (
+              <div key={i} style={{ width: 28, height: 28, borderRadius: 8, background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)", display: "flex", alignItems: "center", justifyContent: "center", fontSize: ".7rem" }}>{ic}</div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
 }
 
 type CheckoutStep = "wallets" | "number" | "upload" | "done";
@@ -1087,10 +1308,11 @@ function Scene4() {
 const SCENES: Array<{ id: number; label: string; dur: number; C: FC }> = [
   { id:0, label:"Brand",    dur:4500,  C:Scene1    },
   { id:1, label:"Cart",     dur:6000,  C:Scene2    },
-  { id:2, label:"Checkout", dur:7500,  C:Scene3    },
-  { id:3, label:"Admin",    dur:7000,  C:SceneAdmin },
-  { id:4, label:"Email",    dur:6500,  C:SceneEmail },
-  { id:5, label:"Delivery", dur:6000,  C:Scene4    },
+  { id:2, label:"Account",  dur:7000,  C:SceneAuth },
+  { id:3, label:"Checkout", dur:7500,  C:Scene3    },
+  { id:4, label:"Admin",    dur:7000,  C:SceneAdmin },
+  { id:5, label:"Email",    dur:6500,  C:SceneEmail },
+  { id:6, label:"Delivery", dur:6000,  C:Scene4    },
 ];
 
 /* ─── Main widget ───────────────────────────────────────────────── */
