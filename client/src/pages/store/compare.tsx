@@ -130,7 +130,11 @@ export default function StoreCompare() {
               {compareItems.map(product => (
                 <td key={product.id} className="p-3">
                   <span className={`text-sm font-medium ${product.stockQuantity > 0 ? "text-green-600" : "text-red-500"}`}>
-                    {product.stockQuantity > 0 ? `${product.stockQuantity} ${t("detail.available")}` : t("products.outOfStock")}
+                    {product.stockQuantity <= 0
+                      ? t("products.outOfStock")
+                      : product.stockQuantity <= ((product as any).lowStockThreshold || 5)
+                      ? (lang === "ar" ? "⚡ كمية محدودة" : lang === "fr" ? "⚡ Stock limité" : "⚡ Limited Stock")
+                      : (lang === "ar" ? "متوفر ✓" : lang === "fr" ? "En stock ✓" : "In Stock ✓")}
                   </span>
                 </td>
               ))}

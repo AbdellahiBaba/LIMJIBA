@@ -233,7 +233,9 @@ export default function StoreProductDetail() {
   }
 
   const displayStock = selectedVariant ? selectedVariant.stockQuantity : product.stockQuantity;
-  const stockColor = displayStock > 10 ? "#22c55e" : displayStock > 5 ? "#eab308" : "#ef4444";
+  const lowThreshold = product.lowStockThreshold || 5;
+  const stockStatus: "in_stock" | "low" | "out" = displayStock <= 0 ? "out" : displayStock <= lowThreshold ? "low" : "in_stock";
+  const stockColor = stockStatus === "in_stock" ? "#22c55e" : stockStatus === "low" ? "#f59e0b" : "#ef4444";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -384,18 +386,26 @@ export default function StoreProductDetail() {
           <div className="space-y-3">
             <div className="flex items-center gap-2 text-sm" data-testid="text-stock-availability">
               <div className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: stockColor }} />
-              <span style={{ color: stockColor, fontWeight: 600 }}>{displayStock} {t("detail.available")}</span>
+              <span style={{ color: stockColor, fontWeight: 600 }}>
+                {stockStatus === "out"
+                  ? t("products.outOfStock")
+                  : stockStatus === "low"
+                  ? (lang === "ar" ? "متوفر ✓" : lang === "fr" ? "En stock ✓" : "In Stock ✓")
+                  : (lang === "ar" ? "متوفر ✓" : lang === "fr" ? "En stock ✓" : "In Stock ✓")}
+              </span>
             </div>
-            {remainingStock < displayStock && remainingStock > 0 && (
-              <div className="flex items-center gap-2 text-sm text-gray-500" data-testid="text-in-cart">
-                <ShoppingCart className="h-3.5 w-3.5" />
-                <span>{displayStock - remainingStock} in cart — {remainingStock} remaining</span>
+            {stockStatus === "low" && displayStock > 0 && (
+              <div className="flex items-center gap-2 text-sm" style={{ color: "#f59e0b" }} data-testid="text-low-stock-warning">
+                <AlertCircle className="h-3.5 w-3.5" />
+                <span className="font-semibold">
+                  {lang === "ar" ? "⚠ كمية محدودة — اسرع قبل النفاذ!" : lang === "fr" ? "⚠ Stock limité — Dépêchez-vous !" : "⚠ Limited Stock — Hurry!"}
+                </span>
               </div>
             )}
-            {displayStock <= 5 && displayStock > 0 && (
-              <div className="flex items-center gap-2 text-sm text-amber-600" data-testid="text-low-stock-warning">
+            {stockStatus === "out" && (
+              <div className="flex items-center gap-2 text-sm text-red-500" data-testid="text-out-of-stock">
                 <AlertCircle className="h-3.5 w-3.5" />
-                <span>{t("products.onlyXLeft").replace("{x}", String(displayStock))}</span>
+                <span>{lang === "ar" ? "نفذت الكمية حالياً" : lang === "fr" ? "Actuellement épuisé" : "Currently unavailable"}</span>
               </div>
             )}
             {product.weightPerUnit > 0 && (

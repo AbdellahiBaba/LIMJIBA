@@ -151,10 +151,10 @@ export default function StoreProducts() {
                     <div className="absolute top-3 left-3">
                       <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full" style={{ background: "rgba(10,22,40,0.85)", color: "#C9A84C" }}>{product.category}</span>
                     </div>
-                    {product.stockQuantity <= 5 && (
+                    {product.stockQuantity > 0 && product.stockQuantity <= (product.lowStockThreshold || 5) && (
                       <div className="absolute top-3 right-3">
-                        <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full bg-red-500/90 text-white" data-testid={`badge-low-stock-${product.id}`}>
-                          {t("products.onlyXLeft").replace("{x}", String(product.stockQuantity))}
+                        <span className="text-[10px] font-semibold px-2.5 py-1 rounded-full text-white" style={{ background: "#f59e0b" }} data-testid={`badge-low-stock-${product.id}`}>
+                          {lang === "ar" ? "⚡ محدود" : lang === "fr" ? "⚡ Limité" : "⚡ Limited"}
                         </span>
                       </div>
                     )}

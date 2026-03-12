@@ -2840,7 +2840,7 @@ export class DatabaseStorage implements IStorage {
   async getStoreProducts(): Promise<Product[]> {
     return await withRetry(async () => {
       const allProducts = await db.select().from(products);
-      return allProducts.filter(p => p.stockQuantity > 0);
+      return allProducts.filter(p => p.stockQuantity > 0 || p.hasVariants);
     });
   }
 
