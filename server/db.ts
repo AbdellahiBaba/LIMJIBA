@@ -1161,6 +1161,17 @@ async function runMigrations(): Promise<void> {
       console.log('[DB] Added option columns and cost_price to product_variants');
     } catch {}
 
+    try {
+      await client.query(`ALTER TABLE product_variants ADD COLUMN images TEXT[]`);
+      console.log('[DB] Added images array to product_variants');
+    } catch {}
+
+    try {
+      await client.query(`ALTER TABLE product_variants ADD COLUMN variant_label_ar TEXT`);
+      await client.query(`ALTER TABLE product_variants ADD COLUMN variant_label_fr TEXT`);
+      console.log('[DB] Added trilingual label columns to product_variants');
+    } catch {}
+
     await client.query(`
       CREATE TABLE IF NOT EXISTS support_conversations (
         id SERIAL PRIMARY KEY,

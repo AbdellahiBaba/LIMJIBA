@@ -575,21 +575,21 @@ export async function sendProductMarketingEmail(
 
   const poeticMessages: Record<string, Record<string, string>> = {
     new_arrival: {
-      en: `<p style="font-style:italic;color:#5a4d3a;font-size:15px;line-height:1.7;">A new treasure has graced the halls of LIMJIBA — handpicked with devotion, wrapped in elegance, and destined for those who appreciate the finer things in life.</p>`,
-      fr: `<p style="font-style:italic;color:#5a4d3a;font-size:15px;line-height:1.7;">Un nouveau trésor vient d'embellir les salons de LIMJIBA — sélectionné avec passion, enveloppé d'élégance, et destiné à ceux qui savourent les plus belles choses de la vie.</p>`,
-      ar: `<p style="font-style:italic;color:#5a4d3a;font-size:15px;line-height:1.7;">كنزٌ جديد قد زيّن أروقة لمجيبة — مُنتقى بعناية فائقة، يلبسه الأناقة، ومُقدَّر لمن يُقدّرون أجمل ما في الحياة.</p>`
+      en: `<p style="color:#1a1a2e;font-size:15px;line-height:1.8;"><strong style="color:#0A1628;">LIMJIBA's curators have done it again.</strong> After an exhaustive global selection process, we are proud to introduce a product that meets our uncompromising standard of excellence. This is not simply an addition to our catalogue — it is a declaration of quality, precision, and the refined taste that defines every LIMJIBA acquisition. Reserved for those who demand the very best.</p>`,
+      fr: `<p style="color:#1a1a2e;font-size:15px;line-height:1.8;"><strong style="color:#0A1628;">L'équipe de sélection LIMJIBA a encore frappé.</strong> Après un processus de curation mondiale rigoureux, nous avons le privilège de vous présenter une acquisition qui incarne notre standard d'excellence absolue. Ce n'est pas simplement un nouveau produit — c'est une affirmation de qualité supérieure, destinée aux connaisseurs qui ne transigent pas avec le meilleur.</p>`,
+      ar: `<p style="color:#1a1a2e;font-size:15px;line-height:1.8;"><strong style="color:#0A1628;">فريق اختيار لمجيبة يُقدّم لكم الجديد.</strong> بعد عملية انتقاء عالمية دقيقة وصارمة، يسعدنا أن نُعلن عن أحدث إضافاتنا التي تُجسّد معايير التميّز التي لا نتنازل عنها. هذا ليس مجرد منتج جديد — إنه تأكيد على الجودة الرفيعة التي اعتادها عملاؤنا الأكثر تميّزاً.</p>`
     },
     flash_sale: {
-      en: `<p style="font-style:italic;color:#5a4d3a;font-size:15px;line-height:1.7;">The golden hour has arrived — a rare moment where luxury meets opportunity. This exclusive offer is a whisper of fortune reserved for the discerning few. Seize it before the curtain falls.</p>`,
-      fr: `<p style="font-style:italic;color:#5a4d3a;font-size:15px;line-height:1.7;">L'heure dorée est arrivée — un moment rare où le luxe rencontre l'opportunité. Cette offre exclusive est un murmure de fortune réservé aux plus avisés. Saisissez-la avant que le rideau ne tombe.</p>`,
-      ar: `<p style="font-style:italic;color:#5a4d3a;font-size:15px;line-height:1.7;">حانت الساعة الذهبية — لحظة نادرة يلتقي فيها الفخامة بالفرصة. هذا العرض الحصري همسة حظٍّ لا تُمنح إلا للمُميّزين. اغتنموها قبل أن يُسدل الستار.</p>`
+      en: `<p style="color:#1a1a2e;font-size:15px;line-height:1.8;"><strong style="color:#C9A84C;">An exceptional commercial opportunity — time-sensitive and exclusively yours.</strong> LIMJIBA rarely discounts. When we do, it signals something significant. This flash sale is a strategic window that sophisticated buyers recognise and act upon immediately. The offer is live now. Your competitors will not wait — neither should you.</p>`,
+      fr: `<p style="color:#1a1a2e;font-size:15px;line-height:1.8;"><strong style="color:#C9A84C;">Une opportunité commerciale exceptionnelle — limitée dans le temps, réservée à notre clientèle privilégiée.</strong> LIMJIBA accorde rarement des remises. Lorsque cela se produit, c'est le signal d'une occasion stratégique à ne pas manquer. Les acheteurs avisés le savent : les meilleures offres n'attendent pas. L'opportunité est ouverte maintenant. Agissez.</p>`,
+      ar: `<p style="color:#1a1a2e;font-size:15px;line-height:1.8;"><strong style="color:#C9A84C;">فرصة تجارية استثنائية — محدودة زمنياً ومخصصة لعملائنا المميّزين.</strong> نادراً ما تُقدّم لمجيبة تخفيضات. وعندما تفعل، فهذا يعني فرصة حقيقية لا تتكرر. المشتري الذكي يعرف كيف يتصرف في اللحظة المناسبة. العرض متاح الآن — اغتنموه قبل أن يغلق الباب.</p>`
     }
   };
 
   const ctaLabels: Record<string, string> = {
-    en: "Discover Now",
-    fr: "Découvrir Maintenant",
-    ar: "اكتشف الآن"
+    en: "Secure Yours Now",
+    fr: "Réserver Maintenant",
+    ar: "احجز الآن"
   };
 
   const safeImgUrl = product.imageUrl && /^https?:\/\//i.test(product.imageUrl) ? escHtml(product.imageUrl) : null;

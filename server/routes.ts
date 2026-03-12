@@ -37,7 +37,7 @@ import {
   insertPurchaseOrderItemSchema,
 } from "@shared/schema";
 import { z } from "zod";
-import { handleCustomerChat, handleAdminChat, generatePromoCode, getCustomerGreeting, generateProductDescriptions, generateNotificationContent } from "./limjiba";
+import { handleCustomerChat, handleAdminChat, generatePromoCode, getCustomerGreeting, generateProductDescriptions, generateNotificationContent, translateVariantLabels } from "./limjiba";
 import { sendOrderStatusEmail, sendOrderInvoiceEmail, sendPaymentConfirmedEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail, sendProductMarketingEmail, sendAbandonedCartReminderEmail, setEmailSocialLinks, sendNewAccountWithPasswordEmail, sendPosReceiptEmail } from "./email";
 
 function escapeHtml(str: string): string {
@@ -4435,12 +4435,14 @@ export async function registerRoutes(
         return {
           productId,
           variantLabel: String(v.variantLabel || "").substring(0, 200),
+          variantLabelAr: v.variantLabelAr ? String(v.variantLabelAr).substring(0, 200) : null,
+          variantLabelFr: v.variantLabelFr ? String(v.variantLabelFr).substring(0, 200) : null,
           sku: v.sku ? String(v.sku).substring(0, 100) : null,
           unitPrice: Math.max(0, Number(v.unitPrice) || product.unitPrice),
           costPrice: Math.max(0, Number(v.costPrice) || 0),
           stockQuantity: Math.max(0, Math.floor(Number(v.stockQuantity) || 0)),
           imageUrl: v.imageUrl || (imgArr && imgArr.length > 0 ? imgArr[0] : null),
-          images: imgArr && imgArr.length > 0 ? imgArr : undefined,
+          images: imgArr && imgArr.length > 0 ? imgArr : null,
           option1Name: v.option1Name || null,
           option1Value: v.option1Value || null,
           option2Name: v.option2Name || null,
@@ -4461,20 +4463,38 @@ export async function registerRoutes(
 
   app.post("/api/ai/generate-descriptions", requireAuth, async (req: Request, res: Response) => {
     try {
-      const { productName, category, variants } = z.object({
+      const { productName, category, variants, concept, wordCount } = z.object({
         productName: z.string().min(1).max(200),
         category: z.string().max(100).optional(),
         variants: z.array(z.string().max(100)).max(50).optional(),
+        concept: z.string().max(500).optional(),
+        wordCount: z.number().int().min(30).max(300).optional(),
       }).parse(req.body);
       const variantLabels = Array.isArray(variants) ? variants.map((v: any) => String(v).substring(0, 100)).slice(0, 50) : [];
       const result = await generateProductDescriptions(
         productName.substring(0, 200),
         String(category || "General").substring(0, 100),
         variantLabels,
+        concept ? concept.substring(0, 500) : undefined,
+        wordCount,
       );
       res.json(result);
     } catch (error) {
       handleError(res, "generateProductDescriptions", error);
+    }
+  });
+
+  app.post("/api/ai/translate-variants", requireAuth, async (req: Request, res: Response) => {
+    try {
+      const { variants } = z.object({
+        variants: z.array(z.object({
+          variantLabel: z.string().max(200),
+        })).max(100),
+      }).parse(req.body);
+      const result = await translateVariantLabels(variants.map(v => v.variantLabel));
+      res.json(result);
+    } catch (error) {
+      handleError(res, "translateVariantLabels", error);
     }
   });
 

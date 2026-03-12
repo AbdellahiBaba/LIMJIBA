@@ -76,6 +76,8 @@ export const productVariants = pgTable("product_variants", {
   id: varchar("id").primaryKey().default(sql`gen_random_uuid()`),
   productId: varchar("product_id").notNull(),
   variantLabel: text("variant_label").notNull(),
+  variantLabelAr: text("variant_label_ar"),
+  variantLabelFr: text("variant_label_fr"),
   sku: text("sku"),
   unitPrice: real("unit_price").notNull(),
   costPrice: real("cost_price").notNull().default(0),

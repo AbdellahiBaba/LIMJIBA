@@ -335,6 +335,8 @@ export async function generateProductDescriptions(
   productName: string,
   category: string,
   variants: string[] = [],
+  concept?: string,
+  wordCount?: number,
 ): Promise<{
   descriptionEn: string;
   descriptionFr: string;
@@ -344,36 +346,41 @@ export async function generateProductDescriptions(
   const variantInfo = variants.length > 0
     ? `\nThis product has variants: ${variants.join(", ")}.`
     : "";
+  const conceptLine = concept ? `\nProduct Concept / Key Selling Points: ${concept}` : "";
+  const targetWords = wordCount || 60;
 
-  const prompt = `You are a poetic luxury copywriter for LIMJIBA (لمجيبة), a premium import & e-commerce house in Mauritania. You write with the soul of a poet — your words paint vivid pictures, stir the senses, and make every product feel like a treasure waiting to be discovered.
+  const prompt = `You are the Chief Marketing Copywriter for LIMJIBA (لمجيبة) — Mauritania's most prestigious import and e-commerce house. You write with the precision of a senior strategist and the eloquence of a master storyteller. Your copy drives desire, commands premium positioning, and converts sophisticated buyers. Every sentence must justify the price, communicate exclusivity, and compel immediate action.
 
-Write beautifully poetic product descriptions for:
+Write elite, high-impact product descriptions for:
 - Product Name: ${productName}
-- Category: ${category}${variantInfo}
+- Category: ${category}${conceptLine}${variantInfo}
+
+Target length: approximately ${targetWords} words per description.
 
 Return a JSON object with these exact fields:
 {
-  "descriptionEn": "English description (2-3 sentences, poetic and lyrical — use elegant metaphors, sensory imagery, and evocative language that makes the reader feel the product's beauty and craftsmanship)",
-  "descriptionFr": "French description (2-3 sentences, romantically lyrical — channel the elegance of French literary tradition, with flowing prose that celebrates refinement and allure)",
-  "descriptionAr": "Arabic description (2-3 sentences, classically eloquent — draw from the richness of Arabic poetic tradition, using expressive imagery and graceful phrasing, RTL-ready)"${variants.length > 0 ? `,
+  "descriptionEn": "English — authoritative luxury marketing copy. Lead with the most powerful benefit. Build desire through precision language, aspirational positioning, and a subtle urgency. Reference LIMJIBA's curation standard. Close with a call to ownership, not just purchase.",
+  "descriptionFr": "French — sophisticated commercial prose in the grand tradition of French luxury marketing. Speak to connoisseurs. Command attention with deliberate rhythm and refined vocabulary. Make ownership feel inevitable.",
+  "descriptionAr": "Arabic — high-calibre business Arabic (فصحى contemporary). Write with authority, elegance, and strategic persuasion. Reference quality, exclusivity, and the discernment of the buyer. RTL-ready."${variants.length > 0 ? `,
   "variantDescriptions": [${variants.map(v => `{"label": "${v}", "en": "...", "fr": "...", "ar": "..."}`).join(", ")}]` : ""}
 }
 
-Style & Rules:
-- Write like a poet, not a salesperson — let beauty and emotion carry the message
-- Use vivid sensory language: textures, colors, feelings, light, movement
-- Weave in elegant metaphors and graceful turns of phrase
-- Each language should feel natively poetic, not translated — English should sing, French should flow like silk, Arabic should resonate with classical eloquence
-- Subtly reference LIMJIBA's devotion to quality and the art of fine importing
-- Keep descriptions concise yet enchanting (2-3 sentences each — every word should matter)
-${variants.length > 0 ? "- Variant descriptions should be 1 poetic sentence each, capturing the unique character and essence of that variant" : ""}
+Execution Rules:
+- NEVER write generic filler — every word must earn its place and serve a commercial purpose
+- Open with power: a bold claim, a striking benefit, or an aspirational statement
+- Use precise, confident language that positions the product at the top of its category
+- Weave in sensory and status signals: craftsmanship, origin, performance, exclusivity
+- Each language must feel like native premium advertising copy — not a translation
+- Subtly reinforce LIMJIBA's identity as the arbiter of quality in Mauritania
+- Descriptions must be commercially compelling AND linguistically beautiful
+${variants.length > 0 ? "- Variant descriptions: 1 punchy, distinctive sentence that differentiates each variant with commercial precision" : ""}
 - Return ONLY valid JSON, no markdown or code blocks`;
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [{ role: "user", content: prompt }],
-    max_tokens: 800,
-    temperature: 0.8,
+    max_tokens: Math.max(800, targetWords * 15),
+    temperature: 0.75,
     response_format: { type: "json_object" },
   });
 
@@ -396,6 +403,51 @@ ${variants.length > 0 ? "- Variant descriptions should be 1 poetic sentence each
     };
   } catch {
     return { descriptionEn: "", descriptionFr: "", descriptionAr: "" };
+  }
+}
+
+export async function translateVariantLabels(
+  labels: string[],
+): Promise<{ variantLabel: string; variantLabelAr: string; variantLabelFr: string }[]> {
+  if (labels.length === 0) return [];
+
+  const prompt = `You are a professional trilingual translator for LIMJIBA, a luxury e-commerce brand in Mauritania. Translate the following product variant labels into Arabic (AR) and French (FR). Keep translations short, precise, and commercially appropriate. Preserve technical terms and sizes/colors accurately.
+
+Variant labels to translate:
+${labels.map((l, i) => `${i + 1}. "${l}"`).join("\n")}
+
+Return a JSON array:
+[
+  {"variantLabel": "original", "variantLabelAr": "Arabic translation", "variantLabelFr": "French translation"},
+  ...
+]
+
+Rules:
+- Match the exact order of input labels
+- For sizes (S, M, L, XL, etc.): keep as-is or use standard Arabic/French equivalents
+- For colors: translate accurately (e.g., "Red" → "أحمر" / "Rouge")
+- For material/technical terms: use precise professional terminology
+- Return ONLY valid JSON array, no markdown`;
+
+  const response = await openai.chat.completions.create({
+    model: "gpt-4o-mini",
+    messages: [{ role: "user", content: prompt }],
+    max_tokens: 800,
+    temperature: 0.3,
+    response_format: { type: "json_object" },
+  });
+
+  const text = response.choices[0]?.message?.content || "{}";
+  try {
+    const parsed = JSON.parse(text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim());
+    const arr = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.translations) ? parsed.translations : []);
+    return labels.map((label, i) => ({
+      variantLabel: label,
+      variantLabelAr: String(arr[i]?.variantLabelAr || label),
+      variantLabelFr: String(arr[i]?.variantLabelFr || label),
+    }));
+  } catch {
+    return labels.map(label => ({ variantLabel: label, variantLabelAr: label, variantLabelFr: label }));
   }
 }
 

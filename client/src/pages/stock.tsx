@@ -85,6 +85,8 @@ interface OptionRow {
 
 interface VariantRow {
   variantLabel: string;
+  variantLabelAr: string;
+  variantLabelFr: string;
   unitPrice: number;
   costPrice: number;
   stockQuantity: number;
@@ -129,6 +131,8 @@ function generateVariantCombinations(options: OptionRow[], parentPrice: number):
 
   return combinations.map(combo => ({
     variantLabel: combo.label,
+    variantLabelAr: "",
+    variantLabelFr: "",
     unitPrice: parentPrice,
     costPrice: 0,
     stockQuantity: 0,
@@ -255,6 +259,8 @@ function OptionsAndVariantsSection({
   variants,
   onVariantsChange,
   parentPrice,
+  onTranslate,
+  translating,
 }: {
   hasOptions: boolean;
   onHasOptionsChange: (v: boolean) => void;
@@ -263,6 +269,8 @@ function OptionsAndVariantsSection({
   variants: VariantRow[];
   onVariantsChange: (vars: VariantRow[]) => void;
   parentPrice: number;
+  onTranslate?: () => void;
+  translating?: boolean;
 }) {
   const { toast } = useToast();
   const [expanded, setExpanded] = useState(true);
@@ -418,13 +426,28 @@ function OptionsAndVariantsSection({
 
               {variants.length > 0 && (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between flex-wrap gap-2">
                     <Label className="text-sm font-semibold">{variants.length} Variants</Label>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <div className="flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium" style={{ background: "rgba(201,168,76,0.1)", color: "#C9A84C", border: "1px solid rgba(201,168,76,0.3)" }} data-testid="text-total-variant-stock">
                         <Package className="h-3 w-3" />
                         Total Stock: {variants.reduce((sum, v) => sum + (v.stockQuantity || 0), 0)}
                       </div>
+                      {onTranslate && (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          onClick={onTranslate}
+                          disabled={translating}
+                          className="gap-1.5 text-xs h-7"
+                          style={{ borderColor: "rgba(201,168,76,0.4)", color: "#C9A84C" }}
+                          data-testid="button-translate-variants"
+                        >
+                          {translating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+                          {translating ? "Translating..." : "Auto-Translate AR/FR"}
+                        </Button>
+                      )}
                     </div>
                   </div>
                   <div className="rounded-md border overflow-x-auto">
@@ -432,11 +455,13 @@ function OptionsAndVariantsSection({
                       <TableHeader>
                         <TableRow>
                           <TableHead className="w-[50px]">Image</TableHead>
-                          <TableHead className="min-w-[140px]">Variant</TableHead>
-                          <TableHead className="w-[100px]">Price</TableHead>
-                          <TableHead className="w-[100px]">Cost</TableHead>
-                          <TableHead className="w-[90px]">Stock</TableHead>
-                          <TableHead className="w-[120px]">SKU</TableHead>
+                          <TableHead className="min-w-[130px]">Variant (EN)</TableHead>
+                          <TableHead className="min-w-[110px]">عربي (AR)</TableHead>
+                          <TableHead className="min-w-[110px]">Français (FR)</TableHead>
+                          <TableHead className="w-[90px]">Price</TableHead>
+                          <TableHead className="w-[90px]">Cost</TableHead>
+                          <TableHead className="w-[80px]">Stock</TableHead>
+                          <TableHead className="w-[110px]">SKU</TableHead>
                           <TableHead className="w-[40px]"></TableHead>
                         </TableRow>
                       </TableHeader>
@@ -472,6 +497,25 @@ function OptionsAndVariantsSection({
                             </TableCell>
                             <TableCell>
                               <span className="text-sm font-medium">{v.variantLabel}</span>
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                value={v.variantLabelAr || ""}
+                                onChange={(e) => updateVariant(idx, "variantLabelAr", e.target.value)}
+                                placeholder="عربي"
+                                className="h-8 text-sm"
+                                dir="rtl"
+                                data-testid={`input-variant-label-ar-${idx}`}
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <Input
+                                value={v.variantLabelFr || ""}
+                                onChange={(e) => updateVariant(idx, "variantLabelFr", e.target.value)}
+                                placeholder="Français"
+                                className="h-8 text-sm"
+                                data-testid={`input-variant-label-fr-${idx}`}
+                              />
                             </TableCell>
                             <TableCell>
                               <Input
@@ -528,7 +572,7 @@ function OptionsAndVariantsSection({
                           </TableRow>
                         ))}
                         <TableRow className="font-medium" style={{ background: "rgba(201,168,76,0.05)" }}>
-                          <TableCell colSpan={4} className="text-right text-sm" style={{ color: "#C9A84C" }}>
+                          <TableCell colSpan={6} className="text-right text-sm" style={{ color: "#C9A84C" }}>
                             Total Available Stock
                           </TableCell>
                           <TableCell className="text-sm font-bold" style={{ color: "#C9A84C" }} data-testid="text-variants-total-stock">
@@ -609,6 +653,9 @@ export function ProductFormPage() {
   const [variants, setVariants] = useState<VariantRow[]>([]);
   const [initialized, setInitialized] = useState(false);
   const [aiGenerating, setAiGenerating] = useState(false);
+  const [variantTranslating, setVariantTranslating] = useState(false);
+  const [aiConcept, setAiConcept] = useState("");
+  const [aiWordCount, setAiWordCount] = useState(60);
   const [formDirty, setFormDirty] = useState(false);
 
   useUnsavedChanges(formDirty);
@@ -672,6 +719,8 @@ export function ProductFormPage() {
       }
       setVariants(existingVariants.map(v => ({
         variantLabel: v.variantLabel,
+        variantLabelAr: (v as any).variantLabelAr || "",
+        variantLabelFr: (v as any).variantLabelFr || "",
         unitPrice: v.unitPrice,
         costPrice: v.costPrice,
         stockQuantity: v.stockQuantity,
@@ -794,6 +843,8 @@ export function ProductFormPage() {
         productName: formData.name,
         category: formData.category || "General",
         variants: variantLabels,
+        concept: aiConcept.trim() || undefined,
+        wordCount: aiWordCount || 60,
       });
       const data = await res.json();
       setFormData(prev => ({
@@ -807,6 +858,27 @@ export function ProductFormPage() {
       toast({ title: error.message || "Failed to generate descriptions", variant: "destructive" });
     } finally {
       setAiGenerating(false);
+    }
+  };
+
+  const translateAllVariants = async () => {
+    if (variants.length === 0) return;
+    setVariantTranslating(true);
+    try {
+      const res = await apiRequest("POST", "/api/ai/translate-variants", {
+        variants: variants.map(v => ({ variantLabel: v.variantLabel })),
+      });
+      const data: { variantLabel: string; variantLabelAr: string; variantLabelFr: string }[] = await res.json();
+      setVariants(prev => prev.map((v, i) => ({
+        ...v,
+        variantLabelAr: data[i]?.variantLabelAr || v.variantLabelAr,
+        variantLabelFr: data[i]?.variantLabelFr || v.variantLabelFr,
+      })));
+      toast({ title: "Variants translated to Arabic & French" });
+    } catch (error: any) {
+      toast({ title: error.message || "Translation failed", variant: "destructive" });
+    } finally {
+      setVariantTranslating(false);
     }
   };
 
@@ -876,25 +948,55 @@ export function ProductFormPage() {
         <div className="lg:col-span-2 space-y-6">
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base">Title & Description</CardTitle>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={generateAiDescriptions}
-                  disabled={aiGenerating || !formData.name?.trim()}
-                  className="gap-1.5 text-xs"
-                  style={{ borderColor: "rgba(201,168,76,0.5)", color: "#C9A84C" }}
-                  data-testid="button-ai-generate-descriptions"
-                >
-                  {aiGenerating ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <Sparkles className="h-3.5 w-3.5" />
-                  )}
-                  {aiGenerating ? "Generating..." : "AI Generate"}
-                </Button>
+              <div className="w-full space-y-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-base">Title & Description</CardTitle>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={generateAiDescriptions}
+                    disabled={aiGenerating || !formData.name?.trim()}
+                    className="gap-1.5 text-xs"
+                    style={{ borderColor: "rgba(201,168,76,0.5)", color: "#C9A84C" }}
+                    data-testid="button-ai-generate-descriptions"
+                  >
+                    {aiGenerating ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Sparkles className="h-3.5 w-3.5" />
+                    )}
+                    {aiGenerating ? "Generating..." : "AI Generate"}
+                  </Button>
+                </div>
+                <div className="rounded-lg border p-3 space-y-3" style={{ borderColor: "rgba(201,168,76,0.2)", background: "rgba(201,168,76,0.03)" }}>
+                  <p className="text-xs font-semibold" style={{ color: "#C9A84C" }}>✦ AI Generation Options</p>
+                  <div className="space-y-1.5">
+                    <Label className="text-xs text-muted-foreground">Product Concept / Key Selling Points</Label>
+                    <Textarea
+                      value={aiConcept}
+                      onChange={(e) => setAiConcept(e.target.value)}
+                      placeholder="e.g. Imported from Morocco, hand-crafted leather, premium quality, ideal for gifting..."
+                      rows={2}
+                      className="text-xs resize-none"
+                      data-testid="input-ai-concept"
+                    />
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Label className="text-xs text-muted-foreground shrink-0">Word Count</Label>
+                    <input
+                      type="range"
+                      min={30}
+                      max={200}
+                      step={10}
+                      value={aiWordCount}
+                      onChange={(e) => setAiWordCount(Number(e.target.value))}
+                      className="flex-1 accent-yellow-600"
+                      data-testid="input-ai-word-count"
+                    />
+                    <span className="text-xs font-semibold w-12 text-right" style={{ color: "#C9A84C" }}>{aiWordCount} words</span>
+                  </div>
+                </div>
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
@@ -1137,6 +1239,8 @@ export function ProductFormPage() {
             variants={variants}
             onVariantsChange={(vars) => { setVariants(vars); setFormDirty(true); }}
             parentPrice={formData.unitPrice || 0}
+            onTranslate={translateAllVariants}
+            translating={variantTranslating}
           />
         </div>
 
