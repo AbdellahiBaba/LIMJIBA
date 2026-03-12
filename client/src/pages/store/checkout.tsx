@@ -300,7 +300,7 @@ export default function StoreCheckout() {
             </div>
           </div>
 
-          {isAuthenticated && availablePoints > 0 && (
+          {isAuthenticated && (
             <div className="rounded-xl border bg-white shadow-sm p-6" style={{ borderColor: `${accentColor}30` }} data-testid="section-loyalty-redeem">
               <div className="flex items-center justify-between mb-3">
                 <div className="flex items-center gap-2">
@@ -312,25 +312,27 @@ export default function StoreCheckout() {
                     <p className="text-xs text-gray-400">{t("loyalty.redeemSubtitle")}</p>
                   </div>
                 </div>
-                <button
-                  onClick={() => setUsePoints(p => !p)}
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none`}
-                  style={{ backgroundColor: usePoints ? accentColor : "#d1d5db" }}
-                  data-testid="toggle-use-points"
-                >
-                  <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${usePoints ? "translate-x-6" : "translate-x-1"}`} />
-                </button>
+                {availablePoints > 0 && (
+                  <button
+                    onClick={() => setUsePoints(p => !p)}
+                    className="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none"
+                    style={{ backgroundColor: usePoints ? accentColor : "#d1d5db" }}
+                    data-testid="toggle-use-points"
+                  >
+                    <span className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${usePoints ? "translate-x-6" : "translate-x-1"}`} />
+                  </button>
+                )}
               </div>
 
               <div className="flex items-center gap-3 mb-3 p-3 rounded-lg" style={{ backgroundColor: `${primaryColor}06` }}>
                 <Award className="h-5 w-5 flex-shrink-0" style={{ color: accentColor }} />
                 <div>
                   <p className="text-sm font-bold" style={{ color: primaryColor }}>{availablePoints} {t("loyalty.points")}</p>
-                  <p className="text-xs text-gray-400">{t("loyalty.availablePoints")}</p>
+                  <p className="text-xs text-gray-400">{availablePoints > 0 ? t("loyalty.availablePoints") : t("loyalty.noPointsYet")}</p>
                 </div>
               </div>
 
-              {usePoints && maxRedeemable > 0 && (
+              {availablePoints > 0 && usePoints && maxRedeemable > 0 && (
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-medium text-gray-600">{t("loyalty.pointsToRedeem")}</span>
@@ -370,7 +372,7 @@ export default function StoreCheckout() {
                   </div>
                 </div>
               )}
-              {usePoints && maxRedeemable === 0 && (
+              {availablePoints > 0 && usePoints && maxRedeemable === 0 && (
                 <p className="text-xs text-gray-400 mt-2">{t("loyalty.maxRedeemNote").replace("{max}", "0").replace("{value}", "0")}</p>
               )}
             </div>

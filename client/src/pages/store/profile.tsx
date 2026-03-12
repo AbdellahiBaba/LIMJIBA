@@ -123,10 +123,10 @@ export default function StoreProfile() {
         {t("profile.title")}
       </h1>
 
-      {((customer?.loyaltyPoints ?? 0) > 0 || loyaltyHistory.length > 0) && (
-        <div className="rounded-xl border bg-white shadow-sm p-6 mb-6" style={{ borderColor: "rgba(201,168,76,0.2)" }} data-testid="section-loyalty-points">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="h-14 w-14 rounded-xl flex items-center justify-center" style={{ background: "linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05))" }}>
+      <div className="rounded-xl border bg-white shadow-sm p-6 mb-6" style={{ borderColor: "rgba(201,168,76,0.2)" }} data-testid="section-loyalty-points">
+        <div className="flex items-center justify-between gap-4 mb-4">
+          <div className="flex items-center gap-4">
+            <div className="h-14 w-14 rounded-xl flex items-center justify-center shrink-0" style={{ background: "linear-gradient(135deg, rgba(201,168,76,0.15), rgba(201,168,76,0.05))" }}>
               <Award className="h-7 w-7" style={{ color: accentColor }} />
             </div>
             <div>
@@ -135,36 +135,55 @@ export default function StoreProfile() {
               <p className="text-xs text-gray-400">{t("loyalty.earnInfo")}</p>
             </div>
           </div>
-          {loyaltyHistory.length > 0 && (
-            <div className="border-t pt-4">
-              <p className="text-sm font-semibold mb-3" style={{ color: primaryColor }}>{t("loyalty.history")}</p>
-              <div className="space-y-2 max-h-48 overflow-y-auto">
-                {loyaltyHistory.slice(0, 10).map((tx: any) => (
-                  <div key={tx.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg" style={{ backgroundColor: `${primaryColor}04` }} data-testid={`tx-loyalty-${tx.id}`}>
-                    <div className="flex items-center gap-2">
-                      <div className="h-6 w-6 rounded-full flex items-center justify-center" style={{ backgroundColor: tx.points >= 0 ? "rgba(22,163,74,0.12)" : "rgba(220,38,38,0.1)" }}>
-                        {tx.points >= 0 ? <TrendingUp className="h-3 w-3 text-green-600" /> : <Gift className="h-3 w-3 text-red-500" />}
-                      </div>
-                      <div>
-                        <p className="text-xs font-medium" style={{ color: primaryColor }}>
-                          {tx.type === "earned" ? t("loyalty.txEarned") : tx.type === "redeemed" ? t("loyalty.txRedeemed") : tx.type === "manual" ? t("loyalty.txManual") : t("loyalty.txRefund")}
-                        </p>
-                        {tx.orderNumber && <p className="text-xs text-gray-400">#{tx.orderNumber}</p>}
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span className="text-sm font-bold" style={{ color: tx.points >= 0 ? "#16a34a" : "#dc2626" }}>
-                        {tx.points >= 0 ? "+" : ""}{tx.points}
-                      </span>
-                      {tx.createdAt && <p className="text-xs text-gray-400">{new Date(tx.createdAt).toLocaleDateString()}</p>}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
+          {(customer?.loyaltyPoints ?? 0) > 0 && (
+            <a href="/store/cart" className="shrink-0">
+              <Button size="sm" className="rounded-full text-xs font-semibold" style={{ backgroundColor: accentColor, color: primaryColor }} data-testid="button-use-at-checkout">
+                <Gift className="h-3 w-3 mr-1" />
+                {t("loyalty.useAtCheckout")}
+              </Button>
+            </a>
+          )}
+          {(customer?.loyaltyPoints ?? 0) === 0 && (
+            <a href="/store" className="shrink-0">
+              <Button size="sm" variant="outline" className="rounded-full text-xs" data-testid="button-shop-to-earn">
+                <ShoppingBag className="h-3 w-3 mr-1" />
+                {t("loyalty.shopNow")}
+              </Button>
+            </a>
           )}
         </div>
-      )}
+        {loyaltyHistory.length > 0 && (
+          <div className="border-t pt-4">
+            <p className="text-sm font-semibold mb-3" style={{ color: primaryColor }}>{t("loyalty.history")}</p>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {loyaltyHistory.slice(0, 10).map((tx: any) => (
+                <div key={tx.id} className="flex items-center justify-between py-1.5 px-2 rounded-lg" style={{ backgroundColor: `${primaryColor}04` }} data-testid={`tx-loyalty-${tx.id}`}>
+                  <div className="flex items-center gap-2">
+                    <div className="h-6 w-6 rounded-full flex items-center justify-center" style={{ backgroundColor: tx.points >= 0 ? "rgba(22,163,74,0.12)" : "rgba(220,38,38,0.1)" }}>
+                      {tx.points >= 0 ? <TrendingUp className="h-3 w-3 text-green-600" /> : <Gift className="h-3 w-3 text-red-500" />}
+                    </div>
+                    <div>
+                      <p className="text-xs font-medium" style={{ color: primaryColor }}>
+                        {tx.type === "earned" ? t("loyalty.txEarned") : tx.type === "redeemed" ? t("loyalty.txRedeemed") : tx.type === "manual" ? t("loyalty.txManual") : t("loyalty.txRefund")}
+                      </p>
+                      {tx.orderNumber && <p className="text-xs text-gray-400">#{tx.orderNumber}</p>}
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-sm font-bold" style={{ color: tx.points >= 0 ? "#16a34a" : "#dc2626" }}>
+                      {tx.points >= 0 ? "+" : ""}{tx.points}
+                    </span>
+                    {tx.createdAt && <p className="text-xs text-gray-400">{new Date(tx.createdAt).toLocaleDateString()}</p>}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {loyaltyHistory.length === 0 && (
+          <p className="text-xs text-gray-400 text-center py-2">{t("loyalty.noHistory")}</p>
+        )}
+      </div>
 
       <div className="rounded-xl border bg-white shadow-sm p-6 space-y-6">
         <h3 className="text-lg font-bold" style={{ color: primaryColor }}>{t("profile.editProfile")}</h3>
