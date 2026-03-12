@@ -2813,6 +2813,16 @@ export class DatabaseStorage implements IStorage {
           const [variant] = await tx.insert(productVariants).values({ ...v, productId }).returning();
           created.push(variant);
         }
+        const totalVariantStock = created
+          .filter(v => v.isActive !== false)
+          .reduce((sum, v) => sum + (v.stockQuantity || 0), 0);
+        const hasActiveVariants = created.length > 0;
+        await tx.update(products)
+          .set({
+            stockQuantity: totalVariantStock,
+            hasVariants: hasActiveVariants || undefined,
+          })
+          .where(eq(products.id, productId));
         return created;
       });
     });
@@ -2840,7 +2850,7 @@ export class DatabaseStorage implements IStorage {
   async getStoreProducts(): Promise<Product[]> {
     return await withRetry(async () => {
       const allProducts = await db.select().from(products);
-      return allProducts.filter(p => p.stockQuantity > 0 || p.hasVariants);
+      return allProducts.filter(p => p.stockQuantity > 0);
     });
   }
 

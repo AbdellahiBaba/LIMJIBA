@@ -38,14 +38,22 @@ export default function StoreProductDetail() {
   const [activeImageIndex, setActiveImageIndex] = useState(0);
   const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, dragFree: false });
 
+  const [productUnavailable, setProductUnavailable] = useState<"out_of_stock" | "not_found" | null>(null);
   const { data: product, isLoading } = useQuery<Product>({
     queryKey: ["/api/store/products", productId],
     queryFn: async () => {
       const res = await fetch(`/api/store/products/${productId}`);
-      if (!res.ok) throw new Error("Product not found");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        const isStock = String(body?.error || "").toLowerCase().includes("out of stock");
+        setProductUnavailable(isStock ? "out_of_stock" : "not_found");
+        throw new Error(body?.error || "Product not found");
+      }
+      setProductUnavailable(null);
       return res.json();
     },
     enabled: !!productId,
+    retry: false,
   });
 
   const { data: allProducts } = useQuery<Product[]>({
@@ -218,14 +226,32 @@ export default function StoreProductDetail() {
     );
   }
 
-  if (!product) {
+  if (!product && !isLoading) {
+    const isOutOfStock = productUnavailable === "out_of_stock";
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
-        <Package className="h-16 w-16 mx-auto text-gray-300 mb-4" />
-        <h2 className="text-2xl font-bold text-gray-500 mb-2">{t("detail.notFound")}</h2>
+        {isOutOfStock ? (
+          <>
+            <div className="w-20 h-20 rounded-full mx-auto mb-6 flex items-center justify-center" style={{ background: "rgba(201,168,76,0.1)", border: "2px solid rgba(201,168,76,0.3)" }}>
+              <Package className="h-10 w-10" style={{ color: "#C9A84C" }} />
+            </div>
+            <h2 className="text-2xl font-bold mb-3" style={{ color: "#0A1628" }}>
+              {lang === "ar" ? "المنتج غير متوفر حالياً" : lang === "fr" ? "Produit temporairement indisponible" : "Currently Out of Stock"}
+            </h2>
+            <p className="text-gray-500 text-sm mb-6 max-w-sm mx-auto">
+              {lang === "ar" ? "هذا المنتج نفدت كميته مؤقتاً. تابع متجرنا للحصول على آخر المنتجات المتاحة." : lang === "fr" ? "Ce produit est temporairement épuisé. Revenez bientôt pour voir nos disponibilités." : "This product is temporarily out of stock. Check back soon or browse our other available products."}
+            </p>
+          </>
+        ) : (
+          <>
+            <Package className="h-16 w-16 mx-auto text-gray-300 mb-4" />
+            <h2 className="text-2xl font-bold text-gray-500 mb-2">{t("detail.notFound")}</h2>
+          </>
+        )}
         <Link href="/store/products">
-          <Button variant="outline" className="rounded-full mt-4">
-            <ArrowLeft className="h-4 w-4 mr-2" /> {t("detail.back")}
+          <Button className="rounded-full mt-2 gap-2" style={{ backgroundColor: "#0A1628", color: "#C9A84C" }}>
+            <ArrowLeft className="h-4 w-4" />
+            {lang === "ar" ? "تصفح المنتجات" : lang === "fr" ? "Voir les produits" : "Browse Products"}
           </Button>
         </Link>
       </div>

@@ -3594,8 +3594,8 @@ export async function registerRoutes(
   app.get("/api/store/products/:id", async (req: Request, res: Response) => {
     try {
       const product = await storage.getProduct(req.params.id);
-      if (!product) {
-        return res.status(404).json({ error: "Product not found" });
+      if (!product || product.stockQuantity <= 0) {
+        return res.status(404).json({ error: "Product not found or out of stock" });
       }
       res.json(product);
     } catch (error) {
