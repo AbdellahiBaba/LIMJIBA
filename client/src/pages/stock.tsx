@@ -657,6 +657,7 @@ export function ProductFormPage() {
   const [aiConcept, setAiConcept] = useState("");
   const [aiWordCount, setAiWordCount] = useState(60);
   const [formDirty, setFormDirty] = useState(false);
+  const [notifyCustomers, setNotifyCustomers] = useState(!isEditing);
   const autoTranslateTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useUnsavedChanges(formDirty);
@@ -850,11 +851,12 @@ export function ProductFormPage() {
     const data = {
       ...formData,
       hasVariants: hasOptions,
-    } as InsertProduct;
+      notifyCustomers,
+    } as InsertProduct & { notifyCustomers: boolean };
     if (isEditing) {
-      updateMutation.mutate(data);
+      updateMutation.mutate(data as InsertProduct);
     } else {
-      createMutation.mutate(data);
+      createMutation.mutate(data as InsertProduct);
     }
   };
 
@@ -1335,6 +1337,25 @@ export function ProductFormPage() {
                   </div>
                 )}
               </div>
+              {!isEditing && (
+                <div className="rounded-md border p-4 space-y-3" style={{ borderColor: "rgba(201,168,76,0.3)", background: "rgba(201,168,76,0.03)" }}>
+                  <Label className="text-sm font-semibold flex items-center gap-2">
+                    <Sparkles className="h-4 w-4" style={{ color: "#C9A84C" }} />
+                    Customer Notifications
+                  </Label>
+                  <div className="flex items-center gap-3">
+                    <Switch
+                      checked={notifyCustomers}
+                      onCheckedChange={setNotifyCustomers}
+                      data-testid="switch-notify-customers"
+                    />
+                    <div>
+                      <span className="text-sm">Notify all customers of this new product</span>
+                      <p className="text-xs text-muted-foreground mt-0.5">Sends a "New Arrival" email + in-app notification to all active customers</p>
+                    </div>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 

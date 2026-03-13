@@ -802,6 +802,98 @@ export interface PosReceiptData {
   status: string;
 }
 
+export async function sendAdminDailyDigestEmail(
+  adminEmail: string,
+  data: {
+    date: string;
+    ordersCount: number;
+    ordersTotal: number;
+    newCustomers: number;
+    lowStockItems: { name: string; stock: number; threshold: number }[];
+    topProducts: { name: string; qty: number; revenue: number }[];
+    pendingOrders: number;
+  }
+): Promise<boolean> {
+  const hasLowStock = data.lowStockItems.length > 0;
+  const lowStockRows = data.lowStockItems.slice(0, 8).map(p =>
+    `<tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0ead8;">${escHtml(p.name)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0ead8;text-align:center;color:#ef4444;font-weight:600;">${p.stock}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0ead8;text-align:center;color:#888;">${p.threshold}</td>
+    </tr>`
+  ).join("");
+
+  const topProductRows = data.topProducts.slice(0, 5).map((p, i) =>
+    `<tr>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0ead8;color:#888;">${i + 1}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0ead8;">${escHtml(p.name)}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0ead8;text-align:center;">${p.qty}</td>
+      <td style="padding:8px 12px;border-bottom:1px solid #f0ead8;text-align:right;color:#C9A84C;font-weight:600;">${p.revenue.toLocaleString()} MRU</td>
+    </tr>`
+  ).join("");
+
+  const body = `
+    <h2 style="color:#0A1628;font-size:22px;margin:0 0 4px;">Daily Store Report</h2>
+    <p style="color:#888;font-size:13px;margin-bottom:24px;">${data.date}</p>
+
+    <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:24px;">
+      <div style="background:linear-gradient(135deg,#0A1628,#162035);border-radius:10px;padding:16px;color:#fff;">
+        <div style="font-size:28px;font-weight:700;color:#C9A84C;">${data.ordersCount}</div>
+        <div style="font-size:13px;opacity:0.7;margin-top:2px;">Orders Today</div>
+      </div>
+      <div style="background:linear-gradient(135deg,#0A1628,#162035);border-radius:10px;padding:16px;color:#fff;">
+        <div style="font-size:24px;font-weight:700;color:#C9A84C;">${data.ordersTotal.toLocaleString()} MRU</div>
+        <div style="font-size:13px;opacity:0.7;margin-top:2px;">Revenue Today</div>
+      </div>
+      <div style="background:#f9f6ef;border-radius:10px;padding:16px;border:1px solid #f0ead8;">
+        <div style="font-size:24px;font-weight:700;color:#0A1628;">${data.newCustomers}</div>
+        <div style="font-size:13px;color:#888;margin-top:2px;">New Customers</div>
+      </div>
+      <div style="background:${data.pendingOrders > 0 ? "#fff8f0;border:1px solid #fed7aa" : "#f9f6ef;border:1px solid #f0ead8"};border-radius:10px;padding:16px;">
+        <div style="font-size:24px;font-weight:700;color:${data.pendingOrders > 0 ? "#ea580c" : "#0A1628"};">${data.pendingOrders}</div>
+        <div style="font-size:13px;color:#888;margin-top:2px;">Pending Orders</div>
+      </div>
+    </div>
+
+    ${hasLowStock ? `
+    <div style="margin-bottom:24px;">
+      <h3 style="color:#ef4444;font-size:15px;margin:0 0 10px;display:flex;align-items:center;gap:6px;">⚠️ Low Stock Alert (${data.lowStockItems.length} items)</h3>
+      <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;border:1px solid #fecaca;">
+        <thead><tr style="background:#fef2f2;">
+          <th style="padding:10px 12px;text-align:left;color:#ef4444;font-size:13px;">Product</th>
+          <th style="padding:10px 12px;text-align:center;color:#ef4444;font-size:13px;">Stock</th>
+          <th style="padding:10px 12px;text-align:center;color:#ef4444;font-size:13px;">Threshold</th>
+        </tr></thead>
+        <tbody>${lowStockRows}</tbody>
+      </table>
+    </div>` : `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:12px 16px;margin-bottom:24px;color:#16a34a;font-size:13px;">✅ All products are sufficiently stocked</div>`}
+
+    ${data.topProducts.length > 0 ? `
+    <div style="margin-bottom:24px;">
+      <h3 style="color:#0A1628;font-size:15px;margin:0 0 10px;">🏆 Top Products Today</h3>
+      <table style="width:100%;border-collapse:collapse;background:#fff;border-radius:8px;overflow:hidden;border:1px solid #f0ead8;">
+        <thead><tr style="background:#0A1628;">
+          <th style="padding:10px 12px;color:#C9A84C;font-size:13px;">#</th>
+          <th style="padding:10px 12px;text-align:left;color:#C9A84C;font-size:13px;">Product</th>
+          <th style="padding:10px 12px;text-align:center;color:#C9A84C;font-size:13px;">Units Sold</th>
+          <th style="padding:10px 12px;text-align:right;color:#C9A84C;font-size:13px;">Revenue</th>
+        </tr></thead>
+        <tbody>${topProductRows}</tbody>
+      </table>
+    </div>` : ""}
+
+    <div style="text-align:center;margin-top:8px;">
+      <a href="${process.env.APP_BASE_URL || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}` : "https://limjiba.com")}/emanager-portal" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#B8963F);color:#0A1628;text-decoration:none;padding:12px 32px;border-radius:8px;font-weight:700;font-size:14px;">Open Admin Portal</a>
+    </div>
+  `;
+
+  return sendEmail({
+    to: adminEmail,
+    subject: `📊 LIMJIBA Daily Report — ${data.date} | ${data.ordersCount} orders, ${data.ordersTotal.toLocaleString()} MRU`,
+    html: brandedHtml(body, "ltr"),
+  });
+}
+
 export async function sendPosReceiptEmail(data: PosReceiptData, lang: string = "en"): Promise<boolean> {
   const l = (lang === "ar" || lang === "fr") ? lang : "en";
   const dir = l === "ar" ? "rtl" : "ltr";

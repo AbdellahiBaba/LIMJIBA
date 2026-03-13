@@ -16,6 +16,8 @@ import {
   User,
   Headset,
   RefreshCw,
+  Check,
+  CheckCheck,
 } from "lucide-react";
 import { useLanguage } from "@/contexts/language-context";
 
@@ -372,6 +374,21 @@ export default function SupportChat() {
                       >
                         {msg.content}
                       </div>
+                      {msg.senderType === "admin" && (
+                        <div className={`flex items-center gap-1 mt-0.5 ${msg.senderType === "admin" ? "justify-end" : ""}`}>
+                          {msg.isRead ? (
+                            <span className="flex items-center gap-0.5 text-[10px]" style={{ color: "#C9A84C" }}>
+                              <CheckCheck className="h-3 w-3" />
+                              Seen
+                            </span>
+                          ) : (
+                            <span className="flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                              <Check className="h-3 w-3" />
+                              Sent
+                            </span>
+                          )}
+                        </div>
+                      )}
                     </div>
                     {msg.senderType === "admin" && (
                       <div className="h-8 w-8 rounded-full flex items-center justify-center shrink-0 mt-1" style={{ backgroundColor: "#0A162820" }}>

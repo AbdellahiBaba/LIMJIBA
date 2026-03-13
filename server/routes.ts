@@ -38,7 +38,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { handleCustomerChat, handleAdminChat, generatePromoCode, getCustomerGreeting, generateProductDescriptions, generateNotificationContent, translateVariantLabels } from "./limjiba";
-import { sendEmail, sendOrderStatusEmail, sendOrderInvoiceEmail, sendPaymentConfirmedEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail, sendProductMarketingEmail, sendAbandonedCartReminderEmail, setEmailSocialLinks, sendNewAccountWithPasswordEmail, sendPosReceiptEmail } from "./email";
+import { sendEmail, sendOrderStatusEmail, sendOrderInvoiceEmail, sendPaymentConfirmedEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail, sendProductMarketingEmail, sendAbandonedCartReminderEmail, setEmailSocialLinks, sendNewAccountWithPasswordEmail, sendPosReceiptEmail, sendAdminDailyDigestEmail } from "./email";
 
 function escapeHtml(str: string): string {
   return str
@@ -1782,7 +1782,8 @@ export async function registerRoutes(
           createdAt: new Date().toISOString(),
         });
       } catch (e) {}
-      if (product.imageUrl || (product.images && product.images.length > 0)) {
+      const shouldNotify = req.body?.notifyCustomers !== false;
+      if (shouldNotify && (product.imageUrl || (product.images && product.images.length > 0))) {
         notifyAllCustomers_NewArrival(product).catch(console.error);
       }
       res.status(201).json(product);
@@ -5671,6 +5672,80 @@ export async function registerRoutes(
   setTimeout(() => {
     processAbandonedCartReminders().catch(console.error);
   }, 60 * 1000);
+
+  async function sendDailyAdminDigest() {
+    try {
+      const settings = await storage.getStoreSettings();
+      const adminEmail = settings?.contactEmail;
+      if (!adminEmail) return;
+
+      const now = new Date();
+      const startOfDay = new Date(now);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(now);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const [allOrders, allProducts, allCustomers] = await Promise.all([
+        storage.getAllStoreOrders(),
+        storage.getAllProducts(),
+        storage.getAllStoreCustomers(),
+      ]);
+
+      const todayOrders = allOrders.filter(o => {
+        const d = new Date(o.createdAt);
+        return d >= startOfDay && d <= endOfDay;
+      });
+
+      const ordersCount = todayOrders.length;
+      const ordersTotal = todayOrders.reduce((sum, o) => sum + (Number(o.total) || 0), 0);
+      const pendingOrders = allOrders.filter(o => o.status === "pending").length;
+
+      const newCustomers = allCustomers.filter(c => {
+        const d = new Date(c.createdAt || 0);
+        return d >= startOfDay && d <= endOfDay;
+      }).length;
+
+      const lowStockItems = allProducts
+        .filter(p => (p.stockQuantity || 0) <= (p.lowStockThreshold || 10))
+        .map(p => ({ name: p.name || "Product", stock: p.stockQuantity || 0, threshold: p.lowStockThreshold || 10 }));
+
+      const productRevenue: Record<number, { name: string; qty: number; revenue: number }> = {};
+      for (const order of todayOrders) {
+        const items: any[] = (order as any).items || [];
+        for (const item of items) {
+          if (!item.productId) continue;
+          if (!productRevenue[item.productId]) {
+            productRevenue[item.productId] = { name: item.productName || item.name || "Product", qty: 0, revenue: 0 };
+          }
+          productRevenue[item.productId].qty += item.quantity || 1;
+          productRevenue[item.productId].revenue += (item.price || 0) * (item.quantity || 1);
+        }
+      }
+      const topProducts = Object.values(productRevenue).sort((a, b) => b.revenue - a.revenue).slice(0, 5);
+
+      const dateStr = now.toLocaleDateString("en-GB", { weekday: "long", year: "numeric", month: "long", day: "numeric" });
+      await sendAdminDailyDigestEmail(adminEmail, {
+        date: dateStr, ordersCount, ordersTotal, newCustomers, lowStockItems, topProducts, pendingOrders,
+      });
+      console.log("[DAILY-DIGEST] Sent admin daily digest to", adminEmail);
+    } catch (err) {
+      console.error("[DAILY-DIGEST] Error sending daily digest:", err);
+    }
+  }
+
+  function scheduleDailyDigest() {
+    const now = new Date();
+    const next8AM = new Date(now);
+    next8AM.setHours(8, 0, 0, 0);
+    if (now >= next8AM) next8AM.setDate(next8AM.getDate() + 1);
+    const msUntil8AM = next8AM.getTime() - now.getTime();
+    setTimeout(() => {
+      sendDailyAdminDigest().catch(console.error);
+      setInterval(() => sendDailyAdminDigest().catch(console.error), 24 * 60 * 60 * 1000);
+    }, msUntil8AM);
+    console.log(`[DAILY-DIGEST] Scheduled for ${next8AM.toLocaleString()} (in ${Math.round(msUntil8AM / 60000)} min)`);
+  }
+  scheduleDailyDigest();
 
   app.get("/api/admin/loyalty/customers", requireAuth, async (req: Request, res: Response) => {
     try {
