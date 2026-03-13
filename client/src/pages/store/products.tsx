@@ -160,8 +160,8 @@ export default function StoreProducts() {
                     )}
                   </div>
                 </Link>
-                <div className="p-4">
-                  <div className="flex items-start justify-between gap-1 mb-1">
+                <div className="p-3 md:p-4">
+                  <div className="flex items-start justify-between gap-1 mb-1.5">
                     <Link href={`/store/products/${product.id}`}>
                       <h3 className="font-semibold text-sm hover:underline cursor-pointer line-clamp-2" style={{ color: primaryColor }} data-testid={`link-product-${product.id}`}>{getProductName(product, lang)}</h3>
                     </Link>
@@ -174,26 +174,24 @@ export default function StoreProducts() {
                       <GitCompareArrows className="h-3.5 w-3.5" />
                     </button>
                   </div>
-                  <div className="flex items-center justify-between gap-2">
-                    <div>
-                      <span className="text-lg md:text-xl font-bold gold-text">{effectivePrice.toFixed(2)}</span>
-                      <span className="text-xs text-gray-400 ml-1">{t("currency")}</span>
-                      {hasDeal && (
-                        <div className="text-[10px] text-gray-400 line-through">{product.unitPrice.toFixed(2)}</div>
-                      )}
-                    </div>
-                    <Button
-                      size="sm"
-                      className={`rounded-full text-xs sm:text-sm h-11 min-w-[44px] px-3 sm:px-4 ${atMax ? "" : "store-btn-gold"}`}
-                      style={atMax ? { backgroundColor: "#9ca3af", color: "#fff" } : { color: primaryColor }}
-                      onClick={() => addItem({ productId: product.id, productName: getProductName(product, lang), unitPrice: effectivePrice, category: product.category, imageUrl: product.imageUrl }, 1, product.stockQuantity)}
-                      disabled={atMax}
-                      data-testid={`button-add-cart-${product.id}`}
-                    >
-                      <ShoppingCart className="h-4 w-4 mr-1" />
-                      {atMax ? t("cart.maxAvailable") : t("products.add")}
-                    </Button>
+                  <div className="mb-2.5">
+                    <span className="text-base md:text-xl font-bold gold-text">{effectivePrice.toFixed(2)}</span>
+                    <span className="text-xs text-gray-400 ml-1">{t("currency")}</span>
+                    {hasDeal && (
+                      <div className="text-[10px] text-gray-400 line-through">{product.unitPrice.toFixed(2)}</div>
+                    )}
                   </div>
+                  <Button
+                    size="sm"
+                    className={`w-full rounded-full text-xs font-semibold h-9 flex items-center justify-center gap-1.5 ${atMax ? "" : "store-btn-gold"}`}
+                    style={atMax ? { backgroundColor: "#9ca3af", color: "#fff" } : { color: primaryColor }}
+                    onClick={() => addItem({ productId: product.id, productName: getProductName(product, lang), unitPrice: effectivePrice, category: product.category, imageUrl: product.imageUrl }, 1, product.stockQuantity)}
+                    disabled={atMax || product.stockQuantity <= 0}
+                    data-testid={`button-add-cart-${product.id}`}
+                  >
+                    <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{product.stockQuantity <= 0 ? t("products.outOfStock") : atMax ? t("cart.maxAvailable") : t("products.add")}</span>
+                  </Button>
                 </div>
               </div>
             );
