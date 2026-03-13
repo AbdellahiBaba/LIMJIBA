@@ -371,22 +371,37 @@ export default function StoreProductDetail() {
                 </span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {variants.filter(v => v.stockQuantity > 0).map(v => (
-                  <button
-                    key={v.id}
-                    onClick={() => { setSelectedVariantId(v.id); setQuantity(1); }}
-                    className="px-4 py-2 rounded-xl text-sm font-medium transition-all border"
-                    style={{
-                      borderColor: selectedVariantId === v.id ? accentColor : "rgba(201,168,76,0.2)",
-                      backgroundColor: selectedVariantId === v.id ? `${accentColor}15` : "white",
-                      color: selectedVariantId === v.id ? primaryColor : "#6b7280",
-                      boxShadow: selectedVariantId === v.id ? `0 0 0 1px ${accentColor}` : "none",
-                    }}
-                    data-testid={`button-variant-${v.id}`}
-                  >
-                    {v.variantLabel}
-                  </button>
-                ))}
+                {variants.map(v => {
+                  const vOutOfStock = v.stockQuantity <= 0;
+                  const isSelected = selectedVariantId === v.id;
+                  return (
+                    <button
+                      key={v.id}
+                      onClick={() => { setSelectedVariantId(v.id); setQuantity(1); }}
+                      className="relative px-4 py-2 rounded-xl text-sm font-medium transition-all border"
+                      style={{
+                        borderColor: isSelected ? (vOutOfStock ? "#ef4444" : accentColor) : (vOutOfStock ? "rgba(239,68,68,0.3)" : "rgba(201,168,76,0.2)"),
+                        backgroundColor: isSelected ? (vOutOfStock ? "rgba(239,68,68,0.08)" : `${accentColor}15`) : "white",
+                        color: vOutOfStock ? "#ef4444" : (isSelected ? primaryColor : "#6b7280"),
+                        boxShadow: isSelected ? `0 0 0 1px ${vOutOfStock ? "#ef4444" : accentColor}` : "none",
+                        opacity: vOutOfStock ? 0.65 : 1,
+                      }}
+                      data-testid={`button-variant-${v.id}`}
+                    >
+                      {vOutOfStock && (
+                        <span className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                          <span className="w-full border-t border-red-400/60" style={{ position: "absolute", top: "50%", left: 0 }} />
+                        </span>
+                      )}
+                      <span style={{ textDecoration: vOutOfStock ? "line-through" : "none" }}>{v.variantLabel}</span>
+                      {vOutOfStock && (
+                        <span className="ml-1.5 text-xs font-normal opacity-80">
+                          ({lang === "ar" ? "نفذ" : lang === "fr" ? "épuisé" : "sold out"})
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
