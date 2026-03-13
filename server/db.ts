@@ -1246,6 +1246,25 @@ async function runMigrations(): Promise<void> {
       console.log('[DB] Updated loyalty points_value to 0.2 (500 pts = 100 MRU)');
     } catch {}
 
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS abandoned_carts (
+        id VARCHAR PRIMARY KEY DEFAULT gen_random_uuid(),
+        customer_email TEXT NOT NULL,
+        customer_id TEXT,
+        customer_name TEXT,
+        language TEXT NOT NULL DEFAULT 'en',
+        items TEXT NOT NULL DEFAULT '[]',
+        item_count INTEGER NOT NULL DEFAULT 0,
+        subtotal REAL NOT NULL DEFAULT 0,
+        reminder_sent BOOLEAN NOT NULL DEFAULT false,
+        converted_to_order BOOLEAN NOT NULL DEFAULT false,
+        last_updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+    await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS abandoned_carts_email_idx ON abandoned_carts (lower(customer_email))`);
+    console.log('[DB] Ensured abandoned_carts table exists');
+
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);

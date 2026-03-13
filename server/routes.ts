@@ -38,7 +38,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { handleCustomerChat, handleAdminChat, generatePromoCode, getCustomerGreeting, generateProductDescriptions, generateNotificationContent, translateVariantLabels } from "./limjiba";
-import { sendOrderStatusEmail, sendOrderInvoiceEmail, sendPaymentConfirmedEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail, sendProductMarketingEmail, sendAbandonedCartReminderEmail, setEmailSocialLinks, sendNewAccountWithPasswordEmail, sendPosReceiptEmail } from "./email";
+import { sendEmail, sendOrderStatusEmail, sendOrderInvoiceEmail, sendPaymentConfirmedEmail, sendWelcomeEmail, sendPasswordResetEmail, sendMarketingEmail, sendProductMarketingEmail, sendAbandonedCartReminderEmail, setEmailSocialLinks, sendNewAccountWithPasswordEmail, sendPosReceiptEmail } from "./email";
 
 function escapeHtml(str: string): string {
   return str
@@ -1782,7 +1782,9 @@ export async function registerRoutes(
           createdAt: new Date().toISOString(),
         });
       } catch (e) {}
-      notifyAllCustomers_NewArrival(product).catch(console.error);
+      if (product.imageUrl || (product.images && product.images.length > 0)) {
+        notifyAllCustomers_NewArrival(product).catch(console.error);
+      }
       res.status(201).json(product);
     } catch (error) {
       handleError(res, "create product", error);
@@ -3929,6 +3931,37 @@ export async function registerRoutes(
         storage.markAbandonedCartConverted(customerEmail).catch(console.error);
       }
 
+      // Notify admin of new order
+      (async () => {
+        try {
+          const settings = await storage.getStoreSettings();
+          const adminEmail = settings?.contactEmail || process.env.SMTP_USER || "support@limjiba.com";
+          const itemLines = validatedItems.map(i => `• ${i.productName} × ${i.quantity} — ${(i.unitPrice * i.quantity).toLocaleString()} MRU`).join("<br>");
+          await sendEmail({
+            to: adminEmail,
+            subject: `🛒 New Order ${orderNumber} — ${total.toLocaleString()} MRU`,
+            html: `<div style="font-family:sans-serif;max-width:600px;margin:auto;padding:24px;background:#f9f9f9;border-radius:10px;">
+              <h2 style="color:#0A1628;margin:0 0 16px;">New Store Order Received</h2>
+              <table style="width:100%;border-collapse:collapse;">
+                <tr><td style="padding:6px 0;color:#666;width:140px;">Order Number</td><td style="padding:6px 0;font-weight:600;color:#0A1628;">${orderNumber}</td></tr>
+                <tr><td style="padding:6px 0;color:#666;">Customer</td><td style="padding:6px 0;font-weight:600;color:#0A1628;">${customerName || "—"}</td></tr>
+                <tr><td style="padding:6px 0;color:#666;">Email</td><td style="padding:6px 0;">${customerEmail || "—"}</td></tr>
+                <tr><td style="padding:6px 0;color:#666;">Phone</td><td style="padding:6px 0;">${customerPhone || "—"}</td></tr>
+                <tr><td style="padding:6px 0;color:#666;">Address</td><td style="padding:6px 0;">${customerAddress || "—"}</td></tr>
+                <tr><td style="padding:6px 0;color:#666;">Payment</td><td style="padding:6px 0;">${paymentMethod || "—"}</td></tr>
+                <tr><td style="padding:6px 0;color:#666;">Total</td><td style="padding:6px 0;font-weight:700;color:#C9A84C;font-size:18px;">${total.toLocaleString()} MRU</td></tr>
+              </table>
+              <div style="margin:16px 0;padding:16px;background:#fff;border-radius:8px;border:1px solid #e5e5e5;">
+                <strong style="color:#0A1628;display:block;margin-bottom:8px;">Items:</strong>
+                <div style="color:#333;line-height:2;">${itemLines}</div>
+              </div>
+              ${notes ? `<div style="margin-bottom:12px;padding:12px;background:#fffbe6;border-radius:8px;border:1px solid #ffe58f;"><strong>Notes:</strong> ${notes}</div>` : ""}
+              <a href="${process.env.APP_BASE_URL || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}` : "https://limjiba.com")}/emanager-portal/store-orders" style="display:inline-block;margin-top:8px;background:#0A1628;color:#C9A84C;padding:12px 28px;border-radius:8px;text-decoration:none;font-weight:700;">View in Admin Portal</a>
+            </div>`,
+          });
+        } catch {}
+      })();
+
       res.status(201).json(order);
     } catch (error) {
       handleError(res, "createStoreOrder", error);
@@ -4314,9 +4347,10 @@ export async function registerRoutes(
       const token = crypto.randomBytes(32).toString("hex");
       const expiry = new Date(Date.now() + 3600000).toISOString();
       await storage.updateStoreCustomerResetToken(customer.id, token, expiry);
-      const host = req.headers.host || "localhost:5000";
-      const protocol = req.headers["x-forwarded-proto"] || "http";
-      const resetUrl = `${protocol}://${host}/store/reset-password?token=${token}`;
+      const appBase = process.env.APP_BASE_URL ||
+        (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}` : null) ||
+        `${Array.isArray(req.headers["x-forwarded-proto"]) ? req.headers["x-forwarded-proto"][0] : (req.headers["x-forwarded-proto"] || "https")}://${req.headers.host || "limjiba.com"}`;
+      const resetUrl = `${appBase}/store/reset-password?token=${token}`;
       sendPasswordResetEmail(email, customer.fullName, resetUrl, customer.language || "en").catch(() => {});
       try {
         await storage.createStoreNotification({

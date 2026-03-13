@@ -52,7 +52,7 @@ interface EmailOptions {
   html: string;
 }
 
-async function sendEmail(options: EmailOptions): Promise<boolean> {
+export async function sendEmail(options: EmailOptions): Promise<boolean> {
   const transport = getTransporter();
   if (!transport) {
     console.log(`[EMAIL] Skipped (no SMTP): ${options.to} — ${options.subject}`);
