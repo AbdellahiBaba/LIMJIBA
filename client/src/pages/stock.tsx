@@ -657,8 +657,33 @@ export function ProductFormPage() {
   const [aiConcept, setAiConcept] = useState("");
   const [aiWordCount, setAiWordCount] = useState(60);
   const [formDirty, setFormDirty] = useState(false);
+  const autoTranslateTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   useUnsavedChanges(formDirty);
+
+  const variantLabelKey = variants.map(v => v.variantLabel).join("|");
+  useEffect(() => {
+    if (!variants.length || variantTranslating) return;
+    const needsTranslation = variants.some(v => (!v.variantLabelAr || !v.variantLabelFr) && v.variantLabel.trim());
+    if (!needsTranslation) return;
+    if (autoTranslateTimerRef.current) clearTimeout(autoTranslateTimerRef.current);
+    autoTranslateTimerRef.current = setTimeout(async () => {
+      setVariantTranslating(true);
+      try {
+        const res = await apiRequest("POST", "/api/ai/translate-variants", {
+          variants: variants.map(v => ({ variantLabel: v.variantLabel })),
+        });
+        const data: { variantLabel: string; variantLabelAr: string; variantLabelFr: string }[] = await res.json();
+        setVariants(prev => prev.map((v, i) => ({
+          ...v,
+          variantLabelAr: v.variantLabelAr || data[i]?.variantLabelAr || "",
+          variantLabelFr: v.variantLabelFr || data[i]?.variantLabelFr || "",
+        })));
+      } catch {}
+      finally { setVariantTranslating(false); }
+    }, 1500);
+    return () => { if (autoTranslateTimerRef.current) clearTimeout(autoTranslateTimerRef.current); };
+  }, [variantLabelKey]);
 
   useEffect(() => {
     if (isEditing && existingProduct && !initialized) {
