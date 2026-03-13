@@ -457,7 +457,6 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                     {t(item.key)}
                   </Link>
                 ))}
-                <Link href="/store/orders" className="block text-sm text-gray-400 hover:text-white no-underline transition-colors">{t("footer.trackOrder")}</Link>
               </div>
             </div>
             <div>
