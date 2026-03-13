@@ -102,20 +102,18 @@ export default function StoreProductDetail() {
     typeof img === "string" && img.trim().length > 0;
 
   const galleryImages: string[] = (() => {
+    const seen = new Set<string>();
+    const result: string[] = [];
+    const addImg = (img: unknown) => {
+      if (validImg(img) && !seen.has(img)) { seen.add(img); result.push(img); }
+    };
     if (selectedVariant) {
-      const variantImgs = (selectedVariant.images || []).filter(validImg);
-      if (variantImgs.length > 0) return variantImgs;
-      if (selectedVariant.imageUrl && validImg(selectedVariant.imageUrl)) return [selectedVariant.imageUrl];
+      addImg(selectedVariant.imageUrl);
+      (selectedVariant.images || []).forEach(addImg);
     }
-    const productImgs = (product?.images || []).filter(validImg);
-    if (productImgs.length > 0) {
-      if (product?.imageUrl && validImg(product.imageUrl) && !productImgs.includes(product.imageUrl)) {
-        return [product.imageUrl, ...productImgs];
-      }
-      return productImgs;
-    }
-    if (product?.imageUrl && validImg(product.imageUrl)) return [product.imageUrl];
-    return [];
+    addImg(product?.imageUrl);
+    (product?.images || []).forEach(addImg);
+    return result;
   })();
 
   useEffect(() => {
