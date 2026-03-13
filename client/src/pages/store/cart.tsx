@@ -106,7 +106,7 @@ export default function StoreCart() {
                   <Link href={`/store/products/${item.productId}`}>
                     <h3 className="font-semibold truncate hover:underline cursor-pointer" style={{ color: primaryColor }}>
                       {item.productName}
-                      {item.variantLabel && <span className="text-xs font-normal text-gray-400 ml-1">({item.variantLabel})</span>}
+                      {item.variantLabel && <span className="text-xs font-normal text-gray-400 ml-1">({lang === "ar" ? (item.variantLabelAr || item.variantLabel) : lang === "fr" ? (item.variantLabelFr || item.variantLabel) : item.variantLabel})</span>}
                     </h3>
                   </Link>
                   <p className="text-xs text-gray-400 mt-0.5">{item.category}</p>

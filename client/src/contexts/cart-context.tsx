@@ -11,6 +11,8 @@ export interface CartItem {
   maxStock?: number;
   variantId?: string;
   variantLabel?: string;
+  variantLabelAr?: string;
+  variantLabelFr?: string;
 }
 
 interface CartContextType {

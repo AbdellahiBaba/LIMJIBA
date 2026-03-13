@@ -195,11 +195,17 @@ export default function StoreProductDetail() {
 
   const productDescription = product ? (lang === "ar" ? product.descriptionAr : lang === "fr" ? product.descriptionFr : product.descriptionEn) : null;
 
+  const getVariantLabel = (v: { variantLabel: string; variantLabelAr?: string | null; variantLabelFr?: string | null }) =>
+    lang === "ar" ? (v.variantLabelAr || v.variantLabel) :
+    lang === "fr" ? (v.variantLabelFr || v.variantLabel) :
+    v.variantLabel;
+
   const handleAddToCart = () => {
     if (!product || !canAdd) return;
     const pName = getProductName(product, lang);
-    const cartItem: any = { productId: product.id, productName: selectedVariant ? `${pName} (${selectedVariant.variantLabel})` : pName, unitPrice: effectivePrice, category: product.category, imageUrl: selectedVariant?.imageUrl || product.imageUrl };
-    if (selectedVariant) { cartItem.variantId = selectedVariant.id; cartItem.variantLabel = selectedVariant.variantLabel; }
+    const vLabel = selectedVariant ? getVariantLabel(selectedVariant) : null;
+    const cartItem: any = { productId: product.id, productName: selectedVariant ? `${pName} (${vLabel})` : pName, unitPrice: effectivePrice, category: product.category, imageUrl: selectedVariant?.imageUrl || product.imageUrl };
+    if (selectedVariant) { cartItem.variantId = selectedVariant.id; cartItem.variantLabel = selectedVariant.variantLabel; cartItem.variantLabelAr = selectedVariant.variantLabelAr; cartItem.variantLabelFr = selectedVariant.variantLabelFr; }
     addItem(cartItem, quantity, activeStock);
     setAdded(true);
     setQuantity(1);
@@ -209,8 +215,9 @@ export default function StoreProductDetail() {
   const handleBuyNow = () => {
     if (!product || !canAdd) return;
     const pName = getProductName(product, lang);
-    const cartItem: any = { productId: product.id, productName: selectedVariant ? `${pName} (${selectedVariant.variantLabel})` : pName, unitPrice: effectivePrice, category: product.category, imageUrl: selectedVariant?.imageUrl || product.imageUrl };
-    if (selectedVariant) { cartItem.variantId = selectedVariant.id; cartItem.variantLabel = selectedVariant.variantLabel; }
+    const vLabel2 = selectedVariant ? getVariantLabel(selectedVariant) : null;
+    const cartItem: any = { productId: product.id, productName: selectedVariant ? `${pName} (${vLabel2})` : pName, unitPrice: effectivePrice, category: product.category, imageUrl: selectedVariant?.imageUrl || product.imageUrl };
+    if (selectedVariant) { cartItem.variantId = selectedVariant.id; cartItem.variantLabel = selectedVariant.variantLabel; cartItem.variantLabelAr = selectedVariant.variantLabelAr; cartItem.variantLabelFr = selectedVariant.variantLabelFr; }
     addItem(cartItem, quantity, activeStock);
     setLocation("/store/checkout");
   };
@@ -399,7 +406,7 @@ export default function StoreProductDetail() {
                           <span className="w-full border-t border-red-400/60" style={{ position: "absolute", top: "50%", left: 0 }} />
                         </span>
                       )}
-                      <span style={{ textDecoration: vOutOfStock ? "line-through" : "none" }}>{v.variantLabel}</span>
+                      <span style={{ textDecoration: vOutOfStock ? "line-through" : "none" }}>{getVariantLabel(v)}</span>
                       {vOutOfStock && (
                         <span className="ml-1.5 text-xs font-normal opacity-80">
                           ({lang === "ar" ? "نفذ" : lang === "fr" ? "épuisé" : "sold out"})
