@@ -36,7 +36,7 @@ export default function StoreProductDetail() {
   const [reviewSubmitted, setReviewSubmitted] = useState(false);
   const [selectedVariantId, setSelectedVariantId] = useState<string | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
-  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: true, dragFree: false });
+  const [emblaRef, emblaApi] = useEmblaCarousel({ loop: false, dragFree: false });
 
   const [productUnavailable, setProductUnavailable] = useState<"out_of_stock" | "not_found" | null>(null);
   const { data: product, isLoading } = useQuery<Product>({
@@ -98,27 +98,33 @@ export default function StoreProductDetail() {
   const avgRating = reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
   const customerAlreadyReviewed = isAuthenticated && customer ? reviews.some(r => r.customerEmail === customer.email) : false;
 
+  const validImg = (img: unknown): img is string =>
+    typeof img === "string" && img.trim().length > 0 && img.startsWith("http");
+
   const galleryImages: string[] = (() => {
     if (selectedVariant) {
-      const variantImgs = selectedVariant.images?.filter(Boolean) || [];
+      const variantImgs = (selectedVariant.images || []).filter(validImg);
       if (variantImgs.length > 0) return variantImgs;
-      if (selectedVariant.imageUrl) return [selectedVariant.imageUrl];
+      if (selectedVariant.imageUrl && validImg(selectedVariant.imageUrl)) return [selectedVariant.imageUrl];
     }
-    const productImgs = product?.images?.filter(Boolean) || [];
+    const productImgs = (product?.images || []).filter(validImg);
     if (productImgs.length > 0) {
-      if (product?.imageUrl && !productImgs.includes(product.imageUrl)) {
+      if (product?.imageUrl && validImg(product.imageUrl) && !productImgs.includes(product.imageUrl)) {
         return [product.imageUrl, ...productImgs];
       }
       return productImgs;
     }
-    if (product?.imageUrl) return [product.imageUrl];
+    if (product?.imageUrl && validImg(product.imageUrl)) return [product.imageUrl];
     return [];
   })();
 
   useEffect(() => {
     setActiveImageIndex(0);
-    if (emblaApi) emblaApi.scrollTo(0);
-  }, [selectedVariantId, emblaApi]);
+    if (emblaApi) {
+      emblaApi.reInit();
+      emblaApi.scrollTo(0, true);
+    }
+  }, [selectedVariantId, galleryImages.length, emblaApi]);
 
   const onEmblaSelect = useCallback(() => {
     if (!emblaApi) return;
