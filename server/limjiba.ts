@@ -416,35 +416,45 @@ export async function translateVariantLabels(
 Variant labels to translate:
 ${labels.map((l, i) => `${i + 1}. "${l}"`).join("\n")}
 
-Return a JSON array:
-[
+Return a JSON object with a "translations" array:
+{"translations": [
   {"variantLabel": "original", "variantLabelAr": "Arabic translation", "variantLabelFr": "French translation"},
   ...
-]
+]}
 
 Rules:
 - Match the exact order of input labels
 - For sizes (S, M, L, XL, etc.): keep as-is or use standard Arabic/French equivalents
-- For colors: translate accurately (e.g., "Red" → "أحمر" / "Rouge")
+- For colors: translate accurately (e.g., "Red" → "أحمر" / "Rouge", "Black" → "أسود" / "Noir", "White" → "أبيض" / "Blanc", "Blue" → "أزرق" / "Bleu", "Beige" → "بيج" / "Beige")
 - For material/technical terms: use precise professional terminology
-- Return ONLY valid JSON array, no markdown`;
+- ALWAYS provide actual translations in Arabic script and French words, never copy the English original`;
 
   const response = await openai.chat.completions.create({
     model: "gpt-4o-mini",
     messages: [{ role: "user", content: prompt }],
-    max_tokens: 800,
-    temperature: 0.3,
+    max_tokens: 1000,
+    temperature: 0.2,
     response_format: { type: "json_object" },
   });
 
   const text = response.choices[0]?.message?.content || "{}";
   try {
-    const parsed = JSON.parse(text.replace(/```json\s*/g, "").replace(/```\s*/g, "").trim());
-    const arr = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.translations) ? parsed.translations : []);
+    const parsed = JSON.parse(text.trim());
+    // Find the translations array under any key
+    let arr: any[] = [];
+    if (Array.isArray(parsed)) {
+      arr = parsed;
+    } else if (Array.isArray(parsed.translations)) {
+      arr = parsed.translations;
+    } else {
+      // Search for any array-valued key
+      const arrayKey = Object.keys(parsed).find(k => Array.isArray(parsed[k]));
+      if (arrayKey) arr = parsed[arrayKey];
+    }
     return labels.map((label, i) => ({
       variantLabel: label,
-      variantLabelAr: String(arr[i]?.variantLabelAr || label),
-      variantLabelFr: String(arr[i]?.variantLabelFr || label),
+      variantLabelAr: arr[i]?.variantLabelAr && arr[i].variantLabelAr !== label ? String(arr[i].variantLabelAr) : label,
+      variantLabelFr: arr[i]?.variantLabelFr && arr[i].variantLabelFr !== label ? String(arr[i].variantLabelFr) : label,
     }));
   } catch {
     return labels.map(label => ({ variantLabel: label, variantLabelAr: label, variantLabelFr: label }));

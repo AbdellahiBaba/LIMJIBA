@@ -664,7 +664,13 @@ export function ProductFormPage() {
   const variantLabelKey = variants.map(v => v.variantLabel).join("|");
   useEffect(() => {
     if (!variants.length || variantTranslating) return;
-    const needsTranslation = variants.some(v => (!v.variantLabelAr || !v.variantLabelFr) && v.variantLabel.trim());
+    const needsTranslation = variants.some(v =>
+      v.variantLabel.trim() && (
+        !v.variantLabelAr || !v.variantLabelFr ||
+        v.variantLabelAr === v.variantLabel ||
+        v.variantLabelFr === v.variantLabel
+      )
+    );
     if (!needsTranslation) return;
     if (autoTranslateTimerRef.current) clearTimeout(autoTranslateTimerRef.current);
     autoTranslateTimerRef.current = setTimeout(async () => {
@@ -674,11 +680,15 @@ export function ProductFormPage() {
           variants: variants.map(v => ({ variantLabel: v.variantLabel })),
         });
         const data: { variantLabel: string; variantLabelAr: string; variantLabelFr: string }[] = await res.json();
-        setVariants(prev => prev.map((v, i) => ({
-          ...v,
-          variantLabelAr: v.variantLabelAr || data[i]?.variantLabelAr || "",
-          variantLabelFr: v.variantLabelFr || data[i]?.variantLabelFr || "",
-        })));
+        setVariants(prev => prev.map((v, i) => {
+          const badAr = !v.variantLabelAr || v.variantLabelAr === v.variantLabel;
+          const badFr = !v.variantLabelFr || v.variantLabelFr === v.variantLabel;
+          return {
+            ...v,
+            variantLabelAr: badAr ? (data[i]?.variantLabelAr || v.variantLabelAr) : v.variantLabelAr,
+            variantLabelFr: badFr ? (data[i]?.variantLabelFr || v.variantLabelFr) : v.variantLabelFr,
+          };
+        }));
       } catch {}
       finally { setVariantTranslating(false); }
     }, 1500);
