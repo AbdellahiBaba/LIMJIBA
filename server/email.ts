@@ -552,7 +552,7 @@ export async function sendProductMarketingEmail(
   email: string,
   customerName: string,
   lang: string,
-  product: { name: string; nameAr?: string | null; nameFr?: string | null; unitPrice: number; imageUrl?: string | null; dealDiscount?: number | null },
+  product: { id?: number | string; name: string; nameAr?: string | null; nameFr?: string | null; unitPrice: number; imageUrl?: string | null; images?: string[] | null; dealDiscount?: number | null },
   type: "new_arrival" | "flash_sale"
 ): Promise<boolean> {
   const l = (lang === "ar" || lang === "fr") ? lang : "en";
@@ -561,6 +561,19 @@ export async function sendProductMarketingEmail(
   const price = `${product.unitPrice.toLocaleString()} MRU`;
   const discount = product.dealDiscount ? `${product.dealDiscount}%` : "";
   const discountedPrice = product.dealDiscount ? `${Math.round(product.unitPrice * (1 - product.dealDiscount / 100)).toLocaleString()} MRU` : "";
+
+  const baseUrl = process.env.APP_BASE_URL ||
+    (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}` : "https://limjiba.com");
+  const productUrl = product.id ? `${baseUrl}/store/product/${product.id}` : baseUrl;
+
+  const resolveImg = (url: string | null | undefined): string | null => {
+    if (!url || !url.trim()) return null;
+    if (/^https?:\/\//i.test(url)) return url;
+    return `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+  };
+
+  const rawImgUrl = resolveImg(product.imageUrl) || resolveImg((product.images || [])[0]);
+  const safeImgUrl = rawImgUrl ? escHtml(rawImgUrl) : null;
 
   const subjects: Record<string, string> = type === "new_arrival"
     ? { en: `✨ New Arrival — ${pName}`, fr: `✨ Nouvelle Arrivée — ${pName}`, ar: `✨ وصول جديد — ${pName}` }
@@ -587,14 +600,17 @@ export async function sendProductMarketingEmail(
   };
 
   const ctaLabels: Record<string, string> = {
-    en: "Secure Yours Now",
-    fr: "Réserver Maintenant",
-    ar: "احجز الآن"
+    en: "View Product Now",
+    fr: "Voir le Produit",
+    ar: "عرض المنتج الآن"
   };
 
-  const safeImgUrl = product.imageUrl && /^https?:\/\//i.test(product.imageUrl) ? escHtml(product.imageUrl) : null;
   const imgBlock = safeImgUrl
-    ? `<div style="text-align:center;margin:20px 0;"><img src="${safeImgUrl}" alt="${escHtml(pName)}" style="max-width:100%;max-height:320px;border-radius:12px;box-shadow:0 4px 20px rgba(10,22,40,0.15);" /></div>`
+    ? `<div style="text-align:center;margin:20px 0;">
+        <a href="${escHtml(productUrl)}" style="display:inline-block;text-decoration:none;">
+          <img src="${safeImgUrl}" alt="${escHtml(pName)}" style="max-width:100%;max-height:340px;border-radius:12px;box-shadow:0 4px 20px rgba(10,22,40,0.18);border:2px solid rgba(201,168,76,0.25);" />
+        </a>
+      </div>`
     : "";
 
   const priceBlock = type === "flash_sale" && product.dealDiscount
@@ -606,7 +622,10 @@ export async function sendProductMarketingEmail(
     : `<div style="text-align:center;margin:16px 0;"><span style="color:#0A1628;font-size:24px;font-weight:700;">${price}</span></div>`;
 
   const ctaBlock = `<div style="text-align:center;margin:24px 0;">
-    <a href="https://limjiba.com" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#B8963F);color:#0A1628;text-decoration:none;padding:14px 40px;border-radius:8px;font-weight:700;font-size:15px;letter-spacing:1px;">${ctaLabels[l]}</a>
+    <a href="${escHtml(productUrl)}" style="display:inline-block;background:linear-gradient(135deg,#C9A84C,#B8963F);color:#0A1628;text-decoration:none;padding:14px 40px;border-radius:8px;font-weight:700;font-size:15px;letter-spacing:1px;">${ctaLabels[l]}</a>
+  </div>
+  <div style="text-align:center;margin:-12px 0 20px;">
+    <a href="${escHtml(productUrl)}" style="color:#0A1628;font-size:12px;opacity:0.5;word-break:break-all;">${escHtml(productUrl)}</a>
   </div>`;
 
   const body = `
