@@ -99,7 +99,7 @@ export default function StoreProductDetail() {
   const customerAlreadyReviewed = isAuthenticated && customer ? reviews.some(r => r.customerEmail === customer.email) : false;
 
   const validImg = (img: unknown): img is string =>
-    typeof img === "string" && img.trim().length > 0 && img.startsWith("http");
+    typeof img === "string" && img.trim().length > 0;
 
   const galleryImages: string[] = (() => {
     if (selectedVariant) {
