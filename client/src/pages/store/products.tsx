@@ -181,17 +181,21 @@ export default function StoreProducts() {
                       <div className="text-[10px] text-gray-400 line-through">{product.unitPrice.toFixed(2)}</div>
                     )}
                   </div>
-                  <Button
-                    size="sm"
-                    className={`w-full rounded-full text-xs font-semibold h-9 flex items-center justify-center gap-1.5 ${atMax ? "" : "store-btn-gold"}`}
-                    style={atMax ? { backgroundColor: "#9ca3af", color: "#fff" } : { color: primaryColor }}
+                  <button
+                    type="button"
+                    className={`rounded-xl text-xs font-semibold h-9 flex items-center justify-center gap-1.5 transition-all disabled:opacity-60 disabled:cursor-not-allowed ${atMax || product.stockQuantity <= 0 ? "" : "store-btn-gold"}`}
+                    style={{
+                      width: "100%",
+                      backgroundColor: (atMax || product.stockQuantity <= 0) ? "#9ca3af" : undefined,
+                      color: (atMax || product.stockQuantity <= 0) ? "#fff" : primaryColor,
+                    }}
                     onClick={() => addItem({ productId: product.id, productName: getProductName(product, lang), unitPrice: effectivePrice, category: product.category, imageUrl: product.imageUrl }, 1, product.stockQuantity)}
                     disabled={atMax || product.stockQuantity <= 0}
                     data-testid={`button-add-cart-${product.id}`}
                   >
-                    <ShoppingCart className="h-3.5 w-3.5 shrink-0" />
-                    <span className="truncate">{product.stockQuantity <= 0 ? t("products.outOfStock") : atMax ? t("cart.maxAvailable") : t("products.add")}</span>
-                  </Button>
+                    <ShoppingCart className="h-3.5 w-3.5 flex-shrink-0" />
+                    <span className="leading-none">{product.stockQuantity <= 0 ? t("products.outOfStock") : atMax ? t("cart.maxAvailable") : t("products.add")}</span>
+                  </button>
                 </div>
               </div>
             );
