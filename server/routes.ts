@@ -3819,7 +3819,7 @@ export async function registerRoutes(
           loyaltyCustomer = await storage.getStoreCustomerByEmail(customerEmail);
           if (loyaltyCustomer) {
             const loyaltySettings = await storage.getStoreSettings();
-            const pv = (loyaltySettings as any)?.pointsValue ?? 1;
+            const pv = (loyaltySettings as any)?.pointsValue ?? 0.2;
             const availablePoints = (loyaltyCustomer as any).loyaltyPoints || 0;
             loyaltyPointsRedeemed = Math.min(pointsToRedeem!, availablePoints);
             loyaltyDiscount = Math.round(loyaltyPointsRedeemed * pv * 100) / 100;
@@ -5688,7 +5688,7 @@ export async function registerRoutes(
   app.get("/api/admin/loyalty/settings", requireAuth, async (req: Request, res: Response) => {
     try {
       const settings = await storage.getStoreSettings();
-      res.json({ pointsRate: (settings as any)?.pointsRate ?? 0.1, pointsValue: (settings as any)?.pointsValue ?? 1 });
+      res.json({ pointsRate: (settings as any)?.pointsRate ?? 0.1, pointsValue: (settings as any)?.pointsValue ?? 0.2 });
     } catch (error) { handleError(res, "getLoyaltySettings", error); }
   });
 

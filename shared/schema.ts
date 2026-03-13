@@ -840,7 +840,7 @@ export const storeSettings = pgTable("store_settings", {
   footerDescription: text("footer_description"),
   openingBalance: real("opening_balance").notNull().default(0),
   pointsRate: real("points_rate").notNull().default(0.1),
-  pointsValue: real("points_value").notNull().default(1),
+  pointsValue: real("points_value").notNull().default(0.2),
   autoEmailInvoice: boolean("auto_email_invoice").notNull().default(true),
   updatedAt: text("updated_at").default(sql`CURRENT_TIMESTAMP`),
 });

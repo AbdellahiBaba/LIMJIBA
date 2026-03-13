@@ -360,39 +360,43 @@ export default function LoyaltyDashboard() {
                     data-testid="input-points-rate"
                   />
                   <p className="text-xs text-gray-400 mt-1">
-                    e.g. 0.1 = 1 point per 10 MRU; 1 = 1 point per 1 MRU
+                    Current: <strong>0.1</strong> = 50 points per 500 MRU spent
                   </p>
                 </div>
 
                 <div>
                   <Label className="text-sm font-semibold mb-1 block" style={{ color: PRIMARY }}>
                     Point Value
-                    <span className="text-xs font-normal text-gray-400 ml-2">MRU value per point redeemed</span>
+                    <span className="text-xs font-normal text-gray-400 ml-2">MRU discount per point redeemed</span>
                   </Label>
                   <Input
                     type="number"
-                    step="0.1"
+                    step="0.01"
                     min="0"
                     max="1000"
                     value={valueInput}
                     onChange={e => setValueInput(e.target.value)}
                     className="rounded-lg"
-                    placeholder={String(loyaltySettings?.pointsValue ?? 1)}
+                    placeholder={String(loyaltySettings?.pointsValue ?? 0.2)}
                     data-testid="input-points-value"
                   />
                   <p className="text-xs text-gray-400 mt-1">
-                    e.g. 1 = each point = 1 MRU discount; 0.5 = each point = 0.5 MRU
+                    Current: <strong>0.2</strong> = 500 points = 100 MRU discount
                   </p>
                 </div>
 
                 <div className="p-4 rounded-lg" style={{ backgroundColor: `${ACCENT}08`, border: `1px solid ${ACCENT}30` }}>
-                  <p className="text-sm font-medium" style={{ color: PRIMARY }}>Preview</p>
-                  <p className="text-xs text-gray-500 mt-1">
-                    On a 500 MRU order → <strong>{Math.floor(500 * Number(rateInput || 0.1))} pts earned</strong>
-                  </p>
-                  <p className="text-xs text-gray-500">
-                    50 pts redeemed → <strong>{(50 * Number(valueInput || 1)).toFixed(2)} MRU discount</strong>
-                  </p>
+                  <p className="text-sm font-medium mb-2" style={{ color: PRIMARY }}>Live Preview</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="text-center p-2 rounded-lg bg-white border">
+                      <p className="text-xs text-gray-400">500 MRU order earns</p>
+                      <p className="text-lg font-bold" style={{ color: ACCENT }}>{Math.floor(500 * Number(rateInput || 0.1))} pts</p>
+                    </div>
+                    <div className="text-center p-2 rounded-lg bg-white border">
+                      <p className="text-xs text-gray-400">500 pts worth</p>
+                      <p className="text-lg font-bold" style={{ color: PRIMARY }}>{(500 * Number(valueInput || 0.2)).toFixed(0)} MRU</p>
+                    </div>
+                  </div>
                 </div>
 
                 <Button

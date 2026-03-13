@@ -1241,6 +1241,11 @@ async function runMigrations(): Promise<void> {
     `);
     console.log('[DB] Ensured loyalty_transactions table exists');
 
+    try {
+      await client.query(`UPDATE store_settings SET points_value = 0.2 WHERE points_value = 1`);
+      console.log('[DB] Updated loyalty points_value to 0.2 (500 pts = 100 MRU)');
+    } catch {}
+
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);
