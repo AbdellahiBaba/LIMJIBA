@@ -462,7 +462,11 @@
     "selectVariant": "Select a variant to add to cart",
     "noVariantsAvailable": "No variants available for this product",
     "customerEmail": "Customer Email",
-    "emailConfirmationWillBeSent": "A confirmation email will be sent"
+    "emailConfirmationWillBeSent": "A confirmation email will be sent",
+    "customerInfo": "Customer Info",
+    "customerPhone": "Phone Number",
+    "customerAddress": "Delivery Address",
+    "addressPlaceholder": "Street, district, city…"
   },
   "sales": {
     "title": "Sales",

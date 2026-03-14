@@ -462,7 +462,11 @@
     "selectVariant": "Sélectionnez une variante à ajouter au panier",
     "noVariantsAvailable": "Aucune variante disponible pour ce produit",
     "customerEmail": "Email Client",
-    "emailConfirmationWillBeSent": "Un email de confirmation sera envoyé"
+    "emailConfirmationWillBeSent": "Un email de confirmation sera envoyé",
+    "customerInfo": "Infos Client",
+    "customerPhone": "Numéro de téléphone",
+    "customerAddress": "Adresse de livraison",
+    "addressPlaceholder": "Rue, quartier, ville…"
   },
   "sales": {
     "title": "Ventes",
