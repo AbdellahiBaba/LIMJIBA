@@ -744,6 +744,10 @@ async function runMigrations(): Promise<void> {
       await client.query(`ALTER TABLE purchase_order_items ADD COLUMN adjusted_unit_cost REAL DEFAULT 0`);
       console.log('[DB] Added adjusted_unit_cost column to purchase_order_items');
     }
+    if (!poItemColNames.includes('variant_id')) {
+      await client.query(`ALTER TABLE purchase_order_items ADD COLUMN variant_id VARCHAR`);
+      console.log('[DB] Added variant_id column to purchase_order_items');
+    }
 
     // Sales - delivery cost field
     if (!existingCols.includes('delivery_cost')) {

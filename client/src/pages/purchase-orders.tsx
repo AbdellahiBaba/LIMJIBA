@@ -27,12 +27,14 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Plus, Search, ClipboardList, Trash2, CheckCircle, Download, Package, Truck, Eye, Wallet } from "lucide-react";
-import type { PurchaseOrderWithItems, Supplier, Product, PaymentWallet } from "@shared/schema";
+import { Plus, Search, ClipboardList, Trash2, CheckCircle, Download, Package, Truck, Eye, Wallet, Layers, Loader2 } from "lucide-react";
+import type { PurchaseOrderWithItems, Supplier, Product, PaymentWallet, ProductVariant } from "@shared/schema";
 
 interface POItemForm {
   productId: string;
   productName: string;
+  variantId?: string;
+  variantLabel?: string;
   quantity: number;
   unitCost: number;
   total: number;
@@ -50,6 +52,9 @@ export default function PurchaseOrders() {
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<POItemForm[]>([{ productId: "", productName: "", quantity: 1, unitCost: 0, total: 0 }]);
   const [paymentWalletId, setPaymentWalletId] = useState("");
+
+  const [variantCache, setVariantCache] = useState<Record<string, ProductVariant[]>>({});
+  const [loadingVariants, setLoadingVariants] = useState<Record<string, boolean>>({});
 
   const [shippingDialogOpen, setShippingDialogOpen] = useState(false);
   const [shippingPO, setShippingPO] = useState<PurchaseOrderWithItems | null>(null);
@@ -181,16 +186,58 @@ export default function PurchaseOrders() {
     setDetailDialogOpen(true);
   }
 
-  function updateItem(index: number, field: string, value: any) {
+  async function fetchVariantsForProduct(productId: string): Promise<ProductVariant[]> {
+    if (variantCache[productId]) return variantCache[productId];
+    setLoadingVariants(prev => ({ ...prev, [productId]: true }));
+    try {
+      const res = await fetch(`/api/products/${productId}/variants`);
+      const data: ProductVariant[] = res.ok ? await res.json() : [];
+      setVariantCache(prev => ({ ...prev, [productId]: data }));
+      return data;
+    } catch {
+      return [];
+    } finally {
+      setLoadingVariants(prev => ({ ...prev, [productId]: false }));
+    }
+  }
+
+  async function updateItem(index: number, field: string, value: any) {
     const newItems = [...items];
     (newItems[index] as any)[field] = value;
+
     if (field === "productId") {
       const product = productsList.find(p => p.id === value);
       if (product) {
         newItems[index].productName = product.name;
         newItems[index].unitCost = product.costPrice || 0;
+        newItems[index].variantId = undefined;
+        newItems[index].variantLabel = undefined;
+        newItems[index].total = newItems[index].quantity * newItems[index].unitCost;
+        setItems(newItems);
+
+        if (product.hasVariants) {
+          const variants = await fetchVariantsForProduct(value);
+          if (variants.length > 0) {
+            const variantRows: POItemForm[] = variants.map(v => ({
+              productId: product.id,
+              productName: product.name,
+              variantId: v.id,
+              variantLabel: v.variantLabel,
+              quantity: 0,
+              unitCost: v.costPrice || product.costPrice || 0,
+              total: 0,
+            }));
+            setItems(prev => {
+              const before = prev.slice(0, index);
+              const after = prev.slice(index + 1);
+              return [...before, ...variantRows, ...after];
+            });
+          }
+        }
+        return;
       }
     }
+
     newItems[index].total = newItems[index].quantity * newItems[index].unitCost;
     setItems(newItems);
   }
@@ -219,7 +266,8 @@ export default function PurchaseOrders() {
       notes,
       items: items.map(i => ({
         productId: i.productId || null,
-        productName: i.productName,
+        variantId: i.variantId || null,
+        productName: i.variantLabel ? `${i.productName} (${i.variantLabel})` : i.productName,
         quantity: i.quantity,
         unitCost: i.unitCost,
         total: i.total,
@@ -490,49 +538,104 @@ export default function PurchaseOrders() {
                   <Plus className="h-4 w-4 mr-1" /> {t("common.add")}
                 </Button>
               </div>
-              <div className="space-y-3 sm:space-y-2">
-                {items.map((item, idx) => (
-                  <div key={idx} className="grid grid-cols-2 sm:grid-cols-12 gap-2 items-end border sm:border-0 rounded-md sm:rounded-none p-2 sm:p-0">
-                    <div className="col-span-2 sm:col-span-4">
-                      <Label className="text-xs sm:hidden">{t("purchaseOrders.product")}</Label>
-                      {idx === 0 && <Label className="text-xs hidden sm:block">{t("purchaseOrders.product")}</Label>}
-                      <Select value={item.productId} onValueChange={v => updateItem(idx, "productId", v)}>
-                        <SelectTrigger data-testid={`select-product-${idx}`}>
-                          <SelectValue placeholder={t("purchaseOrders.productPlaceholder")} />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {productsList.map(p => (
-                            <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+              <div className="space-y-2">
+                {/* Column headers (desktop) */}
+                <div className="hidden sm:grid sm:grid-cols-12 gap-2 px-1">
+                  <div className="col-span-4 text-xs text-muted-foreground font-medium">{t("purchaseOrders.product")}</div>
+                  <div className="col-span-2 text-xs text-muted-foreground font-medium">Variant</div>
+                  <div className="col-span-2 text-xs text-muted-foreground font-medium">{t("purchaseOrders.qty")}</div>
+                  <div className="col-span-2 text-xs text-muted-foreground font-medium">{t("purchaseOrders.unitCostLabel")}</div>
+                  <div className="col-span-1 text-xs text-muted-foreground font-medium text-right">Total</div>
+                  <div className="col-span-1" />
+                </div>
+                {items.map((item, idx) => {
+                  const isVariantRow = !!item.variantId;
+                  const isFirstOfProduct = !isVariantRow || idx === 0 || items[idx - 1]?.productId !== item.productId || !items[idx - 1]?.variantId;
+                  const isLoading = item.productId && loadingVariants[item.productId];
+                  return (
+                    <div key={idx} className={`grid grid-cols-2 sm:grid-cols-12 gap-2 items-center rounded-lg p-2 sm:p-1 border sm:border-0 ${isVariantRow ? "bg-muted/30 sm:bg-transparent sm:border-l-2 sm:rounded-none sm:pl-3" : ""}`} style={isVariantRow ? { borderLeftColor: "#C9A84C" } : {}}>
+                      {/* Product selector or name */}
+                      <div className="col-span-2 sm:col-span-4">
+                        <Label className="text-xs sm:hidden mb-1 block">{t("purchaseOrders.product")}</Label>
+                        {isVariantRow ? (
+                          <div className="flex items-center gap-1.5 h-9 px-2 rounded-md bg-background border text-sm truncate">
+                            {isFirstOfProduct && <Layers className="h-3 w-3 shrink-0" style={{ color: "#C9A84C" }} />}
+                            <span className="truncate text-muted-foreground">{item.productName}</span>
+                          </div>
+                        ) : (
+                          <Select value={item.productId} onValueChange={v => updateItem(idx, "productId", v)}>
+                            <SelectTrigger data-testid={`select-product-${idx}`} className="relative">
+                              {isLoading && <Loader2 className="absolute right-8 top-1/2 -translate-y-1/2 h-3 w-3 animate-spin" />}
+                              <SelectValue placeholder={t("purchaseOrders.productPlaceholder")} />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {productsList.map(p => (
+                                <SelectItem key={p.id} value={p.id}>
+                                  <span className="flex items-center gap-2">
+                                    {p.name}
+                                    {p.hasVariants && <Badge variant="outline" className="text-[10px] py-0 px-1 h-4">variants</Badge>}
+                                  </span>
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        )}
+                      </div>
+
+                      {/* Variant label */}
+                      <div className="col-span-2 sm:col-span-2">
+                        <Label className="text-xs sm:hidden mb-1 block">Variant</Label>
+                        {isVariantRow ? (
+                          <div className="flex items-center gap-1 h-9 px-2 rounded-md text-sm font-medium" style={{ background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.3)", color: "#0A1628" }}>
+                            <span className="truncate">{item.variantLabel}</span>
+                          </div>
+                        ) : (
+                          <div className="h-9 flex items-center px-2 text-xs text-muted-foreground">
+                            {item.productId ? "No variants" : "—"}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Quantity */}
+                      <div className="col-span-1 sm:col-span-2">
+                        <Label className="text-xs sm:hidden mb-1 block">{t("purchaseOrders.qty")}</Label>
+                        <Input
+                          type="number"
+                          min="0"
+                          value={item.quantity}
+                          onChange={e => updateItem(idx, "quantity", e.target.value === "" ? 0 : parseInt(e.target.value))}
+                          data-testid={`input-quantity-${idx}`}
+                          className={isVariantRow ? "border-amber-200 focus:border-amber-400" : ""}
+                        />
+                      </div>
+
+                      {/* Unit cost */}
+                      <div className="col-span-1 sm:col-span-2">
+                        <Label className="text-xs sm:hidden mb-1 block">{t("purchaseOrders.unitCostLabel")}</Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={item.unitCost}
+                          onChange={e => updateItem(idx, "unitCost", e.target.value === "" ? 0 : parseFloat(e.target.value))}
+                          data-testid={`input-unit-cost-${idx}`}
+                        />
+                      </div>
+
+                      {/* Total */}
+                      <div className="col-span-1 sm:col-span-1 text-right font-mono text-sm flex sm:block items-center justify-end h-9">
+                        <span className="text-xs text-muted-foreground sm:hidden mr-1">Total:</span>
+                        {item.total.toFixed(2)}
+                      </div>
+
+                      {/* Remove */}
+                      <div className="col-span-1 sm:col-span-1 flex items-center justify-end">
+                        <Button variant="ghost" size="icon" onClick={() => removeItem(idx)} disabled={items.length <= 1} data-testid={`button-remove-item-${idx}`}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
-                    <div className="col-span-2 sm:col-span-2">
-                      <Label className="text-xs sm:hidden">{t("purchaseOrders.designation")}</Label>
-                      {idx === 0 && <Label className="text-xs hidden sm:block">{t("purchaseOrders.designation")}</Label>}
-                      <Input value={item.productName} onChange={e => updateItem(idx, "productName", e.target.value)} placeholder={t("common.name")} />
-                    </div>
-                    <div className="col-span-1 sm:col-span-2">
-                      <Label className="text-xs sm:hidden">{t("purchaseOrders.qty")}</Label>
-                      {idx === 0 && <Label className="text-xs hidden sm:block">{t("purchaseOrders.qty")}</Label>}
-                      <Input type="number" min="1" value={item.quantity} onChange={e => updateItem(idx, "quantity", e.target.value === "" ? "" as any : parseInt(e.target.value))} />
-                    </div>
-                    <div className="col-span-1 sm:col-span-2">
-                      <Label className="text-xs sm:hidden">{t("purchaseOrders.unitCostLabel")}</Label>
-                      {idx === 0 && <Label className="text-xs hidden sm:block">{t("purchaseOrders.unitCostLabel")}</Label>}
-                      <Input type="number" step="0.01" value={item.unitCost} onChange={e => updateItem(idx, "unitCost", e.target.value === "" ? "" as any : parseFloat(e.target.value))} />
-                    </div>
-                    <div className="col-span-1 sm:col-span-1 text-right font-mono text-sm pt-1 flex sm:block items-end justify-end">
-                      <span className="text-xs text-muted-foreground sm:hidden mr-1">Total:</span>
-                      {item.total.toFixed(2)}
-                    </div>
-                    <div className="col-span-1 sm:col-span-1 flex items-end justify-end">
-                      <Button variant="ghost" size="icon" onClick={() => removeItem(idx)} disabled={items.length <= 1}>
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               <div className="flex justify-end mt-2">
                 <span className="text-sm font-semibold">

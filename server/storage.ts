@@ -2216,28 +2216,53 @@ export class DatabaseStorage implements IStorage {
       }).where(eq(purchaseOrders.id, id));
 
       for (const item of po.items) {
-        if (item.productId) {
-          const [product] = await db.select().from(products).where(eq(products.id, item.productId));
-          if (product) {
-            const previousStock = product.stockQuantity;
-            const newStock = previousStock + item.quantity;
-            await db.update(products).set({
-              stockQuantity: newStock,
-              costPrice: item.unitCost,
-            }).where(eq(products.id, item.productId));
+        if (!item.productId) continue;
 
+        const [product] = await db.select().from(products).where(eq(products.id, item.productId));
+        if (!product) continue;
+
+        if ((item as any).variantId) {
+          const [variant] = await db.select().from(productVariants).where(eq(productVariants.id, (item as any).variantId));
+          if (variant) {
+            const newVariantStock = variant.stockQuantity + item.quantity;
+            await db.update(productVariants).set({
+              stockQuantity: newVariantStock,
+              costPrice: item.unitCost,
+            }).where(eq(productVariants.id, (item as any).variantId));
+            const allVariants = await db.select().from(productVariants).where(eq(productVariants.productId, item.productId));
+            const totalVariantStock = allVariants.reduce((s, v) => s + (v.stockQuantity || 0), 0);
+            const previousStock = product.stockQuantity;
+            await db.update(products).set({ stockQuantity: totalVariantStock }).where(eq(products.id, item.productId));
             await db.insert(stockMovements).values({
               productId: item.productId,
               movementType: 'in',
               reason: 'purchase',
               quantity: item.quantity,
               previousStock,
-              newStock,
-              reference: po.orderNumber,
+              newStock: totalVariantStock,
+              reference: `${po.orderNumber} (${variant.variantLabel})`,
               createdAt: now,
               createdBy: receivedBy,
             });
           }
+        } else {
+          const previousStock = product.stockQuantity;
+          const newStock = previousStock + item.quantity;
+          await db.update(products).set({
+            stockQuantity: newStock,
+            costPrice: item.unitCost,
+          }).where(eq(products.id, item.productId));
+          await db.insert(stockMovements).values({
+            productId: item.productId,
+            movementType: 'in',
+            reason: 'purchase',
+            quantity: item.quantity,
+            previousStock,
+            newStock,
+            reference: po.orderNumber,
+            createdAt: now,
+            createdBy: receivedBy,
+          });
         }
       }
 
