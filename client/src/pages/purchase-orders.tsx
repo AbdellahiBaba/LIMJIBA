@@ -267,7 +267,8 @@ export default function PurchaseOrders() {
       items: items.map(i => ({
         productId: i.productId || null,
         variantId: i.variantId || null,
-        productName: i.variantLabel ? `${i.productName} (${i.variantLabel})` : i.productName,
+        variantLabel: i.variantLabel || null,
+        productName: i.productName,
         quantity: i.quantity,
         unitCost: i.unitCost,
         total: i.total,
@@ -784,8 +785,8 @@ export default function PurchaseOrders() {
               <div>
                 <Label className="text-sm font-semibold">{t("purchaseOrders.shippingBreakdown")}</Label>
 
-                {/* Mobile: stacked cards */}
-                <div className="mt-2 space-y-2 sm:hidden">
+                {/* Mobile + tablet: stacked cards */}
+                <div className="mt-2 space-y-2">
                   {shippingPO.items.map((item) => {
                     const shippingCost = parseFloat(shippingCostInput);
                     let itemShippingShare = 0;
@@ -800,7 +801,16 @@ export default function PurchaseOrders() {
                     const adjustedCost = item.unitCost + perUnitShipping;
                     return (
                       <div key={item.id} className="rounded-lg border p-3 space-y-2" data-testid={`row-shipping-preview-${item.id}`}>
-                        <p className="font-medium text-sm truncate">{item.productName}</p>
+                        {/* Product name + variant badge */}
+                        <div className="flex items-start gap-2 flex-wrap">
+                          <p className="font-medium text-sm">{item.productName}</p>
+                          {item.variantLabel && (
+                            <span className="inline-flex items-center text-[11px] font-semibold px-1.5 py-0.5 rounded" style={{ background: "rgba(201,168,76,0.12)", color: "#8B6914", border: "1px solid rgba(201,168,76,0.35)" }}>
+                              <Layers className="h-2.5 w-2.5 mr-0.5" />{item.variantLabel}
+                            </span>
+                          )}
+                        </div>
+                        {/* 2-col key/value grid */}
                         <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
                           <span className="text-muted-foreground">{t("purchaseOrders.qty")}</span>
                           <span className="font-mono text-right">{item.quantity}</span>
@@ -814,45 +824,6 @@ export default function PurchaseOrders() {
                       </div>
                     );
                   })}
-                </div>
-
-                {/* Desktop: table */}
-                <div className="mt-2 rounded-md border overflow-x-auto hidden sm:block">
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead>{t("purchaseOrders.product")}</TableHead>
-                        <TableHead className="text-right">{t("purchaseOrders.qty")}</TableHead>
-                        <TableHead className="text-right">{t("purchaseOrders.originalCost")}</TableHead>
-                        <TableHead className="text-right">{t("purchaseOrders.shippingShare")}</TableHead>
-                        <TableHead className="text-right">{t("purchaseOrders.adjustedUnitCost")}</TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {shippingPO.items.map((item) => {
-                        const shippingCost = parseFloat(shippingCostInput);
-                        let itemShippingShare = 0;
-                        if (distributionMethod === "by_quantity") {
-                          const totalQty = shippingPO.items.reduce((sum, i) => sum + i.quantity, 0);
-                          itemShippingShare = totalQty > 0 ? (shippingCost * item.quantity) / totalQty : 0;
-                        } else {
-                          const totalValue = shippingPO.items.reduce((sum, i) => sum + i.total, 0);
-                          itemShippingShare = totalValue > 0 ? (shippingCost * item.total) / totalValue : 0;
-                        }
-                        const perUnitShipping = item.quantity > 0 ? itemShippingShare / item.quantity : 0;
-                        const adjustedCost = item.unitCost + perUnitShipping;
-                        return (
-                          <TableRow key={item.id} data-testid={`row-shipping-preview-desktop-${item.id}`}>
-                            <TableCell className="text-sm">{item.productName}</TableCell>
-                            <TableCell className="text-right font-mono text-sm">{item.quantity}</TableCell>
-                            <TableCell className="text-right font-mono text-sm">{item.unitCost.toFixed(2)}</TableCell>
-                            <TableCell className="text-right font-mono text-sm">{itemShippingShare.toFixed(2)}</TableCell>
-                            <TableCell className="text-right font-mono text-sm font-semibold">{adjustedCost.toFixed(2)}</TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
                 </div>
               </div>
             )}
@@ -930,7 +901,16 @@ export default function PurchaseOrders() {
                     <TableBody>
                       {detailPO.items.map((item) => (
                         <TableRow key={item.id} data-testid={`row-detail-item-${item.id}`}>
-                          <TableCell className="text-sm">{item.productName}</TableCell>
+                          <TableCell className="text-sm">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span>{item.productName}</span>
+                              {item.variantLabel && (
+                                <span className="inline-flex items-center text-[10px] font-semibold px-1.5 py-0.5 rounded" style={{ background: "rgba(201,168,76,0.12)", color: "#8B6914", border: "1px solid rgba(201,168,76,0.35)" }}>
+                                  <Layers className="h-2.5 w-2.5 mr-0.5" />{item.variantLabel}
+                                </span>
+                              )}
+                            </div>
+                          </TableCell>
                           <TableCell className="text-right font-mono text-sm">{item.quantity}</TableCell>
                           <TableCell className="text-right font-mono text-sm">{item.unitCost.toFixed(2)}</TableCell>
                           {detailPO.shippingCost && detailPO.shippingCost > 0 && (

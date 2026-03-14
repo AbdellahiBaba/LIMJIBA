@@ -1281,6 +1281,14 @@ async function runMigrations(): Promise<void> {
       if (!e.message?.includes('already exists')) console.error('[DB] customer_address migration:', e.message);
     }
 
+    // Add variant_label to purchase_order_items if missing
+    try {
+      await client.query(`ALTER TABLE purchase_order_items ADD COLUMN variant_label TEXT`);
+      console.log('[DB] Added variant_label column to purchase_order_items');
+    } catch (e: any) {
+      if (!e.message?.includes('already exists')) console.error('[DB] variant_label migration:', e.message);
+    }
+
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);

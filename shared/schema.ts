@@ -565,6 +565,7 @@ export const purchaseOrderItems = pgTable("purchase_order_items", {
   purchaseOrderId: varchar("purchase_order_id").notNull(),
   productId: varchar("product_id"),
   variantId: varchar("variant_id"),
+  variantLabel: text("variant_label"),
   productName: text("product_name").notNull(),
   quantity: integer("quantity").notNull(),
   unitCost: real("unit_cost").notNull(),
