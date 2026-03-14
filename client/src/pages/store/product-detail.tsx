@@ -287,13 +287,17 @@ export default function StoreProductDetail() {
           <div className="store-card-premium rounded-2xl overflow-hidden relative group">
             {galleryImages.length > 0 ? (
               <>
-                <div className="overflow-hidden" ref={emblaRef}>
-                  <div className="flex">
+                <div className="overflow-hidden" ref={emblaRef} key={galleryImages.join("|")}>
+                  <div className="flex" style={{ touchAction: "pan-y" }}>
                     {galleryImages.map((img, idx) => (
-                      <div key={idx} className="flex-[0_0_100%] min-w-0">
-                        <div className="h-[400px] md:h-[500px] flex items-center justify-center" style={{ background: `linear-gradient(135deg, ${primaryColor}05, ${accentColor}08)` }}>
-                          <img src={img} alt={`${getProductName(product, lang)} ${idx + 1}`} className="h-full w-full object-cover" data-testid={`img-product-${product.id}-${idx}`} />
-                        </div>
+                      <div key={img} className="relative flex-[0_0_100%] min-w-0" style={{ height: "500px" }}>
+                        <img
+                          src={img}
+                          alt={`${getProductName(product, lang)} ${idx + 1}`}
+                          className="absolute inset-0 w-full h-full object-contain"
+                          style={{ background: `linear-gradient(135deg, ${primaryColor}05, ${accentColor}08)` }}
+                          data-testid={`img-product-${product.id}-${idx}`}
+                        />
                       </div>
                     ))}
                   </div>
