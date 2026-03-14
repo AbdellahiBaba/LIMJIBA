@@ -1237,7 +1237,7 @@ export default function POS() {
             <div className="space-y-3">
               <Label className="text-sm font-semibold flex items-center gap-1.5">
                 <User className="h-3.5 w-3.5" />
-                {t("pos.customerInfo") || "Customer Info"}
+                {t("pos.customerInfo")}
                 <span className="text-xs text-muted-foreground font-normal">({t("common.optional")})</span>
               </Label>
 
@@ -1262,7 +1262,7 @@ export default function POS() {
               {/* Phone */}
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                  <Phone className="h-3 w-3" /> {t("pos.customerPhone") || "Phone"}
+                  <Phone className="h-3 w-3" /> {t("pos.customerPhone")}
                 </Label>
                 <Input
                   type="tel"
@@ -1276,10 +1276,10 @@ export default function POS() {
               {/* Address */}
               <div className="space-y-1">
                 <Label className="text-xs text-muted-foreground flex items-center gap-1">
-                  <MapPin className="h-3 w-3" /> {t("pos.customerAddress") || "Delivery Address"}
+                  <MapPin className="h-3 w-3" /> {t("pos.customerAddress")}
                 </Label>
                 <Textarea
-                  placeholder={t("pos.addressPlaceholder") || "Street, district, city…"}
+                  placeholder={t("pos.addressPlaceholder")}
                   value={customerAddress}
                   onChange={(e) => setCustomerAddress(e.target.value)}
                   rows={2}

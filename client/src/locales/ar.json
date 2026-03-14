@@ -462,7 +462,11 @@
     "selectVariant": "اختر متغيراً لإضافته إلى السلة",
     "noVariantsAvailable": "لا توجد متغيرات متاحة لهذا المنتج",
     "customerEmail": "البريد الإلكتروني للعميل",
-    "emailConfirmationWillBeSent": "سيتم إرسال بريد إلكتروني للتأكيد"
+    "emailConfirmationWillBeSent": "سيتم إرسال بريد إلكتروني للتأكيد",
+    "customerInfo": "معلومات العميل",
+    "customerPhone": "رقم الهاتف",
+    "customerAddress": "عنوان التوصيل",
+    "addressPlaceholder": "الشارع، الحي، المدينة…"
   },
   "sales": {
     "title": "المبيعات",
