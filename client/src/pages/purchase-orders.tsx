@@ -485,7 +485,7 @@ export default function PurchaseOrders() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) closeDialog(); else setDialogOpen(true); }}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{t("purchaseOrders.title")}</DialogTitle>
             <DialogDescription>{t("purchaseOrders.createPO")}</DialogDescription>
@@ -502,7 +502,7 @@ export default function PurchaseOrders() {
                   <SelectTrigger data-testid="select-supplier">
                     <SelectValue placeholder={t("purchaseOrders.selectSupplier")} />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent className="max-h-56 overflow-y-auto">
                     {suppliersList.map(s => (
                       <SelectItem key={s.id} value={s.id}>{s.name}</SelectItem>
                     ))}
@@ -520,7 +520,7 @@ export default function PurchaseOrders() {
                 <SelectTrigger data-testid="select-payment-wallet">
                   <SelectValue placeholder="Select wallet to debit (optional)" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-56 overflow-y-auto">
                   <SelectItem value="none">No wallet</SelectItem>
                   {walletsList.filter(w => w.isActive).map(w => (
                     <SelectItem key={w.id} value={w.id}>
@@ -587,7 +587,7 @@ export default function PurchaseOrders() {
                                 {isLoading && <Loader2 className="absolute right-8 top-1/2 -translate-y-1/2 h-3 w-3 animate-spin" />}
                                 <SelectValue placeholder={t("purchaseOrders.productPlaceholder")} />
                               </SelectTrigger>
-                              <SelectContent>
+                              <SelectContent className="max-h-56 overflow-y-auto">
                                 {productsList.map(p => (
                                   <SelectItem key={p.id} value={p.id}>
                                     <span className="flex items-center gap-2">
@@ -656,7 +656,7 @@ export default function PurchaseOrders() {
                                 {isLoading && <Loader2 className="absolute right-8 top-1/2 -translate-y-1/2 h-3 w-3 animate-spin" />}
                                 <SelectValue placeholder={t("purchaseOrders.productPlaceholder")} />
                               </SelectTrigger>
-                              <SelectContent>
+                              <SelectContent className="max-h-56 overflow-y-auto">
                                 {productsList.map(p => (
                                   <SelectItem key={p.id} value={p.id}>
                                     <span className="flex items-center gap-2">
@@ -738,7 +738,7 @@ export default function PurchaseOrders() {
       </Dialog>
 
       <Dialog open={shippingDialogOpen} onOpenChange={(open) => { if (!open) closeShippingDialog(); }}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-lg w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Truck className="h-5 w-5" />
@@ -783,7 +783,41 @@ export default function PurchaseOrders() {
             {shippingPO && shippingCostInput && parseFloat(shippingCostInput) > 0 && (
               <div>
                 <Label className="text-sm font-semibold">{t("purchaseOrders.shippingBreakdown")}</Label>
-                <div className="mt-2 rounded-md border overflow-x-auto">
+
+                {/* Mobile: stacked cards */}
+                <div className="mt-2 space-y-2 sm:hidden">
+                  {shippingPO.items.map((item) => {
+                    const shippingCost = parseFloat(shippingCostInput);
+                    let itemShippingShare = 0;
+                    if (distributionMethod === "by_quantity") {
+                      const totalQty = shippingPO.items.reduce((sum, i) => sum + i.quantity, 0);
+                      itemShippingShare = totalQty > 0 ? (shippingCost * item.quantity) / totalQty : 0;
+                    } else {
+                      const totalValue = shippingPO.items.reduce((sum, i) => sum + i.total, 0);
+                      itemShippingShare = totalValue > 0 ? (shippingCost * item.total) / totalValue : 0;
+                    }
+                    const perUnitShipping = item.quantity > 0 ? itemShippingShare / item.quantity : 0;
+                    const adjustedCost = item.unitCost + perUnitShipping;
+                    return (
+                      <div key={item.id} className="rounded-lg border p-3 space-y-2" data-testid={`row-shipping-preview-${item.id}`}>
+                        <p className="font-medium text-sm truncate">{item.productName}</p>
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+                          <span className="text-muted-foreground">{t("purchaseOrders.qty")}</span>
+                          <span className="font-mono text-right">{item.quantity}</span>
+                          <span className="text-muted-foreground">{t("purchaseOrders.originalCost")}</span>
+                          <span className="font-mono text-right">{item.unitCost.toFixed(2)}</span>
+                          <span className="text-muted-foreground">{t("purchaseOrders.shippingShare")}</span>
+                          <span className="font-mono text-right">{itemShippingShare.toFixed(2)}</span>
+                          <span className="text-muted-foreground font-semibold">{t("purchaseOrders.adjustedUnitCost")}</span>
+                          <span className="font-mono font-semibold text-right" style={{ color: "#C9A84C" }}>{adjustedCost.toFixed(2)}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* Desktop: table */}
+                <div className="mt-2 rounded-md border overflow-x-auto hidden sm:block">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -808,7 +842,7 @@ export default function PurchaseOrders() {
                         const perUnitShipping = item.quantity > 0 ? itemShippingShare / item.quantity : 0;
                         const adjustedCost = item.unitCost + perUnitShipping;
                         return (
-                          <TableRow key={item.id} data-testid={`row-shipping-preview-${item.id}`}>
+                          <TableRow key={item.id} data-testid={`row-shipping-preview-desktop-${item.id}`}>
                             <TableCell className="text-sm">{item.productName}</TableCell>
                             <TableCell className="text-right font-mono text-sm">{item.quantity}</TableCell>
                             <TableCell className="text-right font-mono text-sm">{item.unitCost.toFixed(2)}</TableCell>
