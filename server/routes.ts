@@ -1766,11 +1766,8 @@ export async function registerRoutes(
 
   app.post("/api/products", async (req, res) => {
     try {
-      console.log("[POST /api/products] Received:", JSON.stringify(req.body));
       const data = insertProductSchema.parse(req.body);
-      console.log("[POST /api/products] Validated:", JSON.stringify(data));
       const product = await storage.createProduct(data);
-      console.log("[POST /api/products] Created:", JSON.stringify(product));
       try {
         await storage.createAuditLog({
           userId: req.session?.userId || null,
@@ -1795,7 +1792,6 @@ export async function registerRoutes(
 
   app.patch("/api/products/:id", async (req, res) => {
     try {
-      console.log("[PATCH /api/products] Received:", JSON.stringify(req.body));
       const oldProduct = await storage.getProduct(req.params.id);
       const data = insertProductSchema.partial().parse(req.body);
       const product = await storage.updateProduct(req.params.id, data);
@@ -1999,7 +1995,6 @@ export async function registerRoutes(
 
   app.post("/api/invoices", async (req, res) => {
     try {
-      console.log("[POST /api/invoices] Received:", JSON.stringify(req.body));
       const { invoice, items } = req.body;
       
       if (!invoice) {
@@ -2268,7 +2263,6 @@ export async function registerRoutes(
 
   app.post("/api/sales", async (req, res) => {
     try {
-      console.log("[POST /api/sales] Received:", JSON.stringify(req.body));
       const { sale, items } = req.body;
       
       if (!sale) {
@@ -2796,7 +2790,6 @@ export async function registerRoutes(
 
   app.post("/api/resellers", async (req, res) => {
     try {
-      console.log("[POST /api/resellers] Received:", JSON.stringify(req.body));
       const data = insertResellerSchema.parse(req.body);
       const reseller = await storage.createReseller(data);
       res.status(201).json(reseller);
@@ -2893,7 +2886,6 @@ export async function registerRoutes(
 
   app.post("/api/employees", async (req, res) => {
     try {
-      console.log("[POST /api/employees] Received:", JSON.stringify(req.body));
       const data = insertEmployeeSchema.parse(req.body);
       const employee = await storage.createEmployee(data);
       res.status(201).json(employee);
@@ -2938,7 +2930,6 @@ export async function registerRoutes(
 
   app.post("/api/salary-payments", async (req, res) => {
     try {
-      console.log("[POST /api/salary-payments] Received:", JSON.stringify(req.body));
       const data = insertSalaryPaymentSchema.parse(req.body);
       const payment = await storage.createSalaryPayment(data);
       res.status(201).json(payment);
@@ -2982,7 +2973,6 @@ export async function registerRoutes(
 
   app.post("/api/expenses", async (req, res) => {
     try {
-      console.log("[POST /api/expenses] Received:", JSON.stringify(req.body));
       const data = insertExpenseSchema.parse(req.body);
       const expense = await storage.createExpense(data);
       try {
@@ -3166,7 +3156,6 @@ export async function registerRoutes(
 
   app.post("/api/fabrication-invoices", async (req, res) => {
     try {
-      console.log("[POST /api/fabrication-invoices] Received:", JSON.stringify(req.body));
       const { invoice, items } = req.body;
       
       if (!invoice) {
