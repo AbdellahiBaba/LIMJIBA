@@ -485,7 +485,7 @@ export default function PurchaseOrders() {
       </Card>
 
       <Dialog open={dialogOpen} onOpenChange={(open) => { if (!open) closeDialog(); else setDialogOpen(true); }}>
-        <DialogContent className="max-w-3xl w-[95vw] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle>{t("purchaseOrders.title")}</DialogTitle>
             <DialogDescription>{t("purchaseOrders.createPO")}</DialogDescription>
@@ -557,7 +557,7 @@ export default function PurchaseOrders() {
                   return (
                     <div
                       key={idx}
-                      className={`rounded-xl border sm:border-0 sm:rounded-none overflow-hidden ${isVariantRow ? "sm:border-l-2 sm:pl-3" : ""}`}
+                      className={`min-w-0 rounded-xl border sm:border-0 sm:rounded-none overflow-hidden ${isVariantRow ? "sm:border-l-2 sm:pl-3" : ""}`}
                       style={isVariantRow ? { borderLeftColor: "#C9A84C" } : {}}
                     >
                       {/* ── MOBILE CARD LAYOUT ── */}
@@ -738,7 +738,7 @@ export default function PurchaseOrders() {
       </Dialog>
 
       <Dialog open={shippingDialogOpen} onOpenChange={(open) => { if (!open) closeShippingDialog(); }}>
-        <DialogContent className="max-w-lg w-[95vw] max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-lg w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Truck className="h-5 w-5" />
@@ -872,7 +872,7 @@ export default function PurchaseOrders() {
       </Dialog>
 
       <Dialog open={detailDialogOpen} onOpenChange={(open) => { if (!open) { setDetailDialogOpen(false); setDetailPO(null); } }}>
-        <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-3xl w-[calc(100%-2rem)] max-h-[90vh] overflow-y-auto overflow-x-hidden">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <Package className="h-5 w-5" />
