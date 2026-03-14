@@ -250,6 +250,10 @@ async function runMigrations(): Promise<void> {
       await client.query(`ALTER TABLE sales ADD COLUMN wallet_id varchar`);
       console.log('[DB] Added wallet_id column to sales');
     }
+    if (!existingCols.includes('customer_email')) {
+      await client.query(`ALTER TABLE sales ADD COLUMN customer_email text`);
+      console.log('[DB] Added customer_email column to sales');
+    }
     
     // Check products table for barcode column
     const prodColumns = await client.query(`
