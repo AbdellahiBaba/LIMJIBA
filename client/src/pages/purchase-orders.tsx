@@ -538,100 +538,179 @@ export default function PurchaseOrders() {
                   <Plus className="h-4 w-4 mr-1" /> {t("common.add")}
                 </Button>
               </div>
-              <div className="space-y-2">
-                {/* Column headers (desktop) */}
-                <div className="hidden sm:grid sm:grid-cols-12 gap-2 px-1">
-                  <div className="col-span-4 text-xs text-muted-foreground font-medium">{t("purchaseOrders.product")}</div>
-                  <div className="col-span-2 text-xs text-muted-foreground font-medium">Variant</div>
-                  <div className="col-span-2 text-xs text-muted-foreground font-medium">{t("purchaseOrders.qty")}</div>
-                  <div className="col-span-2 text-xs text-muted-foreground font-medium">{t("purchaseOrders.unitCostLabel")}</div>
-                  <div className="col-span-1 text-xs text-muted-foreground font-medium text-right">Total</div>
-                  <div className="col-span-1" />
-                </div>
+              {/* Desktop column headers */}
+              <div className="hidden sm:grid sm:grid-cols-12 gap-2 px-1 mb-1">
+                <div className="col-span-4 text-xs text-muted-foreground font-medium">{t("purchaseOrders.product")}</div>
+                <div className="col-span-2 text-xs text-muted-foreground font-medium">Variant</div>
+                <div className="col-span-2 text-xs text-muted-foreground font-medium">{t("purchaseOrders.qty")}</div>
+                <div className="col-span-2 text-xs text-muted-foreground font-medium">{t("purchaseOrders.unitCostLabel")}</div>
+                <div className="col-span-1 text-xs text-muted-foreground font-medium text-right">Total</div>
+                <div className="col-span-1" />
+              </div>
+
+              <div className="space-y-3">
                 {items.map((item, idx) => {
                   const isVariantRow = !!item.variantId;
                   const isFirstOfProduct = !isVariantRow || idx === 0 || items[idx - 1]?.productId !== item.productId || !items[idx - 1]?.variantId;
-                  const isLoading = item.productId && loadingVariants[item.productId];
+                  const isLoading = !!item.productId && !!loadingVariants[item.productId];
+
                   return (
-                    <div key={idx} className={`grid grid-cols-2 sm:grid-cols-12 gap-2 items-center rounded-lg p-2 sm:p-1 border sm:border-0 ${isVariantRow ? "bg-muted/30 sm:bg-transparent sm:border-l-2 sm:rounded-none sm:pl-3" : ""}`} style={isVariantRow ? { borderLeftColor: "#C9A84C" } : {}}>
-                      {/* Product selector or name */}
-                      <div className="col-span-2 sm:col-span-4">
-                        <Label className="text-xs sm:hidden mb-1 block">{t("purchaseOrders.product")}</Label>
-                        {isVariantRow ? (
-                          <div className="flex items-center gap-1.5 h-9 px-2 rounded-md bg-background border text-sm truncate">
-                            {isFirstOfProduct && <Layers className="h-3 w-3 shrink-0" style={{ color: "#C9A84C" }} />}
-                            <span className="truncate text-muted-foreground">{item.productName}</span>
+                    <div
+                      key={idx}
+                      className={`rounded-xl border sm:border-0 sm:rounded-none overflow-hidden ${isVariantRow ? "sm:border-l-2 sm:pl-3" : ""}`}
+                      style={isVariantRow ? { borderLeftColor: "#C9A84C" } : {}}
+                    >
+                      {/* ── MOBILE CARD LAYOUT ── */}
+                      <div className="sm:hidden p-3 space-y-2.5" style={isVariantRow ? { background: "rgba(201,168,76,0.04)" } : {}}>
+                        {/* Row header: index + remove */}
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                            {isVariantRow
+                              ? <span className="flex items-center gap-1"><Layers className="h-3 w-3" style={{ color: "#C9A84C" }} /> Variant</span>
+                              : `Item ${idx + 1}`}
+                          </span>
+                          <Button variant="ghost" size="icon" className="h-7 w-7 text-destructive" onClick={() => removeItem(idx)} disabled={items.length <= 1} data-testid={`button-remove-item-${idx}`}>
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </Button>
+                        </div>
+
+                        {/* Product selector or locked name */}
+                        <div>
+                          <Label className="text-xs mb-1 block">{t("purchaseOrders.product")}</Label>
+                          {isVariantRow ? (
+                            <div className="flex items-center gap-1.5 h-9 px-3 rounded-md bg-muted border text-sm">
+                              <span className="truncate text-muted-foreground">{item.productName}</span>
+                            </div>
+                          ) : (
+                            <Select value={item.productId} onValueChange={v => updateItem(idx, "productId", v)}>
+                              <SelectTrigger data-testid={`select-product-${idx}`}>
+                                {isLoading && <Loader2 className="absolute right-8 top-1/2 -translate-y-1/2 h-3 w-3 animate-spin" />}
+                                <SelectValue placeholder={t("purchaseOrders.productPlaceholder")} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {productsList.map(p => (
+                                  <SelectItem key={p.id} value={p.id}>
+                                    <span className="flex items-center gap-2">
+                                      {p.name}
+                                      {p.hasVariants && <Badge variant="outline" className="text-[10px] py-0 px-1 h-4">variants</Badge>}
+                                    </span>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
+
+                        {/* Variant label (only for variant rows) */}
+                        {isVariantRow && (
+                          <div>
+                            <Label className="text-xs mb-1 block">Variant</Label>
+                            <div className="flex items-center h-9 px-3 rounded-md text-sm font-semibold" style={{ background: "rgba(201,168,76,0.1)", border: "1px solid rgba(201,168,76,0.35)", color: "#0A1628" }}>
+                              {item.variantLabel}
+                            </div>
                           </div>
-                        ) : (
-                          <Select value={item.productId} onValueChange={v => updateItem(idx, "productId", v)}>
-                            <SelectTrigger data-testid={`select-product-${idx}`} className="relative">
-                              {isLoading && <Loader2 className="absolute right-8 top-1/2 -translate-y-1/2 h-3 w-3 animate-spin" />}
-                              <SelectValue placeholder={t("purchaseOrders.productPlaceholder")} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {productsList.map(p => (
-                                <SelectItem key={p.id} value={p.id}>
-                                  <span className="flex items-center gap-2">
-                                    {p.name}
-                                    {p.hasVariants && <Badge variant="outline" className="text-[10px] py-0 px-1 h-4">variants</Badge>}
-                                  </span>
-                                </SelectItem>
-                              ))}
-                            </SelectContent>
-                          </Select>
                         )}
-                      </div>
 
-                      {/* Variant label */}
-                      <div className="col-span-2 sm:col-span-2">
-                        <Label className="text-xs sm:hidden mb-1 block">Variant</Label>
-                        {isVariantRow ? (
-                          <div className="flex items-center gap-1 h-9 px-2 rounded-md text-sm font-medium" style={{ background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.3)", color: "#0A1628" }}>
-                            <span className="truncate">{item.variantLabel}</span>
+                        {/* Qty + Unit Cost side by side */}
+                        <div className="grid grid-cols-2 gap-2">
+                          <div>
+                            <Label className="text-xs mb-1 block">{t("purchaseOrders.qty")}</Label>
+                            <Input
+                              type="number" min="0"
+                              value={item.quantity}
+                              onChange={e => updateItem(idx, "quantity", e.target.value === "" ? 0 : parseInt(e.target.value))}
+                              data-testid={`input-quantity-${idx}`}
+                              className={isVariantRow ? "border-amber-200" : ""}
+                            />
                           </div>
-                        ) : (
-                          <div className="h-9 flex items-center px-2 text-xs text-muted-foreground">
-                            {item.productId ? "No variants" : "—"}
+                          <div>
+                            <Label className="text-xs mb-1 block">{t("purchaseOrders.unitCostLabel")}</Label>
+                            <Input
+                              type="number" step="0.01"
+                              value={item.unitCost}
+                              onChange={e => updateItem(idx, "unitCost", e.target.value === "" ? 0 : parseFloat(e.target.value))}
+                              data-testid={`input-unit-cost-${idx}`}
+                            />
                           </div>
-                        )}
+                        </div>
+
+                        {/* Total */}
+                        <div className="flex justify-end items-center gap-1.5 pt-0.5">
+                          <span className="text-xs text-muted-foreground">Total:</span>
+                          <span className="font-mono font-semibold text-sm">{item.total.toFixed(2)} MRU</span>
+                        </div>
                       </div>
 
-                      {/* Quantity */}
-                      <div className="col-span-1 sm:col-span-2">
-                        <Label className="text-xs sm:hidden mb-1 block">{t("purchaseOrders.qty")}</Label>
-                        <Input
-                          type="number"
-                          min="0"
-                          value={item.quantity}
-                          onChange={e => updateItem(idx, "quantity", e.target.value === "" ? 0 : parseInt(e.target.value))}
-                          data-testid={`input-quantity-${idx}`}
-                          className={isVariantRow ? "border-amber-200 focus:border-amber-400" : ""}
-                        />
-                      </div>
+                      {/* ── DESKTOP GRID LAYOUT ── */}
+                      <div className="hidden sm:grid sm:grid-cols-12 gap-2 items-center py-1">
+                        {/* Product */}
+                        <div className="col-span-4">
+                          {isVariantRow ? (
+                            <div className="flex items-center gap-1.5 h-9 px-2 rounded-md bg-background border text-sm">
+                              {isFirstOfProduct && <Layers className="h-3 w-3 shrink-0" style={{ color: "#C9A84C" }} />}
+                              <span className="truncate text-muted-foreground">{item.productName}</span>
+                            </div>
+                          ) : (
+                            <Select value={item.productId} onValueChange={v => updateItem(idx, "productId", v)}>
+                              <SelectTrigger data-testid={`select-product-desktop-${idx}`} className="relative">
+                                {isLoading && <Loader2 className="absolute right-8 top-1/2 -translate-y-1/2 h-3 w-3 animate-spin" />}
+                                <SelectValue placeholder={t("purchaseOrders.productPlaceholder")} />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {productsList.map(p => (
+                                  <SelectItem key={p.id} value={p.id}>
+                                    <span className="flex items-center gap-2">
+                                      {p.name}
+                                      {p.hasVariants && <Badge variant="outline" className="text-[10px] py-0 px-1 h-4">variants</Badge>}
+                                    </span>
+                                  </SelectItem>
+                                ))}
+                              </SelectContent>
+                            </Select>
+                          )}
+                        </div>
 
-                      {/* Unit cost */}
-                      <div className="col-span-1 sm:col-span-2">
-                        <Label className="text-xs sm:hidden mb-1 block">{t("purchaseOrders.unitCostLabel")}</Label>
-                        <Input
-                          type="number"
-                          step="0.01"
-                          value={item.unitCost}
-                          onChange={e => updateItem(idx, "unitCost", e.target.value === "" ? 0 : parseFloat(e.target.value))}
-                          data-testid={`input-unit-cost-${idx}`}
-                        />
-                      </div>
+                        {/* Variant */}
+                        <div className="col-span-2">
+                          {isVariantRow ? (
+                            <div className="flex items-center h-9 px-2 rounded-md text-sm font-medium truncate" style={{ background: "rgba(201,168,76,0.08)", border: "1px solid rgba(201,168,76,0.3)", color: "#0A1628" }}>
+                              <span className="truncate">{item.variantLabel}</span>
+                            </div>
+                          ) : (
+                            <div className="h-9 flex items-center px-2 text-xs text-muted-foreground">
+                              {item.productId ? "No variants" : "—"}
+                            </div>
+                          )}
+                        </div>
 
-                      {/* Total */}
-                      <div className="col-span-1 sm:col-span-1 text-right font-mono text-sm flex sm:block items-center justify-end h-9">
-                        <span className="text-xs text-muted-foreground sm:hidden mr-1">Total:</span>
-                        {item.total.toFixed(2)}
-                      </div>
+                        {/* Qty */}
+                        <div className="col-span-2">
+                          <Input type="number" min="0" value={item.quantity}
+                            onChange={e => updateItem(idx, "quantity", e.target.value === "" ? 0 : parseInt(e.target.value))}
+                            data-testid={`input-quantity-desktop-${idx}`}
+                            className={isVariantRow ? "border-amber-200 focus:border-amber-400" : ""}
+                          />
+                        </div>
 
-                      {/* Remove */}
-                      <div className="col-span-1 sm:col-span-1 flex items-center justify-end">
-                        <Button variant="ghost" size="icon" onClick={() => removeItem(idx)} disabled={items.length <= 1} data-testid={`button-remove-item-${idx}`}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        {/* Unit cost */}
+                        <div className="col-span-2">
+                          <Input type="number" step="0.01" value={item.unitCost}
+                            onChange={e => updateItem(idx, "unitCost", e.target.value === "" ? 0 : parseFloat(e.target.value))}
+                            data-testid={`input-unit-cost-desktop-${idx}`}
+                          />
+                        </div>
+
+                        {/* Total */}
+                        <div className="col-span-1 text-right font-mono text-sm pt-2">
+                          {item.total.toFixed(2)}
+                        </div>
+
+                        {/* Remove */}
+                        <div className="col-span-1 flex justify-end">
+                          <Button variant="ghost" size="icon" onClick={() => removeItem(idx)} disabled={items.length <= 1} data-testid={`button-remove-item-desktop-${idx}`}>
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   );
