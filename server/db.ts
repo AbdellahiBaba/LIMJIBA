@@ -1273,6 +1273,14 @@ async function runMigrations(): Promise<void> {
     await client.query(`CREATE UNIQUE INDEX IF NOT EXISTS abandoned_carts_email_idx ON abandoned_carts (lower(customer_email))`);
     console.log('[DB] Ensured abandoned_carts table exists');
 
+    // Add customer_address to sales table if missing
+    try {
+      await client.query(`ALTER TABLE sales ADD COLUMN customer_address TEXT`);
+      console.log('[DB] Added customer_address column to sales');
+    } catch (e: any) {
+      if (!e.message?.includes('already exists')) console.error('[DB] customer_address migration:', e.message);
+    }
+
     console.log('[DB] Schema migrations complete');
   } catch (error) {
     console.error('[DB] Migration error:', error);

@@ -189,6 +189,7 @@ export const sales = pgTable("sales", {
   customerName: text("customer_name"),
   customerPhone: text("customer_phone"),
   customerEmail: text("customer_email"),
+  customerAddress: text("customer_address"),
   walletId: varchar("wallet_id"),
 });
 

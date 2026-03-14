@@ -275,6 +275,7 @@ const saleEditSchema = z.object({
   deliveryCost: z.number().min(0).optional(),
   customerName: z.string().max(200).nullable().optional(),
   customerPhone: z.string().max(50).nullable().optional(),
+  customerAddress: z.string().max(500).nullable().optional(),
 });
 
 const saleUpdateSchema = insertSaleSchema.partial();
@@ -2348,7 +2349,7 @@ export async function registerRoutes(
             customerName,
             customerEmail,
             customerPhone: saleData.customerPhone || null,
-            customerAddress: null,
+            customerAddress: saleData.customerAddress || null,
             items: JSON.stringify(orderItems),
             subtotal: saleData.total + (saleData.discount || 0) - (saleData.deliveryCost || 0),
             discount: saleData.discount || 0,

@@ -58,7 +58,8 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { useToast } from "@/hooks/use-toast";
-import { UserPlus, Wallet } from "lucide-react";
+import { UserPlus, Wallet, Phone, MapPin } from "lucide-react";
+import { Textarea } from "@/components/ui/textarea";
 import type { Product, ProductVariant, CartItem, Reseller, Sale, InsertSale, InsertSaleItem, InsertReseller, ParkedSale, PaymentWallet } from "@shared/schema";
 
 export default function POS() {
@@ -88,6 +89,8 @@ export default function POS() {
   const [returnReason, setReturnReason] = useState("");
   const [customerName, setCustomerName] = useState("");
   const [customerEmail, setCustomerEmail] = useState("");
+  const [customerPhone, setCustomerPhone] = useState("");
+  const [customerAddress, setCustomerAddress] = useState("");
   const [selectedWalletId, setSelectedWalletId] = useState<string>("");
   const [recentSalesOpen, setRecentSalesOpen] = useState(false);
   const [parkDialogOpen, setParkDialogOpen] = useState(false);
@@ -142,6 +145,8 @@ export default function POS() {
       setSelectedReseller("none");
       setCustomerName("");
       setCustomerEmail("");
+      setCustomerPhone("");
+      setCustomerAddress("");
       setSelectedWalletId("");
     },
     onError: (error: Error) => {
@@ -447,6 +452,9 @@ export default function POS() {
     setDeliveryCost(0);
     setSelectedReseller("none");
     setCustomerName("");
+    setCustomerEmail("");
+    setCustomerPhone("");
+    setCustomerAddress("");
     setSelectedWalletId("");
     setPaymentMode("CASH");
   };
@@ -502,6 +510,8 @@ export default function POS() {
         status,
         customerName: customerName.trim() || null,
         customerEmail: customerEmail.trim() || null,
+        customerPhone: customerPhone.trim() || null,
+        customerAddress: customerAddress.trim() || null,
         walletId: (paymentMode === "CASH" || paymentMode === "WALLET") && selectedWalletId ? selectedWalletId : null,
       },
       items: saleItems,
@@ -1224,24 +1234,59 @@ export default function POS() {
               )}
             </div>
 
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1">
-                {t("pos.customerEmail")}
+            <div className="space-y-3">
+              <Label className="text-sm font-semibold flex items-center gap-1.5">
+                <User className="h-3.5 w-3.5" />
+                {t("pos.customerInfo") || "Customer Info"}
                 <span className="text-xs text-muted-foreground font-normal">({t("common.optional")})</span>
               </Label>
-              <Input
-                type="email"
-                placeholder="customer@example.com"
-                value={customerEmail}
-                onChange={(e) => setCustomerEmail(e.target.value)}
-                data-testid="input-customer-email"
-              />
-              {customerEmail.trim() && (
-                <p className="text-xs text-muted-foreground flex items-center gap-1">
-                  <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
-                  {t("pos.emailConfirmationWillBeSent")}
-                </p>
-              )}
+
+              {/* Email */}
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground">{t("pos.customerEmail")}</Label>
+                <Input
+                  type="email"
+                  placeholder="customer@example.com"
+                  value={customerEmail}
+                  onChange={(e) => setCustomerEmail(e.target.value)}
+                  data-testid="input-customer-email"
+                />
+                {customerEmail.trim() && (
+                  <p className="text-xs text-muted-foreground flex items-center gap-1">
+                    <span className="inline-block w-2 h-2 rounded-full bg-green-500" />
+                    {t("pos.emailConfirmationWillBeSent")}
+                  </p>
+                )}
+              </div>
+
+              {/* Phone */}
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Phone className="h-3 w-3" /> {t("pos.customerPhone") || "Phone"}
+                </Label>
+                <Input
+                  type="tel"
+                  placeholder="+222 XX XX XX XX"
+                  value={customerPhone}
+                  onChange={(e) => setCustomerPhone(e.target.value)}
+                  data-testid="input-customer-phone"
+                />
+              </div>
+
+              {/* Address */}
+              <div className="space-y-1">
+                <Label className="text-xs text-muted-foreground flex items-center gap-1">
+                  <MapPin className="h-3 w-3" /> {t("pos.customerAddress") || "Delivery Address"}
+                </Label>
+                <Textarea
+                  placeholder={t("pos.addressPlaceholder") || "Street, district, city…"}
+                  value={customerAddress}
+                  onChange={(e) => setCustomerAddress(e.target.value)}
+                  rows={2}
+                  className="resize-none text-sm"
+                  data-testid="input-customer-address"
+                />
+              </div>
             </div>
 
             <div className="space-y-2">
