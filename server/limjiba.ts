@@ -44,7 +44,7 @@ function setCache(key: string, response: string): void {
   if (responseCache.size >= CACHE_MAX) {
     let oldestKey = "";
     let oldestTime = Infinity;
-    for (const [k, v] of responseCache) {
+    for (const [k, v] of Array.from(responseCache)) {
       if (v.timestamp < oldestTime) {
         oldestTime = v.timestamp;
         oldestKey = k;

@@ -237,7 +237,7 @@ export default function StoreProductDetail() {
     );
   }
 
-  if (!product && !isLoading) {
+  if (!product) {
     const isOutOfStock = productUnavailable === "out_of_stock";
     return (
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 text-center">
@@ -342,7 +342,7 @@ export default function StoreProductDetail() {
                   key={idx}
                   onClick={() => { emblaApi?.scrollTo(idx); setActiveImageIndex(idx); }}
                   className={`flex-shrink-0 w-16 h-16 md:w-20 md:h-20 rounded-lg overflow-hidden border-2 transition-all ${idx === activeImageIndex ? "ring-2 ring-offset-1" : "border-transparent opacity-60 hover:opacity-100"}`}
-                  style={idx === activeImageIndex ? { borderColor: accentColor, ringColor: accentColor } : {}}
+                  style={idx === activeImageIndex ? { borderColor: accentColor, outlineColor: accentColor } : {}}
                   data-testid={`button-thumbnail-${idx}`}
                 >
                   <img src={img} alt="" className="w-full h-full object-cover" />

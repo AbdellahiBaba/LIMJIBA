@@ -310,7 +310,7 @@ export default function StoreLayout({ children }: { children: React.ReactNode })
                                     {lang === "ar" ? (n.messageAr || n.message) : lang === "fr" ? (n.messageFr || n.message) : n.message}
                                   </p>
                                   <p className="text-[10px] text-gray-500 mt-1.5">
-                                    {new Date(n.createdAt).toLocaleDateString(lang === "ar" ? "ar" : lang === "fr" ? "fr" : "en", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
+                                    {new Date(n.createdAt ?? Date.now()).toLocaleDateString(lang === "ar" ? "ar" : lang === "fr" ? "fr" : "en", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                                   </p>
                                 </div>
                               </div>

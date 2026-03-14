@@ -835,7 +835,7 @@ function ViewTransportDialog({
       return div.innerHTML;
     };
 
-    const companyName = branding?.companyInfo?.name || branding?.companyName || "E-Commerce Manager";
+    const companyName = branding?.companyInfo?.name || (branding as any)?.companyName || "E-Commerce Manager";
     const tagline = branding?.companyInfo?.tagline || "Complete E-Commerce Management System";
     const address = branding?.companyInfo?.address || "";
     const phone = branding?.companyInfo?.phone || "";

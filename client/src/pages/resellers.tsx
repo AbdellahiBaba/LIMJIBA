@@ -387,7 +387,7 @@ export default function Resellers() {
       return;
     }
 
-    const companyName = branding?.companyName || "E-Commerce Manager";
+    const companyName = branding?.companyInfo?.name || (branding as any)?.companyName || "E-Commerce Manager";
 
     const buildTable = (fields: PrintField[], copyTitle: string) => {
       const headers = fields.map(f => { const pf = PRINT_FIELDS.find(pf => pf.key === f); return pf ? t(pf.labelKey) : f; }).map(h => `<th style="border:1px solid #333;padding:6px 10px;text-align:left;background:#f0f0f0;font-size:11px;">${h}</th>`).join("");

@@ -98,8 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             lastActivityRef.current = Date.now();
             touchServerRef.current();
           },
-          "data-testid": "button-extend-session",
-        }, "Stay Logged In"),
+        }, "Stay Logged In") as any,
       });
     }, WARNING_AT);
 

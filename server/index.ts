@@ -15,6 +15,9 @@ declare module "express-session" {
     username: string;
     isAdmin: boolean;
     isAuthenticated: boolean;
+    permissions: string;
+    role: string;
+    displayName: string;
   }
 }
 
@@ -65,7 +68,7 @@ let activeSessionMiddleware: any = null;
 
 function createSessionMiddleware(store: any) {
   return session({
-    secret: process.env.SESSION_SECRET,
+    secret: process.env.SESSION_SECRET || "limjiba-session-secret-key",
     name: "pfp_session",
     rolling: true,
     resave: false,

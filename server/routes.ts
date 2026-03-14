@@ -1083,7 +1083,7 @@ export async function registerRoutes(
         items: z.array(z.record(z.any())).optional(),
       }).parse(req.body);
       const { invoice, items } = body;
-      const created = await storage.createTransportationInvoice(invoice, items || []);
+      const created = await storage.createTransportationInvoice(invoice as any, (items || []) as any);
       try {
         await storage.createAuditLog({
           userId: (req as any).user?.id || "system",
@@ -2304,7 +2304,7 @@ export async function registerRoutes(
           action: "create",
           entity: "sale",
           entityId: created.id,
-          details: JSON.stringify({ total: created.totalAmount, items: itemsData.length, walletId: saleData.walletId || null }),
+          details: JSON.stringify({ total: created.total, items: itemsData.length, walletId: saleData.walletId || null }),
           ipAddress: req.ip || null,
           createdAt: new Date().toISOString(),
         });
@@ -5687,13 +5687,13 @@ export async function registerRoutes(
       endOfDay.setHours(23, 59, 59, 999);
 
       const [allOrders, allProducts, allCustomers] = await Promise.all([
-        storage.getAllStoreOrders(),
-        storage.getAllProducts(),
+        storage.getStoreOrders(),
+        storage.getProducts(),
         storage.getAllStoreCustomers(),
       ]);
 
       const todayOrders = allOrders.filter(o => {
-        const d = new Date(o.createdAt);
+        const d = new Date(o.createdAt ?? Date.now());
         return d >= startOfDay && d <= endOfDay;
       });
 

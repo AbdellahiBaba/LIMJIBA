@@ -216,6 +216,7 @@ export function LogoAnimation({
     const CYCLE = 8000;
 
     function animate(timestamp: number) {
+      if (!ctx) return;
       const cycle = (timestamp % CYCLE) / CYCLE;
 
       let phase: "scatter" | "converge" | "hold" | "disperse";

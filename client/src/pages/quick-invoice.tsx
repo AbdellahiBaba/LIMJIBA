@@ -276,7 +276,7 @@ export default function QuickInvoice() {
   const hasWeight = items.some(item => item.weightPerUnit > 0);
 
   const handlePrint = () => {
-    const companyName = branding?.companyInfo?.name || branding?.companyName || "E-Commerce Manager";
+    const companyName = branding?.companyInfo?.name || (branding as any)?.companyName || "E-Commerce Manager";
     const tagline = branding?.companyInfo?.tagline || "Complete E-Commerce Management System";
     const address = branding?.companyInfo?.address || "";
     const phone = branding?.companyInfo?.phone || "";
