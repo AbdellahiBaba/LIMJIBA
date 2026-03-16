@@ -102,10 +102,20 @@ function buildSocialIconsHtml(): string {
     });
 
   if (buttons.length === 0) return "";
+
+  const row1 = buttons.slice(0, 3);
+  const row2 = buttons.slice(3);
+
+  let rows = `<tr>${row1.join("")}</tr>`;
+  if (row2.length > 0) {
+    rows += `\n  <tr><td colspan="${row1.length}" height="8" style="font-size:0;line-height:0;">&nbsp;</td></tr>`;
+    rows += `\n  <tr>${row2.join("")}</tr>`;
+  }
+
   return `
 <p style="color:rgba(201,168,76,0.6);margin:0 0 14px;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:600;font-family:Arial,sans-serif;">Follow Us</p>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 8px;">
-  <tr>${buttons.join("")}</tr>
+  ${rows}
 </table>`;
 }
 
