@@ -19,7 +19,9 @@ export function setEmailSocialLinks(socialLinks: Record<string, string> | null, 
     }
     _cachedSocialLinks = safe;
   }
-  if (websiteUrl) _cachedWebsiteUrl = websiteUrl;
+  if (websiteUrl && /^https?:\/\//i.test(websiteUrl.trim())) {
+    _cachedWebsiteUrl = websiteUrl.trim().replace(/\/+$/, "");
+  }
 }
 
 const SMTP_HOST = process.env.SMTP_HOST || "smtp.zoho.com";
@@ -88,13 +90,13 @@ function buildSocialIconsHtml(): string {
     .map(([key, { bg, label, abbr, textColor }]) => {
       const url = escHtml(_cachedSocialLinks[key].trim());
       const iconUrl = escHtml(`${_cachedWebsiteUrl}/social-icons/${key}.png`);
-      // Real brand icon PNG served from the app, with colored-circle fallback for image-off clients
+      // Real brand icon PNG served from the app, with colored-circle + abbr text fallback for image-off clients
       return `<td align="center" valign="top" style="padding:0 10px;">
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
     <tr>
       <td align="center" valign="middle" style="width:44px;height:44px;border-radius:22px;background:${bg};mso-border-alt:none;">
-        <a href="${url}" target="_blank" title="${label}" style="display:block;width:44px;height:44px;text-decoration:none;border-radius:22px;overflow:hidden;background:${bg};">
-          <img src="${iconUrl}" width="44" height="44" alt="${label}" border="0"
+        <a href="${url}" target="_blank" title="${label}" style="display:block;width:44px;height:44px;line-height:44px;text-align:center;text-decoration:none;border-radius:22px;overflow:hidden;background:${bg};font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:${textColor};">
+          <img src="${iconUrl}" width="44" height="44" alt="${abbr}" border="0"
                style="display:block;width:44px;height:44px;border-radius:22px;"
           />
         </a>
