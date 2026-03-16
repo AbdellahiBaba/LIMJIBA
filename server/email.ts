@@ -88,12 +88,12 @@ function buildSocialIconsHtml(): string {
     .filter(([key]) => _cachedSocialLinks[key]?.trim())
     .map(([key, { bg, label, textColor }]) => {
       const url = escHtml(_cachedSocialLinks[key].trim());
-      return `<td align="center" valign="middle" style="padding:3px;">
+      return `<td align="center" valign="middle" style="padding:0 3px;">
   <table role="presentation" cellpadding="0" cellspacing="0" border="0">
     <tr>
-      <td align="center" style="background:${bg};border-radius:4px;mso-padding-alt:7px 12px;">
+      <td align="center" style="background:${bg};border-radius:4px;mso-padding-alt:8px 16px;">
         <a href="${url}" target="_blank" title="${label}"
-           style="display:inline-block;padding:7px 12px;font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;text-decoration:none;color:${textColor};white-space:nowrap;mso-line-height-rule:exactly;line-height:14px;"
+           style="display:inline-block;padding:8px 16px;font-family:Arial,sans-serif;font-size:11px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;text-decoration:none;color:${textColor};white-space:nowrap;mso-line-height-rule:exactly;line-height:16px;"
         >${label}</a>
       </td>
     </tr>
@@ -102,17 +102,10 @@ function buildSocialIconsHtml(): string {
     });
 
   if (buttons.length === 0) return "";
-
-  const row1 = buttons.slice(0, 3);
-  const row2 = buttons.slice(3);
-
-  let rows = `<tr>${row1.join("")}</tr>`;
-  if (row2.length > 0) rows += `\n  <tr>${row2.join("")}</tr>`;
-
   return `
 <p style="color:rgba(201,168,76,0.6);margin:0 0 14px;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:600;font-family:Arial,sans-serif;">Follow Us</p>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 8px;">
-  ${rows}
+  <tr>${buttons.join("")}</tr>
 </table>`;
 }
 
