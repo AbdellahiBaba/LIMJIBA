@@ -76,11 +76,11 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 function buildSocialIconsHtml(): string {
   // Platform config: brand color + display label (no images — data: URIs are blocked by Gmail/mobile)
   const platforms: Record<string, { bg: string; label: string; abbr: string; textColor: string }> = {
-    whatsapp:  { bg: "#25D366", label: "WhatsApp",  abbr: "W",  textColor: "#fff" },
-    instagram: { bg: "#E4405F", label: "Instagram", abbr: "IG", textColor: "#fff" },
-    facebook:  { bg: "#1877F2", label: "Facebook",  abbr: "f",  textColor: "#fff" },
-    snapchat:  { bg: "#FFFC00", label: "Snapchat",  abbr: "SC", textColor: "#333" },
-    tiktok:    { bg: "#010101", label: "TikTok",    abbr: "TT", textColor: "#fff" },
+    whatsapp:  { bg: "#25D366", label: "WhatsApp",  abbr: "W",  textColor: "#ffffff" },
+    instagram: { bg: "#E4405F", label: "Instagram", abbr: "IG", textColor: "#ffffff" },
+    facebook:  { bg: "#1877F2", label: "Facebook",  abbr: "f",  textColor: "#ffffff" },
+    snapchat:  { bg: "#FFFC00", label: "Snapchat",  abbr: "SC", textColor: "#333333" },
+    tiktok:    { bg: "#010101", label: "TikTok",    abbr: "TT", textColor: "#ffffff" },
   };
 
   const buttons = Object.entries(platforms)
@@ -88,18 +88,19 @@ function buildSocialIconsHtml(): string {
     .map(([key, { bg, label, abbr, textColor }]) => {
       const url = escHtml(_cachedSocialLinks[key].trim());
       // Pure table-based circular button — works in Gmail, Apple Mail, Outlook, all mobile clients
-      return `<td style="padding:0 6px;">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+      // Label td uses white-space:nowrap to prevent text wrapping under the circle
+      return `<td align="center" valign="top" style="padding:0 10px;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
     <tr>
-      <td align="center" valign="middle" style="width:44px;height:44px;border-radius:22px;background:${bg};mso-border-alt:none;">
+      <td align="center" valign="middle" style="width:38px;height:38px;border-radius:19px;background:${bg};mso-border-alt:none;">
         <a href="${url}" target="_blank" title="${label}"
-           style="display:block;width:44px;height:44px;line-height:44px;text-align:center;text-decoration:none;font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:${textColor};border-radius:22px;background:${bg};"
+           style="display:block;width:38px;height:38px;line-height:38px;text-align:center;text-decoration:none;font-family:Arial,sans-serif;font-size:12px;font-weight:800;color:${textColor};border-radius:19px;background:${bg};"
         >${abbr}</a>
       </td>
     </tr>
     <tr>
-      <td align="center" style="padding-top:5px;">
-        <a href="${url}" target="_blank" style="font-family:Arial,sans-serif;font-size:9px;color:rgba(201,168,76,0.7);text-decoration:none;letter-spacing:0.5px;">${label}</a>
+      <td align="center" style="padding-top:6px;white-space:nowrap;">
+        <a href="${url}" target="_blank" style="font-family:Arial,sans-serif;font-size:10px;color:rgba(201,168,76,0.75);text-decoration:none;letter-spacing:0.3px;white-space:nowrap;">${label}</a>
       </td>
     </tr>
   </table>
@@ -108,7 +109,7 @@ function buildSocialIconsHtml(): string {
 
   if (buttons.length === 0) return "";
   return `
-<p style="color:rgba(201,168,76,0.6);margin:0 0 14px;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:600;font-family:Arial,sans-serif;">Follow Us</p>
+<p style="color:rgba(201,168,76,0.6);margin:0 0 16px;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:600;font-family:Arial,sans-serif;">Follow Us</p>
 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 8px;border-collapse:collapse;">
   <tr>${buttons.join("")}</tr>
 </table>`;
