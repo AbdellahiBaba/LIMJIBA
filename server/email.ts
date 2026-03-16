@@ -578,9 +578,8 @@ export async function sendProductMarketingEmail(
   const resolveImg = (url: string | null | undefined): string | null => {
     if (!url || typeof url !== "string" || !url.trim()) return null;
     const trimmed = url.trim();
-    if (/^(blob:|data:)/i.test(trimmed)) return null;
     if (/^https?:\/\//i.test(trimmed)) return trimmed;
-    return `${baseUrl}${trimmed.startsWith("/") ? "" : "/"}${trimmed}`;
+    return null;
   };
 
   const rawImgUrl = resolveImg(product.imageUrl) || resolveImg((product.images || [])[0]);
