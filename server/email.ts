@@ -109,7 +109,7 @@ function buildSocialIconsHtml(): string {
   let rows = `<tr>${row1.join("")}</tr>`;
   if (row2.length > 0) {
     rows += `\n  <tr><td colspan="${row1.length}" height="8" style="font-size:0;line-height:0;">&nbsp;</td></tr>`;
-    rows += `\n  <tr>${row2.join("")}</tr>`;
+    rows += `\n  <tr><td colspan="${row1.length}" align="center"><table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;"><tr>${row2.join("")}</tr></table></td></tr>`;
   }
 
   return `
