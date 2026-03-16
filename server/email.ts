@@ -576,9 +576,11 @@ export async function sendProductMarketingEmail(
   const productUrl = product.id ? `${baseUrl}/store/product/${product.id}` : baseUrl;
 
   const resolveImg = (url: string | null | undefined): string | null => {
-    if (!url || !url.trim()) return null;
-    if (/^https?:\/\//i.test(url)) return url;
-    return `${baseUrl}${url.startsWith("/") ? "" : "/"}${url}`;
+    if (!url || typeof url !== "string" || !url.trim()) return null;
+    const trimmed = url.trim();
+    if (/^(blob:|data:)/i.test(trimmed)) return null;
+    if (/^https?:\/\//i.test(trimmed)) return trimmed;
+    return `${baseUrl}${trimmed.startsWith("/") ? "" : "/"}${trimmed}`;
   };
 
   const rawImgUrl = resolveImg(product.imageUrl) || resolveImg((product.images || [])[0]);
@@ -615,11 +617,16 @@ export async function sendProductMarketingEmail(
   };
 
   const imgBlock = safeImgUrl
-    ? `<div style="text-align:center;margin:20px 0;">
-        <a href="${escHtml(productUrl)}" style="display:inline-block;text-decoration:none;">
-          <img src="${safeImgUrl}" alt="${escHtml(pName)}" style="max-width:100%;max-height:340px;border-radius:12px;box-shadow:0 4px 20px rgba(10,22,40,0.18);border:2px solid rgba(201,168,76,0.25);" />
-        </a>
-      </div>`
+    ? `<table role="presentation" cellpadding="0" cellspacing="0" border="0" width="560" style="margin:20px auto;">
+        <tr>
+          <td align="center" width="560">
+            <a href="${escHtml(productUrl)}" target="_blank" style="display:block;text-decoration:none;">
+              <img src="${safeImgUrl}" alt="${escHtml(pName)}" width="560" border="0"
+                   style="display:block;width:560px;height:auto;border-radius:12px;border:2px solid rgba(201,168,76,0.25);" />
+            </a>
+          </td>
+        </tr>
+      </table>`
     : "";
 
   const priceBlock = type === "flash_sale" && product.dealDiscount
