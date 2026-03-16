@@ -76,35 +76,25 @@ export async function sendEmail(options: EmailOptions): Promise<boolean> {
 }
 
 function buildSocialIconsHtml(): string {
-  // Platform config: brand color + display label (no images — data: URIs are blocked by Gmail/mobile)
-  const platforms: Record<string, { bg: string; label: string; abbr: string; textColor: string }> = {
-    whatsapp:  { bg: "#25D366", label: "WhatsApp",  abbr: "W",  textColor: "#ffffff" },
-    instagram: { bg: "#E4405F", label: "Instagram", abbr: "IG", textColor: "#ffffff" },
-    facebook:  { bg: "#1877F2", label: "Facebook",  abbr: "f",  textColor: "#ffffff" },
-    snapchat:  { bg: "#FFFC00", label: "Snapchat",  abbr: "SC", textColor: "#333333" },
-    tiktok:    { bg: "#010101", label: "TikTok",    abbr: "TT", textColor: "#ffffff" },
+  const platforms: Record<string, { bg: string; label: string; textColor: string }> = {
+    whatsapp:  { bg: "#25D366", label: "WhatsApp",  textColor: "#ffffff" },
+    instagram: { bg: "#E4405F", label: "Instagram", textColor: "#ffffff" },
+    facebook:  { bg: "#1877F2", label: "Facebook",  textColor: "#ffffff" },
+    snapchat:  { bg: "#FFFC00", label: "Snapchat",  textColor: "#333333" },
+    tiktok:    { bg: "#010101", label: "TikTok",    textColor: "#ffffff" },
   };
 
   const buttons = Object.entries(platforms)
     .filter(([key]) => _cachedSocialLinks[key]?.trim())
-    .map(([key, { bg, label, abbr, textColor }]) => {
+    .map(([key, { bg, label, textColor }]) => {
       const url = escHtml(_cachedSocialLinks[key].trim());
-      const iconUrl = escHtml(`${_cachedWebsiteUrl}/social-icons/${key}.png`);
-      // Real brand icon PNG served from the app, with colored-circle + abbr text fallback for image-off clients
-      return `<td align="center" valign="top" style="padding:0 10px;">
-  <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
+      return `<td align="center" valign="middle" style="padding:3px;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0">
     <tr>
-      <td align="center" valign="middle" style="width:44px;height:44px;border-radius:22px;background:${bg};mso-border-alt:none;">
-        <a href="${url}" target="_blank" title="${label}" style="display:block;width:44px;height:44px;line-height:44px;text-align:center;text-decoration:none;border-radius:22px;overflow:hidden;background:${bg};font-family:Arial,sans-serif;font-size:13px;font-weight:700;color:${textColor};">
-          <img src="${iconUrl}" width="44" height="44" alt="${abbr}" border="0"
-               style="display:block;width:44px;height:44px;border-radius:22px;"
-          />
-        </a>
-      </td>
-    </tr>
-    <tr>
-      <td align="center" style="padding-top:6px;white-space:nowrap;">
-        <a href="${url}" target="_blank" style="font-family:Arial,sans-serif;font-size:10px;color:rgba(201,168,76,0.75);text-decoration:none;letter-spacing:0.3px;white-space:nowrap;">${label}</a>
+      <td align="center" style="background:${bg};border-radius:4px;mso-padding-alt:7px 12px;">
+        <a href="${url}" target="_blank" title="${label}"
+           style="display:inline-block;padding:7px 12px;font-family:Arial,Helvetica,sans-serif;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase;text-decoration:none;color:${textColor};white-space:nowrap;mso-line-height-rule:exactly;line-height:14px;"
+        >${label}</a>
       </td>
     </tr>
   </table>
@@ -112,10 +102,17 @@ function buildSocialIconsHtml(): string {
     });
 
   if (buttons.length === 0) return "";
+
+  const row1 = buttons.slice(0, 3);
+  const row2 = buttons.slice(3);
+
+  let rows = `<tr>${row1.join("")}</tr>`;
+  if (row2.length > 0) rows += `\n  <tr>${row2.join("")}</tr>`;
+
   return `
-<p style="color:rgba(201,168,76,0.6);margin:0 0 16px;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:600;font-family:Arial,sans-serif;">Follow Us</p>
-<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 8px;border-collapse:collapse;">
-  <tr>${buttons.join("")}</tr>
+<p style="color:rgba(201,168,76,0.6);margin:0 0 14px;font-size:11px;letter-spacing:3px;text-transform:uppercase;font-weight:600;font-family:Arial,sans-serif;">Follow Us</p>
+<table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto 8px;">
+  ${rows}
 </table>`;
 }
 
