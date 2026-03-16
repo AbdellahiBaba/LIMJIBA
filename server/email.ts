@@ -87,15 +87,17 @@ function buildSocialIconsHtml(): string {
     .filter(([key]) => _cachedSocialLinks[key]?.trim())
     .map(([key, { bg, label, abbr, textColor }]) => {
       const url = escHtml(_cachedSocialLinks[key].trim());
-      // Pure table-based circular button — works in Gmail, Apple Mail, Outlook, all mobile clients
-      // Label td uses white-space:nowrap to prevent text wrapping under the circle
+      const iconUrl = escHtml(`${_cachedWebsiteUrl}/social-icons/${key}.png`);
+      // Real brand icon PNG served from the app, with colored-circle fallback for image-off clients
       return `<td align="center" valign="top" style="padding:0 10px;">
   <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 auto;">
     <tr>
-      <td align="center" valign="middle" style="width:38px;height:38px;border-radius:19px;background:${bg};mso-border-alt:none;">
-        <a href="${url}" target="_blank" title="${label}"
-           style="display:block;width:38px;height:38px;line-height:38px;text-align:center;text-decoration:none;font-family:Arial,sans-serif;font-size:12px;font-weight:800;color:${textColor};border-radius:19px;background:${bg};"
-        >${abbr}</a>
+      <td align="center" valign="middle" style="width:44px;height:44px;border-radius:22px;background:${bg};mso-border-alt:none;">
+        <a href="${url}" target="_blank" title="${label}" style="display:block;width:44px;height:44px;text-decoration:none;border-radius:22px;overflow:hidden;background:${bg};">
+          <img src="${iconUrl}" width="44" height="44" alt="${label}" border="0"
+               style="display:block;width:44px;height:44px;border-radius:22px;"
+          />
+        </a>
       </td>
     </tr>
     <tr>

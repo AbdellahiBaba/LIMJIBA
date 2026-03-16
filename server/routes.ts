@@ -508,7 +508,8 @@ export async function registerRoutes(
       if (settings?.socialLinks) {
         try {
           const links = JSON.parse(settings.socialLinks);
-          setEmailSocialLinks(links, "https://limjiba.com");
+          const baseUrl = process.env.APP_BASE_URL || (process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS.split(",")[0]}` : "https://limjiba.com");
+          setEmailSocialLinks(links, baseUrl);
           console.log("[EMAIL] Social links loaded for email footer");
         } catch {}
       }
