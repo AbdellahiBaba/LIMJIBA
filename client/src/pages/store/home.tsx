@@ -8,7 +8,6 @@ import { useRecentlyViewed } from "@/hooks/use-recently-viewed";
 import { Button } from "@/components/ui/button";
 import { ShoppingCart, ArrowRight, Star, Sparkles, Package, Shield, Truck, Award, ChevronRight, Clock, Flame, Eye, Heart, Zap, CheckCircle, Globe, Crown, Gift, Lock, Diamond, ThumbsUp, Medal, Gem, Quote } from "lucide-react";
 import type { Product, CmsBanner, StoreSettings, Category, StoreReview } from "@shared/schema";
-import { CinematicLogoReveal } from "@/components/cinematic-logo-reveal";
 import { StoreMarketingIntro } from "@/components/store-marketing-intro";
 
 function getProductName(product: Product, lang: string): string {
@@ -203,10 +202,6 @@ export default function StoreHome() {
         </div>
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center w-full py-20">
-          <div className="animate-fade-in-up">
-            <CinematicLogoReveal width={400} height={400} />
-          </div>
-
           <div className="animate-fade-in-up-delay-1">
             <div className={`inline-flex items-center gap-2 px-5 py-2 rounded-full text-sm mb-6 premium-badge ${lang === "ar" ? "brand-name-ar" : ""}`}>
               <Sparkles className="h-4 w-4" />
