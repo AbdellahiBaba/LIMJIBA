@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Loader2 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import type { StoreSettings } from "@shared/schema";
-import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18-removebg-preview_1773192470477.png";
+import logoImg from "@assets/logo.png";
 
 export default function StoreLogin() {
   const { t } = useStoreLanguage();

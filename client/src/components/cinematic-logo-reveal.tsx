@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useCallback } from "react";
 
-import logoSrc from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18-removebg-preview_1773192470477.png";
+import logoSrc from "@assets/logo.png";
 
 interface CinematicLogoRevealProps {
   width?: number;

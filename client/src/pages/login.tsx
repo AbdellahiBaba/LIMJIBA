@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Loader2, Lock, User, Package, Shield, Boxes, Factory, Truck } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import defaultLogoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18-removebg-preview_1773192470477.png";
+import defaultLogoImg from "@assets/logo.png";
 
 export default function Login() {
   const [username, setUsername] = useState("");

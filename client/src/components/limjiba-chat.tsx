@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { MessageCircle, X, Send, Loader2, Bot, User, Headset, ArrowLeft, Plus } from "lucide-react";
 import { useStoreLanguage } from "@/components/store-layout";
-import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18-removebg-preview_1773192470477.png";
+import logoImg from "@assets/logo.png";
 
 interface Message {
   role: "user" | "assistant";

@@ -12,7 +12,7 @@ import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import type { StoreSettings, StoreNotification } from "@shared/schema";
 import { type StoreLanguage, getStoreTranslation } from "@/locales/store";
 import PwaInstallPrompt from "@/components/pwa-install-prompt";
-import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18-removebg-preview_1773192470477.png";
+import logoImg from "@assets/logo.png";
 import aegisai360LogoPath from "@assets/aegisai360_logo.svg";
 
 interface StoreLanguageContextType {

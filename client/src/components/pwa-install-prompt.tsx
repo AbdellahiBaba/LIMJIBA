@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { X, Download, Share } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useStoreLanguage } from "@/components/store-layout";
-import logoImg from "@assets/WhatsApp_Image_2026-03-09_at_20.11.18-removebg-preview_1773192470477.png";
+import logoImg from "@assets/logo.png";
 
 const DISMISS_KEY = "pwa-install-dismissed";
 const DISMISS_DAYS = 7;

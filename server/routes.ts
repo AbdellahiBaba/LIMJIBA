@@ -1512,7 +1512,7 @@ export async function registerRoutes(
         logoDataUrl = sanitizeUrl(branding.logo);
       } else {
         try {
-          const logoPath = path.resolve('attached_assets/WhatsApp_Image_2026-03-09_at_20.11.18-removebg-preview_1773192470477.png');
+          const logoPath = path.resolve('attached_assets/logo.png');
           if (fs.existsSync(logoPath)) {
             const logoBuffer = fs.readFileSync(logoPath);
             logoDataUrl = `data:image/png;base64,${logoBuffer.toString('base64')}`;
@@ -2425,7 +2425,7 @@ export async function registerRoutes(
         logoDataUrl = sanitizeUrl(branding.logo);
       } else {
         try {
-          const logoPath = path.resolve('attached_assets/WhatsApp_Image_2026-03-09_at_20.11.18-removebg-preview_1773192470477.png');
+          const logoPath = path.resolve('attached_assets/logo.png');
           if (fs.existsSync(logoPath)) {
             const logoBuffer = fs.readFileSync(logoPath);
             logoDataUrl = `data:image/png;base64,${logoBuffer.toString('base64')}`;
