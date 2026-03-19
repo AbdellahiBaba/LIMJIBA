@@ -1327,8 +1327,8 @@ export function StoreMarketingIntro() {
   const [lang,       setLang]       = useState<Lang>(() => detectLang());
   const [products,   setProducts]   = useState<ProductData[]>(STATIC_PRODUCTS);
   const [wallets,    setWallets]    = useState<WalletData[]>(STATIC_WALLETS_DEF);
-  /* Mobile starts minimized, desktop starts expanded */
-  const [minimized,  setMinimized]  = useState(() => window.innerWidth < 768);
+  /* Always start expanded on all devices */
+  const [minimized,  setMinimized]  = useState(false);
   const timers = useRef<ReturnType<typeof setTimeout>[]>([]);
 
   /* Inject CSS once */
@@ -1435,14 +1435,14 @@ export function StoreMarketingIntro() {
   return (
     <ScenarioCtx.Provider value={scenarioCtxValue}>
     <LangCtx.Provider value={lang}>
-      {/* Backdrop: semi-dark for fullscreen, transparent for mobile expanded */}
-      {(fullscreen || (isMobile && !minimized)) && (
+      {/* Backdrop: semi-dark overlay only in fullscreen mode */}
+      {fullscreen && (
         <div
           onClick={handleBackdrop}
           style={{
             position:"fixed", inset:0, zIndex:8999,
-            background: fullscreen ? "rgba(0,0,0,.65)" : "transparent",
-            backdropFilter: fullscreen ? "blur(2px)" : "none",
+            background:"rgba(0,0,0,.65)",
+            backdropFilter:"blur(2px)",
           }}
         />
       )}
