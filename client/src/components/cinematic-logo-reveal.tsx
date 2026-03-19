@@ -536,13 +536,13 @@ export function CinematicLogoReveal({ width=500, height=500, onComplete }: Cinem
   if (error) {
     return (
       <div className="mx-auto flex items-center justify-center" style={{width,height}} data-testid="cinematic-logo-fallback">
-        <img src={logoSrc} alt="LIMJIBA" style={{maxWidth:width*0.7,maxHeight:height*0.7,objectFit:"contain"}}/>
+        <img src={logoSrc} alt="LIMJIBA" style={{maxWidth:width*0.7,maxHeight:height*0.7,objectFit:"contain",mixBlendMode:"screen"}}/>
       </div>
     );
   }
   return (
     <div className="mx-auto flex items-center justify-center" style={{width,height}} data-testid="cinematic-logo-reveal-container">
-      <canvas ref={canvasRef} style={{width,height,willChange:"transform",borderRadius:8}} data-testid="cinematic-logo-canvas"/>
+      <canvas ref={canvasRef} style={{width,height,willChange:"transform",borderRadius:8,mixBlendMode:"screen"}} data-testid="cinematic-logo-canvas"/>
     </div>
   );
 }
