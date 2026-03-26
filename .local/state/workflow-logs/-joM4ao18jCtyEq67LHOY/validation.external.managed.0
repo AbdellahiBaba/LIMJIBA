@@ -1,0 +1,29 @@
+VERDICT: REJECTED
+The diff is close on email markup, but it misses a core requirement in `resolveImg`, so the task is not complete.
+
+Critical findings:
+- `imgBlock` update is largely correct and email-safe: image is wrapped in a presentation table,VERDICT: REJECTED
+ `<td>` has explicit width/alignment, `<img>` has `width="560"`, `display:blocThe diff is close on email markup, but it misses a core requirement in `resolveImg`, so the task is not complete.
+k`, `height:auto`, `border="0"`, and box-shadow/max-
+heCritical findings:
+ight were removed. Link wrapper is block-level, so clickability is correct.
+- **Blocking issue:** `resolveImg` still accepts relative paths and blindly prefixes `baseUrl` for any non-http URL. This contradicts the stated acceptance criteria (“relative-only path should be omitted”) and does not properly reject non-http schemes. Example: `ftp://...` would be transformed into a malformed URL instead of being rejected.
+- Acceptance criterion says invalid image inputs (null/blob/data/relative-only path) must omit image block. Current logic omits null/blob/data but **not relative-only paths**.
+- Verification criterion (“no TypeScript errors”) is not met in current workspace: `npm run check` fails with 5 TS errors in `server/replit_integrations/*` files.
+
+Security: none observed (no serious auth/injection/secrets regressions in the touched email logic).
+
+Next actions:
+1) Tighten `resolveImg` to allow only absolute `http://` or `https://` URLs; return `null` for relative paths and all other schemes.
+2) Re-run task acceptance checks after patch (especially rendering behavior with missing/invalid image input).
+3) Resolve or explicitly baseline existing TypeScript errors before claiming completion of the “no TS errors” verification step.- `imgBlock` update is largely correct and email-safe: image is wrapped in a presentation table, `<td>` has explicit width/alignment, `<img>` has `width="560"`, `display:block`, `height:auto`, `border="0"`, and box-shadow/max-height were removed. Link wrapper is block-level, so clickability is correct.
+- **Blocking issue:** `resolveImg` still accepts relative paths and blindly prefixes `baseUrl` for any non-http URL. This contradicts the stated acceptance criteria (“relative-only path should be omitted”) and does not properly reject non-http schemes. Example: `ftp://...` would be transformed into a malformed URL instead of being rejected.
+- Acceptance criterion says invalid image inputs (null/blob/data/relative-only path) must omit image block. Current logic omits null/blob/data but **not relative-only paths**.
+- Verification criterion (“no TypeScript errors”) is not met in current workspace: `npm run check` fails with 5 TS errors in `server/replit_integrations/*` files.
+
+Security: none observed (no serious auth/injection/secrets regressions in the touched email logic).
+
+Next actions:
+1) Tighten `resolveImg` to allow only absolute `http://` or `https://` URLs; return `null` for relative paths and all other schemes.
+2) Re-run task acceptance checks after patch (especially rendering behavior with missing/invalid image input).
+3) Resolve or explicitly baseline existing TypeScript errors before claiming completion of the “no TS errors” verification step.

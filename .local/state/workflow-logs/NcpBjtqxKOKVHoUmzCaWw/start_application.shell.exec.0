@@ -1,0 +1,32 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K[DB] Environment: DEVELOPMENT
+[DB] Database provider: Neon
+[DB] Connecting to PostgreSQL: ep-steep-sound-ah0glgx6-pooler.c-3.us-east-1.aws.neon.tech
+11:38:35 PM [express] Starting server initialization...
+11:38:35 PM [express] NODE_ENV: development
+11:38:35 PM [express] PORT: 5000
+11:38:35 PM [express] Registering routes...
+[DAILY-DIGEST] Scheduled for 3/20/2026, 8:00:00 AM (in 501 min)
+11:38:35 PM [express] Routes registered successfully
+11:38:35 PM [express] Setting up Vite for development...
+11:38:35 PM [express] Server listening on http://0.0.0.0:5000
+11:38:35 PM [express] Vite development server configured
+[DB] Verifying database connection...
+[EMAIL] Social links loaded for email footer
+[DB] Database connection verified (824ms)
+[DB] Running schema migrations...
+[DB] Made driver_name and responsible optional on transportation_invoices
+[DB] Updated CMS pages with rich content
+[DB] Created product_variants table
+[DB] Created product_reviews table
+[DB] Created store_reviews table
+[DB] Ensured user_sessions table exists
+[DB] Ensured loyalty_transactions table exists
+[DB] Updated loyalty points_value to 0.2 (500 pts = 100 MRU)
+[DB] Ensured abandoned_carts table exists
+[DB] Schema migrations complete
+11:38:43 PM [express] Database ready for requests
+11:38:43 PM [express] Server fully initialized and ready

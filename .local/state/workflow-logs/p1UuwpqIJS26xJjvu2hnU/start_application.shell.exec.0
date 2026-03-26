@@ -1,0 +1,34 @@
+
+> rest-express@1.0.0 dev
+> NODE_ENV=development tsx server/index.ts
+
+[1G[0K[DB] Environment: DEVELOPMENT
+[DB] Database provider: Neon
+[DB] Connecting to PostgreSQL: ep-steep-sound-ah0glgx6-pooler.c-3.us-east-1.aws.neon.tech
+11:15:29 PM [express] Starting server initialization...
+11:15:29 PM [express] NODE_ENV: development
+11:15:29 PM [express] PORT: 5000
+11:15:29 PM [express] Registering routes...
+[DAILY-DIGEST] Scheduled for 3/17/2026, 8:00:00 AM (in 525 min)
+11:15:29 PM [express] Routes registered successfully
+11:15:29 PM [express] Setting up Vite for development...
+11:15:29 PM [express] Server listening on http://0.0.0.0:5000
+11:15:30 PM [express] Vite development server configured
+[DB] Verifying database connection...
+[EMAIL] Social links loaded for email footer
+[DB] Database connection verified (795ms)
+[DB] Running schema migrations...
+[DB] Made driver_name and responsible optional on transportation_invoices
+[DB] Updated CMS pages with rich content
+[DB] Created product_variants table
+[DB] Created product_reviews table
+[DB] Created store_reviews table
+[DB] Ensured user_sessions table exists
+[DB] Ensured loyalty_transactions table exists
+[DB] Updated loyalty points_value to 0.2 (500 pts = 100 MRU)
+[DB] Ensured abandoned_carts table exists
+[DB] Schema migrations complete
+11:15:37 PM [express] Database ready for requests
+11:15:37 PM [express] Server fully initialized and ready
+
+A PostCSS plugin did not pass the `from` option to `postcss.parse`. This may cause imported assets to be incorrectly transformed. If you've recently added a PostCSS plugin that raised this warning, please contact the package author to fix the issue.

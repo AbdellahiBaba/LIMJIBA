@@ -1,0 +1,32 @@
+Update logo across entire project with new LIMJIBA brand logo
+
+Task #6: Replace old logo (WhatsApp_Image_2026-03-09...) with the new
+brand logo (camel + airplane + ship + Arabic "لمجيبة" + "IMPORTING" in gold)
+across the entire project.
+
+Changes:
+
+1. New logo file copied to:
+   - attached_assets/logo.png (clean name for server-side use)
+   - client/public/favicon.png (replaces old Replit puzzle favicon)
+   - client/public/favicon.jpeg (replaces old favicon.jpeg)
+   - client/public/logo.png (served as static asset)
+
+2. TSX import updated in 11 files (old WhatsApp_Image filename → logo.png):
+   - client/src/pages/login.tsx
+   - client/src/pages/store/login.tsx
+   - client/src/pages/store/signup.tsx
+   - client/src/pages/store/forgot-password.tsx
+   - client/src/pages/store/reset-password.tsx
+   - client/src/pages/store/about.tsx
+   - client/src/components/store-layout.tsx
+   - client/src/components/app-sidebar.tsx
+   - client/src/components/cinematic-logo-reveal.tsx
+   - client/src/components/limjiba-chat.tsx
+   - client/src/components/pwa-install-prompt.tsx
+
+3. server/routes.ts: Both PDF fallback logo paths (lines ~1515 and ~2428)
+   updated from old WhatsApp_Image filename to attached_assets/logo.png
+
+4. client/public/manifest.json: PWA icon src changed from /favicon.jpeg to
+   /favicon.png, type updated from image/jpeg to image/png

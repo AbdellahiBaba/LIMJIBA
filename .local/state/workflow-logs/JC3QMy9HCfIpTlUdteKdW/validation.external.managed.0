@@ -1,0 +1,55 @@
+VERDICT: APPROVED_WITH_COMMENTS
+
+The email-image changes in `server/email.ts` correctly implement the core functional requirements for reliable product image rendering across major email clients, with one non-blocking caveat on verification scope.
+
+CVERDICT: APPROVED_WITH_COMMENTS
+ritical findings / analysis:
+- `resolveImg` now effectively enforces HTTP(S)-only URLs (`/^https?:\/\//i`), which inherently rejects `blob:`, `data:`, and relative paths. This satisfies the requirement to avoid dead/blocked
+ email image sources.
+- `imgBlock` was rewritten to email-safe table markup:
+ The email-image changes in `server/email.ts` correctly implement the core functional requirements for reliable product image rendering across major email clients, with one non-blocking caveat on verification scope.
+ - `<table role="presentation" ... width="560">` wrapper added.
+  - `<
+td align="center" width="560">` added for Outlook-safe sizing/centering.
+ Critical findings / analysis:
+ - `<a ... style="display:block">` ensures full-image click target.
+  - `<im- `resolveImg` now effectively enforces HTTP(S)-only URLs (`/^https?:\/\//i`), which inherently rejects `blob:`, `data:`, and relative paths. This satisfies the requirement to avoid dead/blocked email image sources.
+g ... width="560" border="0" style="display:bloc- `imgBlock` was rewritten to email-safe table markup:
+k;width:560px;height:auto;...">` includes required attributes/sty  - `<table role="presentation" ... width="560">` wrapper added.
+les to prevent Outlook/Gmail rendering issues.
+- Unsuppor  - `<td align="center" width="560">` added for Outlook-safe sizing/centering.
+ted/fragile styling concerns were handled appropriate  - `<a ... style="display:block">` ensures full-image click target.
+ly:
+  - No `box-shadow` remains.
+  - A border-based acce  - `<img ... width="560" border="0" style="display:block;width:560px;height:auto;...">` includes required attributes/styles to prevent Outlook/Gmail rendering issues.
+nt is retained (Outlook-safe fallback approach).
+  - `max-height` - Unsupported/fragile styling concerns were handled appropriately:
+constraints are removed from the image block.
+- Conditional re  - No `box-shadow` remains.
+ndering (`safeImgUrl ? ... : ""`) cleanly omits the entire  - A border-based accent is retained (Outlook-safe fallback approach).
+ image section when image URL is invalid/missing, preve  - `max-height` constraints are removed from the image block.
+nting broken placeholders and preserving surrounding content.
+
+Verification caveat:
+- `npm run check` currently fails with existing TypeScript errors in unrelated integration files (`server/replit_integrations/batch/*`, `server/replit_integrations/image/*`). These do not appear introduced by this email diff, but they prevent confirming the “no TypeScript errors” acceptance item at repository level.
+- Runtime restart verification via `npm run dev` is blocked in this environment (tooling requires workflow restart operation not available here), so I could not independently validate startup in-session.
+
+Security:
+- None observed of serious concern in this diff. URL filtering tightened (positive from an abuse/safety perspective).
+
+Next actions:
+1. Run the project workflow restart in the main agent environment and confirm email path startup behavior.
+2. Resolve or explicitly baseline the unrelated TypeScript errors in replit integration files so `npm run check` can pass globally.
+3. (Optional) Send a test marketing email to Gmail + Outlook mailbox pair to visually confirm 560px rendering and click-through behavior end-to-end.- Conditional rendering (`safeImgUrl ? ... : ""`) cleanly omits the entire image section when image URL is invalid/missing, preventing broken placeholders and preserving surrounding content.
+
+Verification caveat:
+- `npm run check` currently fails with existing TypeScript errors in unrelated integration files (`server/replit_integrations/batch/*`, `server/replit_integrations/image/*`). These do not appear introduced by this email diff, but they prevent confirming the “no TypeScript errors” acceptance item at repository level.
+- Runtime restart verification via `npm run dev` is blocked in this environment (tooling requires workflow restart operation not available here), so I could not independently validate startup in-session.
+
+Security:
+- None observed of serious concern in this diff. URL filtering tightened (positive from an abuse/safety perspective).
+
+Next actions:
+1. Run the project workflow restart in the main agent environment and confirm email path startup behavior.
+2. Resolve or explicitly baseline the unrelated TypeScript errors in replit integration files so `npm run check` can pass globally.
+3. (Optional) Send a test marketing email to Gmail + Outlook mailbox pair to visually confirm 560px rendering and click-through behavior end-to-end.
