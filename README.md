@@ -1,4 +1,51 @@
-A comprehensive e-commerce management system branded as LIMJIBA / لمجيبة (Mauritanian premium import & e-commerce). Provides modules for Invoice Generation (standard and manufacturing), Stock/Inventory Management, Point-of-Sale (POS), Reseller Rewards Program, Salaries Management, Business Expenses Tracking, Profit Analytics, Supplier Management, Purchase Orders, Shipments, Audit Trail, Advanced Reporting, and a trilingual public storefront with customer authentication. All old plastic business data (POLY FLECTA PLASTICA) has been completely removed and replaced with LIMJIBA branding.
+A comprehensive e-commerce management system branded as LIMJIBA / لمجيبة (Mauritanian premium import & e-commerce). 
+
+<div align="center">
+
+<!-- Frontend -->
+[![React](https://img.shields.io/badge/Frontend-React_18-61DAFB.svg?logo=react&logoColor=white)](https://react.dev)
+[![TypeScript](https://img.shields.io/badge/Language-TypeScript-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+[![Vite](https://img.shields.io/badge/Build-Vite-646CFF.svg?logo=vite&logoColor=white)](https://vitejs.dev)
+[![TailwindCSS](https://img.shields.io/badge/Styling-TailwindCSS-38B2AC.svg?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![shadcn/ui](https://img.shields.io/badge/UI-shadcn%2Fui-000000.svg)](https://ui.shadcn.com)
+[![Radix UI](https://img.shields.io/badge/Components-Radix_UI-161618.svg?logo=radix-ui&logoColor=white)](https://www.radix-ui.com)
+[![TanStack Query](https://img.shields.io/badge/State-TanStack_Query-FF4154.svg?logo=reactquery&logoColor=white)](https://tanstack.com/query)
+
+<!-- Backend -->
+[![Node.js](https://img.shields.io/badge/Backend-Node.js-339933.svg?logo=node.js&logoColor=white)](https://nodejs.org)
+[![Express](https://img.shields.io/badge/API-Express.js-000000.svg?logo=express&logoColor=white)](https://expressjs.com)
+[![TypeScript](https://img.shields.io/badge/Language-TypeScript-3178C6.svg?logo=typescript&logoColor=white)](https://www.typescriptlang.org)
+
+<!-- Database -->
+[![PostgreSQL](https://img.shields.io/badge/Database-PostgreSQL-4169E1.svg?logo=postgresql&logoColor=white)](https://www.postgresql.org)
+[![Drizzle ORM](https://img.shields.io/badge/ORM-Drizzle-FFDA79.svg)](https://orm.drizzle.team)
+
+<!-- AI -->
+[![OpenAI](https://img.shields.io/badge/AI-OpenAI-412991.svg?logo=openai&logoColor=white)](https://platform.openai.com)
+
+<!-- Storefront -->
+[![PWA](https://img.shields.io/badge/Storefront-PWA-5A0FC8.svg?logo=pwa&logoColor=white)](https://developer.mozilla.org/docs/Web/Progressive_web_apps)
+[![RTL Support](https://img.shields.io/badge/Language-RTL_Arabic-FFCC00.svg)](#)
+[![Localization](https://img.shields.io/badge/i18n-EN%2FFR%2FAR-008080.svg)](#)
+
+<!-- Branding -->
+[![Branding](https://img.shields.io/badge/Brand-LIMJIBA-FFD700.svg)](#)
+[![Currency](https://img.shields.io/badge/Currency-MRU-0A1628.svg)](#)
+
+<!-- Security -->
+[![Security](https://img.shields.io/badge/Security-Helmet.js-000000.svg)](https://helmetjs.github.io)
+[![Rate Limiting](https://img.shields.io/badge/Security-Rate_Limiting-orange.svg)](#)
+
+<!-- Email -->
+[![SMTP](https://img.shields.io/badge/Email-Zoho_SMTP-CC0000.svg)](https://www.zoho.com/mail/)
+
+<!-- License -->
+[![License](https://img.shields.io/badge/License-Proprietary-8B0000.svg)](#)
+
+</div>
+
+
+Provides modules for Invoice Generation (standard and manufacturing), Stock/Inventory Management, Point-of-Sale (POS), Reseller Rewards Program, Salaries Management, Business Expenses Tracking, Profit Analytics, Supplier Management, Purchase Orders, Shipments, Audit Trail, Advanced Reporting, and a trilingual public storefront with customer authentication. All old plastic business data (POLY FLECTA PLASTICA) has been completely removed and replaced with LIMJIBA branding.
 
 Brand Identity: Royal Navy (#0A1628) + Royal Gold (#C9A84C) + Deep Black (#060B14) + Ivory (#FAF6EE), Montserrat typography. Gold gradient: linear-gradient(135deg, #C9A84C, #B8963F, #D4B55A). Logo: camel + plane + world map with Arabic "لمجيبة" + "IMPORTING" text. Currency: MRU (Mauritanian Ouguiya / أوقية) Languages: Arabic, French, English (trilingual with RTL support)
 
